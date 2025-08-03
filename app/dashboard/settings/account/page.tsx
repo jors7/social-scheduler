@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -56,9 +57,15 @@ export default function AccountPage() {
           {/* Avatar */}
           <div className="flex items-center space-x-4">
             <div className="relative">
-              <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center">
+              <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center relative overflow-hidden">
                 {formData.avatar ? (
-                  <img src={formData.avatar} alt="Avatar" className="w-24 h-24 rounded-full object-cover" />
+                  <Image 
+                    src={formData.avatar} 
+                    alt="Avatar" 
+                    width={96}
+                    height={96}
+                    className="rounded-full object-cover" 
+                  />
                 ) : (
                   <User className="w-12 h-12 text-gray-400" />
                 )}

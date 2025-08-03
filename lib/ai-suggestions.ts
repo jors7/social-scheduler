@@ -254,7 +254,7 @@ export class AICaptionService {
     suggestions.push(...this.hashtags.general.slice(0, 2))
     
     // Remove duplicates and return
-    return [...new Set(suggestions)].slice(0, 10)
+    return Array.from(new Set(suggestions)).slice(0, 10)
   }
 
   static getPopularHashtags(platform: string): string[] {

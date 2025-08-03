@@ -11,6 +11,7 @@ export function TopPosts() {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'image':
+        // eslint-disable-next-line jsx-a11y/alt-text
         return <Image className="h-3 w-3" />
       case 'video':
         return <Video className="h-3 w-3" />

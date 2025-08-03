@@ -264,7 +264,7 @@ export default function PlansPage() {
       <Card>
         <CardHeader>
           <CardTitle>Feature Comparison</CardTitle>
-          <CardDescription>Compare what's included in each plan</CardDescription>
+          <CardDescription>Compare what&apos;s included in each plan</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -329,13 +329,13 @@ export default function PlansPage() {
               <h4 className="font-medium mb-2">Can I change plans at any time?</h4>
               <p className="text-sm text-gray-600">
                 Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately, 
-                and you'll be prorated for the difference.
+                and you&apos;ll be prorated for the difference.
               </p>
             </div>
             <div>
               <h4 className="font-medium mb-2">What happens if I exceed my plan limits?</h4>
               <p className="text-sm text-gray-600">
-                We'll notify you when approaching limits. If exceeded, you can upgrade your plan or 
+                We&apos;ll notify you when approaching limits. If exceeded, you can upgrade your plan or 
                 wait until the next billing cycle.
               </p>
             </div>

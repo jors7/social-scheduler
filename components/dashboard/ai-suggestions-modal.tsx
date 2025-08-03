@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -50,7 +50,7 @@ export function AISuggestionsModal({
     { id: 'educational', label: 'Educational', icon: GraduationCap, description: 'Informative' }
   ]
 
-  const generateSuggestions = async (tone: string = selectedTone) => {
+  const generateSuggestions = useCallback(async (tone: string = selectedTone) => {
     if (platforms.length === 0) return
     
     setLoading(true)
@@ -73,13 +73,13 @@ export function AISuggestionsModal({
     } finally {
       setLoading(false)
     }
-  }
+  }, [content, platforms, selectedTone])
 
   useEffect(() => {
     if (open && platforms.length > 0) {
       generateSuggestions()
     }
-  }, [open, content, platforms])
+  }, [open, platforms, generateSuggestions])
 
   const handleToneChange = (tone: string) => {
     setSelectedTone(tone)
