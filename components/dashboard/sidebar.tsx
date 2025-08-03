@@ -37,7 +37,6 @@ const navigation = [
     icon: PlusCircle,
     children: [
       { name: 'New Post', href: '/dashboard/create/new', icon: Edit },
-      { name: 'MultiPost', href: '/dashboard/create/multi', icon: Grid3x3 },
     ],
   },
   {

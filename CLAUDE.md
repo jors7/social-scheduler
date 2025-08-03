@@ -14,8 +14,8 @@ Social Scheduler is a web application that allows users to schedule and post con
 - **UI Components**: Radix UI primitives with custom styling
 - **Forms**: React Hook Form with Zod validation
 - **Icons**: Lucide React
-- **Authentication**: TBD (NextAuth.js planned)
-- **Database**: TBD (PostgreSQL/Prisma planned)
+- **Authentication**: Supabase Auth
+- **Database**: Supabase (PostgreSQL)
 
 ## Development Commands
 
@@ -41,6 +41,8 @@ npm run lint     # Run ESLint
 │   ├── landing/        # Landing page components
 │   └── dashboard/      # Dashboard components
 ├── lib/                # Utility functions
+│   └── supabase/       # Supabase client configuration
+├── supabase/           # Database schema and migrations
 └── public/             # Static assets
 ```
 
@@ -64,17 +66,18 @@ npm run lint     # Run ESLint
 - ✅ Project initialized with Next.js and TypeScript
 - ✅ Basic UI components (Button, Card, Input, Label)
 - ✅ Landing page with all sections
-- ✅ Login and Signup pages (UI only)
+- ✅ Login and Signup pages with Supabase Auth
 - ✅ Dashboard layout with sidebar navigation
 - ✅ Dashboard home page with stats and quick actions
 - ✅ Post creation interface with platform selection
 - ✅ Calendar view for scheduled posts
 - ✅ Posts management page (All/Scheduled/Posted/Drafts)
 - ✅ Settings page with social media account connections
-- ⏳ Authentication system (NextAuth.js)
-- ⏳ Database setup (PostgreSQL/Prisma)
+- ✅ Authentication system (Supabase Auth)
+- ✅ Database setup (Supabase PostgreSQL)
 - ⏳ API integrations for social platforms
-- ⏳ Rich text editor for post content
-- ⏳ AI caption suggestions
-- ⏳ Analytics dashboard
+- ✅ Rich text editor with formatting, links, and character limits
+- ✅ AI caption suggestions with multiple tones and hashtags
+- ✅ Analytics dashboard with charts and metrics
+- ✅ Connected AI suggestions to OpenAI GPT-4o-mini API
 - ⏳ Billing integration
