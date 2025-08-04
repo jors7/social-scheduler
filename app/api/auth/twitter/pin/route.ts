@@ -73,10 +73,38 @@ export async function POST(request: NextRequest) {
 
     console.log('Logging in with PIN:', pin);
     // Exchange PIN for permanent credentials
-    const loginResult = await tempClient.login(pin);
-    console.log('Login result keys:', Object.keys(loginResult));
+    let accessToken: string;
+    let accessSecret: string;
     
-    const { accessToken, accessSecret } = loginResult;
+    try {
+      const loginResult = await tempClient.login(pin);
+      console.log('Login successful, result keys:', Object.keys(loginResult));
+      
+      accessToken = loginResult.accessToken;
+      accessSecret = loginResult.accessSecret;
+      
+      if (!accessToken || !accessSecret) {
+        console.error('Missing tokens in login result:', loginResult);
+        return NextResponse.json({ 
+          error: 'Invalid response from Twitter. Please try again.' 
+        }, { status: 400 });
+      }
+      
+      console.log('Got permanent tokens:', { 
+        accessToken: accessToken.substring(0, 10) + '...', 
+        accessSecret: accessSecret.substring(0, 10) + '...' 
+      });
+    } catch (loginError: any) {
+      console.error('Twitter login error:', loginError);
+      if (loginError.code === 401) {
+        return NextResponse.json({ 
+          error: 'Invalid PIN or expired session. Please try connecting again.' 
+        }, { status: 400 });
+      }
+      return NextResponse.json({ 
+        error: 'Failed to verify PIN with Twitter' 
+      }, { status: 500 });
+    }
 
     console.log('PIN login successful, verifying credentials...');
     // Verify credentials and get user info
