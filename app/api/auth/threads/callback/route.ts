@@ -57,7 +57,8 @@ export async function GET(request: NextRequest) {
     });
 
     console.log('Exchanging code for token...');
-    const tokenResponse = await fetch('https://graph.threads.net/oauth/access_token', {
+    // Threads uses Facebook Graph API for token exchange
+    const tokenResponse = await fetch('https://graph.facebook.com/v18.0/oauth/access_token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -78,13 +79,14 @@ export async function GET(request: NextRequest) {
 
     // Exchange short-lived token for long-lived token
     const longLivedParams = new URLSearchParams({
-      grant_type: 'th_exchange_token',
+      grant_type: 'fb_exchange_token',
+      client_id: process.env.THREADS_APP_ID!,
       client_secret: process.env.THREADS_APP_SECRET!,
-      access_token: tokenData.access_token,
+      fb_exchange_token: tokenData.access_token,
     });
 
     const longLivedResponse = await fetch(
-      `https://graph.threads.net/access_token?${longLivedParams.toString()}`
+      `https://graph.facebook.com/v18.0/oauth/access_token?${longLivedParams.toString()}`
     );
 
     let accessToken = tokenData.access_token;
@@ -97,9 +99,23 @@ export async function GET(request: NextRequest) {
       console.log('Got long-lived token');
     }
 
-    // Get user info
+    // Get user info - First get Facebook user ID
+    const fbUserResponse = await fetch(
+      `https://graph.facebook.com/v18.0/me?access_token=${accessToken}`
+    );
+    
+    if (!fbUserResponse.ok) {
+      console.error('Failed to get Facebook user info');
+      return NextResponse.redirect(
+        new URL('/dashboard/settings?error=threads_auth_failed', request.url)
+      );
+    }
+    
+    const fbUserData = await fbUserResponse.json();
+    
+    // Then get Threads profile using Facebook user ID
     const userResponse = await fetch(
-      `https://graph.threads.net/v1.0/me?fields=id,username,threads_profile_picture_url&access_token=${accessToken}`
+      `https://graph.threads.net/v1.0/${fbUserData.id}?fields=id,username,threads_profile_picture_url,threads_biography&access_token=${accessToken}`
     );
 
     if (!userResponse.ok) {

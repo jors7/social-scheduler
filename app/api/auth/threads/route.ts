@@ -6,9 +6,16 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     console.log('=== Threads OAuth Initialization ===');
+    console.log('Environment check:', {
+      hasAppId: !!process.env.THREADS_APP_ID,
+      hasAppSecret: !!process.env.THREADS_APP_SECRET,
+      nodeEnv: process.env.NODE_ENV
+    });
     
     if (!process.env.THREADS_APP_ID || !process.env.THREADS_APP_SECRET) {
       console.error('Missing Threads API credentials');
+      console.error('THREADS_APP_ID:', process.env.THREADS_APP_ID ? 'set' : 'missing');
+      console.error('THREADS_APP_SECRET:', process.env.THREADS_APP_SECRET ? 'set' : 'missing');
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
@@ -31,18 +38,25 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
-    // Build authorization URL
+    // Build authorization URL - Threads uses Facebook OAuth
     const params = new URLSearchParams({
       client_id: process.env.THREADS_APP_ID,
       redirect_uri: redirectUri,
-      scope: 'threads_basic,threads_content_publish',
+      scope: 'threads_basic,threads_content_publish,threads_manage_insights,threads_read_replies',
       response_type: 'code',
       state: state,
     });
 
-    const authUrl = `https://threads.net/oauth/authorize?${params.toString()}`;
+    // Threads actually uses Facebook's OAuth endpoint
+    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
 
     console.log('Redirecting to Threads auth:', authUrl);
+    console.log('Auth params:', {
+      client_id: process.env.THREADS_APP_ID,
+      redirect_uri: redirectUri,
+      scope: 'threads_basic,threads_content_publish',
+      state: state
+    });
 
     return NextResponse.json({ authUrl });
   } catch (error) {
