@@ -27,7 +27,7 @@ interface SocialAccount {
   id: string
   platform: string
   account_name: string
-  account_username: string
+  username: string
   profile_image_url?: string
   is_active: boolean
 }
@@ -287,7 +287,7 @@ export default function SettingsContent() {
                           <div>
                             <p className="font-medium">{platform.name}</p>
                             {isConnected && connectedAccount && (
-                              <p className="text-sm text-gray-600">@{connectedAccount.account_username}</p>
+                              <p className="text-sm text-gray-600">@{connectedAccount.username}</p>
                             )}
                             {platform.note && (
                               <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">

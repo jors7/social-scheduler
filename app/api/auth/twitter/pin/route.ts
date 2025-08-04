@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
         platform: 'twitter',
         account_id: twitterUser.id,
         account_name: twitterUser.name,
-        account_username: twitterUser.username,
+        username: twitterUser.username, // Changed from account_username to username
         profile_image_url: twitterUser.profile_image_url,
         access_token: accessToken,
         access_secret: accessSecret,
