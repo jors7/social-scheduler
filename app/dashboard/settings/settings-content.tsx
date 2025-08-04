@@ -101,6 +101,9 @@ export default function SettingsContent() {
     } else if (success === 'threads_connected') {
       toast.success('Threads account connected successfully!')
       router.replace('/dashboard/settings')
+    } else if (success === 'instagram_connected') {
+      toast.success('Instagram account connected successfully!')
+      router.replace('/dashboard/settings')
     } else if (error) {
       const errorMessages: Record<string, string> = {
         twitter_auth_failed: 'Twitter authentication failed. Please try again.',
@@ -110,6 +113,11 @@ export default function SettingsContent() {
         twitter_callback_failed: 'Failed to complete Twitter authentication.',
         threads_auth_failed: 'Threads authentication failed. Please try again.',
         threads_callback_failed: 'Failed to complete Threads authentication.',
+        instagram_auth_failed: 'Instagram authentication failed. Please try again.',
+        instagram_callback_failed: 'Failed to complete Instagram authentication.',
+        instagram_no_pages: 'No Facebook pages found. Please create a Facebook page first.',
+        instagram_not_connected: 'No Instagram account connected to your Facebook page.',
+        instagram_not_business: 'Please convert your Instagram account to a Business account.',
       }
       toast.error(errorMessages[error] || 'An error occurred. Please try again.')
       router.replace('/dashboard/settings')
@@ -180,6 +188,33 @@ export default function SettingsContent() {
       } catch (error) {
         console.error('Error connecting to Threads:', error)
         toast.error('Failed to connect to Threads')
+      } finally {
+        setLoading(false)
+      }
+    } else if (platformId === 'instagram') {
+      setLoading(true)
+      try {
+        console.log('Fetching Instagram auth URL...')
+        const response = await fetch('/api/auth/instagram')
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('API Error:', errorText)
+          toast.error(`Failed to connect: ${response.status}`)
+          return
+        }
+        
+        const data = await response.json()
+        
+        if (data.authUrl) {
+          console.log('Redirecting to:', data.authUrl)
+          window.location.href = data.authUrl
+        } else {
+          toast.error('Failed to initialize Instagram authentication')
+        }
+      } catch (error) {
+        console.error('Error connecting to Instagram:', error)
+        toast.error('Failed to connect to Instagram')
       } finally {
         setLoading(false)
       }

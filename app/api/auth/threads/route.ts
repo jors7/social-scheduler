@@ -69,6 +69,10 @@ export async function GET(request: NextRequest) {
       fullUrl: threadsDirectUrl
     });
     
+    // Let's also try a manual URL construction to be absolutely sure
+    const manualUrl = `https://threads.net/oauth/authorize?client_id=${process.env.THREADS_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=threads_basic,threads_content_publish&response_type=code&state=${state}`;
+    console.log('Manual URL construction:', manualUrl);
+    
     // Also try alternative parameter format
     const altParams = new URLSearchParams({
       app_id: process.env.THREADS_APP_ID!,
