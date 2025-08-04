@@ -1,4 +1,4 @@
-import { BskyApi } from '@atproto/api';
+import { BskyAgent } from '@atproto/api';
 
 export interface BlueskyCredentials {
   identifier: string; // handle or DID
@@ -6,17 +6,17 @@ export interface BlueskyCredentials {
 }
 
 export class BlueskyClient {
-  private api: BskyApi;
+  private agent: BskyAgent;
 
   constructor() {
-    this.api = new BskyApi({
+    this.agent = new BskyAgent({
       service: 'https://bsky.social',
     });
   }
 
   async login(credentials: BlueskyCredentials) {
     try {
-      const response = await this.api.login({
+      const response = await this.agent.login({
         identifier: credentials.identifier,
         password: credentials.password,
       });
@@ -33,8 +33,8 @@ export class BlueskyClient {
 
   async getProfile(actor?: string) {
     try {
-      const response = await this.api.getProfile({ 
-        actor: actor || this.api.session?.did || '' 
+      const response = await this.agent.getProfile({ 
+        actor: actor || this.agent.session?.did || '' 
       });
       return response.data;
     } catch (error: any) {
@@ -45,13 +45,13 @@ export class BlueskyClient {
 
   async createPost(text: string, images?: Buffer[]) {
     try {
-      let embed;
+      let embed: any = undefined;
       
       if (images && images.length > 0) {
         const uploadedImages = [];
         for (const image of images) {
-          const uploadResponse = await this.api.uploadBlob(image, {
-            encoding: 'image/jpeg', // You might want to detect the actual type
+          const uploadResponse = await this.agent.uploadBlob(image, {
+            encoding: 'image/jpeg',
           });
           uploadedImages.push({
             alt: '',
@@ -65,11 +65,11 @@ export class BlueskyClient {
         };
       }
 
-      const response = await this.api.post({
+      const response = await this.agent.post({
         text,
         embed,
         createdAt: new Date().toISOString(),
-      });
+      } as any);
 
       return {
         success: true,
@@ -82,17 +82,17 @@ export class BlueskyClient {
   }
 
   async verifyCredentials(credentials: BlueskyCredentials) {
-    const tempApi = new BskyApi({
+    const tempAgent = new BskyAgent({
       service: 'https://bsky.social',
     });
 
     try {
-      const loginResponse = await tempApi.login({
+      const loginResponse = await tempAgent.login({
         identifier: credentials.identifier,
         password: credentials.password,
       });
 
-      const profile = await tempApi.getProfile({ 
+      const profile = await tempAgent.getProfile({ 
         actor: loginResponse.data.did 
       });
 
