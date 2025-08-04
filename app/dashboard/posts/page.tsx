@@ -15,6 +15,7 @@ import {
   Send,
   FileText
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 const mockPosts = [
   {
@@ -279,8 +280,4 @@ export default function PostsPage() {
       </div>
     </div>
   )
-}
-
-function cn(...classes: string[]) {
-  return classes.filter(Boolean).join(' ')
 }

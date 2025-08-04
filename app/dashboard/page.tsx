@@ -11,6 +11,7 @@ import {
   ArrowUpRight
 } from 'lucide-react'
 import Link from 'next/link'
+import { cn } from '@/lib/utils'
 
 const stats = [
   {
@@ -238,8 +239,4 @@ export default function DashboardPage() {
       </Card>
     </div>
   )
-}
-
-function cn(...classes: string[]) {
-  return classes.filter(Boolean).join(' ')
 }

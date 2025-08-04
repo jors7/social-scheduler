@@ -15,6 +15,7 @@ import {
   ExternalLink,
   TrendingUp
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 const mockPostedPosts = [
   {
@@ -336,8 +337,4 @@ export default function PostedPostsPage() {
       </div>
     </div>
   )
-}
-
-function cn(...classes: string[]) {
-  return classes.filter(Boolean).join(' ')
 }

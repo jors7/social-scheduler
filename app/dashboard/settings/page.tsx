@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,77 +15,71 @@ import {
   Bell,
   Shield,
   CreditCard,
-  HelpCircle
+  HelpCircle,
+  AlertCircle
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { toast } from 'sonner'
 
-const socialPlatforms = [
-  {
-    id: 'twitter',
-    name: 'X (Twitter)',
-    icon: '𝕏',
-    connected: true,
-    username: '@johndoe',
-    color: 'bg-black'
-  },
-  {
-    id: 'instagram',
-    name: 'Instagram',
-    icon: '📷',
-    connected: true,
-    username: '@john.doe',
-    color: 'bg-gradient-to-br from-purple-600 to-pink-500'
-  },
-  {
-    id: 'facebook',
-    name: 'Facebook',
-    icon: 'f',
-    connected: false,
-    color: 'bg-blue-600'
-  },
-  {
-    id: 'linkedin',
-    name: 'LinkedIn',
-    icon: 'in',
-    connected: true,
-    username: 'John Doe',
-    color: 'bg-blue-700'
-  },
-  {
-    id: 'youtube',
-    name: 'YouTube',
-    icon: '▶',
-    connected: false,
-    color: 'bg-red-600'
-  },
-  {
-    id: 'tiktok',
-    name: 'TikTok',
-    icon: '♪',
-    connected: false,
-    color: 'bg-black'
-  },
-  {
-    id: 'threads',
-    name: 'Threads',
-    icon: '@',
-    connected: false,
-    color: 'bg-black'
-  },
-  {
-    id: 'bluesky',
-    name: 'Bluesky',
-    icon: '🦋',
-    connected: false,
-    color: 'bg-sky-500'
-  },
-  {
-    id: 'pinterest',
-    name: 'Pinterest',
-    icon: 'P',
-    connected: false,
-    color: 'bg-red-700'
-  },
-]
+  const socialPlatforms = [
+    {
+      id: 'twitter',
+      name: 'X (Twitter)',
+      icon: '𝕏',
+      color: 'bg-black',
+      note: 'Free tier: Read-only access'
+    },
+    {
+      id: 'instagram',
+      name: 'Instagram',
+      icon: '📷',
+      color: 'bg-gradient-to-br from-purple-600 to-pink-500'
+    },
+    {
+      id: 'facebook',
+      name: 'Facebook',
+      icon: 'f',
+      color: 'bg-blue-600'
+    },
+    {
+      id: 'linkedin',
+      name: 'LinkedIn',
+      icon: 'in',
+      color: 'bg-blue-700'
+    },
+    {
+      id: 'youtube',
+      name: 'YouTube',
+      icon: '▶',
+      color: 'bg-red-600'
+    },
+    {
+      id: 'tiktok',
+      name: 'TikTok',
+      icon: '♪',
+      color: 'bg-black'
+    },
+    {
+      id: 'threads',
+      name: 'Threads',
+      icon: '@',
+      color: 'bg-black'
+    },
+    {
+      id: 'bluesky',
+      name: 'Bluesky',
+      icon: '🦋',
+      color: 'bg-sky-500'
+    },
+    {
+      id: 'pinterest',
+      name: 'Pinterest',
+      icon: 'P',
+      color: 'bg-red-700'
+    },
+  ]
 
 const settingsSections = [
   { id: 'accounts', label: 'Connected Accounts', icon: Link2 },
@@ -96,17 +90,127 @@ const settingsSections = [
   { id: 'help', label: 'Help & Support', icon: HelpCircle },
 ]
 
+interface SocialAccount {
+  id: string
+  platform: string
+  account_name: string
+  account_username: string
+  profile_image_url?: string
+  is_active: boolean
+}
+
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState('accounts')
+  const [loading, setLoading] = useState(false)
+  const [connectedAccounts, setConnectedAccounts] = useState<SocialAccount[]>([])
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const supabase = createClientComponentClient()
 
-  const handleConnect = (platformId: string) => {
-    // TODO: Implement OAuth flow for each platform
-    console.log(`Connecting to ${platformId}`)
+  useEffect(() => {
+    fetchConnectedAccounts()
+    
+    // Handle success/error messages from OAuth callback
+    const success = searchParams.get('success')
+    const error = searchParams.get('error')
+    
+    if (success === 'twitter_connected') {
+      toast.success('Twitter account connected successfully!')
+      router.replace('/dashboard/settings')
+    } else if (error) {
+      const errorMessages: Record<string, string> = {
+        twitter_auth_failed: 'Twitter authentication failed. Please try again.',
+        twitter_session_expired: 'Authentication session expired. Please try again.',
+        unauthorized: 'You must be logged in to connect social accounts.',
+        database_error: 'Failed to save account information. Please try again.',
+        twitter_callback_failed: 'Failed to complete Twitter authentication.',
+      }
+      toast.error(errorMessages[error] || 'An error occurred. Please try again.')
+      router.replace('/dashboard/settings')
+    }
+  }, [searchParams, router])
+
+  const fetchConnectedAccounts = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, error } = await supabase
+        .from('social_accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+
+      if (error) throw error
+      setConnectedAccounts(data || [])
+    } catch (error) {
+      console.error('Error fetching connected accounts:', error)
+      toast.error('Failed to load connected accounts')
+    }
   }
 
-  const handleDisconnect = (platformId: string) => {
-    // TODO: Implement disconnect logic
-    console.log(`Disconnecting from ${platformId}`)
+  const handleConnect = async (platformId: string) => {
+    console.log('Connect button clicked for:', platformId)
+    if (platformId === 'twitter') {
+      setLoading(true)
+      try {
+        console.log('Fetching Twitter auth URL...')
+        const response = await fetch('/api/auth/twitter')
+        console.log('Response status:', response.status)
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('API Error:', errorText)
+          toast.error(`Failed to connect: ${response.status}`)
+          return
+        }
+        
+        const data = await response.json()
+        console.log('Response data:', data)
+        
+        if (data.authUrl) {
+          console.log('Redirecting to:', data.authUrl)
+          window.location.href = data.authUrl
+        } else {
+          toast.error('Failed to initialize Twitter authentication')
+        }
+      } catch (error) {
+        console.error('Error connecting to Twitter:', error)
+        toast.error('Failed to connect to Twitter')
+      } finally {
+        setLoading(false)
+      }
+    } else {
+      toast.info(`${platformId} integration coming soon!`)
+    }
+  }
+
+  const handleDisconnect = async (platformId: string) => {
+    if (!confirm(`Are you sure you want to disconnect your ${platformId} account?`)) {
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
+
+      const { error } = await supabase
+        .from('social_accounts')
+        .update({ is_active: false })
+        .eq('user_id', user.id)
+        .eq('platform', platformId)
+
+      if (error) throw error
+
+      toast.success(`${platformId} account disconnected`)
+      fetchConnectedAccounts()
+    } catch (error) {
+      console.error('Error disconnecting account:', error)
+      toast.error('Failed to disconnect account')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -154,7 +258,11 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {socialPlatforms.map(platform => (
+                    {socialPlatforms.map(platform => {
+                      const connectedAccount = connectedAccounts.find(acc => acc.platform === platform.id)
+                      const isConnected = !!connectedAccount
+                      
+                      return (
                       <div
                         key={platform.id}
                         className="flex items-center justify-between p-4 border rounded-lg"
@@ -168,17 +276,24 @@ export default function SettingsPage() {
                           </div>
                           <div>
                             <p className="font-medium">{platform.name}</p>
-                            {platform.connected && (
-                              <p className="text-sm text-gray-600">{platform.username}</p>
+                            {isConnected && connectedAccount && (
+                              <p className="text-sm text-gray-600">@{connectedAccount.account_username}</p>
+                            )}
+                            {platform.note && (
+                              <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
+                                <AlertCircle className="h-3 w-3" />
+                                {platform.note}
+                              </p>
                             )}
                           </div>
                         </div>
-                        {platform.connected ? (
+                        {isConnected ? (
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleDisconnect(platform.id)}
                             className="text-red-600 hover:text-red-700"
+                            disabled={loading}
                           >
                             <X className="mr-1 h-4 w-4" />
                             Disconnect
@@ -188,13 +303,15 @@ export default function SettingsPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleConnect(platform.id)}
+                            disabled={loading}
                           >
                             <Plus className="mr-1 h-4 w-4" />
                             Connect
                           </Button>
                         )}
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </CardContent>
               </Card>
@@ -349,8 +466,4 @@ export default function SettingsPage() {
       </div>
     </div>
   )
-}
-
-function cn(...classes: string[]) {
-  return classes.filter(Boolean).join(' ')
 }

@@ -17,6 +17,7 @@ import {
   X,
   ChevronDown
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 const platforms = [
   { id: 'twitter', name: 'X (Twitter)', icon: '𝕏', charLimit: 280 },
@@ -304,8 +305,4 @@ export default function CreateNewPostPage() {
       />
     </div>
   )
-}
-
-function cn(...classes: string[]) {
-  return classes.filter(Boolean).join(' ')
 }

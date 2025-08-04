@@ -17,6 +17,7 @@ import {
   Save,
   Clock
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 const mockDraftPosts = [
   {
@@ -342,8 +343,4 @@ export default function DraftPostsPage() {
       </div>
     </div>
   )
-}
-
-function cn(...classes: string[]) {
-  return classes.filter(Boolean).join(' ')
 }

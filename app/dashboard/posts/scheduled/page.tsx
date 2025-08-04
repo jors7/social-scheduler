@@ -18,6 +18,7 @@ import {
   Eye,
   Send
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 const mockScheduledPosts = [
   {
@@ -378,8 +379,4 @@ export default function ScheduledPostsPage() {
       </div>
     </div>
   )
-}
-
-function cn(...classes: string[]) {
-  return classes.filter(Boolean).join(' ')
 }
