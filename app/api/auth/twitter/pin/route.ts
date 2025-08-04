@@ -114,26 +114,33 @@ export async function POST(request: NextRequest) {
     console.log('Twitter user verified:', twitterUser.username);
 
     // Store Twitter credentials in database
+    const accountData = {
+      user_id: user.id,
+      platform: 'twitter',
+      account_id: twitterUser.id,
+      account_name: twitterUser.name,
+      account_username: twitterUser.username,
+      profile_image_url: twitterUser.profile_image_url,
+      access_token: accessToken,
+      access_secret: accessSecret,
+      is_active: true,
+      updated_at: new Date().toISOString(),
+    };
+    
+    console.log('Saving account data:', { ...accountData, access_token: 'hidden', access_secret: 'hidden' });
+    
     const { error: dbError } = await supabase
       .from('social_accounts')
-      .upsert({
-        user_id: user.id,
-        platform: 'twitter',
-        account_id: twitterUser.id,
-        account_name: twitterUser.name,
-        account_username: twitterUser.username,
-        profile_image_url: twitterUser.profile_image_url,
-        access_token: accessToken,
-        access_secret: accessSecret,
-        is_active: true,
-        updated_at: new Date().toISOString(),
-      }, {
+      .upsert(accountData, {
         onConflict: 'user_id,platform',
       });
 
     if (dbError) {
-      console.error('Database error:', dbError);
-      return NextResponse.json({ error: 'Failed to save account' }, { status: 500 });
+      console.error('Database error details:', dbError);
+      return NextResponse.json({ 
+        error: 'Failed to save account', 
+        details: dbError.message 
+      }, { status: 500 });
     }
 
     // Clear OAuth cookies
