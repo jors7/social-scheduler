@@ -98,6 +98,9 @@ export default function SettingsContent() {
     } else if (success === 'bluesky_connected') {
       toast.success('Bluesky account connected successfully!')
       router.replace('/dashboard/settings')
+    } else if (success === 'threads_connected') {
+      toast.success('Threads account connected successfully!')
+      router.replace('/dashboard/settings')
     } else if (error) {
       const errorMessages: Record<string, string> = {
         twitter_auth_failed: 'Twitter authentication failed. Please try again.',
@@ -105,6 +108,8 @@ export default function SettingsContent() {
         unauthorized: 'You must be logged in to connect social accounts.',
         database_error: 'Failed to save account information. Please try again.',
         twitter_callback_failed: 'Failed to complete Twitter authentication.',
+        threads_auth_failed: 'Threads authentication failed. Please try again.',
+        threads_callback_failed: 'Failed to complete Threads authentication.',
       }
       toast.error(errorMessages[error] || 'An error occurred. Please try again.')
       router.replace('/dashboard/settings')
@@ -151,6 +156,33 @@ export default function SettingsContent() {
       }
     } else if (platformId === 'bluesky') {
       setShowBlueskyDialog(true)
+    } else if (platformId === 'threads') {
+      setLoading(true)
+      try {
+        console.log('Fetching Threads auth URL...')
+        const response = await fetch('/api/auth/threads')
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('API Error:', errorText)
+          toast.error(`Failed to connect: ${response.status}`)
+          return
+        }
+        
+        const data = await response.json()
+        
+        if (data.authUrl) {
+          console.log('Redirecting to:', data.authUrl)
+          window.location.href = data.authUrl
+        } else {
+          toast.error('Failed to initialize Threads authentication')
+        }
+      } catch (error) {
+        console.error('Error connecting to Threads:', error)
+        toast.error('Failed to connect to Threads')
+      } finally {
+        setLoading(false)
+      }
     } else {
       toast.info(`${platformId} integration coming soon!`)
     }
