@@ -57,13 +57,14 @@ export async function GET(request: NextRequest) {
     });
 
     console.log('Exchanging code for token...');
-    // Threads uses Facebook Graph API for token exchange with GET request
-    const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?${tokenParams.toString()}`;
+    // Use Instagram token exchange endpoint
+    const tokenUrl = `https://api.instagram.com/oauth/access_token`;
     const tokenResponse = await fetch(tokenUrl, {
-      method: 'GET',
+      method: 'POST',
       headers: {
-        'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
+      body: tokenParams.toString(),
     });
 
     if (!tokenResponse.ok) {
