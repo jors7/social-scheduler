@@ -22,6 +22,14 @@ import { cn } from '@/lib/utils'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import { toast } from 'sonner'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 interface SocialAccount {
   id: string
@@ -46,6 +54,11 @@ export default function SettingsContent() {
   const [activeSection, setActiveSection] = useState('accounts')
   const [loading, setLoading] = useState(false)
   const [connectedAccounts, setConnectedAccounts] = useState<SocialAccount[]>([])
+  const [showBlueskyDialog, setShowBlueskyDialog] = useState(false)
+  const [blueskyCredentials, setBlueskyCredentials] = useState({
+    identifier: '', // handle or email
+    password: ''    // app password
+  })
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createBrowserClient(
@@ -81,6 +94,9 @@ export default function SettingsContent() {
     
     if (success === 'twitter_connected') {
       toast.success('Twitter account connected successfully!')
+      router.replace('/dashboard/settings')
+    } else if (success === 'bluesky_connected') {
+      toast.success('Bluesky account connected successfully!')
       router.replace('/dashboard/settings')
     } else if (error) {
       const errorMessages: Record<string, string> = {
@@ -133,8 +149,42 @@ export default function SettingsContent() {
       } finally {
         setLoading(false)
       }
+    } else if (platformId === 'bluesky') {
+      setShowBlueskyDialog(true)
     } else {
       toast.info(`${platformId} integration coming soon!`)
+    }
+  }
+
+  const handleBlueskyConnect = async () => {
+    if (!blueskyCredentials.identifier || !blueskyCredentials.password) {
+      toast.error('Please enter both your handle/email and app password')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const response = await fetch('/api/auth/bluesky', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(blueskyCredentials),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast.success('Bluesky account connected successfully!')
+        setShowBlueskyDialog(false)
+        setBlueskyCredentials({ identifier: '', password: '' })
+        fetchConnectedAccounts()
+      } else {
+        toast.error(data.error || 'Failed to connect Bluesky account')
+      }
+    } catch (error) {
+      console.error('Error connecting to Bluesky:', error)
+      toast.error('Failed to connect to Bluesky')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -475,6 +525,69 @@ export default function SettingsContent() {
           )}
         </div>
       </div>
+
+      {/* Bluesky Connection Dialog */}
+      <Dialog open={showBlueskyDialog} onOpenChange={setShowBlueskyDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Connect Bluesky Account</DialogTitle>
+            <DialogDescription>
+              Enter your Bluesky credentials to connect your account. We recommend using an app password instead of your main password.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="bluesky-identifier">Handle or Email</Label>
+              <Input
+                id="bluesky-identifier"
+                type="text"
+                placeholder="your-handle.bsky.social or email@example.com"
+                value={blueskyCredentials.identifier}
+                onChange={(e) => setBlueskyCredentials(prev => ({
+                  ...prev,
+                  identifier: e.target.value
+                }))}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="bluesky-password">App Password</Label>
+              <Input
+                id="bluesky-password"
+                type="password"
+                placeholder="App password (not your main password)"
+                value={blueskyCredentials.password}
+                onChange={(e) => setBlueskyCredentials(prev => ({
+                  ...prev,
+                  password: e.target.value
+                }))}
+              />
+              <p className="text-xs text-gray-600 mt-1">
+                Create an app password at: bsky.app/settings/app-passwords
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowBlueskyDialog(false)
+                setBlueskyCredentials({ identifier: '', password: '' })
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleBlueskyConnect}
+              disabled={loading}
+            >
+              {loading ? 'Connecting...' : 'Connect'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
