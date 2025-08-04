@@ -46,7 +46,7 @@ export default function PrivacyPolicy() {
 
           <h2>Social Media Integration</h2>
           <p>
-            When you connect your social media accounts, we store access tokens securely to post content on your behalf. We only access the minimum permissions required for posting and do not access private messages or personal data beyond what's necessary for our service.
+            When you connect your social media accounts, we store access tokens securely to post content on your behalf. We only access the minimum permissions required for posting and do not access private messages or personal data beyond what&apos;s necessary for our service.
           </p>
 
           <h2>Data Security</h2>
