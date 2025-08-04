@@ -40,8 +40,8 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
-    // Threads actually uses Facebook OAuth system with special configuration
-    const fbParams = new URLSearchParams({
+    // Try Threads direct OAuth with correct App ID format
+    const threadsParams = new URLSearchParams({
       client_id: process.env.THREADS_APP_ID!,
       redirect_uri: redirectUri,
       scope: 'threads_basic,threads_content_publish',
@@ -49,8 +49,8 @@ export async function GET(request: NextRequest) {
       state: state,
     });
 
-    // Use Facebook OAuth endpoint - this is the correct approach for Threads
-    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?${fbParams.toString()}`;
+    // Use Threads OAuth endpoint directly
+    const authUrl = `https://threads.net/oauth/authorize?${threadsParams.toString()}`;
     
     console.log('Using Facebook OAuth for Threads:', authUrl);
     console.log('Auth params:', {
