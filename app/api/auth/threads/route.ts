@@ -38,19 +38,20 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
-    // Build authorization URL - Threads uses Facebook OAuth
+    // Build authorization URL - Threads has its own OAuth
     const params = new URLSearchParams({
       client_id: process.env.THREADS_APP_ID,
       redirect_uri: redirectUri,
-      scope: 'threads_basic,threads_content_publish,threads_manage_insights,threads_read_replies',
+      scope: 'threads_basic,threads_content_publish',
       response_type: 'code',
       state: state,
     });
 
-    // Threads actually uses Facebook's OAuth endpoint
-    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
+    // Threads uses its own OAuth endpoint
+    const authUrl = `https://threads.net/oauth/authorize?${params.toString()}`;
 
     console.log('Redirecting to Threads auth:', authUrl);
+    console.log('Full URL:', authUrl);
     console.log('Auth params:', {
       client_id: process.env.THREADS_APP_ID,
       redirect_uri: redirectUri,
