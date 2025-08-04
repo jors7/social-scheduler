@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     console.log('Facebook OAuth URL for Instagram/Threads:', facebookOAuthUrl);
     console.log('Threads Direct URL:', threadsDirectUrl);
     
-    console.log('Generated Threads OAuth URL:', authUrl);
+    console.log('Generated Threads OAuth URL:', threadsDirectUrl);
     console.log('Full URL breakdown:', {
       baseUrl: 'https://threads.net/oauth/authorize',
       client_id: process.env.THREADS_APP_ID,
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
       scope: 'threads_basic,threads_content_publish',
       response_type: 'code',
       state: state,
-      fullUrl: authUrl
+      fullUrl: threadsDirectUrl
     });
     
     // Also try alternative parameter format
