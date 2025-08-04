@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       const accountData = {
         user_id: user.id,
         platform: 'twitter',
-        account_id: twitterUser.id,
+        platform_user_id: twitterUser.id, // Changed from account_id to platform_user_id
         account_name: twitterUser.name,
         username: twitterUser.username,
         profile_image_url: twitterUser.profile_image_url,

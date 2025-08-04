@@ -26,6 +26,7 @@ import { toast } from 'sonner'
 interface SocialAccount {
   id: string
   platform: string
+  platform_user_id: string
   account_name: string
   username: string
   profile_image_url?: string
