@@ -57,13 +57,13 @@ export async function GET(request: NextRequest) {
     });
 
     console.log('Exchanging code for token...');
-    // Threads uses Facebook Graph API for token exchange
-    const tokenResponse = await fetch('https://graph.facebook.com/v18.0/oauth/access_token', {
-      method: 'POST',
+    // Threads uses Facebook Graph API for token exchange with GET request
+    const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?${tokenParams.toString()}`;
+    const tokenResponse = await fetch(tokenUrl, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
       },
-      body: tokenParams.toString(),
     });
 
     if (!tokenResponse.ok) {

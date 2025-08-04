@@ -40,8 +40,8 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
-    // Build authorization URL - Threads endpoint with correct parameter names
-    const params = new URLSearchParams({
+    // Threads actually uses Facebook OAuth system with special configuration
+    const fbParams = new URLSearchParams({
       client_id: process.env.THREADS_APP_ID!,
       redirect_uri: redirectUri,
       scope: 'threads_basic,threads_content_publish',
@@ -49,24 +49,10 @@ export async function GET(request: NextRequest) {
       state: state,
     });
 
-    // Also try with app_id parameter (Meta sometimes uses this)
-    const authUrlWithAppId = `https://threads.net/oauth/authorize?` + 
-      new URLSearchParams({
-        app_id: process.env.THREADS_APP_ID!,
-        redirect_uri: redirectUri,
-        scope: 'threads_basic,threads_content_publish',
-        response_type: 'code',
-        state: state,
-      }).toString();
-
-    const authUrl = `https://threads.net/oauth/authorize?${params.toString()}`;
+    // Use Facebook OAuth endpoint - this is the correct approach for Threads
+    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?${fbParams.toString()}`;
     
-    console.log('Trying both URL formats:');
-    console.log('client_id version:', authUrl);
-    console.log('app_id version:', authUrlWithAppId);
-
-    console.log('Redirecting to Threads auth:', authUrl);
-    console.log('Full URL:', authUrl);
+    console.log('Using Facebook OAuth for Threads:', authUrl);
     console.log('Auth params:', {
       client_id: process.env.THREADS_APP_ID,
       redirect_uri: redirectUri,
@@ -74,8 +60,7 @@ export async function GET(request: NextRequest) {
       state: state
     });
 
-    // Return the app_id version since that's what the error is asking for
-    return NextResponse.json({ authUrl: authUrlWithAppId });
+    return NextResponse.json({ authUrl });
   } catch (error) {
     console.error('Threads OAuth initialization error:', error);
     return NextResponse.json(
