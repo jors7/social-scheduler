@@ -49,13 +49,14 @@ export async function GET(request: NextRequest) {
       state: state,
     });
 
-    // Try Instagram Basic Display endpoint for Threads
-    const instagramUrl = `https://api.instagram.com/oauth/authorize?${threadsParams.toString()}`;
+    // Use Facebook OAuth with Instagram scopes for Threads
+    const facebookOAuthUrl = `https://www.facebook.com/v18.0/dialog/oauth?${threadsParams.toString()}`;
     
-    // Use Threads OAuth endpoint directly
-    const authUrl = `https://threads.net/oauth/authorize?${threadsParams.toString()}`;
+    // Alternative: Try Threads direct endpoint
+    const threadsDirectUrl = `https://threads.net/oauth/authorize?${threadsParams.toString()}`;
     
-    console.log('Instagram OAuth URL:', instagramUrl);
+    console.log('Facebook OAuth URL for Instagram/Threads:', facebookOAuthUrl);
+    console.log('Threads Direct URL:', threadsDirectUrl);
     
     console.log('Generated Threads OAuth URL:', authUrl);
     console.log('Full URL breakdown:', {
@@ -79,8 +80,8 @@ export async function GET(request: NextRequest) {
     const altUrl = `https://threads.net/oauth/authorize?${altParams.toString()}`;
     console.log('Alternative URL with app_id:', altUrl);
 
-    // Try Instagram OAuth endpoint instead
-    return NextResponse.json({ authUrl: instagramUrl });
+    // Use pure Threads OAuth with Threads App ID
+    return NextResponse.json({ authUrl: threadsDirectUrl });
   } catch (error) {
     console.error('Threads OAuth initialization error:', error);
     return NextResponse.json(
