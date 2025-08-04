@@ -1,12 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TwitterApi } from 'twitter-api-v2';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { TwitterService } from '@/lib/twitter/service';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+        },
+      }
+    )
     const searchParams = request.nextUrl.searchParams;
     
     // Get OAuth verifier from callback
@@ -20,7 +33,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Get stored OAuth tokens
-    const cookieStore = cookies();
     const storedToken = cookieStore.get('twitter_oauth_token')?.value;
     const storedTokenSecret = cookieStore.get('twitter_oauth_token_secret')?.value;
 

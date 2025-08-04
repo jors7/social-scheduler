@@ -43,10 +43,14 @@ export class TwitterService {
   async postTweet(text: string, mediaIds?: string[]): Promise<{ id: string; text: string }> {
     try {
       // Check if we can post (requires Basic tier or higher)
-      const result = await this.client.v2.tweet({
-        text,
-        media: mediaIds ? { media_ids: mediaIds } : undefined,
-      });
+      const tweetData: any = { text };
+      if (mediaIds && mediaIds.length > 0) {
+        tweetData.media = { 
+          media_ids: mediaIds.slice(0, 4) as [string] | [string, string] | [string, string, string] | [string, string, string, string]
+        };
+      }
+      
+      const result = await this.client.v2.tweet(tweetData);
 
       return {
         id: result.data.id,

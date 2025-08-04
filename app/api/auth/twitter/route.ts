@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOAuthClient } from '@/lib/twitter/client';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+        },
+      }
+    )
     
     // Check if user is authenticated
     const { data: { user } } = await supabase.auth.getUser();
@@ -25,7 +38,6 @@ export async function GET(request: NextRequest) {
     });
 
     // Store OAuth tokens in session
-    const cookieStore = cookies();
     cookieStore.set('twitter_oauth_token', authLink.oauth_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
