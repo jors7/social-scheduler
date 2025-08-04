@@ -117,25 +117,16 @@ export async function POST(request: NextRequest) {
     console.log('Preparing to save Twitter account...');
     
     try {
-      // First check if account already exists
-      const { data: existingAccount } = await supabase
-        .from('social_accounts')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('platform', 'twitter')
-        .single();
-
       const accountData = {
         user_id: user.id,
         platform: 'twitter',
         account_id: twitterUser.id,
         account_name: twitterUser.name,
-        username: twitterUser.username, // Changed from account_username to username
+        username: twitterUser.username,
         profile_image_url: twitterUser.profile_image_url,
         access_token: accessToken,
         access_secret: accessSecret,
         is_active: true,
-        updated_at: new Date().toISOString(),
       };
       
       console.log('Account data to save:', { 
@@ -144,35 +135,28 @@ export async function POST(request: NextRequest) {
         access_secret: 'hidden' 
       });
 
-      let result;
-      if (existingAccount) {
-        console.log('Updating existing account...');
-        result = await supabase
-          .from('social_accounts')
-          .update(accountData)
-          .eq('user_id', user.id)
-          .eq('platform', 'twitter');
-      } else {
-        console.log('Inserting new account...');
-        result = await supabase
-          .from('social_accounts')
-          .insert(accountData);
-      }
+      // Use upsert with the correct conflict resolution
+      const { data, error: dbError } = await supabase
+        .from('social_accounts')
+        .upsert(accountData, {
+          onConflict: 'user_id,platform'
+        })
+        .select();
 
-      if (result.error) {
-        console.error('Database operation error:', result.error);
+      if (dbError) {
+        console.error('Database error:', dbError);
         return NextResponse.json({ 
-          error: 'Failed to save account', 
-          details: result.error.message,
-          code: result.error.code
+          error: 'Database error', 
+          details: dbError.message,
+          code: dbError.code
         }, { status: 500 });
       }
 
-      console.log('Account saved successfully');
+      console.log('Account saved successfully:', data);
     } catch (saveError: any) {
-      console.error('Error saving account:', saveError);
+      console.error('Unexpected error saving account:', saveError);
       return NextResponse.json({ 
-        error: 'Failed to save account', 
+        error: 'Unexpected error', 
         details: saveError.message 
       }, { status: 500 });
     }
@@ -182,7 +166,15 @@ export async function POST(request: NextRequest) {
     cookieStore.delete('twitter_oauth_token_secret');
 
     console.log('Twitter account connected successfully');
-    return NextResponse.json({ success: true, user: twitterUser });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Twitter account connected successfully',
+      user: {
+        id: twitterUser.id,
+        name: twitterUser.name,  
+        username: twitterUser.username
+      }
+    });
 
   } catch (error) {
     console.error('Twitter PIN verification error:', error);
