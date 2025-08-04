@@ -10,8 +10,12 @@ export async function POST(request: NextRequest) {
   try {
     console.log('=== Twitter PIN Verification ===');
     
-    const { pin } = await request.json();
+    const body = await request.json();
+    console.log('Request body:', body);
+    
+    const { pin } = body;
     if (!pin) {
+      console.log('No PIN provided');
       return NextResponse.json({ error: 'PIN is required' }, { status: 400 });
     }
 
@@ -47,18 +51,32 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('OAuth tokens found, creating client...');
+    console.log('Using stored tokens:', { 
+      token: storedToken?.substring(0, 10) + '...', 
+      secret: storedTokenSecret?.substring(0, 10) + '...' 
+    });
 
+    // Verify environment variables
+    if (!process.env.TWITTER_API_KEY || !process.env.TWITTER_API_SECRET) {
+      console.error('Missing Twitter API credentials');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
+    console.log('Creating Twitter client with credentials...');
     // Create client with temporary credentials
     const tempClient = new TwitterApi({
-      appKey: process.env.TWITTER_API_KEY!,
-      appSecret: process.env.TWITTER_API_SECRET!,
+      appKey: process.env.TWITTER_API_KEY,
+      appSecret: process.env.TWITTER_API_SECRET,
       accessToken: storedToken,
       accessSecret: storedTokenSecret,
     });
 
-    console.log('Logging in with PIN...');
+    console.log('Logging in with PIN:', pin);
     // Exchange PIN for permanent credentials
-    const { accessToken, accessSecret } = await tempClient.login(pin);
+    const loginResult = await tempClient.login(pin);
+    console.log('Login result keys:', Object.keys(loginResult));
+    
+    const { accessToken, accessSecret } = loginResult;
 
     console.log('PIN login successful, verifying credentials...');
     // Verify credentials and get user info
