@@ -40,9 +40,9 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
-    // Try Threads direct OAuth with correct App ID format
+    // Try Threads direct OAuth with app_id parameter format
     const threadsParams = new URLSearchParams({
-      client_id: process.env.THREADS_APP_ID!,
+      app_id: process.env.THREADS_APP_ID!,
       redirect_uri: redirectUri,
       scope: 'threads_basic,threads_content_publish',
       response_type: 'code',
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     console.log('Generated Threads OAuth URL:', threadsDirectUrl);
     console.log('Full URL breakdown:', {
       baseUrl: 'https://threads.net/oauth/authorize',
-      client_id: process.env.THREADS_APP_ID,
+      app_id: process.env.THREADS_APP_ID,
       redirect_uri: redirectUri,
       scope: 'threads_basic,threads_content_publish',
       response_type: 'code',
