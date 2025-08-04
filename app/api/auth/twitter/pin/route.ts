@@ -114,32 +114,66 @@ export async function POST(request: NextRequest) {
     console.log('Twitter user verified:', twitterUser.username);
 
     // Store Twitter credentials in database
-    const accountData = {
-      user_id: user.id,
-      platform: 'twitter',
-      account_id: twitterUser.id,
-      account_name: twitterUser.name,
-      account_username: twitterUser.username,
-      profile_image_url: twitterUser.profile_image_url,
-      access_token: accessToken,
-      access_secret: accessSecret,
-      is_active: true,
-      updated_at: new Date().toISOString(),
-    };
+    console.log('Preparing to save Twitter account...');
     
-    console.log('Saving account data:', { ...accountData, access_token: 'hidden', access_secret: 'hidden' });
-    
-    const { error: dbError } = await supabase
-      .from('social_accounts')
-      .upsert(accountData, {
-        onConflict: 'user_id,platform',
+    try {
+      // First check if account already exists
+      const { data: existingAccount } = await supabase
+        .from('social_accounts')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('platform', 'twitter')
+        .single();
+
+      const accountData = {
+        user_id: user.id,
+        platform: 'twitter',
+        account_id: twitterUser.id,
+        account_name: twitterUser.name,
+        account_username: twitterUser.username,
+        profile_image_url: twitterUser.profile_image_url,
+        access_token: accessToken,
+        access_secret: accessSecret,
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      };
+      
+      console.log('Account data to save:', { 
+        ...accountData, 
+        access_token: 'hidden', 
+        access_secret: 'hidden' 
       });
 
-    if (dbError) {
-      console.error('Database error details:', dbError);
+      let result;
+      if (existingAccount) {
+        console.log('Updating existing account...');
+        result = await supabase
+          .from('social_accounts')
+          .update(accountData)
+          .eq('user_id', user.id)
+          .eq('platform', 'twitter');
+      } else {
+        console.log('Inserting new account...');
+        result = await supabase
+          .from('social_accounts')
+          .insert(accountData);
+      }
+
+      if (result.error) {
+        console.error('Database operation error:', result.error);
+        return NextResponse.json({ 
+          error: 'Failed to save account', 
+          details: result.error.message,
+          code: result.error.code
+        }, { status: 500 });
+      }
+
+      console.log('Account saved successfully');
+    } catch (saveError: any) {
+      console.error('Error saving account:', saveError);
       return NextResponse.json({ 
         error: 'Failed to save account', 
-        details: dbError.message 
+        details: saveError.message 
       }, { status: 500 });
     }
 
