@@ -115,7 +115,14 @@ export default function SettingsContent() {
         
         if (data.authUrl) {
           console.log('Redirecting to:', data.authUrl)
-          window.location.href = data.authUrl
+          // Open Twitter auth in a new window and show PIN entry instructions
+          const authWindow = window.open(data.authUrl, 'twitter-auth', 'width=600,height=700,scrollbars=yes,resizable=yes')
+          
+          // Redirect to PIN entry page
+          toast.info('After authorizing on Twitter, you\'ll get a PIN code. Come back here to enter it.')
+          setTimeout(() => {
+            router.push('/twitter-callback')
+          }, 2000)
         } else {
           toast.error('Failed to initialize Twitter authentication')
         }
