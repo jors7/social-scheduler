@@ -8,11 +8,19 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     console.log('=== Threads OAuth Callback ===');
+    console.log('Full callback URL:', request.url);
     
     const searchParams = request.nextUrl.searchParams;
     const code = searchParams.get('code');
     const state = searchParams.get('state');
     const error = searchParams.get('error');
+    
+    console.log('Callback parameters:', {
+      code: code ? `${code.substring(0, 10)}...` : 'missing',
+      state: state,
+      error: error,
+      allParams: Object.fromEntries(searchParams.entries())
+    });
 
     if (error) {
       console.error('Threads OAuth error:', error);
