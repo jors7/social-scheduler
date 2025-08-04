@@ -9,7 +9,9 @@ export async function GET(request: NextRequest) {
     console.log('Environment check:', {
       hasAppId: !!process.env.THREADS_APP_ID,
       hasAppSecret: !!process.env.THREADS_APP_SECRET,
-      nodeEnv: process.env.NODE_ENV
+      nodeEnv: process.env.NODE_ENV,
+      appIdValue: process.env.THREADS_APP_ID,
+      appIdLength: process.env.THREADS_APP_ID?.length
     });
     
     if (!process.env.THREADS_APP_ID || !process.env.THREADS_APP_SECRET) {
@@ -38,17 +40,30 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
-    // Build authorization URL - Threads has its own OAuth
+    // Build authorization URL - Threads endpoint with correct parameter names
     const params = new URLSearchParams({
-      client_id: process.env.THREADS_APP_ID,
+      client_id: process.env.THREADS_APP_ID!,
       redirect_uri: redirectUri,
       scope: 'threads_basic,threads_content_publish',
       response_type: 'code',
       state: state,
     });
 
-    // Threads uses its own OAuth endpoint
+    // Also try with app_id parameter (Meta sometimes uses this)
+    const authUrlWithAppId = `https://threads.net/oauth/authorize?` + 
+      new URLSearchParams({
+        app_id: process.env.THREADS_APP_ID!,
+        redirect_uri: redirectUri,
+        scope: 'threads_basic,threads_content_publish',
+        response_type: 'code',
+        state: state,
+      }).toString();
+
     const authUrl = `https://threads.net/oauth/authorize?${params.toString()}`;
+    
+    console.log('Trying both URL formats:');
+    console.log('client_id version:', authUrl);
+    console.log('app_id version:', authUrlWithAppId);
 
     console.log('Redirecting to Threads auth:', authUrl);
     console.log('Full URL:', authUrl);
@@ -59,7 +74,8 @@ export async function GET(request: NextRequest) {
       state: state
     });
 
-    return NextResponse.json({ authUrl });
+    // Return the app_id version since that's what the error is asking for
+    return NextResponse.json({ authUrl: authUrlWithAppId });
   } catch (error) {
     console.error('Threads OAuth initialization error:', error);
     return NextResponse.json(
