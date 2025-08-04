@@ -53,9 +53,9 @@ export async function GET(request: NextRequest) {
 
     console.log('User authenticated:', user.id);
 
-    // Get callback URL
-    const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/twitter/callback`;
-    console.log('Callback URL:', callbackUrl);
+    // Get callback URL - try OOB first for testing
+    const callbackUrl = 'oob'; // Out-of-band callback for testing
+    console.log('Using OOB callback for testing');
     
     // Initialize OAuth client
     console.log('Initializing OAuth client...');
