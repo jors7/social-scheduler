@@ -130,18 +130,19 @@ export async function GET(request: NextRequest) {
     }
 
     // Check all pages for Instagram connections
-    let page = null;
+    let selectedPage = null;
     let instagramData = null;
     
     console.log('Checking all pages for Instagram connections...');
     for (const pageItem of pagesData.data) {
-      console.log(`Checking page: ${pageItem.name} (${pageItem.id})`);
+      const page = pageItem as any; // Type assertion to fix TypeScript error
+      console.log(`Checking page: ${page.name} (${page.id})`);
       
       // Try multiple API endpoints to find Instagram accounts
       const endpoints = [
-        `https://graph.facebook.com/v18.0/${pageItem.id}?fields=instagram_business_account&access_token=${pageItem.access_token}`,
-        `https://graph.facebook.com/v18.0/${pageItem.id}?fields=instagram_business_account,connected_instagram_account&access_token=${pageItem.access_token}`,
-        `https://graph.facebook.com/v18.0/${pageItem.id}/instagram_accounts?access_token=${pageItem.access_token}`
+        `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`,
+        `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account,connected_instagram_account&access_token=${page.access_token}`,
+        `https://graph.facebook.com/v18.0/${page.id}/instagram_accounts?access_token=${page.access_token}`
       ];
       
       for (const endpoint of endpoints) {
@@ -153,9 +154,9 @@ export async function GET(request: NextRequest) {
           console.log(`Response for ${pageItem.name}:`, JSON.stringify(data, null, 2));
           
           if (data.instagram_business_account || data.connected_instagram_account || (data.data && data.data.length > 0)) {
-            page = pageItem;
+            selectedPage = page;
             instagramData = data;
-            console.log(`Found Instagram connection on page: ${pageItem.name}`);
+            console.log(`Found Instagram connection on page: ${page.name}`);
             break;
           }
         } else {
@@ -164,17 +165,17 @@ export async function GET(request: NextRequest) {
         }
       }
       
-      if (page) break;
+      if (selectedPage) break;
     }
     
-    if (!page || !instagramData) {
+    if (!selectedPage || !instagramData) {
       console.error('No Instagram Business account found on any page');
       return NextResponse.redirect(
         new URL('/dashboard/settings?error=instagram_not_business', request.url)
       );
     }
     
-    console.log('Selected page with Instagram:', JSON.stringify(page, null, 2));
+    console.log('Selected page with Instagram:', JSON.stringify(selectedPage, null, 2));
     console.log('Instagram data:', JSON.stringify(instagramData, null, 2));
 
     // Extract Instagram account ID from different possible response formats
@@ -196,7 +197,7 @@ export async function GET(request: NextRequest) {
 
     // Get Instagram profile info
     const profileResponse = await fetch(
-      `https://graph.facebook.com/v18.0/${instagramAccountId}?fields=id,username,media_count,followers_count,profile_picture_url,biography&access_token=${page.access_token}`
+      `https://graph.facebook.com/v18.0/${instagramAccountId}?fields=id,username,media_count,followers_count,profile_picture_url,biography&access_token=${selectedPage.access_token}`
     );
 
     if (!profileResponse.ok) {
@@ -236,7 +237,7 @@ export async function GET(request: NextRequest) {
       account_name: profileData.username,
       username: profileData.username,
       profile_image_url: profileData.profile_picture_url,
-      access_token: page.access_token, // Page access token for Instagram API
+      access_token: selectedPage.access_token, // Page access token for Instagram API
       access_secret: '', // Not used for Instagram
       is_active: true,
     };
