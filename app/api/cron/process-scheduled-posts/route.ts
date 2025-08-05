@@ -243,7 +243,13 @@ async function postToFacebook(content: string, account: any, mediaUrls?: string[
   console.log('Content being sent:', JSON.stringify(content));
   console.log('Content length:', content.length);
   
-  const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/api/post/facebook`, {
+  const baseUrl = process.env.VERCEL_URL 
+    ? `https://${process.env.VERCEL_URL}` 
+    : process.env.NEXTAUTH_URL || 'http://localhost:3001';
+  
+  console.log('Using base URL:', baseUrl);
+  
+  const response = await fetch(`${baseUrl}/api/post/facebook`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -263,7 +269,15 @@ async function postToFacebook(content: string, account: any, mediaUrls?: string[
 }
 
 async function postToBluesky(content: string, account: any, mediaUrls?: string[]) {
-  const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/api/post/bluesky`, {
+  const baseUrl = process.env.VERCEL_URL 
+    ? `https://${process.env.VERCEL_URL}` 
+    : process.env.NEXTAUTH_URL || 'http://localhost:3001';
+  
+  console.log('=== BLUESKY API CALL ===');
+  console.log('Content being sent:', JSON.stringify(content));
+  console.log('Using base URL:', baseUrl);
+  
+  const response = await fetch(`${baseUrl}/api/post/bluesky`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
