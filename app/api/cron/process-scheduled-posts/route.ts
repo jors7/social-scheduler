@@ -147,10 +147,18 @@ export async function GET(request: NextRequest) {
 
           } catch (error) {
             console.error(`Error posting to ${platform}:`, error);
+            
+            // Include URL info in error for debugging
+            const debugUrl = process.env.VERCEL_URL 
+              ? `VERCEL_URL: ${process.env.VERCEL_URL}` 
+              : 'Using localhost';
+            
+            const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+            
             postResults.push({
               platform,
               success: false,
-              error: error instanceof Error ? error.message : 'Unknown error'
+              error: `${errorMsg} (${debugUrl})`
             });
           }
         }
@@ -261,11 +269,28 @@ async function postToFacebook(content: string, account: any, mediaUrls?: string[
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Facebook posting failed');
+    const contentType = response.headers.get('content-type');
+    console.error('Facebook API error - Status:', response.status);
+    console.error('Content-Type:', contentType);
+    
+    if (contentType && contentType.includes('application/json')) {
+      const error = await response.json();
+      throw new Error(error.error || 'Facebook posting failed');
+    } else {
+      const text = await response.text();
+      console.error('Non-JSON response:', text.substring(0, 200));
+      throw new Error(`Facebook API returned HTML/text instead of JSON (Status: ${response.status})`);
+    }
   }
 
-  return response.json();
+  try {
+    return await response.json();
+  } catch (jsonError) {
+    console.error('Failed to parse Facebook response as JSON');
+    const text = await response.text();
+    console.error('Response text:', text.substring(0, 200));
+    throw new Error('Facebook API returned non-JSON response');
+  }
 }
 
 async function postToBluesky(content: string, account: any, mediaUrls?: string[]) {
@@ -289,11 +314,28 @@ async function postToBluesky(content: string, account: any, mediaUrls?: string[]
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Bluesky posting failed');
+    const contentType = response.headers.get('content-type');
+    console.error('Bluesky API error - Status:', response.status);
+    console.error('Content-Type:', contentType);
+    
+    if (contentType && contentType.includes('application/json')) {
+      const error = await response.json();
+      throw new Error(error.error || 'Bluesky posting failed');
+    } else {
+      const text = await response.text();
+      console.error('Non-JSON response:', text.substring(0, 200));
+      throw new Error(`Bluesky API returned HTML/text instead of JSON (Status: ${response.status})`);
+    }
   }
 
-  return response.json();
+  try {
+    return await response.json();
+  } catch (jsonError) {
+    console.error('Failed to parse Bluesky response as JSON');
+    const text = await response.text();
+    console.error('Response text:', text.substring(0, 200));
+    throw new Error('Bluesky API returned non-JSON response');
+  }
 }
 
 // Helper function to clean HTML content (same as PostingService)
