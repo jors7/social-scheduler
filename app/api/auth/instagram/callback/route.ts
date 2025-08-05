@@ -78,6 +78,16 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenResponse.json();
     console.log('Token received, getting user info...');
 
+    // First, let's see what user we're authenticated as
+    const userResponse = await fetch(
+      `https://graph.facebook.com/v18.0/me?access_token=${tokenData.access_token}`
+    );
+    
+    if (userResponse.ok) {
+      const userData = await userResponse.json();
+      console.log('Authenticated Facebook user:', userData);
+    }
+
     // Get user's Facebook pages (required for Instagram Business accounts)
     console.log('Fetching Facebook pages...');
     const pagesResponse = await fetch(
@@ -86,16 +96,31 @@ export async function GET(request: NextRequest) {
 
     console.log('Pages response status:', pagesResponse.status);
     
+    let pagesData = { data: [] };
+    
     if (!pagesResponse.ok) {
       const errorText = await pagesResponse.text();
       console.error('Failed to get Facebook pages:', errorText);
-      return NextResponse.redirect(
-        new URL('/dashboard/settings?error=instagram_auth_failed', request.url)
-      );
+    } else {
+      pagesData = await pagesResponse.json();
+      console.log('Pages data:', JSON.stringify(pagesData, null, 2));
     }
-
-    const pagesData = await pagesResponse.json();
-    console.log('Pages data:', JSON.stringify(pagesData, null, 2));
+    
+    // If no personal pages found, try to get business pages
+    if (!pagesData.data || pagesData.data.length === 0) {
+      console.log('No personal pages found, trying business accounts...');
+      
+      // Try to get business accounts
+      const businessResponse = await fetch(
+        `https://graph.facebook.com/v18.0/me/accounts?type=page&access_token=${tokenData.access_token}`
+      );
+      
+      if (businessResponse.ok) {
+        const businessData = await businessResponse.json();
+        console.log('Business pages data:', JSON.stringify(businessData, null, 2));
+        pagesData = businessData;
+      }
+    }
     
     if (!pagesData.data || pagesData.data.length === 0) {
       console.error('No Facebook pages found in response:', pagesData);
@@ -104,31 +129,70 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get the first page (you might want to let user choose)
-    const page = pagesData.data[0];
+    // Check all pages for Instagram connections
+    let page = null;
+    let instagramData = null;
     
-    // Get Instagram account connected to this page
-    const instagramResponse = await fetch(
-      `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
-    );
-
-    if (!instagramResponse.ok) {
-      console.error('Failed to get Instagram account');
-      return NextResponse.redirect(
-        new URL('/dashboard/settings?error=instagram_not_connected', request.url)
-      );
+    console.log('Checking all pages for Instagram connections...');
+    for (const pageItem of pagesData.data) {
+      console.log(`Checking page: ${pageItem.name} (${pageItem.id})`);
+      
+      // Try multiple API endpoints to find Instagram accounts
+      const endpoints = [
+        `https://graph.facebook.com/v18.0/${pageItem.id}?fields=instagram_business_account&access_token=${pageItem.access_token}`,
+        `https://graph.facebook.com/v18.0/${pageItem.id}?fields=instagram_business_account,connected_instagram_account&access_token=${pageItem.access_token}`,
+        `https://graph.facebook.com/v18.0/${pageItem.id}/instagram_accounts?access_token=${pageItem.access_token}`
+      ];
+      
+      for (const endpoint of endpoints) {
+        console.log(`Trying endpoint: ${endpoint.split('?')[0]}`);
+        const response = await fetch(endpoint);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`Response for ${pageItem.name}:`, JSON.stringify(data, null, 2));
+          
+          if (data.instagram_business_account || data.connected_instagram_account || (data.data && data.data.length > 0)) {
+            page = pageItem;
+            instagramData = data;
+            console.log(`Found Instagram connection on page: ${pageItem.name}`);
+            break;
+          }
+        } else {
+          const errorText = await response.text();
+          console.log(`Endpoint failed: ${errorText}`);
+        }
+      }
+      
+      if (page) break;
     }
-
-    const instagramData = await instagramResponse.json();
     
-    if (!instagramData.instagram_business_account) {
-      console.error('No Instagram Business account connected to page');
+    if (!page || !instagramData) {
+      console.error('No Instagram Business account found on any page');
       return NextResponse.redirect(
         new URL('/dashboard/settings?error=instagram_not_business', request.url)
       );
     }
+    
+    console.log('Selected page with Instagram:', JSON.stringify(page, null, 2));
+    console.log('Instagram data:', JSON.stringify(instagramData, null, 2));
 
-    const instagramAccountId = instagramData.instagram_business_account.id;
+    // Extract Instagram account ID from different possible response formats
+    let instagramAccountId;
+    if (instagramData.instagram_business_account) {
+      instagramAccountId = instagramData.instagram_business_account.id;
+    } else if (instagramData.connected_instagram_account) {
+      instagramAccountId = instagramData.connected_instagram_account.id;
+    } else if (instagramData.data && instagramData.data.length > 0) {
+      instagramAccountId = instagramData.data[0].id;
+    } else {
+      console.error('Could not extract Instagram account ID from:', instagramData);
+      return NextResponse.redirect(
+        new URL('/dashboard/settings?error=instagram_not_business', request.url)
+      );
+    }
+    
+    console.log('Instagram Account ID:', instagramAccountId);
 
     // Get Instagram profile info
     const profileResponse = await fetch(

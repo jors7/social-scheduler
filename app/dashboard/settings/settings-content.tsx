@@ -110,6 +110,12 @@ export default function SettingsContent() {
     } else if (success === 'instagram_connected') {
       toast.success('Instagram account connected successfully!')
       router.replace('/dashboard/settings')
+    } else if (success === 'facebook_connected') {
+      toast.success('Facebook page connected successfully!')
+      router.replace('/dashboard/settings')
+    } else if (success === 'pinterest_connected') {
+      toast.success('Pinterest account connected successfully!')
+      router.replace('/dashboard/settings')
     } else if (error) {
       const errorMessages: Record<string, string> = {
         twitter_auth_failed: 'Twitter authentication failed. Please try again.',
@@ -124,6 +130,8 @@ export default function SettingsContent() {
         instagram_no_pages: 'No Facebook pages found. Please create a Facebook page first.',
         instagram_not_connected: 'No Instagram account connected to your Facebook page.',
         instagram_not_business: 'Please convert your Instagram account to a Business account.',
+        facebook_auth_failed: 'Facebook authentication failed. Please try again.',
+        facebook_callback_failed: 'Failed to complete Facebook authentication.',
       }
       toast.error(errorMessages[error] || 'An error occurred. Please try again.')
       router.replace('/dashboard/settings')
@@ -221,6 +229,58 @@ export default function SettingsContent() {
       } catch (error) {
         console.error('Error connecting to Instagram:', error)
         toast.error('Failed to connect to Instagram')
+      } finally {
+        setLoading(false)
+      }
+    } else if (platformId === 'facebook') {
+      setLoading(true)
+      try {
+        console.log('Fetching Facebook auth URL...')
+        const response = await fetch('/api/auth/facebook')
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('API Error:', errorText)
+          toast.error(`Failed to connect: ${response.status}`)
+          return
+        }
+        
+        const data = await response.json()
+        
+        if (data.authUrl) {
+          console.log('Redirecting to:', data.authUrl)
+          window.location.href = data.authUrl
+        } else {
+          toast.error('Failed to initialize Facebook authentication')
+        }
+      } catch (error) {
+        console.error('Error connecting to Facebook:', error)
+        toast.error('Failed to connect to Facebook')
+      } finally {
+        setLoading(false)
+      }
+    } else if (platformId === 'pinterest') {
+      setLoading(true)
+      try {
+        console.log('Connecting Pinterest account...')
+        const response = await fetch('/api/auth/pinterest', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        
+        const data = await response.json()
+        
+        if (response.ok) {
+          toast.success('Pinterest account connected successfully!')
+          fetchConnectedAccounts()
+        } else {
+          toast.error(data.error || 'Failed to connect Pinterest account')
+        }
+      } catch (error) {
+        console.error('Error connecting to Pinterest:', error)
+        toast.error('Failed to connect to Pinterest')
       } finally {
         setLoading(false)
       }

@@ -40,52 +40,29 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
-    // Use correct Threads OAuth with client_id parameter (Facebook App ID)
-    const threadsParams = new URLSearchParams({
+    // Use valid Meta permissions for Threads access
+    // Threads API requires Instagram permissions since they're connected
+    const params = new URLSearchParams({
       client_id: process.env.META_APP_ID!,
       redirect_uri: redirectUri,
-      scope: 'threads_basic,threads_content_publish',
+      scope: 'pages_show_list,pages_read_engagement',
       response_type: 'code',
       state: state,
     });
 
-    // Use Facebook OAuth with Instagram scopes for Threads
-    const facebookOAuthUrl = `https://www.facebook.com/v18.0/dialog/oauth?${threadsParams.toString()}`;
+    // Use Facebook OAuth endpoint which handles Threads permissions
+    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
     
-    // Alternative: Try Threads direct endpoint
-    const threadsDirectUrl = `https://threads.net/oauth/authorize?${threadsParams.toString()}`;
-    
-    console.log('Facebook OAuth URL for Instagram/Threads:', facebookOAuthUrl);
-    console.log('Threads Direct URL:', threadsDirectUrl);
-    
-    console.log('Generated Threads OAuth URL:', threadsDirectUrl);
-    console.log('Full URL breakdown:', {
-      baseUrl: 'https://threads.net/oauth/authorize',
+    console.log('Threads OAuth URL (via Facebook):', authUrl);
+    console.log('Parameters:', {
       client_id: process.env.META_APP_ID,
       redirect_uri: redirectUri,
       scope: 'threads_basic,threads_content_publish',
       response_type: 'code',
       state: state,
-      fullUrl: threadsDirectUrl
     });
-    
-    // Let's also try a manual URL construction to be absolutely sure
-    const manualUrl = `https://threads.net/oauth/authorize?client_id=${process.env.META_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=threads_basic,threads_content_publish&response_type=code&state=${state}`;
-    console.log('Manual URL construction:', manualUrl);
-    
-    // Also try alternative parameter format
-    const altParams = new URLSearchParams({
-      app_id: process.env.META_APP_ID!,
-      redirect_uri: redirectUri,
-      scope: 'threads_basic,threads_content_publish',
-      response_type: 'code',
-      state: state,
-    });
-    const altUrl = `https://threads.net/oauth/authorize?${altParams.toString()}`;
-    console.log('Alternative URL with app_id:', altUrl);
 
-    // Use pure Threads OAuth with Threads App ID
-    return NextResponse.json({ authUrl: threadsDirectUrl });
+    return NextResponse.json({ authUrl });
   } catch (error) {
     console.error('Threads OAuth initialization error:', error);
     return NextResponse.json(

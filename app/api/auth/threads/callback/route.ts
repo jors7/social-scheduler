@@ -65,15 +65,16 @@ export async function GET(request: NextRequest) {
     });
 
     console.log('Exchanging code for token...');
-    // Use Instagram token exchange endpoint
-    const tokenUrl = `https://api.instagram.com/oauth/access_token`;
-    const tokenResponse = await fetch(tokenUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: tokenParams.toString(),
+    console.log('Token exchange parameters:', {
+      client_id: process.env.META_APP_ID?.substring(0, 5) + '...',
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code',
+      code: code.substring(0, 10) + '...'
     });
+    
+    // Use Facebook Graph API token exchange endpoint
+    const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?${tokenParams.toString()}`;
+    const tokenResponse = await fetch(tokenUrl);
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
@@ -108,34 +109,59 @@ export async function GET(request: NextRequest) {
       console.log('Got long-lived token');
     }
 
-    // Get user info - First get Facebook user ID
+    // Get Facebook user info
     const fbUserResponse = await fetch(
       `https://graph.facebook.com/v18.0/me?access_token=${accessToken}`
     );
     
     if (!fbUserResponse.ok) {
-      console.error('Failed to get Facebook user info');
+      const errorText = await fbUserResponse.text();
+      console.error('Failed to get Facebook user info:', errorText);
       return NextResponse.redirect(
         new URL('/dashboard/settings?error=threads_auth_failed', request.url)
       );
     }
     
     const fbUserData = await fbUserResponse.json();
+    console.log('Facebook user data:', fbUserData);
     
-    // Then get Threads profile using Facebook user ID
-    const userResponse = await fetch(
-      `https://graph.threads.net/v1.0/${fbUserData.id}?fields=id,username,threads_profile_picture_url,threads_biography&access_token=${accessToken}`
+    // Get user's Facebook pages (which can be used for Threads)
+    const pagesResponse = await fetch(
+      `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
     );
-
-    if (!userResponse.ok) {
-      console.error('Failed to get user info');
+    
+    if (!pagesResponse.ok) {
+      const errorText = await pagesResponse.text();
+      console.error('Failed to get Facebook pages:', errorText);
       return NextResponse.redirect(
         new URL('/dashboard/settings?error=threads_auth_failed', request.url)
       );
     }
-
-    const userData = await userResponse.json();
-    console.log('User data received:', userData.username);
+    
+    const pagesData = await pagesResponse.json();
+    console.log('Pages data:', JSON.stringify(pagesData, null, 2));
+    
+    if (!pagesData.data || pagesData.data.length === 0) {
+      console.error('No Facebook pages found for Threads');
+      return NextResponse.redirect(
+        new URL('/dashboard/settings?error=threads_no_pages', request.url)
+      );
+    }
+    
+    // Use the first page for Threads (since Threads is connected to pages)
+    const page = pagesData.data[0];
+    console.log('Using page for Threads:', page.name);
+    
+    // For now, we'll save the Facebook page info as the "Threads" account
+    // In the future, when Threads API is more mature, we can get actual Threads profile info
+    const userData = {
+      id: page.id,
+      username: page.name,
+      threads_profile_picture_url: null, // Could get from page data if needed
+      threads_biography: page.about || ''
+    };
+    
+    console.log('Threads account data:', userData);
 
     // Store in database
     const supabase = createServerClient(
@@ -164,7 +190,7 @@ export async function GET(request: NextRequest) {
       account_name: userData.username,
       username: userData.username,
       profile_image_url: userData.threads_profile_picture_url,
-      access_token: accessToken,
+      access_token: page.access_token, // Use page access token for posting
       access_secret: '', // Threads doesn't use access secret
       is_active: true,
       expires_at: expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null,

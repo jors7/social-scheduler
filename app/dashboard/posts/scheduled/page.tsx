@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { toast } from 'sonner'
 import { 
   Search, 
   Filter,
@@ -16,9 +17,22 @@ import {
   Play,
   Pause,
   Eye,
-  Send
+  Send,
+  X
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ScheduledPostsList } from '@/components/scheduled-posts-list'
+
+interface ScheduledPost {
+  id: string
+  content: string
+  platforms: string[]
+  platform_content: Record<string, string>
+  media_urls: string[]
+  scheduled_for: string
+  status: 'pending' | 'posting' | 'posted' | 'failed' | 'cancelled'
+  created_at: string
+}
 
 const mockScheduledPosts = [
   {
@@ -85,22 +99,72 @@ const platformIcons: Record<string, string> = {
   linkedin: 'in',
   youtube: '▶',
   tiktok: '♪',
+  threads: '@',
+  bluesky: '🦋',
+  pinterest: 'P',
 }
 
 export default function ScheduledPostsPage() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedPosts, setSelectedPosts] = useState<number[]>([])
+  const [selectedPosts, setSelectedPosts] = useState<string[]>([])
   const [filterStatus, setFilterStatus] = useState('all') // all, active, paused
+  const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const filteredPosts = mockScheduledPosts.filter(post => {
-    if (searchQuery && !post.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !post.content.toLowerCase().includes(searchQuery.toLowerCase())) return false
-    if (filterStatus === 'active' && !post.isActive) return false
-    if (filterStatus === 'paused' && post.isActive) return false
+  const fetchScheduledPosts = async () => {
+    try {
+      const response = await fetch('/api/posts/schedule')
+      if (!response.ok) throw new Error('Failed to fetch')
+      
+      const data = await response.json()
+      setScheduledPosts(data.posts || [])
+    } catch (error) {
+      console.error('Error fetching scheduled posts:', error)
+      toast.error('Failed to load scheduled posts')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchScheduledPosts()
+  }, [])
+
+  const formatTimeUntil = (scheduledFor: string) => {
+    const now = new Date()
+    const scheduled = new Date(scheduledFor)
+    const diffMs = scheduled.getTime() - now.getTime()
+    
+    if (diffMs <= 0) return 'Overdue'
+    
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+    
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''}, ${hours} hour${hours !== 1 ? 's' : ''}`
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''}, ${minutes} min`
+    return `${minutes} min`
+  }
+
+  const formatScheduledDate = (scheduledFor: string) => {
+    return new Date(scheduledFor).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    })
+  }
+
+  const filteredPosts = scheduledPosts.filter(post => {
+    if (searchQuery && !post.content.toLowerCase().includes(searchQuery.toLowerCase())) return false
+    if (filterStatus === 'active' && post.status !== 'pending') return false
+    if (filterStatus === 'paused' && post.status !== 'cancelled') return false
     return true
   })
 
-  const togglePostSelection = (postId: number) => {
+  const togglePostSelection = (postId: string) => {
     setSelectedPosts(prev =>
       prev.includes(postId)
         ? prev.filter(id => id !== postId)
@@ -116,15 +180,27 @@ export default function ScheduledPostsPage() {
     }
   }
 
-  const activePosts = filteredPosts.filter(post => post.isActive).length
-  const pausedPosts = filteredPosts.filter(post => !post.isActive).length
+  const activePosts = scheduledPosts.filter(post => post.status === 'pending').length
+  const pausedPosts = scheduledPosts.filter(post => post.status === 'cancelled').length
 
-  const getStatusColor = (isActive: boolean) => {
-    return isActive ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-blue-100 text-blue-700'
+      case 'cancelled': return 'bg-orange-100 text-orange-700'
+      case 'failed': return 'bg-red-100 text-red-700'
+      case 'posting': return 'bg-yellow-100 text-yellow-700'
+      default: return 'bg-gray-100 text-gray-700'
+    }
   }
 
-  const getStatusIcon = (isActive: boolean) => {
-    return isActive ? Clock : Pause
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending': return Clock
+      case 'cancelled': return Pause
+      case 'failed': return X
+      case 'posting': return Send
+      default: return Clock
+    }
   }
 
   const getUrgencyColor = (timeUntil: string) => {
@@ -251,132 +327,13 @@ export default function ScheduledPostsPage() {
       )}
 
       {/* Posts List */}
-      <div className="space-y-4">
-        {filteredPosts.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <Clock className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-gray-500 mb-2">No scheduled posts found</p>
-              <p className="text-sm text-gray-400">Schedule your first post to see it here</p>
-              <Button className="mt-4" onClick={() => window.location.href = '/dashboard/create/new'}>
-                <Calendar className="mr-2 h-4 w-4" />
-                Schedule a Post
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            <div className="flex items-center gap-2 px-4">
-              <input
-                type="checkbox"
-                checked={selectedPosts.length === filteredPosts.length}
-                onChange={toggleAllPosts}
-                className="rounded border-gray-300"
-              />
-              <span className="text-sm text-gray-600">Select all</span>
-            </div>
-            
-            {filteredPosts.map(post => {
-              const StatusIcon = getStatusIcon(post.isActive)
-              
-              return (
-                <Card key={post.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                  <CardContent className="p-0">
-                    <div className="flex items-start p-4 gap-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedPosts.includes(post.id)}
-                        onChange={() => togglePostSelection(post.id)}
-                        className="mt-1 rounded border-gray-300"
-                      />
-                      
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="font-semibold text-lg">{post.title}</h3>
-                              <span className={cn(
-                                "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium",
-                                getStatusColor(post.isActive)
-                              )}>
-                                <StatusIcon className="mr-1 h-3 w-3" />
-                                {post.isActive ? 'Active' : 'Paused'}
-                              </span>
-                            </div>
-                            
-                            <p className="text-gray-600 mb-3 line-clamp-2">{post.content}</p>
-                            
-                            <div className="flex items-center gap-4 mb-3">
-                              <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4 text-gray-400" />
-                                <span className="text-sm font-medium">
-                                  {post.scheduledFor}
-                                </span>
-                              </div>
-                              
-                              <div className="flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-gray-400" />
-                                <span className={cn(
-                                  "text-sm",
-                                  getUrgencyColor(post.timeUntilPost)
-                                )}>
-                                  in {post.timeUntilPost}
-                                </span>
-                              </div>
-                              
-                              <div className="flex gap-1">
-                                {post.platforms.map(platform => (
-                                  <span
-                                    key={platform}
-                                    className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-xs"
-                                  >
-                                    {platformIcons[platform] || platform[0].toUpperCase()}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            {/* Quick Actions */}
-                            <div className="flex gap-2">
-                              <Button size="sm" variant="outline" className="text-xs">
-                                <Edit className="mr-1 h-3 w-3" />
-                                Edit
-                              </Button>
-                              <Button size="sm" variant="outline" className="text-xs">
-                                <Eye className="mr-1 h-3 w-3" />
-                                Preview
-                              </Button>
-                              {post.isActive ? (
-                                <Button size="sm" variant="outline" className="text-xs">
-                                  <Pause className="mr-1 h-3 w-3" />
-                                  Pause
-                                </Button>
-                              ) : (
-                                <Button size="sm" variant="outline" className="text-xs">
-                                  <Play className="mr-1 h-3 w-3" />
-                                  Resume
-                                </Button>
-                              )}
-                              <Button size="sm" className="text-xs">
-                                <Send className="mr-1 h-3 w-3" />
-                                Post Now
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </>
-        )}
-      </div>
+      <ScheduledPostsList
+        posts={filteredPosts}
+        selectedPosts={selectedPosts}
+        onTogglePostSelection={togglePostSelection}
+        onToggleAllPosts={toggleAllPosts}
+        loading={loading}
+      />
     </div>
   )
 }

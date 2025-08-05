@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
+import { PostingService, PostData } from '@/lib/posting/service'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -39,6 +41,9 @@ export default function CreateNewPostPage() {
   const [scheduledDate, setScheduledDate] = useState('')
   const [scheduledTime, setScheduledTime] = useState('')
   const [showAISuggestions, setShowAISuggestions] = useState(false)
+  const [isPosting, setIsPosting] = useState(false)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [uploadedMediaUrls, setUploadedMediaUrls] = useState<string[]>([])
 
   const togglePlatform = (platformId: string) => {
     setSelectedPlatforms(prev =>
@@ -86,6 +91,254 @@ export default function CreateNewPostPage() {
       current: textContent.length,
       limit: platform?.charLimit || 0
     }
+  }
+
+  const uploadFiles = async (): Promise<string[]> => {
+    if (selectedFiles.length === 0) return []
+    
+    const formData = new FormData()
+    selectedFiles.forEach(file => {
+      formData.append('files', file)
+    })
+    
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      if (!response.ok) {
+        throw new Error('Upload failed')
+      }
+      
+      const data = await response.json()
+      return data.files.map((file: any) => file.url)
+    } catch (error) {
+      console.error('Upload error:', error)
+      toast.error('Failed to upload images')
+      return []
+    }
+  }
+
+  const handlePostNow = async () => {
+    if (selectedPlatforms.length === 0) {
+      toast.error('Please select at least one platform')
+      return
+    }
+
+    // Check if we have content either in main area or platform-specific
+    const hasMainContent = postContent.trim().length > 0
+    const hasPlatformContent = selectedPlatforms.some(platform => 
+      platformContent[platform]?.trim().length > 0
+    )
+    
+    if (!hasMainContent && !hasPlatformContent) {
+      toast.error('Please enter some content')
+      return
+    }
+
+    // Filter to only supported platforms for now
+    const supportedPlatforms = selectedPlatforms.filter(p => ['facebook', 'bluesky'].includes(p))
+    const unsupportedPlatforms = selectedPlatforms.filter(p => !['facebook', 'bluesky'].includes(p))
+
+    if (supportedPlatforms.length === 0) {
+      toast.error('Please select Facebook or Bluesky (other platforms coming soon!)')
+      return
+    }
+
+    if (unsupportedPlatforms.length > 0) {
+      toast.info(`Posting to ${supportedPlatforms.join(', ')} (${unsupportedPlatforms.join(', ')} coming soon!)`)
+    }
+
+    setIsPosting(true)
+
+    // Safety timeout to prevent button getting stuck
+    const timeoutId = setTimeout(() => {
+      console.warn('Posting timeout - resetting button state')
+      setIsPosting(false)
+      toast.error('Posting timed out - please try again')
+    }, 60000) // 60 second timeout for uploads
+
+    try {
+      // Upload files first if any
+      let mediaUrls: string[] = []
+      if (selectedFiles.length > 0) {
+        toast.info('Uploading media...')
+        mediaUrls = await uploadFiles()
+        if (mediaUrls.length === 0 && selectedFiles.length > 0) {
+          toast.error('Failed to upload media files')
+          return
+        }
+        setUploadedMediaUrls(mediaUrls)
+      }
+
+      const postingService = new PostingService()
+      const postData: PostData = {
+        content: postContent,
+        platforms: supportedPlatforms,
+        platformContent: platformContent,
+        mediaUrls: mediaUrls,
+      }
+
+      const results = await postingService.postToMultiplePlatforms(postData)
+      
+      // Show results
+      const successful = results.filter(r => r.success)
+      const failed = results.filter(r => !r.success)
+
+      if (successful.length > 0) {
+        toast.success(`Successfully posted to ${successful.map(r => r.platform).join(', ')}!`)
+      }
+
+      if (failed.length > 0) {
+        failed.forEach(result => {
+          toast.error(`Failed to post to ${result.platform}: ${result.error}`)
+        })
+      }
+
+      // Clear form if all successful
+      if (failed.length === 0) {
+        // Clean up uploaded images from storage
+        if (mediaUrls.length > 0) {
+          try {
+            await fetch('/api/upload/cleanup', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ urls: mediaUrls }),
+            })
+          } catch (error) {
+            console.error('Failed to cleanup uploaded files:', error)
+          }
+        }
+        
+        setPostContent('')
+        setPlatformContent({})
+        setSelectedPlatforms([])
+        setSelectedFiles([])
+        setUploadedMediaUrls([])
+      }
+
+    } catch (error) {
+      console.error('Posting error:', error)
+      toast.error('Failed to post: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    } finally {
+      // Clear timeout and always reset posting state
+      clearTimeout(timeoutId)
+      setIsPosting(false)
+    }
+  }
+
+  const handleSchedulePost = async () => {
+    if (!scheduledDate || !scheduledTime) {
+      toast.error('Please select both date and time')
+      return
+    }
+
+    if (selectedPlatforms.length === 0) {
+      toast.error('Please select at least one platform')
+      return
+    }
+
+    // Check if we have content either in main area or platform-specific
+    const hasMainContent = postContent.trim().length > 0
+    const hasPlatformContent = selectedPlatforms.some(platform => 
+      platformContent[platform]?.trim().length > 0
+    )
+    
+    if (!hasMainContent && !hasPlatformContent) {
+      toast.error('Please enter some content')
+      return
+    }
+
+    setIsPosting(true)
+
+    try {
+      // Upload files first if any
+      let mediaUrls: string[] = []
+      if (selectedFiles.length > 0) {
+        toast.info('Uploading media...')
+        mediaUrls = await uploadFiles()
+        if (mediaUrls.length === 0 && selectedFiles.length > 0) {
+          toast.error('Failed to upload media files')
+          return
+        }
+      }
+
+      // Combine date and time
+      const scheduledFor = new Date(`${scheduledDate}T${scheduledTime}`)
+      
+      // Save to database
+      const response = await fetch('/api/posts/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: postContent,
+          platforms: selectedPlatforms,
+          platformContent: platformContent,
+          mediaUrls: mediaUrls,
+          scheduledFor: scheduledFor.toISOString(),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to schedule post')
+      }
+
+      toast.success('Post scheduled successfully!')
+      
+      // Clear form
+      setPostContent('')
+      setPlatformContent({})
+      setSelectedPlatforms([])
+      setSelectedFiles([])
+      setUploadedMediaUrls([])
+      setScheduledDate('')
+      setScheduledTime('')
+
+    } catch (error) {
+      console.error('Scheduling error:', error)
+      toast.error('Failed to schedule post')
+    } finally {
+      setIsPosting(false)
+    }
+  }
+
+  const handleSaveAsDraft = async () => {
+    toast.info('Save as draft functionality coming soon!')
+  }
+
+  const handleFileSelect = (files: FileList | null) => {
+    if (!files) return
+    
+    const fileArray = Array.from(files)
+    const validFiles = fileArray.filter(file => {
+      const isImage = file.type.startsWith('image/')
+      const isVideo = file.type.startsWith('video/')
+      const sizeLimit = isImage ? 50 * 1024 * 1024 : 500 * 1024 * 1024 // 50MB for images, 500MB for videos
+      
+      if (!isImage && !isVideo) {
+        toast.error(`${file.name}: Only images and videos are supported`)
+        return false
+      }
+      
+      if (file.size > sizeLimit) {
+        toast.error(`${file.name}: File too large (max ${isImage ? '50MB' : '500MB'})`)
+        return false
+      }
+      
+      return true
+    })
+    
+    setSelectedFiles(prev => [...prev, ...validFiles])
+  }
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    handleFileSelect(e.dataTransfer.files)
   }
 
   return (
@@ -211,10 +464,7 @@ export default function CreateNewPostPage() {
             <div 
               className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
               onClick={() => document.getElementById('file-upload')?.click()}
-              onDrop={(e) => {
-                e.preventDefault()
-                // Handle file drop logic here
-              }}
+              onDrop={handleDrop}
               onDragOver={(e) => e.preventDefault()}
               onDragEnter={(e) => e.preventDefault()}
             >
@@ -224,11 +474,7 @@ export default function CreateNewPostPage() {
                 multiple
                 accept="image/*,video/*"
                 className="hidden"
-                onChange={(e) => {
-                  // Handle file selection logic here
-                  const files = Array.from(e.target.files || [])
-                  console.log('Selected files:', files)
-                }}
+                onChange={(e) => handleFileSelect(e.target.files)}
               />
               <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
               <p className="mt-2 text-sm text-gray-600">
@@ -241,6 +487,47 @@ export default function CreateNewPostPage() {
                 Videos: MP4, MOV, AVI up to 500MB
               </p>
             </div>
+            
+            {/* Selected Files Display */}
+            {selectedFiles.length > 0 && (
+              <div className="mt-4">
+                <Label className="text-sm font-medium">Selected Files ({selectedFiles.length})</Label>
+                <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="relative group">
+                      <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                        {file.type.startsWith('image/') ? (
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={file.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="text-center">
+                              <ImageIcon className="mx-auto h-8 w-8 text-gray-400" />
+                              <p className="text-xs text-gray-500 mt-1">Video</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => removeFile(index)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      <p className="text-xs text-gray-600 mt-1 truncate" title={file.name}>
+                        {file.name}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {(file.size / 1024 / 1024).toFixed(1)} MB
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -285,11 +572,51 @@ export default function CreateNewPostPage() {
 
       {/* Action Buttons */}
       <div className="flex gap-4">
-        <Button className="flex-1" disabled={selectedPlatforms.length === 0}>
-          <Send className="mr-2 h-4 w-4" />
-          Post Now
-        </Button>
-        <Button variant="outline" className="flex-1" disabled={selectedPlatforms.length === 0}>
+        {scheduledDate && scheduledTime ? (
+          <>
+            <Button 
+              className="flex-1" 
+              disabled={
+                selectedPlatforms.length === 0 || 
+                isPosting || 
+                (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()))
+              }
+              onClick={handleSchedulePost}
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              {isPosting ? 'Scheduling...' : 'Schedule Post'}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setScheduledDate('')
+                setScheduledTime('')
+              }}
+            >
+              <X className="mr-2 h-4 w-4" />
+              Clear Schedule
+            </Button>
+          </>
+        ) : (
+          <Button 
+            className="flex-1" 
+            disabled={
+              selectedPlatforms.length === 0 || 
+              isPosting || 
+              (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()))
+            }
+            onClick={handlePostNow}
+          >
+            <Send className="mr-2 h-4 w-4" />
+            {isPosting ? 'Posting...' : 'Post Now'}
+          </Button>
+        )}
+        <Button 
+          variant="outline" 
+          className="flex-1" 
+          disabled={selectedPlatforms.length === 0 || isPosting}
+          onClick={handleSaveAsDraft}
+        >
           <Save className="mr-2 h-4 w-4" />
           Save as Draft
         </Button>
