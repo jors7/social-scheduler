@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     const params = new URLSearchParams({
       client_id: process.env.META_APP_ID,
       redirect_uri: redirectUri,
-      scope: 'instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement',
+      scope: 'pages_show_list',
       response_type: 'code',
       state: state,
     });
