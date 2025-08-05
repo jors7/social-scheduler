@@ -1,8 +1,7 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron/process-scheduled-posts",
-      "schedule": "0 * * * *"
+  "functions": {
+    "app/api/cron/process-scheduled-posts/route.ts": {
+      "maxDuration": 60
     }
-  ]
+  }
 }

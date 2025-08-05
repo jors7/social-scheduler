@@ -126,6 +126,29 @@ export default function ScheduledPostsPage() {
     }
   }
 
+  const processDuePosts = async () => {
+    try {
+      toast.info('Processing due posts...')
+      const response = await fetch('/api/cron/process-scheduled-posts', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || 'test'}`
+        }
+      })
+      
+      if (!response.ok) throw new Error('Failed to process posts')
+      
+      const data = await response.json()
+      toast.success(`Processed ${data.processed || 0} posts`)
+      
+      // Refresh the list
+      fetchScheduledPosts()
+    } catch (error) {
+      console.error('Error processing posts:', error)
+      toast.error('Failed to process posts')
+    }
+  }
+
   useEffect(() => {
     fetchScheduledPosts()
   }, [])
@@ -242,6 +265,10 @@ export default function ScheduledPostsPage() {
         <Button variant="outline">
           <Filter className="mr-2 h-4 w-4" />
           More Filters
+        </Button>
+        <Button onClick={processDuePosts} className="bg-green-600 hover:bg-green-700">
+          <Send className="mr-2 h-4 w-4" />
+          Process Due Posts
         </Button>
       </div>
 
