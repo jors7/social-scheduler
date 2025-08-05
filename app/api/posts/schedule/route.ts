@@ -25,11 +25,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { content, platforms, platformContent, mediaUrls, scheduledFor } = await request.json();
+    const body = await request.json();
+    console.log('Schedule request body:', JSON.stringify(body, null, 2));
+    
+    const { content, platforms, platformContent, mediaUrls, scheduledFor } = body;
 
     // Validate inputs
     if (!content || !platforms || platforms.length === 0 || !scheduledFor) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      console.log('Validation failed:', {
+        hasContent: !!content,
+        hasPlatforms: !!platforms,
+        platformsLength: platforms?.length,
+        hasScheduledFor: !!scheduledFor
+      });
+      return NextResponse.json({ 
+        error: 'Missing required fields',
+        details: {
+          content: !content ? 'Content is required' : 'OK',
+          platforms: !platforms || platforms.length === 0 ? 'At least one platform is required' : 'OK',
+          scheduledFor: !scheduledFor ? 'Scheduled time is required' : 'OK'
+        }
+      }, { status: 400 });
     }
 
     // Validate scheduled time is in the future

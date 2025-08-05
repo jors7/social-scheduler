@@ -267,21 +267,27 @@ export default function CreateNewPostPage() {
       // Combine date and time
       const scheduledFor = new Date(`${scheduledDate}T${scheduledTime}`)
       
+      const requestData = {
+        content: postContent,
+        platforms: selectedPlatforms,
+        platformContent: platformContent,
+        mediaUrls: mediaUrls,
+        scheduledFor: scheduledFor.toISOString(),
+      }
+      
+      console.log('Sending schedule request:', requestData)
+      
       // Save to database
       const response = await fetch('/api/posts/schedule', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: postContent,
-          platforms: selectedPlatforms,
-          platformContent: platformContent,
-          mediaUrls: mediaUrls,
-          scheduledFor: scheduledFor.toISOString(),
-        }),
+        body: JSON.stringify(requestData),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to schedule post')
+        const errorData = await response.json()
+        console.error('Schedule API error:', errorData)
+        throw new Error(errorData.error || 'Failed to schedule post')
       }
 
       toast.success('Post scheduled successfully!')
