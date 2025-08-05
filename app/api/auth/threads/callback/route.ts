@@ -57,8 +57,8 @@ export async function GET(request: NextRequest) {
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
     const tokenParams = new URLSearchParams({
-      client_id: process.env.THREADS_APP_ID!,
-      client_secret: process.env.THREADS_APP_SECRET!,
+      client_id: process.env.META_APP_ID!,
+      client_secret: process.env.META_APP_SECRET!,
       grant_type: 'authorization_code',
       redirect_uri: redirectUri,
       code: code,
@@ -89,8 +89,8 @@ export async function GET(request: NextRequest) {
     // Exchange short-lived token for long-lived token
     const longLivedParams = new URLSearchParams({
       grant_type: 'fb_exchange_token',
-      client_id: process.env.THREADS_APP_ID!,
-      client_secret: process.env.THREADS_APP_SECRET!,
+      client_id: process.env.META_APP_ID!,
+      client_secret: process.env.META_APP_SECRET!,
       fb_exchange_token: tokenData.access_token,
     });
 

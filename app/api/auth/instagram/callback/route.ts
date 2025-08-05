@@ -49,8 +49,8 @@ export async function GET(request: NextRequest) {
     const redirectUri = `${baseUrl}/api/auth/instagram/callback`;
 
     const tokenParams = new URLSearchParams({
-      client_id: process.env.THREADS_APP_ID!,
-      client_secret: process.env.THREADS_APP_SECRET!,
+      client_id: process.env.META_APP_ID!,
+      client_secret: process.env.META_APP_SECRET!,
       grant_type: 'authorization_code',
       redirect_uri: redirectUri,
       code: code,

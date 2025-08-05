@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     console.log('=== Instagram OAuth Initialization ===');
     
-    if (!process.env.THREADS_APP_ID || !process.env.THREADS_APP_SECRET) {
+    if (!process.env.META_APP_ID || !process.env.META_APP_SECRET) {
       console.error('Missing Meta API credentials');
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     // Build Facebook OAuth URL for Instagram permissions
     const params = new URLSearchParams({
-      client_id: process.env.THREADS_APP_ID,
+      client_id: process.env.META_APP_ID,
       redirect_uri: redirectUri,
       scope: 'instagram_basic,instagram_content_publish,pages_show_list',
       response_type: 'code',
