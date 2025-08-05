@@ -8,6 +8,13 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     console.log('=== Instagram OAuth Callback ===');
+    console.log('Full callback URL:', request.url);
+    console.log('Environment check:', {
+      hasMetaAppId: !!process.env.META_APP_ID,
+      hasMetaAppSecret: !!process.env.META_APP_SECRET,
+      metaAppIdLength: process.env.META_APP_ID?.length,
+      nodeEnv: process.env.NODE_ENV
+    });
     
     const searchParams = request.nextUrl.searchParams;
     const code = searchParams.get('code');
