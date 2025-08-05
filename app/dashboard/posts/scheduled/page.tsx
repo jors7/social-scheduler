@@ -149,6 +149,20 @@ export default function ScheduledPostsPage() {
       
       const data = await response.json()
       console.log('Cron response data:', data)
+      
+      // Show detailed results
+      if (data.results && data.results.length > 0) {
+        data.results.forEach((result: any, index: number) => {
+          console.log(`Result ${index + 1}:`, result)
+          if (result.errors && result.errors.length > 0) {
+            console.error(`Post ${result.postId} errors:`, result.errors)
+          }
+          if (result.platforms && result.platforms.length > 0) {
+            console.log(`Post ${result.postId} succeeded on:`, result.platforms)
+          }
+        })
+      }
+      
       toast.success(`Processed ${data.processed || 0} posts`)
       
       // Refresh the list
