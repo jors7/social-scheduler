@@ -128,15 +128,21 @@ export async function GET(request: NextRequest) {
 
     // Get status from query params
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status') || 'pending';
+    const status = searchParams.get('status');
 
-    // Fetch scheduled posts
-    const { data, error } = await supabase
+    // Build query
+    let query = supabase
       .from('scheduled_posts')
       .select('*')
-      .eq('user_id', user.id)
-      .eq('status', status)
-      .order('scheduled_for', { ascending: true });
+      .eq('user_id', user.id);
+
+    // Only filter by status if provided
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    }
+
+    // Fetch scheduled posts
+    const { data, error } = await query.order('scheduled_for', { ascending: true });
 
     if (error) {
       console.error('Database error:', error);
@@ -152,6 +158,79 @@ export async function GET(request: NextRequest) {
     console.error('Get scheduled posts error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch scheduled posts' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+        },
+      }
+    );
+
+    // Check if user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { postId, scheduledFor, status } = body;
+
+    if (!postId) {
+      return NextResponse.json({ error: 'Post ID is required' }, { status: 400 });
+    }
+
+    // Build update object
+    const updateData: any = {};
+    if (scheduledFor !== undefined) {
+      updateData.scheduled_for = scheduledFor;
+    }
+    if (status !== undefined) {
+      updateData.status = status;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: 'No update data provided' }, { status: 400 });
+    }
+
+    // Update the scheduled post
+    const { data, error } = await supabase
+      .from('scheduled_posts')
+      .update(updateData)
+      .eq('id', postId)
+      .eq('user_id', user.id) // Ensure user can only update their own posts
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Database update error:', error);
+      return NextResponse.json({ error: 'Failed to update scheduled post' }, { status: 500 });
+    }
+
+    if (!data) {
+      return NextResponse.json({ error: 'Post not found or unauthorized' }, { status: 404 });
+    }
+
+    return NextResponse.json({ 
+      success: true,
+      post: data 
+    });
+
+  } catch (error) {
+    console.error('PATCH scheduled posts error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update scheduled post' },
       { status: 500 }
     );
   }

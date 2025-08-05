@@ -19,14 +19,27 @@ export async function GET(request: NextRequest) {
 
     console.log('=== Processing Scheduled Posts ===', new Date().toISOString());
 
+    // Check required environment variables
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      console.error('Missing NEXT_PUBLIC_SUPABASE_URL');
+      return NextResponse.json({ error: 'Missing Supabase URL' }, { status: 500 });
+    }
+    
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('Missing SUPABASE_SERVICE_ROLE_KEY');
+      return NextResponse.json({ error: 'Missing Supabase service role key' }, { status: 500 });
+    }
+
     // Create Supabase client with service role key (bypasses RLS)
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
     // Find posts that are due to be posted
     const now = new Date().toISOString();
+    console.log('Querying for posts due before:', now);
+    
     const { data: duePosts, error } = await supabase
       .from('scheduled_posts')
       .select('*')
@@ -36,7 +49,11 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching due posts:', error);
-      return NextResponse.json({ error: 'Database error' }, { status: 500 });
+      return NextResponse.json({ 
+        error: 'Database error', 
+        details: error.message,
+        code: error.code 
+      }, { status: 500 });
     }
 
     if (!duePosts || duePosts.length === 0) {

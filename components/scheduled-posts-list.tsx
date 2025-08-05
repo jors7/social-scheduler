@@ -32,6 +32,9 @@ interface ScheduledPostsListProps {
   selectedPosts: string[]
   onTogglePostSelection: (postId: string) => void
   onToggleAllPosts: () => void
+  onPostNow?: (postId: string) => void
+  onPausePost?: (postId: string) => void
+  onResumePost?: (postId: string) => void
   loading: boolean
 }
 
@@ -109,6 +112,9 @@ export function ScheduledPostsList({
   selectedPosts, 
   onTogglePostSelection, 
   onToggleAllPosts,
+  onPostNow,
+  onPausePost,
+  onResumePost,
   loading 
 }: ScheduledPostsListProps) {
   if (loading) {
@@ -225,20 +231,36 @@ export function ScheduledPostsList({
                           Preview
                         </Button>
                         {post.status === 'pending' ? (
-                          <Button size="sm" variant="outline" className="text-xs">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-xs"
+                            onClick={() => onPausePost?.(post.id)}
+                          >
                             <Pause className="mr-1 h-3 w-3" />
                             Pause
                           </Button>
                         ) : post.status === 'cancelled' ? (
-                          <Button size="sm" variant="outline" className="text-xs">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-xs"
+                            onClick={() => onResumePost?.(post.id)}
+                          >
                             <Play className="mr-1 h-3 w-3" />
                             Resume
                           </Button>
                         ) : null}
-                        <Button size="sm" className="text-xs">
-                          <Send className="mr-1 h-3 w-3" />
-                          Post Now
-                        </Button>
+                        {(post.status === 'pending' || post.status === 'cancelled') && (
+                          <Button 
+                            size="sm" 
+                            className="text-xs"
+                            onClick={() => onPostNow?.(post.id)}
+                          >
+                            <Send className="mr-1 h-3 w-3" />
+                            Post Now
+                          </Button>
+                        )}
                       </div>
                     </div>
                     

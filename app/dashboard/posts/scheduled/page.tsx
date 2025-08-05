@@ -149,6 +149,73 @@ export default function ScheduledPostsPage() {
     }
   }
 
+  const handlePostNow = async (postId: string) => {
+    try {
+      toast.info('Posting now...')
+      
+      // Update the post's scheduled_for to now so it gets processed
+      const response = await fetch('/api/posts/schedule', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId: postId,
+          scheduledFor: new Date().toISOString()
+        })
+      })
+      
+      if (!response.ok) throw new Error('Failed to update post')
+      
+      // Process the posts (this will pick up the updated post)
+      await processDuePosts()
+      
+    } catch (error) {
+      console.error('Error posting now:', error)
+      toast.error('Failed to post now')
+    }
+  }
+
+  const handlePausePost = async (postId: string) => {
+    try {
+      const response = await fetch('/api/posts/schedule', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId: postId,
+          status: 'cancelled'
+        })
+      })
+      
+      if (!response.ok) throw new Error('Failed to pause post')
+      
+      toast.success('Post paused')
+      fetchScheduledPosts()
+    } catch (error) {
+      console.error('Error pausing post:', error)
+      toast.error('Failed to pause post')
+    }
+  }
+
+  const handleResumePost = async (postId: string) => {
+    try {
+      const response = await fetch('/api/posts/schedule', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId: postId,
+          status: 'pending'
+        })
+      })
+      
+      if (!response.ok) throw new Error('Failed to resume post')
+      
+      toast.success('Post resumed')
+      fetchScheduledPosts()
+    } catch (error) {
+      console.error('Error resuming post:', error)
+      toast.error('Failed to resume post')
+    }
+  }
+
   useEffect(() => {
     fetchScheduledPosts()
   }, [])
@@ -359,6 +426,9 @@ export default function ScheduledPostsPage() {
         selectedPosts={selectedPosts}
         onTogglePostSelection={togglePostSelection}
         onToggleAllPosts={toggleAllPosts}
+        onPostNow={handlePostNow}
+        onPausePost={handlePausePost}
+        onResumePost={handleResumePost}
         loading={loading}
       />
     </div>
