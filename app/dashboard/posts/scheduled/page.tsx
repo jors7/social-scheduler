@@ -127,8 +127,12 @@ export default function ScheduledPostsPage() {
   }
 
   const processDuePosts = async () => {
+    console.log('=== PROCESSING DUE POSTS ===')
+    
     try {
       toast.info('Processing due posts...')
+      console.log('Calling cron endpoint...')
+      
       const response = await fetch('/api/cron/process-scheduled-posts', {
         method: 'GET',
         headers: {
@@ -136,9 +140,15 @@ export default function ScheduledPostsPage() {
         }
       })
       
-      if (!response.ok) throw new Error('Failed to process posts')
+      console.log('Cron response status:', response.status)
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Cron error response:', errorText)
+        throw new Error('Failed to process posts')
+      }
       
       const data = await response.json()
+      console.log('Cron response data:', data)
       toast.success(`Processed ${data.processed || 0} posts`)
       
       // Refresh the list
@@ -150,9 +160,13 @@ export default function ScheduledPostsPage() {
   }
 
   const handlePostNow = async (postId: string) => {
+    console.log('=== POST NOW BUTTON CLICKED ===')
+    console.log('Post ID:', postId)
+    
     try {
       toast.info('Posting now...')
       
+      console.log('Updating post scheduled time...')
       // Update the post's scheduled_for to now so it gets processed
       const response = await fetch('/api/posts/schedule', {
         method: 'PATCH',
@@ -163,8 +177,14 @@ export default function ScheduledPostsPage() {
         })
       })
       
-      if (!response.ok) throw new Error('Failed to update post')
+      console.log('PATCH response status:', response.status)
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('PATCH error:', errorData)
+        throw new Error('Failed to update post')
+      }
       
+      console.log('Post updated, now processing due posts...')
       // Process the posts (this will pick up the updated post)
       await processDuePosts()
       
