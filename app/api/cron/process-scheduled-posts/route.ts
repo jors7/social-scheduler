@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
             postResults.push({
               platform,
               success: true,
-              postId: result.postId || result.id,
+              postId: (result as any).postId || (result as any).id || (result as any).uri,
               data: result
             });
 
