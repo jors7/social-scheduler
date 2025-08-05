@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { PostingService } from '@/lib/posting/service';
+import { postToFacebookDirect, postToBlueskyDirect } from '@/lib/posting/cron-service';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -124,11 +125,11 @@ export async function GET(request: NextRequest) {
             
             let result;
 
-            // Post to platform using direct API calls
+            // Post to platform using direct function calls (no HTTP)
             if (platform === 'facebook') {
-              result = await postToFacebook(content, account, post.media_urls);
+              result = await postToFacebookDirect(content, account, post.media_urls);
             } else if (platform === 'bluesky') {
-              result = await postToBluesky(content, account, post.media_urls);
+              result = await postToBlueskyDirect(content, account, post.media_urls);
             } else {
               postResults.push({
                 platform,
@@ -245,98 +246,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Helper functions for posting to platforms
-async function postToFacebook(content: string, account: any, mediaUrls?: string[]) {
-  console.log('=== FACEBOOK API CALL ===');
-  console.log('Content being sent:', JSON.stringify(content));
-  console.log('Content length:', content.length);
-  
-  const baseUrl = process.env.VERCEL_URL 
-    ? `https://${process.env.VERCEL_URL}` 
-    : process.env.NEXTAUTH_URL || 'http://localhost:3001';
-  
-  console.log('Using base URL:', baseUrl);
-  
-  const response = await fetch(`${baseUrl}/api/post/facebook`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      pageId: account.platform_user_id,
-      pageAccessToken: account.access_token,
-      message: content,
-      mediaUrls: mediaUrls,
-    }),
-  });
-
-  if (!response.ok) {
-    const contentType = response.headers.get('content-type');
-    console.error('Facebook API error - Status:', response.status);
-    console.error('Content-Type:', contentType);
-    
-    if (contentType && contentType.includes('application/json')) {
-      const error = await response.json();
-      throw new Error(error.error || 'Facebook posting failed');
-    } else {
-      const text = await response.text();
-      console.error('Non-JSON response:', text.substring(0, 200));
-      throw new Error(`Facebook API returned HTML/text instead of JSON (Status: ${response.status})`);
-    }
-  }
-
-  try {
-    return await response.json();
-  } catch (jsonError) {
-    console.error('Failed to parse Facebook response as JSON');
-    const text = await response.text();
-    console.error('Response text:', text.substring(0, 200));
-    throw new Error('Facebook API returned non-JSON response');
-  }
-}
-
-async function postToBluesky(content: string, account: any, mediaUrls?: string[]) {
-  const baseUrl = process.env.VERCEL_URL 
-    ? `https://${process.env.VERCEL_URL}` 
-    : process.env.NEXTAUTH_URL || 'http://localhost:3001';
-  
-  console.log('=== BLUESKY API CALL ===');
-  console.log('Content being sent:', JSON.stringify(content));
-  console.log('Using base URL:', baseUrl);
-  
-  const response = await fetch(`${baseUrl}/api/post/bluesky`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      identifier: account.access_token,
-      password: account.access_secret,
-      text: content,
-      mediaUrls: mediaUrls,
-    }),
-  });
-
-  if (!response.ok) {
-    const contentType = response.headers.get('content-type');
-    console.error('Bluesky API error - Status:', response.status);
-    console.error('Content-Type:', contentType);
-    
-    if (contentType && contentType.includes('application/json')) {
-      const error = await response.json();
-      throw new Error(error.error || 'Bluesky posting failed');
-    } else {
-      const text = await response.text();
-      console.error('Non-JSON response:', text.substring(0, 200));
-      throw new Error(`Bluesky API returned HTML/text instead of JSON (Status: ${response.status})`);
-    }
-  }
-
-  try {
-    return await response.json();
-  } catch (jsonError) {
-    console.error('Failed to parse Bluesky response as JSON');
-    const text = await response.text();
-    console.error('Response text:', text.substring(0, 200));
-    throw new Error('Bluesky API returned non-JSON response');
-  }
-}
+// Helper functions section removed - now using direct function calls from cron-service.ts
 
 // Helper function to clean HTML content (same as PostingService)
 function cleanHtmlContent(content: string): string {
