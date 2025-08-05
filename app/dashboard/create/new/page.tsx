@@ -55,15 +55,7 @@ export default function CreateNewPostPage() {
 
   const handleContentChange = (content: string) => {
     setPostContent(content)
-    
-    // Update all platform content unless customized
-    const updatedContent: Record<string, string> = {}
-    selectedPlatforms.forEach(platformId => {
-      if (!platformContent[platformId]) {
-        updatedContent[platformId] = content
-      }
-    })
-    setPlatformContent(prev => ({ ...prev, ...updatedContent }))
+    // Don't automatically sync to platform content - let users explicitly customize if needed
   }
 
   const handlePlatformContentChange = (platformId: string, content: string) => {
@@ -72,14 +64,7 @@ export default function CreateNewPostPage() {
 
   const handleAISuggestionSelect = (suggestion: string) => {
     setPostContent(suggestion)
-    // Update all platform content unless customized
-    const updatedContent: Record<string, string> = {}
-    selectedPlatforms.forEach(platformId => {
-      if (!platformContent[platformId]) {
-        updatedContent[platformId] = suggestion
-      }
-    })
-    setPlatformContent(prev => ({ ...prev, ...updatedContent }))
+    // Don't automatically sync to platform content - let users explicitly customize if needed
   }
 
   const getCharCount = (platformId: string) => {
@@ -173,10 +158,20 @@ export default function CreateNewPostPage() {
       }
 
       const postingService = new PostingService()
+      
+      // Only include platform-specific content if it's actually different from main content
+      const filteredPlatformContent: Record<string, string> = {}
+      Object.entries(platformContent).forEach(([platform, content]) => {
+        // Only include if it's different from main content and not empty
+        if (content && content.trim() !== postContent.trim()) {
+          filteredPlatformContent[platform] = content
+        }
+      })
+      
       const postData: PostData = {
         content: postContent,
         platforms: supportedPlatforms,
-        platformContent: platformContent,
+        platformContent: Object.keys(filteredPlatformContent).length > 0 ? filteredPlatformContent : undefined,
         mediaUrls: mediaUrls,
       }
 
@@ -267,10 +262,19 @@ export default function CreateNewPostPage() {
       // Combine date and time
       const scheduledFor = new Date(`${scheduledDate}T${scheduledTime}`)
       
+      // Only include platform-specific content if it's actually different from main content
+      const filteredPlatformContent: Record<string, string> = {}
+      Object.entries(platformContent).forEach(([platform, content]) => {
+        // Only include if it's different from main content and not empty
+        if (content && content.trim() !== postContent.trim()) {
+          filteredPlatformContent[platform] = content
+        }
+      })
+      
       const requestData = {
         content: postContent,
         platforms: selectedPlatforms,
-        platformContent: platformContent,
+        platformContent: Object.keys(filteredPlatformContent).length > 0 ? filteredPlatformContent : undefined,
         mediaUrls: mediaUrls,
         scheduledFor: scheduledFor.toISOString(),
       }
