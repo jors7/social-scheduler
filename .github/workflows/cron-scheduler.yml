@@ -1,0 +1,17 @@
+name: Process Scheduled Posts
+
+on:
+  schedule:
+    # Runs every minute
+    - cron: '* * * * *'
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  process-posts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call cron endpoint
+        run: |
+          curl -X GET "${{ secrets.VERCEL_URL }}/api/cron/process-scheduled-posts" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -f || echo "Cron job failed"
