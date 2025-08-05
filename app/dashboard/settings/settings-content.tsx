@@ -53,6 +53,7 @@ const settingsSections = [
 export default function SettingsContent() {
   const [activeSection, setActiveSection] = useState('accounts')
   const [loading, setLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const [connectedAccounts, setConnectedAccounts] = useState<SocialAccount[]>([])
   const [showBlueskyDialog, setShowBlueskyDialog] = useState(false)
   const [blueskyCredentials, setBlueskyCredentials] = useState({
@@ -67,6 +68,7 @@ export default function SettingsContent() {
   )
 
   const fetchConnectedAccounts = useCallback(async () => {
+    setRefreshing(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -78,10 +80,14 @@ export default function SettingsContent() {
         .eq('is_active', true)
 
       if (error) throw error
+      console.log('Fetched connected accounts:', data)
       setConnectedAccounts(data || [])
+      toast.success('Accounts refreshed')
     } catch (error) {
       console.error('Error fetching connected accounts:', error)
       toast.error('Failed to load connected accounts')
+    } finally {
+      setRefreshing(false)
     }
   }, [supabase])
 
@@ -379,10 +385,22 @@ export default function SettingsContent() {
             <>
               <Card>
                 <CardHeader>
-                  <CardTitle>Connected Social Media Accounts</CardTitle>
-                  <CardDescription>
-                    Connect your social media accounts to start scheduling posts
-                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Connected Social Media Accounts</CardTitle>
+                      <CardDescription>
+                        Connect your social media accounts to start scheduling posts
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={fetchConnectedAccounts}
+                      disabled={refreshing}
+                    >
+                      {refreshing ? 'Refreshing...' : 'Refresh'}
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4 sm:grid-cols-2">
