@@ -113,7 +113,8 @@ export async function GET(request: NextRequest) {
           }
 
           try {
-            const content = post.platform_content?.[platform] || post.content;
+            const rawContent = post.platform_content?.[platform] || post.content;
+            const content = cleanHtmlContent(rawContent);
             let result;
 
             // Post to platform using direct API calls
@@ -268,6 +269,47 @@ async function postToBluesky(content: string, account: any, mediaUrls?: string[]
   }
 
   return response.json();
+}
+
+// Helper function to clean HTML content (same as PostingService)
+function cleanHtmlContent(content: string): string {
+  // Handle null/undefined content
+  if (!content || typeof content !== 'string') {
+    return '';
+  }
+  
+  // First, convert paragraph and line break tags to actual line breaks
+  let cleaned = content
+    .replace(/<\/p>/gi, '\n\n') // End of paragraph gets double line break
+    .replace(/<br\s*\/?>/gi, '\n') // Line breaks get single line break
+    .replace(/<\/div>/gi, '\n') // Divs often act as line breaks
+    .replace(/<\/li>/gi, '\n') // List items get line breaks
+    
+  // Replace common HTML entities
+  cleaned = cleaned
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&ldquo;/g, '"')
+    .replace(/&rdquo;/g, '"')
+    .replace(/&lsquo;/g, "'")
+    .replace(/&rsquo;/g, "'")
+    .replace(/&mdash;/g, '—')
+    .replace(/&ndash;/g, '–');
+
+  // Remove remaining HTML tags
+  cleaned = cleaned.replace(/<[^>]*>/g, '');
+  
+  // Clean up extra whitespace
+  cleaned = cleaned
+    .replace(/\n\s*\n\s*\n/g, '\n\n') // Max double line breaks
+    .replace(/^\s+|\s+$/g, '') // Trim start/end
+    .replace(/[ \t]+/g, ' '); // Normalize spaces
+
+  return cleaned;
 }
 
 // Helper function to clean up media files after successful posting
