@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
         
         if (response.ok) {
           const data = await response.json();
-          console.log(`Response for ${pageItem.name}:`, JSON.stringify(data, null, 2));
+          console.log(`Response for ${page.name}:`, JSON.stringify(data, null, 2));
           
           if (data.instagram_business_account || data.connected_instagram_account || (data.data && data.data.length > 0)) {
             selectedPage = page;
