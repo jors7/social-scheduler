@@ -115,6 +115,13 @@ export async function GET(request: NextRequest) {
           try {
             const rawContent = post.platform_content?.[platform] || post.content;
             const content = cleanHtmlContent(rawContent);
+            
+            console.log(`=== ${platform.toUpperCase()} CONTENT DEBUG ===`);
+            console.log('Raw content:', JSON.stringify(rawContent));
+            console.log('Cleaned content:', JSON.stringify(content));
+            console.log('Content length:', content.length);
+            console.log('First 10 chars:', JSON.stringify(content.substring(0, 10)));
+            
             let result;
 
             // Post to platform using direct API calls
@@ -232,6 +239,10 @@ export async function GET(request: NextRequest) {
 
 // Helper functions for posting to platforms
 async function postToFacebook(content: string, account: any, mediaUrls?: string[]) {
+  console.log('=== FACEBOOK API CALL ===');
+  console.log('Content being sent:', JSON.stringify(content));
+  console.log('Content length:', content.length);
+  
   const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/api/post/facebook`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
