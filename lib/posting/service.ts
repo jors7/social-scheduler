@@ -178,21 +178,27 @@ export class PostingService {
       return '';
     }
     
-    // First, convert paragraph and line break tags to actual line breaks
-    let cleaned = content
+    let cleaned = content;
+    
+    // First, decode any HTML entities that might have been double-encoded
+    // This handles cases like &lt;p&gt;text&lt;/p&gt; -> <p>text</p>
+    cleaned = cleaned
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
+    
+    // Now convert HTML tags to line breaks
+    cleaned = cleaned
       .replace(/<\/p>/gi, '\n\n') // End of paragraph gets double line break
       .replace(/<br\s*\/?>/gi, '\n') // Line breaks get single line break
       .replace(/<\/div>/gi, '\n') // Divs often act as line breaks
       .replace(/<\/li>/gi, '\n') // List items get line breaks
       
-    // Replace common HTML entities
+    // Replace remaining HTML entities
     cleaned = cleaned
       .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
       .replace(/&ldquo;/g, '"')
       .replace(/&rdquo;/g, '"')
       .replace(/&lsquo;/g, "'")

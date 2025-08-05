@@ -50,6 +50,8 @@ export function RichTextEditor({
           keepMarks: true,
           keepAttributes: false,
         },
+        // Disable the default link extension from StarterKit to avoid conflicts
+        link: false,
       }),
       Link.configure({
         openOnClick: false,
