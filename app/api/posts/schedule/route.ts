@@ -48,10 +48,27 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Validate scheduled time is in the future
+    // Validate scheduled time is in the future (allow 5 minutes tolerance for timezone/clock differences)
     const scheduledDate = new Date(scheduledFor);
-    if (scheduledDate <= new Date()) {
-      return NextResponse.json({ error: 'Scheduled time must be in the future' }, { status: 400 });
+    const now = new Date();
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+    
+    console.log('Time validation:', {
+      scheduledFor: scheduledDate.toISOString(),
+      serverTime: now.toISOString(),
+      fiveMinutesAgo: fiveMinutesAgo.toISOString(),
+      isValid: scheduledDate > fiveMinutesAgo
+    });
+    
+    if (scheduledDate <= fiveMinutesAgo) {
+      return NextResponse.json({ 
+        error: 'Scheduled time must be in the future',
+        details: {
+          scheduledFor: scheduledDate.toISOString(),
+          serverTime: now.toISOString(),
+          message: 'Please schedule at least 5 minutes from now'
+        }
+      }, { status: 400 });
     }
 
     // Save to database
