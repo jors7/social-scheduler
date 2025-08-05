@@ -45,8 +45,8 @@ export class BlueskyService {
       return {
         did: session.session.did,
         handle: session.session.handle,
-        displayName: session.session.displayName,
-        avatar: session.session.avatar,
+        displayName: (session.session as any).displayName || session.session.handle,
+        avatar: (session.session as any).avatar,
       };
     } catch (error) {
       console.error('Bluesky profile error:', error);
