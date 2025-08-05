@@ -79,21 +79,26 @@ export async function GET(request: NextRequest) {
     console.log('Token received, getting user info...');
 
     // Get user's Facebook pages (required for Instagram Business accounts)
+    console.log('Fetching Facebook pages...');
     const pagesResponse = await fetch(
       `https://graph.facebook.com/v18.0/me/accounts?access_token=${tokenData.access_token}`
     );
 
+    console.log('Pages response status:', pagesResponse.status);
+    
     if (!pagesResponse.ok) {
-      console.error('Failed to get Facebook pages');
+      const errorText = await pagesResponse.text();
+      console.error('Failed to get Facebook pages:', errorText);
       return NextResponse.redirect(
         new URL('/dashboard/settings?error=instagram_auth_failed', request.url)
       );
     }
 
     const pagesData = await pagesResponse.json();
+    console.log('Pages data:', JSON.stringify(pagesData, null, 2));
     
     if (!pagesData.data || pagesData.data.length === 0) {
-      console.error('No Facebook pages found');
+      console.error('No Facebook pages found in response:', pagesData);
       return NextResponse.redirect(
         new URL('/dashboard/settings?error=instagram_no_pages', request.url)
       );
