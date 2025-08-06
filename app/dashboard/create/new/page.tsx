@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { toast } from 'sonner'
 import { PostingService, PostData } from '@/lib/posting/service'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -51,6 +51,8 @@ function CreateNewPostPageContent() {
   const [loadingDraft, setLoadingDraft] = useState(false)
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
   const loadedDraftRef = useRef<string | null>(null)
+  const [shouldAutoPublish, setShouldAutoPublish] = useState(false)
+  const [shouldAutoSchedule, setShouldAutoSchedule] = useState(false)
 
   const togglePlatform = (platformId: string) => {
     setSelectedPlatforms(prev =>
@@ -112,7 +114,7 @@ function CreateNewPostPageContent() {
     }
   }
 
-  const handlePostNow = async () => {
+  const handlePostNow = useCallback(async () => {
     if (selectedPlatforms.length === 0) {
       toast.error('Please select at least one platform')
       return
@@ -241,7 +243,7 @@ function CreateNewPostPageContent() {
       clearTimeout(timeoutId)
       setIsPosting(false)
     }
-  }
+  }, [selectedPlatforms, postContent, platformContent, selectedFiles, uploadedMediaUrls, currentDraftId])
 
   const handleSchedulePost = async () => {
     if (!scheduledDate || !scheduledTime) {
@@ -472,6 +474,24 @@ function CreateNewPostPageContent() {
     }
   }, [searchParams, loadingDraft])
 
+  // Auto-publish when draft is loaded and platforms are set
+  useEffect(() => {
+    if (shouldAutoPublish && selectedPlatforms.length > 0 && postContent.trim() && !isPosting) {
+      console.log('Auto-publishing with platforms:', selectedPlatforms)
+      setShouldAutoPublish(false)
+      handlePostNow()
+    }
+  }, [selectedPlatforms, postContent, shouldAutoPublish, isPosting, handlePostNow])
+
+  // Auto-schedule when draft is loaded and platforms are set
+  useEffect(() => {
+    if (shouldAutoSchedule && selectedPlatforms.length > 0 && postContent.trim() && !isPosting) {
+      console.log('Auto-scheduling with platforms:', selectedPlatforms)
+      setShouldAutoSchedule(false)
+      // The schedule form should already be pre-filled
+    }
+  }, [selectedPlatforms, postContent, shouldAutoSchedule, isPosting])
+
   const loadDraft = async (draftId: string, openSchedule: boolean, publishNow: boolean) => {
     setLoadingDraft(true)
     try {
@@ -523,13 +543,12 @@ function CreateNewPostPageContent() {
         const timeStr = now.toTimeString().slice(0, 5)
         setScheduledDate(dateStr)
         setScheduledTime(timeStr)
+        setShouldAutoSchedule(true)
         toast.info('Draft loaded. Please select when to schedule the post.')
       } else if (publishNow) {
-        // Automatically trigger post now after a brief delay
+        // Set flag to auto-publish once platforms are loaded
+        setShouldAutoPublish(true)
         toast.info('Draft loaded. Publishing now...')
-        setTimeout(() => {
-          handlePostNow()
-        }, 500)
       } else {
         toast.success('Draft loaded successfully')
       }
