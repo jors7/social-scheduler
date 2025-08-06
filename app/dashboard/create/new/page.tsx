@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { Suspense } from 'react'
 
 const platforms = [
   { id: 'twitter', name: 'X (Twitter)', icon: '𝕏', charLimit: 280 },
@@ -34,7 +35,7 @@ const platforms = [
   { id: 'pinterest', name: 'Pinterest', icon: 'P', charLimit: 500 },
 ]
 
-export default function CreateNewPostPage() {
+function CreateNewPostPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
@@ -868,5 +869,13 @@ export default function CreateNewPostPage() {
         onSelectSuggestion={handleAISuggestionSelect}
       />
     </div>
+  )
+}
+
+export default function CreateNewPostPage() {
+  return (
+    <Suspense fallback={<div className="max-w-4xl mx-auto p-8">Loading...</div>}>
+      <CreateNewPostPageContent />
+    </Suspense>
   )
 }
