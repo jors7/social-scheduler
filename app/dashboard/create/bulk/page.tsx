@@ -437,7 +437,7 @@ export default function BulkUploadPage() {
             <CardHeader>
               <CardTitle>Default Settings</CardTitle>
               <CardDescription>
-                These settings apply to posts that don't specify platforms in the CSV
+                These settings apply to posts that don&apos;t specify platforms in the CSV
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

@@ -194,7 +194,7 @@ export default function DashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-gray-600 mt-1">Welcome back! Here's your social media overview.</p>
+            <p className="text-gray-600 mt-1">Welcome back! Here&apos;s your social media overview.</p>
           </div>
           <Link href="/dashboard/create/new">
             <Button className="mt-4 sm:mt-0">

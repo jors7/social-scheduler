@@ -28,32 +28,32 @@ interface ScheduleSuggestion {
   score: number
 }
 
-const DEFAULT_OPTIMAL_TIMES = {
+const DEFAULT_OPTIMAL_TIMES: PlatformOptimalTimes = {
   // Fallback times when no data is available (based on general best practices)
   facebook: [
-    { hour: 9, dayOfWeek: 2, score: 80 }, // Tuesday 9 AM
-    { hour: 15, dayOfWeek: 3, score: 85 }, // Wednesday 3 PM
-    { hour: 10, dayOfWeek: 4, score: 75 }, // Thursday 10 AM
+    { hour: 9, dayOfWeek: 2, avgEngagement: 50, postCount: 5, score: 80 }, // Tuesday 9 AM
+    { hour: 15, dayOfWeek: 3, avgEngagement: 60, postCount: 4, score: 85 }, // Wednesday 3 PM
+    { hour: 10, dayOfWeek: 4, avgEngagement: 45, postCount: 3, score: 75 }, // Thursday 10 AM
   ],
   bluesky: [
-    { hour: 8, dayOfWeek: 2, score: 70 }, // Tuesday 8 AM
-    { hour: 12, dayOfWeek: 3, score: 75 }, // Wednesday 12 PM
-    { hour: 17, dayOfWeek: 1, score: 65 }, // Monday 5 PM
+    { hour: 8, dayOfWeek: 2, avgEngagement: 35, postCount: 4, score: 70 }, // Tuesday 8 AM
+    { hour: 12, dayOfWeek: 3, avgEngagement: 40, postCount: 3, score: 75 }, // Wednesday 12 PM
+    { hour: 17, dayOfWeek: 1, avgEngagement: 30, postCount: 3, score: 65 }, // Monday 5 PM
   ],
   twitter: [
-    { hour: 9, dayOfWeek: 2, score: 80 },
-    { hour: 12, dayOfWeek: 3, score: 75 },
-    { hour: 15, dayOfWeek: 4, score: 70 },
+    { hour: 9, dayOfWeek: 2, avgEngagement: 55, postCount: 5, score: 80 },
+    { hour: 12, dayOfWeek: 3, avgEngagement: 50, postCount: 4, score: 75 },
+    { hour: 15, dayOfWeek: 4, avgEngagement: 45, postCount: 3, score: 70 },
   ],
   instagram: [
-    { hour: 11, dayOfWeek: 2, score: 85 },
-    { hour: 14, dayOfWeek: 4, score: 80 },
-    { hour: 17, dayOfWeek: 5, score: 75 },
+    { hour: 11, dayOfWeek: 2, avgEngagement: 70, postCount: 6, score: 85 },
+    { hour: 14, dayOfWeek: 4, avgEngagement: 65, postCount: 5, score: 80 },
+    { hour: 17, dayOfWeek: 5, avgEngagement: 60, postCount: 4, score: 75 },
   ],
   linkedin: [
-    { hour: 8, dayOfWeek: 2, score: 90 }, // Tuesday 8 AM
-    { hour: 12, dayOfWeek: 3, score: 85 }, // Wednesday 12 PM
-    { hour: 17, dayOfWeek: 4, score: 80 }, // Thursday 5 PM
+    { hour: 8, dayOfWeek: 2, avgEngagement: 80, postCount: 7, score: 90 }, // Tuesday 8 AM
+    { hour: 12, dayOfWeek: 3, avgEngagement: 75, postCount: 5, score: 85 }, // Wednesday 12 PM
+    { hour: 17, dayOfWeek: 4, avgEngagement: 70, postCount: 4, score: 80 }, // Thursday 5 PM
   ]
 }
 

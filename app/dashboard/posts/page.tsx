@@ -19,6 +19,32 @@ import {
   Play
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+
+interface UnifiedPost {
+  id: string
+  title: string
+  content: string
+  platforms: string[]
+  status: string
+  type: 'draft' | 'scheduled'
+  scheduled_for?: string
+  created_at: string
+  updated_at?: string
+  posted_at?: string
+  media_urls?: string[]
+  source?: 'draft' | 'scheduled'
+  platform_content?: Record<string, string>
+  post_results?: any[]
+  error_message?: string
+}
+
+interface PostStats {
+  views: number
+  likes: number
+  comments: number
+  shares: number
+}
 
 const mockPosts = [
   {
