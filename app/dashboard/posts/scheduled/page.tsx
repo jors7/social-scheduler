@@ -118,7 +118,14 @@ export default function ScheduledPostsPage() {
       if (!response.ok) throw new Error('Failed to fetch')
       
       const data = await response.json()
-      setScheduledPosts(data.posts || [])
+      const posts = data.posts || []
+      
+      // Sort by scheduled_for (soonest first)
+      const sortedPosts = posts.sort((a: ScheduledPost, b: ScheduledPost) => {
+        return new Date(a.scheduled_for).getTime() - new Date(b.scheduled_for).getTime()
+      })
+      
+      setScheduledPosts(sortedPosts)
     } catch (error) {
       console.error('Error fetching scheduled posts:', error)
       toast.error('Failed to load scheduled posts')

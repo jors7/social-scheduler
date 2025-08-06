@@ -1,58 +1,88 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { getAnalyticsOverview } from '@/lib/mock-analytics'
 import { BarChart3, Eye, Heart, MessageCircle, TrendingUp, Users } from 'lucide-react'
 
-export function OverviewCards() {
-  const data = getAnalyticsOverview()
+interface AnalyticsData {
+  totalPosts: number
+  totalEngagement: number
+  totalReach: number
+  totalImpressions: number
+  engagementRate: number
+  topPlatform: string
+  postedPosts: any[]
+  platformStats: Record<string, any>
+}
+
+interface OverviewCardsProps {
+  analyticsData: AnalyticsData | null
+}
+
+export function OverviewCards({ analyticsData }: OverviewCardsProps) {
+  if (!analyticsData) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <Card key={i} className="animate-pulse">
+            <CardHeader className="pb-2">
+              <div className="h-4 bg-gray-200 rounded w-24"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-32"></div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
 
   const cards = [
     {
       title: 'Total Posts',
-      value: data.totalPosts.toLocaleString(),
-      change: '+12%',
-      changeType: 'positive' as const,
+      value: analyticsData.totalPosts.toLocaleString(),
+      change: analyticsData.totalPosts > 0 ? `${analyticsData.totalPosts} created` : 'No posts yet',
+      changeType: analyticsData.totalPosts > 0 ? 'neutral' as const : 'neutral' as const,
       icon: BarChart3,
-      description: 'vs last month'
+      description: 'drafts & published'
     },
     {
       title: 'Total Engagement',
-      value: data.totalEngagement.toLocaleString(),
-      change: '+23%',
-      changeType: 'positive' as const,
+      value: analyticsData.totalEngagement.toLocaleString(),
+      change: analyticsData.totalEngagement > 0 ? 'From posted content' : 'No engagement yet',
+      changeType: analyticsData.totalEngagement > 0 ? 'positive' as const : 'neutral' as const,
       icon: Heart,
       description: 'likes, comments, shares'
     },
     {
       title: 'Total Reach',
-      value: data.totalReach.toLocaleString(),
-      change: '+8%',
-      changeType: 'positive' as const,
+      value: analyticsData.totalReach.toLocaleString(),
+      change: analyticsData.postedPosts.length > 0 ? `${analyticsData.postedPosts.length} posts published` : 'No posts published',
+      changeType: analyticsData.totalReach > 0 ? 'positive' as const : 'neutral' as const,
       icon: Users,
-      description: 'unique accounts reached'
+      description: 'accounts reached'
     },
     {
       title: 'Impressions',
-      value: data.totalImpressions.toLocaleString(),
-      change: '+15%',
-      changeType: 'positive' as const,
+      value: analyticsData.totalImpressions.toLocaleString(),
+      change: analyticsData.totalImpressions > 0 ? 'Content views' : 'No views yet',
+      changeType: analyticsData.totalImpressions > 0 ? 'positive' as const : 'neutral' as const,
       icon: Eye,
       description: 'total views'
     },
     {
       title: 'Engagement Rate',
-      value: `${data.engagementRate}%`,
-      change: '+0.3%',
-      changeType: 'positive' as const,
+      value: analyticsData.engagementRate > 0 ? `${analyticsData.engagementRate.toFixed(1)}%` : '0%',
+      change: analyticsData.totalReach > 0 ? 'Real performance' : 'Need more posts',
+      changeType: analyticsData.engagementRate > 0 ? 'positive' as const : 'neutral' as const,
       icon: TrendingUp,
-      description: 'average across platforms'
+      description: 'average rate'
     },
     {
       title: 'Top Platform',
-      value: data.topPlatform,
-      change: 'Leading',
-      changeType: 'neutral' as const,
+      value: analyticsData.topPlatform,
+      change: analyticsData.topPlatform !== 'N/A' ? 'Best performer' : 'No data',
+      changeType: analyticsData.topPlatform !== 'N/A' ? 'positive' as const : 'neutral' as const,
       icon: MessageCircle,
       description: 'by engagement'
     }

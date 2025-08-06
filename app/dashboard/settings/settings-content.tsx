@@ -7,15 +7,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { 
   Plus,
-  Check,
   X,
   Link2,
-  Settings,
-  User,
   Bell,
-  Shield,
-  CreditCard,
-  HelpCircle,
   AlertCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -42,12 +36,8 @@ interface SocialAccount {
 }
 
 const settingsSections = [
-  { id: 'accounts', label: 'Connected Accounts', icon: Link2 },
-  { id: 'profile', label: 'Profile', icon: User },
-  { id: 'notifications', label: 'Notifications', icon: Bell },
-  { id: 'security', label: 'Security', icon: Shield },
-  { id: 'billing', label: 'Billing', icon: CreditCard },
-  { id: 'help', label: 'Help & Support', icon: HelpCircle },
+  { id: 'accounts', label: 'Social Media Accounts', icon: Link2 },
+  { id: 'notifications', label: 'Post Notifications', icon: Bell },
 ]
 
 export default function SettingsContent() {
@@ -67,7 +57,7 @@ export default function SettingsContent() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  const fetchConnectedAccounts = useCallback(async () => {
+  const fetchConnectedAccounts = useCallback(async (showSuccessToast = false) => {
     setRefreshing(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -82,7 +72,9 @@ export default function SettingsContent() {
       if (error) throw error
       console.log('Fetched connected accounts:', data)
       setConnectedAccounts(data || [])
-      toast.success('Accounts refreshed')
+      if (showSuccessToast) {
+        toast.success('Accounts refreshed')
+      }
     } catch (error) {
       console.error('Error fetching connected accounts:', error)
       toast.error('Failed to load connected accounts')
@@ -136,7 +128,7 @@ export default function SettingsContent() {
       toast.error(errorMessages[error] || 'An error occurred. Please try again.')
       router.replace('/dashboard/settings')
     }
-  }, [searchParams, router, fetchConnectedAccounts])
+  }, [searchParams, router])
 
   const handleConnect = async (platformId: string) => {
     console.log('Connect button clicked for:', platformId)
@@ -414,33 +406,32 @@ export default function SettingsContent() {
         <p className="text-gray-600 mt-1">Manage your account and preferences</p>
       </div>
 
-      <div className="grid lg:grid-cols-4 gap-6 mt-8">
-        {/* Sidebar Navigation */}
-        <Card className="h-fit">
-          <CardContent className="p-2">
-            {settingsSections.map(section => {
-              const Icon = section.icon
-              return (
-                <button
-                  key={section.id}
-                  onClick={() => setActiveSection(section.id)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                    activeSection === section.id
-                      ? "bg-primary text-white"
-                      : "hover:bg-gray-100"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {section.label}
-                </button>
-              )
-            })}
-          </CardContent>
-        </Card>
+      {/* Navigation Tabs */}
+      <div className="mt-8 border-b border-gray-200">
+        <nav className="flex space-x-8" aria-label="Tabs">
+          {settingsSections.map(section => {
+            const Icon = section.icon
+            return (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={cn(
+                  "flex items-center gap-2 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors",
+                  activeSection === section.id
+                    ? "border-primary text-primary"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                {section.label}
+              </button>
+            )
+          })}
+        </nav>
+      </div>
 
-        {/* Main Content */}
-        <div className="lg:col-span-3 space-y-6">
+      {/* Main Content */}
+      <div className="mt-8 space-y-6">
           {activeSection === 'accounts' && (
             <>
               <Card>
@@ -455,7 +446,7 @@ export default function SettingsContent() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={fetchConnectedAccounts}
+                      onClick={() => fetchConnectedAccounts(true)}
                       disabled={refreshing}
                     >
                       {refreshing ? 'Refreshing...' : 'Refresh'}
@@ -538,37 +529,6 @@ export default function SettingsContent() {
             </>
           )}
 
-          {activeSection === 'profile' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile Information</CardTitle>
-                <CardDescription>
-                  Update your personal information
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" defaultValue="John" />
-                  </div>
-                  <div>
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" defaultValue="Doe" />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue="john@example.com" />
-                </div>
-                <div>
-                  <Label htmlFor="company">Company</Label>
-                  <Input id="company" defaultValue="Acme Inc." />
-                </div>
-                <Button>Save Changes</Button>
-              </CardContent>
-            </Card>
-          )}
 
           {activeSection === 'notifications' && (
             <Card>
@@ -612,63 +572,6 @@ export default function SettingsContent() {
             </Card>
           )}
 
-          {activeSection === 'billing' && (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Current Plan</CardTitle>
-                  <CardDescription>
-                    You are currently on the Professional plan
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-2xl font-bold">$49/month</p>
-                      <p className="text-sm text-gray-600">Billed monthly</p>
-                    </div>
-                    <Button variant="outline">Change Plan</Button>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Up to 10 social accounts</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Unlimited scheduled posts</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Advanced analytics</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payment Method</CardTitle>
-                  <CardDescription>
-                    Manage your payment information
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <CreditCard className="h-8 w-8 text-gray-400" />
-                      <div>
-                        <p className="font-medium">•••• •••• •••• 4242</p>
-                        <p className="text-sm text-gray-600">Expires 12/25</p>
-                      </div>
-                    </div>
-                    <Button variant="outline" size="sm">Update</Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </>
-          )}
-        </div>
       </div>
 
       {/* Bluesky Connection Dialog */}

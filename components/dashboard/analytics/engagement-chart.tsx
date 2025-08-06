@@ -1,10 +1,67 @@
 'use client'
 
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { getEngagementData } from '@/lib/mock-analytics'
 
-export function EngagementChart() {
-  const data = getEngagementData(30)
+interface AnalyticsData {
+  totalPosts: number
+  totalEngagement: number
+  totalReach: number
+  totalImpressions: number
+  engagementRate: number
+  topPlatform: string
+  postedPosts: any[]
+  platformStats: Record<string, any>
+}
+
+interface EngagementChartProps {
+  analyticsData: AnalyticsData | null
+}
+
+export function EngagementChart({ analyticsData }: EngagementChartProps) {
+  if (!analyticsData) {
+    return <div className="h-[300px] animate-pulse bg-gray-200 rounded"></div>
+  }
+  
+  // Generate chart data from posted posts
+  const data = analyticsData.postedPosts
+    .map(post => {
+      let likes = 0
+      let comments = 0
+      let shares = 0
+      
+      if (post.post_results && Array.isArray(post.post_results)) {
+        post.post_results.forEach((result: any) => {
+          if (result.success && result.data?.metrics) {
+            likes += result.data.metrics.likes || 0
+            comments += result.data.metrics.comments || 0
+            shares += result.data.metrics.shares || 0
+          }
+        })
+      }
+      
+      return {
+        date: new Date(post.posted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        likes,
+        comments,
+        shares,
+        total: likes + comments + shares,
+        timestamp: new Date(post.posted_at).getTime()
+      }
+    })
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .slice(-30) // Last 30 data points
+  
+  if (data.length === 0) {
+    return (
+      <div className="h-[300px] flex items-center justify-center text-gray-500">
+        <div className="text-center">
+          <div className="text-4xl mb-4">💬</div>
+          <p className="text-sm">No engagement data available</p>
+          <p className="text-xs text-gray-400">Publish posts to see engagement trends</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="h-[300px]">

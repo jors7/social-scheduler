@@ -23,7 +23,8 @@ import {
   ChevronDown,
   ChevronUp,
   Menu,
-  X
+  X,
+  Upload
 } from 'lucide-react'
 
 const navigation = [
@@ -37,6 +38,7 @@ const navigation = [
     icon: PlusCircle,
     children: [
       { name: 'New Post', href: '/dashboard/create/new', icon: Edit },
+      { name: 'Bulk Upload', href: '/dashboard/create/bulk', icon: Upload },
     ],
   },
   {
@@ -88,10 +90,15 @@ export function Sidebar() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-4">
-        <Button className="w-full mb-4" size="lg">
-          <PlusCircle className="mr-2 h-5 w-5" />
-          Create a Post
-        </Button>
+        <Link href="/dashboard/create/new">
+          <Button className="w-full mb-4" size="lg" variant="default">
+            <PlusCircle className="mr-2 h-5 w-5" />
+            Create a Post
+          </Button>
+        </Link>
+        
+        {/* Divider */}
+        <div className="border-t border-gray-200 mb-4"></div>
 
         <nav className="space-y-1">
           {navigation.map((item) => (
@@ -123,7 +130,7 @@ export function Sidebar() {
                           href={child.href}
                           className={cn(
                             'flex items-center rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 transition-colors',
-                            pathname === child.href && 'bg-primary text-white hover:bg-primary/90'
+                            pathname === child.href && 'bg-gray-900 text-white hover:bg-gray-800'
                           )}
                         >
                           <child.icon className="mr-3 h-4 w-4" />
@@ -138,7 +145,7 @@ export function Sidebar() {
                   href={item.href!}
                   className={cn(
                     'flex items-center rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 transition-colors',
-                    pathname === item.href && 'bg-primary text-white hover:bg-primary/90'
+                    pathname === item.href && 'bg-gray-900 text-white hover:bg-gray-800'
                   )}
                 >
                   <item.icon className="mr-3 h-5 w-5" />
