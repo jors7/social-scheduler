@@ -53,6 +53,7 @@ function CreateNewPostPageContent() {
   const loadedDraftRef = useRef<string | null>(null)
   const [shouldAutoPublish, setShouldAutoPublish] = useState(false)
   const [shouldAutoSchedule, setShouldAutoSchedule] = useState(false)
+  const [editingScheduledPost, setEditingScheduledPost] = useState(false)
 
   const togglePlatform = (platformId: string) => {
     setSelectedPlatforms(prev =>
@@ -303,12 +304,30 @@ function CreateNewPostPageContent() {
       
       console.log('Sending schedule request:', requestData)
       
-      // Save to database
-      const response = await fetch('/api/posts/schedule', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestData),
-      })
+      // Update existing scheduled post or create new one
+      let response
+      if (editingScheduledPost && currentDraftId) {
+        // Update existing scheduled post
+        response = await fetch('/api/posts/schedule', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            postId: currentDraftId,
+            content: requestData.content,
+            platforms: requestData.platforms,
+            platformContent: requestData.platformContent,
+            mediaUrls: requestData.mediaUrls,
+            scheduledFor: requestData.scheduledFor
+          }),
+        })
+      } else {
+        // Create new scheduled post
+        response = await fetch('/api/posts/schedule', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestData),
+        })
+      }
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -316,10 +335,11 @@ function CreateNewPostPageContent() {
         throw new Error(errorData.error || 'Failed to schedule post')
       }
 
-      toast.success('Post scheduled successfully!')
+      const successMessage = editingScheduledPost ? 'Scheduled post updated successfully!' : 'Post scheduled successfully!'
+      toast.success(successMessage)
       
-      // Delete draft if this was scheduled from a draft
-      if (currentDraftId) {
+      // Delete draft if this was scheduled from a draft (not when editing scheduled post)
+      if (!editingScheduledPost && currentDraftId) {
         try {
           await fetch(`/api/drafts?id=${currentDraftId}`, {
             method: 'DELETE'
@@ -339,6 +359,7 @@ function CreateNewPostPageContent() {
       setScheduledDate('')
       setScheduledTime('')
       setCurrentDraftId(null)
+      setEditingScheduledPost(false)
 
     } catch (error) {
       console.error('Scheduling error:', error)
@@ -460,9 +481,10 @@ function CreateNewPostPageContent() {
     handleFileSelect(e.dataTransfer.files)
   }
 
-  // Load draft if draftId is present in URL
+  // Load draft or scheduled post if ID is present in URL
   useEffect(() => {
     const draftId = searchParams.get('draftId')
+    const scheduledPostId = searchParams.get('scheduledPostId')
     const shouldSchedule = searchParams.get('schedule') === 'true'
     const shouldPublish = searchParams.get('publish') === 'true'
     
@@ -471,6 +493,10 @@ function CreateNewPostPageContent() {
       loadedDraftRef.current = draftId
       setCurrentDraftId(draftId)
       loadDraft(draftId, shouldSchedule, shouldPublish)
+    } else if (scheduledPostId && scheduledPostId !== loadedDraftRef.current && !loadingDraft) {
+      console.log('Starting scheduled post load for:', scheduledPostId)
+      loadedDraftRef.current = scheduledPostId
+      loadScheduledPost(scheduledPostId)
     }
   }, [searchParams, loadingDraft])
 
@@ -556,6 +582,69 @@ function CreateNewPostPageContent() {
     } catch (error) {
       console.error('Error loading draft:', error)
       toast.error('Failed to load draft')
+    } finally {
+      setLoadingDraft(false)
+    }
+  }
+
+  const loadScheduledPost = async (postId: string) => {
+    setLoadingDraft(true) // Reuse the same loading state
+    try {
+      console.log('Loading scheduled post with ID:', postId)
+      const response = await fetch('/api/posts/schedule')
+      if (!response.ok) throw new Error('Failed to fetch scheduled posts')
+      
+      const data = await response.json()
+      console.log('All scheduled posts:', data.posts)
+      const scheduledPost = data.posts?.find((p: any) => p.id === postId)
+      console.log('Found scheduled post:', scheduledPost)
+      
+      if (!scheduledPost) {
+        toast.error('Scheduled post not found')
+        return
+      }
+      
+      // Load scheduled post data into form
+      console.log('Setting content:', scheduledPost.content)
+      console.log('Setting platforms:', scheduledPost.platforms)
+      console.log('Setting platform_content:', scheduledPost.platform_content)
+      console.log('Setting media_urls:', scheduledPost.media_urls)
+      console.log('Setting scheduled time:', scheduledPost.scheduled_for)
+      
+      setPostContent(scheduledPost.content || '')
+      setSelectedPlatforms(scheduledPost.platforms || [])
+      setPlatformContent(scheduledPost.platform_content || {})
+      
+      // If there are platform-specific content, show customization
+      if (Object.keys(scheduledPost.platform_content || {}).length > 0) {
+        setShowPlatformCustomization(true)
+      }
+      
+      // Load media URLs if any
+      if (scheduledPost.media_urls && scheduledPost.media_urls.length > 0) {
+        setUploadedMediaUrls(scheduledPost.media_urls)
+        toast.info('Media files from scheduled post have been loaded')
+      }
+      
+      // Pre-fill the scheduled date and time from the original schedule
+      if (scheduledPost.scheduled_for) {
+        const scheduledDate = new Date(scheduledPost.scheduled_for)
+        const dateStr = scheduledDate.toISOString().split('T')[0]
+        const timeStr = scheduledDate.toTimeString().slice(0, 5)
+        setScheduledDate(dateStr)
+        setScheduledTime(timeStr)
+      }
+      
+      // Store the original post ID for updating
+      setCurrentDraftId(postId) // Reuse the same state for tracking the post being edited
+      setEditingScheduledPost(true) // Mark that we're editing a scheduled post
+      
+      console.log('Scheduled post data loaded successfully')
+      toast.success('Scheduled post loaded for editing')
+      
+    } catch (error) {
+      console.error('Error loading scheduled post:', error)
+      toast.error('Failed to load scheduled post')
     } finally {
       setLoadingDraft(false)
     }

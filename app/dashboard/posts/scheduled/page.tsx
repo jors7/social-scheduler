@@ -113,7 +113,8 @@ export default function ScheduledPostsPage() {
 
   const fetchScheduledPosts = async () => {
     try {
-      const response = await fetch('/api/posts/schedule')
+      // Only fetch pending and posting status posts (exclude posted, failed, cancelled)
+      const response = await fetch('/api/posts/schedule?status=pending,posting')
       if (!response.ok) throw new Error('Failed to fetch')
       
       const data = await response.json()
@@ -304,6 +305,99 @@ export default function ScheduledPostsPage() {
     }
   }
 
+  const handleBulkDelete = async () => {
+    if (selectedPosts.length === 0) return
+    
+    const confirmMessage = `Are you sure you want to delete ${selectedPosts.length} scheduled post${selectedPosts.length > 1 ? 's' : ''}?`
+    if (!confirm(confirmMessage)) return
+
+    try {
+      const deletePromises = selectedPosts.map(postId => 
+        fetch(`/api/posts/schedule?id=${postId}`, {
+          method: 'DELETE'
+        })
+      )
+
+      const results = await Promise.all(deletePromises)
+      const failed = results.filter(r => !r.ok)
+
+      if (failed.length === 0) {
+        toast.success(`Successfully deleted ${selectedPosts.length} post${selectedPosts.length > 1 ? 's' : ''}`)
+        setSelectedPosts([])
+        fetchScheduledPosts()
+      } else {
+        toast.error(`Failed to delete ${failed.length} post${failed.length > 1 ? 's' : ''}`)
+        fetchScheduledPosts() // Refresh to show current state
+      }
+    } catch (error) {
+      console.error('Bulk delete error:', error)
+      toast.error('Failed to delete posts')
+    }
+  }
+
+  const handleBulkPause = async () => {
+    if (selectedPosts.length === 0) return
+
+    try {
+      const pausePromises = selectedPosts.map(postId => 
+        fetch('/api/posts/schedule', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ postId, status: 'cancelled' })
+        })
+      )
+
+      const results = await Promise.all(pausePromises)
+      const failed = results.filter(r => !r.ok)
+
+      if (failed.length === 0) {
+        toast.success(`Successfully paused ${selectedPosts.length} post${selectedPosts.length > 1 ? 's' : ''}`)
+        setSelectedPosts([])
+        fetchScheduledPosts()
+      } else {
+        toast.error(`Failed to pause ${failed.length} post${failed.length > 1 ? 's' : ''}`)
+        fetchScheduledPosts()
+      }
+    } catch (error) {
+      console.error('Bulk pause error:', error)
+      toast.error('Failed to pause posts')
+    }
+  }
+
+  const handleBulkResume = async () => {
+    if (selectedPosts.length === 0) return
+
+    try {
+      const resumePromises = selectedPosts.map(postId => 
+        fetch('/api/posts/schedule', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ postId, status: 'pending' })
+        })
+      )
+
+      const results = await Promise.all(resumePromises)
+      const failed = results.filter(r => !r.ok)
+
+      if (failed.length === 0) {
+        toast.success(`Successfully resumed ${selectedPosts.length} post${selectedPosts.length > 1 ? 's' : ''}`)
+        setSelectedPosts([])
+        fetchScheduledPosts()
+      } else {
+        toast.error(`Failed to resume ${failed.length} post${failed.length > 1 ? 's' : ''}`)
+        fetchScheduledPosts()
+      }
+    } catch (error) {
+      console.error('Bulk resume error:', error)
+      toast.error('Failed to resume posts')
+    }
+  }
+
+  const handleEditPost = (postId: string) => {
+    // Navigate to create/new page with scheduledPostId parameter
+    window.location.href = `/dashboard/create/new?scheduledPostId=${postId}`
+  }
+
   const activePosts = scheduledPosts.filter(post => post.status === 'pending').length
   const pausedPosts = scheduledPosts.filter(post => post.status === 'cancelled').length
 
@@ -429,23 +523,23 @@ export default function ScheduledPostsPage() {
               {selectedPosts.length} post{selectedPosts.length > 1 ? 's' : ''} selected
             </span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleBulkPause}>
                 <Pause className="mr-2 h-4 w-4" />
                 Pause
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleBulkResume}>
                 <Play className="mr-2 h-4 w-4" />
                 Resume
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" disabled>
                 <Edit className="mr-2 h-4 w-4" />
                 Edit
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" disabled>
                 <Copy className="mr-2 h-4 w-4" />
                 Duplicate
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleBulkDelete}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete
               </Button>
@@ -463,6 +557,7 @@ export default function ScheduledPostsPage() {
         onPostNow={handlePostNow}
         onPausePost={handlePausePost}
         onResumePost={handleResumePost}
+        onEditPost={handleEditPost}
         loading={loading}
       />
     </div>

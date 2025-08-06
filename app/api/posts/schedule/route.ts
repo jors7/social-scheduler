@@ -138,7 +138,13 @@ export async function GET(request: NextRequest) {
 
     // Only filter by status if provided
     if (status && status !== 'all') {
-      query = query.eq('status', status);
+      // Handle multiple statuses separated by comma
+      if (status.includes(',')) {
+        const statuses = status.split(',').map(s => s.trim());
+        query = query.in('status', statuses);
+      } else {
+        query = query.eq('status', status);
+      }
     }
 
     // Fetch scheduled posts - newest first
@@ -185,7 +191,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { postId, scheduledFor, status } = body;
+    const { postId, scheduledFor, status, content, platforms, platformContent, mediaUrls } = body;
 
     if (!postId) {
       return NextResponse.json({ error: 'Post ID is required' }, { status: 400 });
@@ -198,6 +204,18 @@ export async function PATCH(request: NextRequest) {
     }
     if (status !== undefined) {
       updateData.status = status;
+    }
+    if (content !== undefined) {
+      updateData.content = content;
+    }
+    if (platforms !== undefined) {
+      updateData.platforms = platforms;
+    }
+    if (platformContent !== undefined) {
+      updateData.platform_content = platformContent || {};
+    }
+    if (mediaUrls !== undefined) {
+      updateData.media_urls = mediaUrls || [];
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -231,6 +249,60 @@ export async function PATCH(request: NextRequest) {
     console.error('PATCH scheduled posts error:', error);
     return NextResponse.json(
       { error: 'Failed to update scheduled post' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+        },
+      }
+    );
+
+    // Check if user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const postId = searchParams.get('id');
+
+    if (!postId) {
+      return NextResponse.json({ error: 'Post ID is required' }, { status: 400 });
+    }
+
+    // Delete the scheduled post
+    const { error } = await supabase
+      .from('scheduled_posts')
+      .delete()
+      .eq('id', postId)
+      .eq('user_id', user.id); // Ensure user can only delete their own posts
+
+    if (error) {
+      console.error('Database delete error:', error);
+      return NextResponse.json({ error: 'Failed to delete scheduled post' }, { status: 500 });
+    }
+
+    return NextResponse.json({ 
+      success: true,
+      message: 'Scheduled post deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('DELETE scheduled posts error:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete scheduled post' },
       { status: 500 }
     );
   }

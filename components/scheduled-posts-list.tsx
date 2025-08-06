@@ -35,6 +35,7 @@ interface ScheduledPostsListProps {
   onPostNow?: (postId: string) => void
   onPausePost?: (postId: string) => void
   onResumePost?: (postId: string) => void
+  onEditPost?: (postId: string) => void
   loading: boolean
 }
 
@@ -128,6 +129,7 @@ export function ScheduledPostsList({
   onPostNow,
   onPausePost,
   onResumePost,
+  onEditPost,
   loading 
 }: ScheduledPostsListProps) {
   if (loading) {
@@ -235,7 +237,12 @@ export function ScheduledPostsList({
                       
                       {/* Quick Actions */}
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="text-xs">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-xs"
+                          onClick={() => onEditPost?.(post.id)}
+                        >
                           <Edit className="mr-1 h-3 w-3" />
                           Edit
                         </Button>
