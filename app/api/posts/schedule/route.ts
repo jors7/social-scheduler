@@ -141,8 +141,8 @@ export async function GET(request: NextRequest) {
       query = query.eq('status', status);
     }
 
-    // Fetch scheduled posts
-    const { data, error } = await query.order('scheduled_for', { ascending: true });
+    // Fetch scheduled posts - newest first
+    const { data, error } = await query.order('scheduled_for', { ascending: false });
 
     if (error) {
       console.error('Database error:', error);

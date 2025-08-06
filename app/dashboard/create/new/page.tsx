@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { PostingService, PostData } from '@/lib/posting/service'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,6 +20,7 @@ import {
   ChevronDown
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useSearchParams, useRouter } from 'next/navigation'
 
 const platforms = [
   { id: 'twitter', name: 'X (Twitter)', icon: '𝕏', charLimit: 280 },
@@ -34,6 +35,8 @@ const platforms = [
 ]
 
 export default function CreateNewPostPage() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
   const [postContent, setPostContent] = useState('')
   const [platformContent, setPlatformContent] = useState<Record<string, string>>({})
@@ -44,6 +47,9 @@ export default function CreateNewPostPage() {
   const [isPosting, setIsPosting] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploadedMediaUrls, setUploadedMediaUrls] = useState<string[]>([])
+  const [loadingDraft, setLoadingDraft] = useState(false)
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
+  const loadedDraftRef = useRef<string | null>(null)
 
   const togglePlatform = (platformId: string) => {
     setSelectedPlatforms(prev =>
@@ -206,11 +212,24 @@ export default function CreateNewPostPage() {
           }
         }
         
+        // Delete draft if this was posted from a draft
+        if (currentDraftId) {
+          try {
+            await fetch(`/api/drafts?id=${currentDraftId}`, {
+              method: 'DELETE'
+            })
+            console.log('Draft deleted after successful posting')
+          } catch (error) {
+            console.error('Failed to delete draft after posting:', error)
+          }
+        }
+        
         setPostContent('')
         setPlatformContent({})
         setSelectedPlatforms([])
         setSelectedFiles([])
         setUploadedMediaUrls([])
+        setCurrentDraftId(null)
       }
 
     } catch (error) {
@@ -296,6 +315,18 @@ export default function CreateNewPostPage() {
 
       toast.success('Post scheduled successfully!')
       
+      // Delete draft if this was scheduled from a draft
+      if (currentDraftId) {
+        try {
+          await fetch(`/api/drafts?id=${currentDraftId}`, {
+            method: 'DELETE'
+          })
+          console.log('Draft deleted after successful scheduling')
+        } catch (error) {
+          console.error('Failed to delete draft after scheduling:', error)
+        }
+      }
+      
       // Clear form
       setPostContent('')
       setPlatformContent({})
@@ -304,6 +335,7 @@ export default function CreateNewPostPage() {
       setUploadedMediaUrls([])
       setScheduledDate('')
       setScheduledTime('')
+      setCurrentDraftId(null)
 
     } catch (error) {
       console.error('Scheduling error:', error)
@@ -314,7 +346,81 @@ export default function CreateNewPostPage() {
   }
 
   const handleSaveAsDraft = async () => {
-    toast.info('Save as draft functionality coming soon!')
+    if (selectedPlatforms.length === 0) {
+      toast.error('Please select at least one platform')
+      return
+    }
+
+    if (!postContent.trim()) {
+      toast.error('Please enter some content')
+      return
+    }
+
+    setIsPosting(true)
+
+    try {
+      // Upload files first if any
+      let mediaUrls: string[] = [...uploadedMediaUrls] // Include existing URLs
+      if (selectedFiles.length > 0) {
+        toast.info('Uploading media...')
+        const newUrls = await uploadFiles()
+        mediaUrls = [...mediaUrls, ...newUrls]
+      }
+
+      // Only include platform-specific content if it's actually different from main content
+      const filteredPlatformContent: Record<string, string> = {}
+      Object.entries(platformContent).forEach(([platform, content]) => {
+        if (content && content.trim() !== postContent.trim()) {
+          filteredPlatformContent[platform] = content
+        }
+      })
+
+      // Extract title from content (first line or first 50 chars)
+      const plainText = postContent.replace(/<[^>]*>/g, '').trim()
+      const title = plainText.split('\n')[0].slice(0, 50) + (plainText.length > 50 ? '...' : '')
+
+      const method = currentDraftId ? 'PATCH' : 'POST'
+      const body = {
+        title: title || 'Untitled Draft',
+        content: postContent,
+        platforms: selectedPlatforms,
+        platformContent: Object.keys(filteredPlatformContent).length > 0 ? filteredPlatformContent : undefined,
+        mediaUrls: mediaUrls,
+      }
+      
+      if (currentDraftId) {
+        (body as any).draftId = currentDraftId
+      }
+
+      const response = await fetch('/api/drafts', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save draft')
+      }
+
+      toast.success(currentDraftId ? 'Draft updated successfully!' : 'Draft saved successfully!')
+      
+      // Clear form
+      setPostContent('')
+      setPlatformContent({})
+      setSelectedPlatforms([])
+      setSelectedFiles([])
+      setUploadedMediaUrls([])
+      setCurrentDraftId(null)
+      
+      // Redirect to drafts page
+      router.push('/dashboard/posts/drafts')
+
+    } catch (error) {
+      console.error('Save draft error:', error)
+      toast.error('Failed to save draft')
+    } finally {
+      setIsPosting(false)
+    }
   }
 
   const handleFileSelect = (files: FileList | null) => {
@@ -351,11 +457,96 @@ export default function CreateNewPostPage() {
     handleFileSelect(e.dataTransfer.files)
   }
 
+  // Load draft if draftId is present in URL
+  useEffect(() => {
+    const draftId = searchParams.get('draftId')
+    const shouldSchedule = searchParams.get('schedule') === 'true'
+    const shouldPublish = searchParams.get('publish') === 'true'
+    
+    if (draftId && draftId !== loadedDraftRef.current && !loadingDraft) {
+      console.log('Starting draft load for:', draftId)
+      loadedDraftRef.current = draftId
+      setCurrentDraftId(draftId)
+      loadDraft(draftId, shouldSchedule, shouldPublish)
+    }
+  }, [searchParams, loadingDraft])
+
+  const loadDraft = async (draftId: string, openSchedule: boolean, publishNow: boolean) => {
+    setLoadingDraft(true)
+    try {
+      console.log('Loading draft with ID:', draftId)
+      const response = await fetch('/api/drafts')
+      if (!response.ok) throw new Error('Failed to fetch drafts')
+      
+      const data = await response.json()
+      console.log('All drafts:', data.drafts)
+      const draft = data.drafts?.find((d: any) => d.id === draftId)
+      console.log('Found draft:', draft)
+      
+      if (!draft) {
+        toast.error('Draft not found')
+        return
+      }
+      
+      // Debug: Log what we're setting
+      console.log('Setting content:', draft.content)
+      console.log('Setting platforms:', draft.platforms)
+      console.log('Setting platform_content:', draft.platform_content)
+      console.log('Setting media_urls:', draft.media_urls)
+      
+      // Load draft data into form
+      setPostContent(draft.content || '')
+      setSelectedPlatforms(draft.platforms || [])
+      setPlatformContent(draft.platform_content || {})
+      
+      // If there are platform-specific content, show customization
+      if (Object.keys(draft.platform_content || {}).length > 0) {
+        setShowPlatformCustomization(true)
+      }
+      
+      // Load media URLs if any
+      if (draft.media_urls && draft.media_urls.length > 0) {
+        setUploadedMediaUrls(draft.media_urls)
+        // Note: We can't restore the actual File objects, just the URLs
+        toast.info('Media files from draft have been loaded')
+      }
+      
+      console.log('Draft data set successfully')
+      
+      // Handle schedule/publish actions
+      if (openSchedule) {
+        // Set a default schedule time (e.g., 1 hour from now)
+        const now = new Date()
+        now.setHours(now.getHours() + 1)
+        const dateStr = now.toISOString().split('T')[0]
+        const timeStr = now.toTimeString().slice(0, 5)
+        setScheduledDate(dateStr)
+        setScheduledTime(timeStr)
+        toast.info('Draft loaded. Please select when to schedule the post.')
+      } else if (publishNow) {
+        // Automatically trigger post now after a brief delay
+        toast.info('Draft loaded. Publishing now...')
+        setTimeout(() => {
+          handlePostNow()
+        }, 500)
+      } else {
+        toast.success('Draft loaded successfully')
+      }
+      
+    } catch (error) {
+      console.error('Error loading draft:', error)
+      toast.error('Failed to load draft')
+    } finally {
+      setLoadingDraft(false)
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Create New Post</h1>
         <p className="text-gray-600 mt-1">Share your content across multiple social media platforms</p>
+        {loadingDraft && <p className="text-blue-600 mt-2">Loading draft...</p>}
       </div>
 
       {/* Platform Selection */}
@@ -580,6 +771,40 @@ export default function CreateNewPostPage() {
         </CardContent>
       </Card>
 
+      {/* Show existing media from draft */}
+      {uploadedMediaUrls.length > 0 && selectedFiles.length === 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Media from Draft</CardTitle>
+            <CardDescription>Previously uploaded media files</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {uploadedMediaUrls.map((url, index) => (
+                <div key={index} className="relative group">
+                  <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                    <img
+                      src={url}
+                      alt={`Media ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      setUploadedMediaUrls(prev => prev.filter((_, i) => i !== index))
+                      toast.info('Media removed from post')
+                    }}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Action Buttons */}
       <div className="flex gap-4">
         {scheduledDate && scheduledTime ? (
@@ -589,6 +814,7 @@ export default function CreateNewPostPage() {
               disabled={
                 selectedPlatforms.length === 0 || 
                 isPosting || 
+                loadingDraft ||
                 (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()))
               }
               onClick={handleSchedulePost}
@@ -613,6 +839,7 @@ export default function CreateNewPostPage() {
             disabled={
               selectedPlatforms.length === 0 || 
               isPosting || 
+              loadingDraft ||
               (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()))
             }
             onClick={handlePostNow}
@@ -624,11 +851,11 @@ export default function CreateNewPostPage() {
         <Button 
           variant="outline" 
           className="flex-1" 
-          disabled={selectedPlatforms.length === 0 || isPosting}
+          disabled={selectedPlatforms.length === 0 || isPosting || loadingDraft}
           onClick={handleSaveAsDraft}
         >
           <Save className="mr-2 h-4 w-4" />
-          Save as Draft
+          {currentDraftId ? 'Update Draft' : 'Save as Draft'}
         </Button>
       </div>
 

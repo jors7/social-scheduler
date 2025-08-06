@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { toast } from 'sonner'
 import { 
   Search, 
   Filter,
@@ -18,53 +19,18 @@ import {
   Clock
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useRouter } from 'next/navigation'
 
-const mockDraftPosts = [
-  {
-    id: 1,
-    title: 'Customer Success Story',
-    content: 'Read how Company X increased their revenue by 150% using our platform...',
-    platforms: ['linkedin'],
-    status: 'draft',
-    createdAt: '2024-01-18',
-    lastModified: '2024-01-20 3:30 PM',
-    wordCount: 145,
-    isComplete: false
-  },
-  {
-    id: 2,
-    title: 'Upcoming Product Launch',
-    content: 'We\'re excited to announce our biggest product launch yet! Coming soon...',
-    platforms: ['twitter', 'facebook', 'instagram'],
-    status: 'draft',
-    createdAt: '2024-01-17',
-    lastModified: '2024-01-19 10:15 AM',
-    wordCount: 89,
-    isComplete: true
-  },
-  {
-    id: 3,
-    title: 'Industry Insights Blog Promotion',
-    content: 'Check out our latest blog post about industry trends and what they mean...',
-    platforms: ['linkedin', 'twitter'],
-    status: 'draft',
-    createdAt: '2024-01-16',
-    lastModified: '2024-01-16 4:45 PM',
-    wordCount: 234,
-    isComplete: true
-  },
-  {
-    id: 4,
-    title: '',
-    content: 'Just started working on this new post about our team culture and values...',
-    platforms: ['instagram'],
-    status: 'draft',
-    createdAt: '2024-01-15',
-    lastModified: '2024-01-15 2:20 PM',
-    wordCount: 67,
-    isComplete: false
-  },
-]
+interface Draft {
+  id: string
+  title: string
+  content: string
+  platforms: string[]
+  platform_content: Record<string, string>
+  media_urls: string[]
+  created_at: string
+  updated_at: string
+}
 
 const platformIcons: Record<string, string> = {
   twitter: '𝕏',
@@ -73,49 +39,154 @@ const platformIcons: Record<string, string> = {
   linkedin: 'in',
   youtube: '▶',
   tiktok: '♪',
+  threads: '@',
+  bluesky: '🦋',
+  pinterest: 'P',
+}
+
+// Helper function to strip HTML tags
+const stripHtml = (html: string) => {
+  return html
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim()
+}
+
+// Helper function to count words
+const countWords = (text: string) => {
+  const plainText = stripHtml(text)
+  return plainText.split(/\s+/).filter(word => word.length > 0).length
 }
 
 export default function DraftPostsPage() {
+  const router = useRouter()
+  const [drafts, setDrafts] = useState<Draft[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedPosts, setSelectedPosts] = useState<number[]>([])
+  const [selectedDrafts, setSelectedDrafts] = useState<string[]>([])
   const [sortBy, setSortBy] = useState('modified') // 'modified', 'created', 'title'
 
-  const filteredPosts = mockDraftPosts
-    .filter(post => {
-      if (searchQuery && !post.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !post.content.toLowerCase().includes(searchQuery.toLowerCase())) return false
+  const fetchDrafts = async () => {
+    try {
+      const response = await fetch('/api/drafts')
+      if (!response.ok) throw new Error('Failed to fetch')
+      
+      const data = await response.json()
+      setDrafts(data.drafts || [])
+    } catch (error) {
+      console.error('Error fetching drafts:', error)
+      toast.error('Failed to load drafts')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchDrafts()
+  }, [])
+
+  const handleDelete = async (draftId: string) => {
+    if (!confirm('Are you sure you want to delete this draft?')) return
+
+    try {
+      const response = await fetch(`/api/drafts?id=${draftId}`, {
+        method: 'DELETE'
+      })
+      
+      if (!response.ok) throw new Error('Failed to delete')
+      
+      toast.success('Draft deleted successfully')
+      fetchDrafts() // Refresh the list
+    } catch (error) {
+      console.error('Error deleting draft:', error)
+      toast.error('Failed to delete draft')
+    }
+  }
+
+  const handleEdit = (draftId: string) => {
+    // TODO: Navigate to edit page with draft data
+    router.push(`/dashboard/create/new?draftId=${draftId}`)
+  }
+
+  const handleSchedule = (draftId: string) => {
+    // TODO: Navigate to create page with draft data and open schedule section
+    router.push(`/dashboard/create/new?draftId=${draftId}&schedule=true`)
+  }
+
+  const handlePublishNow = (draftId: string) => {
+    // TODO: Navigate to create page with draft data and trigger publish
+    router.push(`/dashboard/create/new?draftId=${draftId}&publish=true`)
+  }
+
+  const filteredDrafts = drafts
+    .filter(draft => {
+      if (searchQuery && !draft.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+          !stripHtml(draft.content).toLowerCase().includes(searchQuery.toLowerCase())) return false
       return true
     })
     .sort((a, b) => {
       switch (sortBy) {
         case 'created':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         case 'title':
           return a.title.localeCompare(b.title)
         case 'modified':
         default:
-          return new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime()
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
       }
     })
 
-  const togglePostSelection = (postId: number) => {
-    setSelectedPosts(prev =>
-      prev.includes(postId)
-        ? prev.filter(id => id !== postId)
-        : [...prev, postId]
+  const toggleDraftSelection = (draftId: string) => {
+    setSelectedDrafts(prev =>
+      prev.includes(draftId)
+        ? prev.filter(id => id !== draftId)
+        : [...prev, draftId]
     )
   }
 
-  const toggleAllPosts = () => {
-    if (selectedPosts.length === filteredPosts.length) {
-      setSelectedPosts([])
+  const toggleAllDrafts = () => {
+    if (selectedDrafts.length === filteredDrafts.length) {
+      setSelectedDrafts([])
     } else {
-      setSelectedPosts(filteredPosts.map(post => post.id))
+      setSelectedDrafts(filteredDrafts.map(draft => draft.id))
     }
   }
 
-  const completeDrafts = filteredPosts.filter(post => post.isComplete).length
-  const incompleteDrafts = filteredPosts.filter(post => !post.isComplete).length
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+    
+    if (diffInHours < 24) {
+      const hours = Math.floor(diffInHours)
+      if (hours === 0) {
+        const minutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+        return `${minutes} minutes ago`
+      }
+      return `${hours} hour${hours !== 1 ? 's' : ''} ago`
+    } else if (diffInHours < 168) { // 7 days
+      const days = Math.floor(diffInHours / 24)
+      return `${days} day${days !== 1 ? 's' : ''} ago`
+    } else {
+      return date.toLocaleDateString()
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4 animate-pulse" />
+          <p className="text-gray-500">Loading drafts...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -158,7 +229,7 @@ export default function DraftPostsPage() {
               <FileText className="h-8 w-8 text-gray-500" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Drafts</p>
-                <p className="text-2xl font-bold">{filteredPosts.length}</p>
+                <p className="text-2xl font-bold">{filteredDrafts.length}</p>
               </div>
             </div>
           </CardContent>
@@ -166,12 +237,16 @@ export default function DraftPostsPage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center">
-              <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
-                <span className="text-green-600 font-bold">✓</span>
-              </div>
+              <Calendar className="h-8 w-8 text-blue-500" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Ready to Publish</p>
-                <p className="text-2xl font-bold">{completeDrafts}</p>
+                <p className="text-sm font-medium text-gray-600">Created Today</p>
+                <p className="text-2xl font-bold">
+                  {filteredDrafts.filter(d => {
+                    const today = new Date()
+                    const created = new Date(d.created_at)
+                    return created.toDateString() === today.toDateString()
+                  }).length}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -179,10 +254,16 @@ export default function DraftPostsPage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center">
-              <Edit className="h-8 w-8 text-orange-500" />
+              <Clock className="h-8 w-8 text-orange-500" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">In Progress</p>
-                <p className="text-2xl font-bold">{incompleteDrafts}</p>
+                <p className="text-sm font-medium text-gray-600">Modified This Week</p>
+                <p className="text-2xl font-bold">
+                  {filteredDrafts.filter(d => {
+                    const weekAgo = new Date()
+                    weekAgo.setDate(weekAgo.getDate() - 7)
+                    return new Date(d.updated_at) > weekAgo
+                  }).length}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -190,43 +271,41 @@ export default function DraftPostsPage() {
       </div>
 
       {/* Bulk Actions */}
-      {selectedPosts.length > 0 && (
+      {selectedDrafts.length > 0 && (
         <Card className="bg-primary/10 border-primary">
           <CardContent className="flex items-center justify-between py-4">
             <span className="text-sm font-medium">
-              {selectedPosts.length} draft{selectedPosts.length > 1 ? 's' : ''} selected
+              {selectedDrafts.length} draft{selectedDrafts.length > 1 ? 's' : ''} selected
             </span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => {
+                // TODO: Implement bulk delete
+                toast.info('Bulk delete coming soon')
+              }}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => {
+                // TODO: Implement duplicate
+                toast.info('Duplicate feature coming soon')
+              }}>
                 <Copy className="mr-2 h-4 w-4" />
                 Duplicate
-              </Button>
-              <Button variant="outline" size="sm">
-                <Calendar className="mr-2 h-4 w-4" />
-                Schedule
-              </Button>
-              <Button size="sm">
-                <Send className="mr-2 h-4 w-4" />
-                Publish Now
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Posts List */}
+      {/* Drafts List */}
       <div className="space-y-4">
-        {filteredPosts.length === 0 ? (
+        {filteredDrafts.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
               <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <p className="text-gray-500 mb-2">No drafts found</p>
               <p className="text-sm text-gray-400">Start creating content to see your drafts here</p>
-              <Button className="mt-4" onClick={() => window.location.href = '/dashboard/create/new'}>
+              <Button className="mt-4" onClick={() => router.push('/dashboard/create/new')}>
                 <Edit className="mr-2 h-4 w-4" />
                 Create New Post
               </Button>
@@ -237,22 +316,25 @@ export default function DraftPostsPage() {
             <div className="flex items-center gap-2 px-4">
               <input
                 type="checkbox"
-                checked={selectedPosts.length === filteredPosts.length}
-                onChange={toggleAllPosts}
+                checked={selectedDrafts.length === filteredDrafts.length}
+                onChange={toggleAllDrafts}
                 className="rounded border-gray-300"
               />
               <span className="text-sm text-gray-600">Select all</span>
             </div>
             
-            {filteredPosts.map(post => {              
+            {filteredDrafts.map(draft => {              
+              const wordCount = countWords(draft.content)
+              const plainContent = stripHtml(draft.content)
+              
               return (
-                <Card key={post.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                <Card key={draft.id} className="overflow-hidden hover:shadow-md transition-shadow">
                   <CardContent className="p-0">
                     <div className="flex items-start p-4 gap-4">
                       <input
                         type="checkbox"
-                        checked={selectedPosts.includes(post.id)}
-                        onChange={() => togglePostSelection(post.id)}
+                        checked={selectedDrafts.includes(draft.id)}
+                        onChange={() => toggleDraftSelection(draft.id)}
                         className="mt-1 rounded border-gray-300"
                       />
                       
@@ -261,70 +343,81 @@ export default function DraftPostsPage() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <h3 className="font-semibold text-lg">
-                                {post.title || <span className="text-gray-400 italic">Untitled Draft</span>}
+                                {draft.title || <span className="text-gray-400 italic">Untitled Draft</span>}
                               </h3>
-                              {post.isComplete && (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                  <span className="mr-1">✓</span>
-                                  Ready
-                                </span>
-                              )}
-                              {!post.isComplete && (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-                                  <Edit className="mr-1 h-3 w-3" />
-                                  In Progress
-                                </span>
-                              )}
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                <FileText className="mr-1 h-3 w-3" />
+                                Draft
+                              </span>
                             </div>
-                            <p className="text-gray-600 mt-1 line-clamp-2">{post.content}</p>
+                            <p className="text-gray-600 mt-1 line-clamp-2">{plainContent}</p>
                             
                             <div className="flex items-center gap-4 mt-3">
-                              <div className="flex items-center gap-2">
-                                <FileText className="h-4 w-4 text-gray-400" />
-                                <span className="text-xs px-2 py-1 rounded-full font-medium bg-gray-100 text-gray-700">
-                                  Draft
-                                </span>
-                              </div>
-                              
                               <span className="text-sm text-gray-500">
                                 <Clock className="inline h-3 w-3 mr-1" />
-                                Modified {post.lastModified}
+                                Modified {formatDate(draft.updated_at)}
                               </span>
                               
                               <span className="text-sm text-gray-500">
-                                {post.wordCount} words
+                                {wordCount} words
                               </span>
                               
                               <div className="flex gap-1">
-                                {post.platforms.map(platform => (
+                                {draft.platforms.map(platform => (
                                   <span
                                     key={platform}
                                     className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-xs"
+                                    title={platform}
                                   >
                                     {platformIcons[platform] || platform[0].toUpperCase()}
                                   </span>
                                 ))}
                               </div>
+
+                              {draft.media_urls.length > 0 && (
+                                <span className="text-sm text-gray-500">
+                                  📎 {draft.media_urls.length} attachment{draft.media_urls.length > 1 ? 's' : ''}
+                                </span>
+                              )}
                             </div>
                             
                             {/* Quick Actions */}
                             <div className="flex gap-2 mt-4">
-                              <Button size="sm" variant="outline" className="text-xs">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="text-xs"
+                                onClick={() => handleEdit(draft.id)}
+                              >
                                 <Edit className="mr-1 h-3 w-3" />
                                 Continue Editing
                               </Button>
-                              {post.isComplete && (
-                                <>
-                                  <Button size="sm" variant="outline" className="text-xs">
-                                    <Calendar className="mr-1 h-3 w-3" />
-                                    Schedule
-                                  </Button>
-                                  <Button size="sm" className="text-xs">
-                                    <Send className="mr-1 h-3 w-3" />
-                                    Publish Now
-                                  </Button>
-                                </>
-                              )}
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="text-xs"
+                                onClick={() => handleSchedule(draft.id)}
+                              >
+                                <Calendar className="mr-1 h-3 w-3" />
+                                Schedule
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                className="text-xs"
+                                onClick={() => handlePublishNow(draft.id)}
+                              >
+                                <Send className="mr-1 h-3 w-3" />
+                                Publish Now
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="text-xs text-red-600 hover:text-red-700"
+                                onClick={() => handleDelete(draft.id)}
+                              >
+                                <Trash2 className="mr-1 h-3 w-3" />
+                                Delete
+                              </Button>
                             </div>
                           </div>
                           

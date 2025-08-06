@@ -19,7 +19,7 @@ import {
   Type,
   Quote
 } from 'lucide-react'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 
 interface RichTextEditorProps {
   content?: string
@@ -102,6 +102,13 @@ export function RichTextEditor({
   const removeLink = useCallback(() => {
     editor?.chain().focus().extendMarkRange('link').unsetLink().run()
   }, [editor])
+
+  // Update editor content when content prop changes
+  useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      editor.commands.setContent(content, false)
+    }
+  }, [content, editor])
 
   if (!editor) {
     return null

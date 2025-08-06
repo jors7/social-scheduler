@@ -107,6 +107,19 @@ const getUrgencyColor = (timeUntil: string) => {
   return 'text-gray-600'
 }
 
+const stripHtml = (html: string) => {
+  // Remove HTML tags and decode entities
+  return html
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim()
+}
+
 export function ScheduledPostsList({ 
   posts, 
   selectedPosts, 
@@ -176,7 +189,7 @@ export function ScheduledPostsList({
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-semibold text-lg line-clamp-1">
-                          {post.content.slice(0, 60)}...
+                          {stripHtml(post.content).slice(0, 60)}...
                         </h3>
                         <span className={cn(
                           "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium",
@@ -187,7 +200,7 @@ export function ScheduledPostsList({
                         </span>
                       </div>
                       
-                      <p className="text-gray-600 mb-3 line-clamp-2">{post.content}</p>
+                      <p className="text-gray-600 mb-3 line-clamp-2">{stripHtml(post.content)}</p>
                       
                       <div className="flex items-center gap-4 mb-3">
                         <div className="flex items-center gap-2">
