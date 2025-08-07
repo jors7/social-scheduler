@@ -186,13 +186,23 @@ export class SubscriptionService {
 
     if (error) throw error;
 
+    // Type assertion for usage summary data
+    const usageData = data as {
+      posts_used: number;
+      posts_limit: number;
+      ai_suggestions_used: number;
+      ai_suggestions_limit: number;
+      connected_accounts_used: number;
+      connected_accounts_limit: number;
+    };
+
     return {
-      posts_used: data.posts_used,
-      posts_limit: data.posts_limit === -1 ? Infinity : data.posts_limit,
-      ai_suggestions_used: data.ai_suggestions_used,
-      ai_suggestions_limit: data.ai_suggestions_limit === -1 ? Infinity : data.ai_suggestions_limit,
-      connected_accounts_used: data.connected_accounts_used,
-      connected_accounts_limit: data.connected_accounts_limit === -1 ? Infinity : data.connected_accounts_limit,
+      posts_used: usageData.posts_used,
+      posts_limit: usageData.posts_limit === -1 ? Infinity : usageData.posts_limit,
+      ai_suggestions_used: usageData.ai_suggestions_used,
+      ai_suggestions_limit: usageData.ai_suggestions_limit === -1 ? Infinity : usageData.ai_suggestions_limit,
+      connected_accounts_used: usageData.connected_accounts_used,
+      connected_accounts_limit: usageData.connected_accounts_limit === -1 ? Infinity : usageData.connected_accounts_limit,
     };
   }
 
