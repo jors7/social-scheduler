@@ -44,21 +44,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No Stripe subscription found' }, { status: 404 })
     }
 
-    const subscription = subscriptions.data[0]
+    const subscription = subscriptions.data[0] as any // Type assertion for flexibility
 
     // Extract metadata
-    const { user_id, plan_id, billing_cycle } = subscription.metadata
+    const { user_id, plan_id, billing_cycle } = subscription.metadata || {}
 
     if (!user_id || !plan_id) {
       return NextResponse.json({ error: 'Missing metadata in subscription' }, { status: 400 })
     }
 
     // Convert timestamps safely
-    const currentPeriodStart = typeof subscription.current_period_start === 'number' 
+    const currentPeriodStart = subscription.current_period_start
       ? new Date(subscription.current_period_start * 1000).toISOString()
       : new Date().toISOString()
     
-    const currentPeriodEnd = typeof subscription.current_period_end === 'number'
+    const currentPeriodEnd = subscription.current_period_end
       ? new Date(subscription.current_period_end * 1000).toISOString()
       : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
 
@@ -74,13 +74,13 @@ export async function POST(request: NextRequest) {
         stripe_customer_id: customer.id,
         current_period_start: currentPeriodStart,
         current_period_end: currentPeriodEnd,
-        trial_end: subscription.trial_end && typeof subscription.trial_end === 'number' 
+        trial_end: subscription.trial_end
           ? new Date(subscription.trial_end * 1000).toISOString() 
           : null,
-        cancel_at: subscription.cancel_at && typeof subscription.cancel_at === 'number'
+        cancel_at: subscription.cancel_at
           ? new Date(subscription.cancel_at * 1000).toISOString() 
           : null,
-        canceled_at: subscription.canceled_at && typeof subscription.canceled_at === 'number'
+        canceled_at: subscription.canceled_at
           ? new Date(subscription.canceled_at * 1000).toISOString() 
           : null,
         updated_at: new Date().toISOString()
