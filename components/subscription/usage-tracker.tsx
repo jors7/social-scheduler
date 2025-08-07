@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress'
 import { subscriptionService } from '@/lib/subscription/service'
 import { formatUsageDisplay, getUsagePercentage, isNearLimit } from '@/lib/subscription/usage'
 import { cn } from '@/lib/utils'
-import { AlertCircle, CheckCircle, Infinity } from 'lucide-react'
+import { AlertCircle, CheckCircle, Infinity as InfinityIcon } from 'lucide-react'
 
 interface UsageTrackerProps {
   resource: 'posts' | 'ai_suggestions' | 'connected_accounts'
@@ -57,7 +57,7 @@ export function UsageTracker({
 
   const percentage = getUsagePercentage(usage.current, usage.limit)
   const nearLimit = isNearLimit(usage.current, usage.limit)
-  const atLimit = usage.current >= usage.limit && usage.limit !== Infinity
+  const atLimit = usage.current >= usage.limit && usage.limit !== -1
 
   const getResourceLabel = () => {
     switch (resource) {
@@ -103,14 +103,14 @@ export function UsageTracker({
             )}>
               {formatUsageDisplay(usage.current, usage.limit)}
             </span>
-            {usage.limit === Infinity && (
-              <Infinity className="h-3 w-3 text-muted-foreground" />
+            {usage.limit === -1 && (
+              <InfinityIcon className="h-3 w-3 text-muted-foreground" />
             )}
           </div>
         </div>
       )}
       
-      {showProgress && usage.limit !== Infinity && (
+      {showProgress && usage.limit !== -1 && (
         <Progress 
           value={percentage} 
           className={cn(
