@@ -90,13 +90,19 @@ export async function middleware(request: NextRequest) {
         .rpc('get_user_subscription', { user_uuid: user.id })
         .single()
 
+      // Type assertion for subscription data
+      const subscription = subscriptionData as {
+        plan_id: string;
+        status: string;
+      } | null
+
       // If no subscription or on free plan, redirect to homepage pricing
-      if (!subscriptionData || subscriptionData.plan_id === 'free') {
+      if (!subscription || subscription.plan_id === 'free') {
         return NextResponse.redirect(new URL('/#pricing', request.url))
       }
 
       // Check if subscription is active or in trial
-      if (!['active', 'trialing'].includes(subscriptionData.status)) {
+      if (!['active', 'trialing'].includes(subscription.status)) {
         return NextResponse.redirect(new URL('/#pricing', request.url))
       }
     } catch (error) {
