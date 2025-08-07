@@ -132,7 +132,7 @@ export default function BillingPage() {
     )
   }
 
-  const currentPlan = subscription?.planId ? SUBSCRIPTION_PLANS[subscription.planId] : SUBSCRIPTION_PLANS.free
+  const currentPlan = subscription?.planId ? SUBSCRIPTION_PLANS[subscription.planId as keyof typeof SUBSCRIPTION_PLANS] : SUBSCRIPTION_PLANS.free
   const isFreePlan = subscription?.planId === 'free' || !subscription?.hasSubscription
 
   const getUsagePercentage = (used: number, limit: number) => {
