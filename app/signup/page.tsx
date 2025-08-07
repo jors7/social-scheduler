@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +11,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 
 export default function SignupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const intendedPlan = searchParams.get('plan') || null
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -21,6 +23,13 @@ export default function SignupPage() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const supabase = createClient()
+
+  useEffect(() => {
+    // Store intended plan in localStorage for later use
+    if (intendedPlan) {
+      localStorage.setItem('intendedPlan', intendedPlan)
+    }
+  }, [intendedPlan])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,11 +56,52 @@ export default function SignupPage() {
 
       if (error) {
         setError(error.message)
+      } else if (data.user) {
+        // For development: Auto-login after signup
+        // In production, you'd want email confirmation
+        const isDevEnvironment = process.env.NODE_ENV === 'development'
+        
+        if (isDevEnvironment) {
+          // Try to sign in immediately after signup (works if email confirmation is disabled)
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: formData.email,
+            password: formData.password
+          })
+          
+          if (!signInError) {
+            // Store intended plan in user metadata
+            if (intendedPlan) {
+              await supabase.auth.updateUser({
+                data: { intended_plan: intendedPlan }
+              })
+            }
+            
+            setMessage('Account created successfully! Redirecting to dashboard...')
+            setTimeout(() => {
+              router.push('/dashboard')
+            }, 1500)
+          } else {
+            // Email confirmation is likely required
+            setMessage('Account created successfully! Please check your email to confirm your account before logging in.')
+          }
+        } else {
+          // Production behavior
+          if (data.user.email_confirmed_at) {
+            setMessage('Account created successfully! Redirecting to dashboard...')
+            setTimeout(() => {
+              router.push('/dashboard')
+            }, 2000)
+          } else {
+            setMessage('Account created successfully! Please check your email to confirm your account before logging in.')
+          }
+        }
       } else {
-        setMessage('Check your email for the confirmation link!')
+        // Signup succeeded but no user data returned
+        setMessage('Account created! Please check your email to confirm your account.')
       }
     } catch (err) {
-      setError('An unexpected error occurred')
+      console.error('Signup error:', err)
+      setError('An unexpected error occurred: ' + (err instanceof Error ? err.message : String(err)))
     } finally {
       setLoading(false)
     }

@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { DragDropCalendar } from '@/components/dashboard/drag-drop-calendar'
+import { SubscriptionGate } from '@/components/subscription/subscription-gate'
 
 interface ScheduledPost {
   id: string
@@ -130,12 +131,14 @@ export default function CalendarPage() {
         </Link>
       </div>
 
-      <DragDropCalendar
-        scheduledPosts={scheduledPosts}
-        onPostUpdate={handlePostUpdate}
-        onPostEdit={handleEditPost}
-        onPostDelete={handleDeletePost}
-      />
+      <SubscriptionGate feature="calendar scheduling">
+        <DragDropCalendar
+          scheduledPosts={scheduledPosts}
+          onPostUpdate={handlePostUpdate}
+          onPostEdit={handleEditPost}
+          onPostDelete={handleDeletePost}
+        />
+      </SubscriptionGate>
     </div>
   )
 }

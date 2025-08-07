@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { 
   BarChart3, 
   Calendar, 
@@ -16,6 +17,9 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/client'
+import { getClientSubscription } from '@/lib/subscription/client'
+import { Crown, Sparkles } from 'lucide-react'
 
 interface PostData {
   id: string
@@ -55,26 +59,46 @@ export default function DashboardPage() {
   const [recentPosts, setRecentPosts] = useState<PostData[]>([])
   const [upcomingSchedule, setUpcomingSchedule] = useState<{date: string, posts: number}[]>([])
   const [loading, setLoading] = useState(true)
+  const [subscription, setSubscription] = useState<any>(null)
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch all data concurrently
-      const [draftsResponse, scheduledResponse] = await Promise.all([
-        fetch('/api/drafts'),
-        fetch('/api/posts/schedule')
-      ])
+      const supabase = createClient()
       
-      if (!draftsResponse.ok || !scheduledResponse.ok) {
-        throw new Error('Failed to fetch dashboard data')
+      // Check if user is authenticated
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) {
+        toast.error('Please log in to view your dashboard')
+        return
       }
       
-      const [draftsData, scheduledData] = await Promise.all([
-        draftsResponse.json(),
-        scheduledResponse.json()
+      // Get subscription status
+      const subData = await getClientSubscription()
+      setSubscription(subData)
+      
+      // Fetch all data concurrently
+      const [draftsResult, scheduledResult] = await Promise.all([
+        supabase
+          .from('drafts')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('updated_at', { ascending: false }),
+        supabase
+          .from('scheduled_posts')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('scheduled_for', { ascending: false })
       ])
       
-      const drafts = draftsData.drafts || []
-      const scheduled = scheduledData.posts || []
+      if (draftsResult.error) {
+        console.error('Error fetching drafts:', draftsResult.error)
+      }
+      if (scheduledResult.error) {
+        console.error('Error fetching scheduled posts:', scheduledResult.error)
+      }
+      
+      const drafts = draftsResult.data || []
+      const scheduled = scheduledResult.data || []
       const allPosts = [...drafts, ...scheduled]
       
       // Calculate stats
@@ -265,6 +289,72 @@ export default function DashboardPage() {
           </Button>
         </Link>
       </div>
+
+      {/* Membership Status Card */}
+      {subscription && (
+        <Card className={cn(
+          "border-2",
+          subscription.hasSubscription ? "border-primary bg-gradient-to-r from-primary/5 to-primary/10" : "border-gray-200"
+        )}>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {subscription.hasSubscription ? (
+                  <Crown className="h-5 w-5 text-primary" />
+                ) : (
+                  <Sparkles className="h-5 w-5 text-gray-400" />
+                )}
+                <CardTitle className="text-lg">Your Membership</CardTitle>
+              </div>
+              <Badge 
+                variant={subscription.hasSubscription ? "default" : "secondary"}
+                className={cn(
+                  "font-semibold",
+                  subscription.hasSubscription && "bg-primary"
+                )}
+              >
+                {subscription.planId ? subscription.planId.charAt(0).toUpperCase() + subscription.planId.slice(1) : 'Free'} Plan
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">
+                  {subscription.hasSubscription ? (
+                    subscription.isTrialing ? 
+                      `Trial ends ${subscription.trialEndsAt ? new Date(subscription.trialEndsAt).toLocaleDateString() : 'soon'}` :
+                      'Full access to all premium features'
+                  ) : (
+                    'Upgrade to unlock scheduling, analytics, and more'
+                  )}
+                </p>
+                {subscription.hasSubscription && subscription.currentPeriodEnd && (
+                  <p className="text-xs text-muted-foreground">
+                    Renews on {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                {subscription.hasSubscription ? (
+                  <Link href="/dashboard/billing">
+                    <Button variant="outline" size="sm">
+                      Manage Billing
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link href="/#pricing">
+                    <Button size="sm">
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Upgrade Now
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

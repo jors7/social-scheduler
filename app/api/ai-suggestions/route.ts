@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { checkAndIncrementUsage } from '@/lib/subscription/usage'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -11,6 +14,38 @@ export async function POST(request: NextRequest) {
 
     if (!openai) {
       return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 })
+    }
+
+    // Check authentication
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+        },
+      }
+    )
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Check usage limits
+    const usageCheck = await checkAndIncrementUsage('ai_suggestions', 1, false)
+    if (!usageCheck.allowed) {
+      return NextResponse.json({ 
+        error: 'AI suggestion limit exceeded',
+        message: usageCheck.message,
+        usage: {
+          current: usageCheck.currentUsage,
+          limit: usageCheck.limit
+        }
+      }, { status: 403 })
     }
 
     const platformInfo = platforms.map((p: string) => {
@@ -111,6 +146,9 @@ Important: Return ONLY the JSON array, no additional text.
       platforms: suggestion.platforms || platforms,
       characterCount: suggestion.characterCount || suggestion.content.length
     }))
+
+    // Increment usage after successful generation
+    await checkAndIncrementUsage('ai_suggestions', 1, true)
 
     return NextResponse.json({ suggestions: formattedSuggestions })
 

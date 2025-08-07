@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { AISuggestionsModal } from '@/components/dashboard/ai-suggestions-modal'
+import { SubscriptionGate } from '@/components/subscription/subscription-gate'
 import { 
   Calendar,
   Clock,
@@ -733,7 +734,8 @@ function CreateNewPostPageContent() {
         {loadingDraft && <p className="text-blue-600 mt-2">Loading draft...</p>}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <SubscriptionGate feature="post scheduling">
+        <div className="grid gap-6 lg:grid-cols-3">
         {/* Left Column - Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Post Content */}
@@ -1183,6 +1185,7 @@ function CreateNewPostPageContent() {
         platforms={selectedPlatforms}
         onSelectSuggestion={handleAISuggestionSelect}
       />
+      </SubscriptionGate>
     </div>
   )
 }

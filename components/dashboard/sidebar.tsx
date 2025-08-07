@@ -1,10 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 import {
   Home,
   PlusCircle,
@@ -66,9 +68,51 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const supabase = createClient()
   const [expandedItems, setExpandedItems] = useState<string[]>(['Create', 'Posts'])
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  
+  useEffect(() => {
+    loadUser()
+    
+    // Subscribe to auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser(session.user)
+      }
+    })
+    
+    // Reload user data when pathname changes (in case profile was updated)
+    return () => subscription.unsubscribe()
+  }, [pathname])
+  
+  const loadUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    setUser(user)
+    setLoading(false)
+  }
+  
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+      })
+      
+      if (response.ok) {
+        toast.success('Logged out successfully')
+        router.push('/login')
+      } else {
+        toast.error('Failed to logout')
+      }
+    } catch (error) {
+      console.error('Logout error:', error)
+      toast.error('An error occurred while logging out')
+    }
+  }
 
   const toggleExpanded = (name: string) => {
     setExpandedItems(prev =>
@@ -163,8 +207,13 @@ export function Sidebar() {
           className="w-full flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 transition-colors"
         >
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-gray-300 rounded-full mr-3" />
-            <span>Account</span>
+            <div className="w-8 h-8 bg-primary rounded-full mr-3 flex items-center justify-center text-white font-semibold">
+              {user?.email?.[0]?.toUpperCase() || 'U'}
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-medium">{user?.user_metadata?.full_name || 'User'}</p>
+              <p className="text-xs text-gray-500">{user?.email || 'Loading...'}</p>
+            </div>
           </div>
           {isAccountMenuOpen ? (
             <ChevronUp className="h-4 w-4" />
@@ -176,25 +225,18 @@ export function Sidebar() {
         {isAccountMenuOpen && (
           <div className="mt-2 space-y-1">
             <Link
-              href="/dashboard/settings/account"
+              href="/dashboard/profile"
               className="flex items-center rounded-lg px-3 py-2 text-sm hover:bg-gray-100"
             >
               <Users className="mr-3 h-4 w-4" />
-              Manage Account
+              My Profile
             </Link>
             <Link
-              href="/dashboard/settings/billing"
+              href="/dashboard/billing"
               className="flex items-center rounded-lg px-3 py-2 text-sm hover:bg-gray-100"
             >
               <CreditCard className="mr-3 h-4 w-4" />
-              Billing
-            </Link>
-            <Link
-              href="/dashboard/settings/plans"
-              className="flex items-center rounded-lg px-3 py-2 text-sm hover:bg-gray-100"
-            >
-              <Settings className="mr-3 h-4 w-4" />
-              Plans
+              Billing & Plans
             </Link>
             <Link
               href="/support"
@@ -204,9 +246,7 @@ export function Sidebar() {
               Support
             </Link>
             <button
-              onClick={() => {
-                // Handle logout
-              }}
+              onClick={handleLogout}
               className="w-full flex items-center rounded-lg px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
             >
               <LogOut className="mr-3 h-4 w-4" />

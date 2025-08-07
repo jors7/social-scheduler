@@ -1,7 +1,13 @@
+'use client'
+
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Check, Calendar, Users, BarChart, Zap, Shield, Star, Menu } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 const platforms = [
   { name: 'X (Twitter)', icon: '𝕏' },
@@ -71,42 +77,45 @@ const testimonials = [
 
 const pricingPlans = [
   {
+    id: 'starter',
     name: 'Starter',
-    price: '$19',
+    price: '$9',
     description: 'Perfect for individuals and small businesses',
     features: [
-      'Up to 3 social accounts',
-      '30 scheduled posts/month',
+      'Up to 5 social accounts',
+      'Unlimited posts',
       'Basic analytics',
-      'AI caption suggestions',
+      '7-day free trial',
     ],
   },
   {
+    id: 'professional',
     name: 'Professional',
-    price: '$49',
+    price: '$19',
     description: 'For growing businesses and teams',
     features: [
-      'Up to 10 social accounts',
-      'Unlimited scheduled posts',
+      'Up to 15 social accounts',
+      'Unlimited posts',
       'Advanced analytics',
       'AI caption suggestions',
-      'Team collaboration',
       'Priority support',
+      '7-day free trial',
     ],
     popular: true,
   },
   {
+    id: 'enterprise',
     name: 'Enterprise',
-    price: 'Custom',
-    description: 'For large organizations with custom needs',
+    price: '$29',
+    description: 'Everything you need for large teams',
     features: [
       'Unlimited social accounts',
-      'Unlimited scheduled posts',
-      'Custom analytics',
-      'AI caption suggestions',
-      'Advanced team features',
-      'Dedicated support',
-      'API access',
+      'Unlimited posts',
+      'Advanced analytics',
+      'Unlimited AI suggestions',
+      'Team collaboration',
+      'Priority support',
+      '7-day free trial',
     ],
   },
 ]
@@ -135,6 +144,54 @@ const faqs = [
 ]
 
 export default function LandingPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [loading, setLoading] = useState<string | null>(null)
+  const router = useRouter()
+  const supabase = createClient()
+
+  useEffect(() => {
+    checkAuth()
+  }, [])
+
+  const checkAuth = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    setIsAuthenticated(!!user)
+  }
+
+  const handleStartTrial = async (planId: string) => {
+    if (!isAuthenticated) {
+      // Not logged in, redirect to signup with plan
+      router.push(`/signup?plan=${planId}`)
+      return
+    }
+
+    // User is logged in, proceed to Stripe checkout
+    setLoading(planId)
+    
+    try {
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId,
+          billingCycle: 'monthly', // Default to monthly
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session')
+      }
+
+      const { url } = await response.json()
+      window.location.href = url
+    } catch (error) {
+      console.error('Checkout error:', error)
+      toast.error('Failed to start checkout. Please try again.')
+    } finally {
+      setLoading(null)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       {/* Header */}
@@ -263,7 +320,7 @@ export default function LandingPage() {
             Simple, Transparent Pricing
           </h2>
           <p className="text-xl text-gray-600 text-center mb-12">
-            Start with a 14-day free trial. No credit card required.
+            Start with a 7-day free trial. No credit card required.
           </p>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {pricingPlans.map((plan) => (
@@ -293,8 +350,13 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Button className="w-full mt-6" variant={plan.popular ? 'default' : 'outline'}>
-                    {plan.price === 'Custom' ? 'Contact Sales' : 'Start Free Trial'}
+                  <Button 
+                    className="w-full mt-6" 
+                    variant={plan.popular ? 'default' : 'outline'}
+                    onClick={() => handleStartTrial(plan.id)}
+                    disabled={loading === plan.id}
+                  >
+                    {loading === plan.id ? 'Loading...' : 'Start Free Trial'}
                   </Button>
                 </CardContent>
               </Card>

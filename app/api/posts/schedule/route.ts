@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { checkAndIncrementUsage } from '@/lib/subscription/usage';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,6 +49,19 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // Check usage limits
+    const usageCheck = await checkAndIncrementUsage('posts', 1, false);
+    if (!usageCheck.allowed) {
+      return NextResponse.json({ 
+        error: 'Usage limit exceeded',
+        message: usageCheck.message,
+        usage: {
+          current: usageCheck.currentUsage,
+          limit: usageCheck.limit
+        }
+      }, { status: 403 });
+    }
+
     // Validate scheduled time is in the future (allow 5 minutes tolerance for timezone/clock differences)
     const scheduledDate = new Date(scheduledFor);
     const now = new Date();
@@ -90,6 +104,9 @@ export async function POST(request: NextRequest) {
       console.error('Database error:', error);
       return NextResponse.json({ error: 'Failed to schedule post' }, { status: 500 });
     }
+
+    // Increment usage after successful creation
+    await checkAndIncrementUsage('posts', 1, true);
 
     return NextResponse.json({ 
       success: true,

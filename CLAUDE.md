@@ -135,11 +135,128 @@ npm run lint     # Run ESLint
 - 🔄 **Vercel Cron**: Hobby plan limited to hourly scheduling (not minute-level)
 - 🔄 **Manual Triggers**: Added "Post Now" buttons for immediate posting
 
-### Pending Features
+## 🚨 CRITICAL ISSUES TO FIX
+
+### Identified Problems
+1. **Stripe Integration Not Working**: Payments aren't being processed due to webhook configuration
+2. **No Authentication UI**: Missing login/logout functionality in the sidebar
+3. **No Profile/Billing Pages**: These pages don't exist but are linked in the sidebar
+4. **Subscription Not Updating**: After payment, subscription status isn't updating in database
+5. **Environment Variable Conflict**: NEXT_PUBLIC_APP_URL defined twice with different values
+
+## 📋 IMPLEMENTATION PLAN
+
+### Phase 1: Fix Critical Configuration Issues ⚙️
+- [x] Fix environment variables (remove duplicate NEXT_PUBLIC_APP_URL)
+- [x] Configure Stripe webhook endpoint for local development
+- [x] Fix subscription service to use service role for webhooks
+
+### Phase 2: Implement Authentication UI 🔐
+- [x] Create `/api/auth/logout` endpoint
+- [x] Add working logout button in sidebar
+- [x] Show user info in sidebar (email/name)
+- [x] Create user profile page (`/dashboard/profile`)
+- [x] Add email verification handling
+
+### Phase 3: Implement Billing & Subscription Management 💳
+- [ ] Create billing page (`/dashboard/billing`)
+  - [ ] Show current subscription details
+  - [ ] Display payment history
+  - [ ] Add Stripe Customer Portal link
+  - [ ] Show usage statistics
+- [ ] Fix webhook handler with service role
+- [ ] Create client-side subscription utilities
+- [ ] Handle subscription events properly
+
+### Phase 4: Fix Subscription Gate & Status Updates 🔒
+- [ ] Fix SubscriptionGate component subscription checking
+- [ ] Add subscription status refresh after payment
+- [ ] Handle trial periods correctly
+- [ ] Update UI immediately after successful payment
+
+### Phase 5: Testing & Verification 🧪
+- [ ] Set up Stripe CLI for local testing
+- [ ] Test complete signup → payment → access flow
+- [ ] Test subscription cancellation
+- [ ] Test trial expiration
+
+### Phase 6: Additional Features ✨
+- [ ] Add Stripe Customer Portal integration
+- [ ] Add usage tracking dashboard
+- [ ] Implement subscription upgrade/downgrade flow
+
+## 🛠️ STEP-BY-STEP IMPLEMENTATION
+
+### Step 1: Fix Environment Variables
+```bash
+# Remove duplicate NEXT_PUBLIC_APP_URL
+# Keep only: NEXT_PUBLIC_APP_URL=http://localhost:3001
+```
+
+### Step 2: Set Up Stripe CLI
+```bash
+# Install Stripe CLI
+brew install stripe/stripe-cli/stripe
+
+# Login to Stripe
+stripe login
+
+# Forward webhooks to local server
+stripe listen --forward-to localhost:3001/api/webhooks/stripe
+
+# Copy the webhook signing secret and update .env.local
+STRIPE_WEBHOOK_SECRET=whsec_xxxxx
+```
+
+### Step 3: Create Missing Pages
+- `/app/dashboard/profile/page.tsx` - User profile management
+- `/app/dashboard/billing/page.tsx` - Subscription & billing
+- `/app/api/auth/logout/route.ts` - Logout endpoint
+- `/app/api/stripe/portal/route.ts` - Customer portal
+
+### Step 4: Fix Webhook Handler
+- Use Supabase service role for database updates
+- Handle all subscription lifecycle events
+- Update user subscription status correctly
+
+### Step 5: Test Payment Flow
+1. Sign up new user
+2. Try to access locked feature
+3. Click "Subscribe Now"
+4. Complete Stripe checkout
+5. Verify subscription is active
+6. Verify access to locked features
+
+## 📝 FILES TO CREATE/MODIFY
+
+### New Files Required:
+- `/app/dashboard/profile/page.tsx`
+- `/app/dashboard/billing/page.tsx`
+- `/app/api/auth/logout/route.ts`
+- `/app/api/stripe/portal/route.ts`
+- `/lib/subscription/client.ts`
+
+### Files to Modify:
+- `.env.local` - Fix environment variables
+- `/components/dashboard/sidebar.tsx` - Add logout, user info
+- `/app/api/webhooks/stripe/route.ts` - Fix with service role
+- `/lib/subscription/service.ts` - Split server/client
+- `/components/subscription/subscription-gate.tsx` - Fix checking
+
+## ✅ SUCCESS CRITERIA
+- [ ] User can sign up and log in
+- [ ] User can log out from dashboard
+- [ ] User can view their profile
+- [ ] User can subscribe via Stripe
+- [ ] Subscription unlocks features immediately
+- [ ] User can manage billing via Stripe portal
+- [ ] Webhooks update subscription status
+- [ ] Trial periods work correctly
+
+### Pending Features (After Core Fix)
 - ⏳ **Edit Scheduled Posts**: Modify scheduled content before posting
 - ⏳ **Advanced Analytics**: Detailed performance metrics and insights
 - ⏳ **Team Collaboration**: Multi-user support with roles and permissions
-- ⏳ **Billing Integration**: Subscription management and usage tracking
 - ⏳ **Production Deployment**: Custom domain and app store reviews
 
 ## Technical Implementation Details
@@ -239,3 +356,63 @@ CREATE TABLE social_accounts (
 3. **Environment Setup**: Configure `.env.local` with API keys
 4. **Testing**: Manual testing with Facebook and Bluesky (only working platforms)
 5. **Deployment**: Automatic Vercel deployment on git push
+
+## Recent Updates - Billing & Subscription System (Jan 2025)
+
+### ✅ Successfully Implemented
+1. **Complete Stripe Integration**
+   - Checkout flow with 7-day trials
+   - Three pricing tiers: Starter ($9/90), Professional ($19/190), Enterprise ($29/290)
+   - Stripe webhook handling for real-time updates
+   - Customer portal for subscription management
+
+2. **User Authentication & Profile**
+   - Fixed dashboard data loading issues
+   - Added logout functionality
+   - Profile management with persistent updates
+   - User avatar display in sidebar
+
+3. **Billing Dashboard**
+   - Comprehensive billing page at `/dashboard/billing`
+   - Current plan display with status
+   - Usage statistics with progress bars
+   - Payment history tracking
+   - Quick upgrade/manage options
+
+4. **Subscription Gates**
+   - Feature locking for premium features
+   - Automatic unlock after payment
+   - Trial period support
+   - Clear upgrade prompts
+
+### Database Additions
+```sql
+-- Payment History Table
+CREATE TABLE payment_history (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id),
+  amount INTEGER,
+  currency TEXT,
+  status TEXT,
+  created_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Usage Summary Function
+CREATE FUNCTION get_usage_summary(user_uuid UUID)
+RETURNS TABLE (
+  posts_used INTEGER,
+  posts_limit INTEGER,
+  ai_suggestions_used INTEGER,
+  ai_suggestions_limit INTEGER,
+  connected_accounts_used INTEGER,
+  connected_accounts_limit INTEGER
+);
+```
+
+### Key Files for Billing System
+- `/app/dashboard/billing/page.tsx` - Billing dashboard
+- `/app/api/stripe/portal/route.ts` - Customer portal endpoint
+- `/app/api/stripe/checkout/route.ts` - Checkout session creation
+- `/app/api/webhooks/stripe/route.ts` - Webhook handler
+- `/lib/subscription/client.ts` - Client-side subscription utilities
+- `/components/subscription/subscription-gate.tsx` - Feature locking
