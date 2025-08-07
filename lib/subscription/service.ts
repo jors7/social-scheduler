@@ -66,8 +66,23 @@ export class SubscriptionService {
       throw error;
     }
 
+    // Type assertion for the subscription data
+    const subscriptionData = data as {
+      id?: string;
+      plan_id: string;
+      status: string;
+      billing_cycle: string;
+      current_period_start: string;
+      current_period_end: string;
+      trial_end?: string | null;
+      cancel_at?: string | null;
+      canceled_at?: string | null;
+      stripe_subscription_id?: string | null;
+      stripe_customer_id?: string | null;
+    } | null;
+
     // If no subscription found, return free plan
-    if (!data) {
+    if (!subscriptionData) {
       return {
         id: 'free-default',
         user_id: userId,
@@ -86,21 +101,21 @@ export class SubscriptionService {
     }
 
     // Get the plan details
-    const plan = SUBSCRIPTION_PLANS[data.plan_id as PlanId];
+    const plan = SUBSCRIPTION_PLANS[subscriptionData.plan_id as PlanId];
 
     return {
-      id: data.id || 'free-default',
+      id: subscriptionData.id || 'free-default',
       user_id: userId,
-      plan_id: data.plan_id as PlanId,
-      status: data.status as SubscriptionStatus,
-      billing_cycle: data.billing_cycle as BillingCycle,
-      current_period_start: data.current_period_start,
-      current_period_end: data.current_period_end,
-      trial_end: data.trial_end,
-      cancel_at: data.cancel_at,
-      canceled_at: data.canceled_at,
-      stripe_subscription_id: data.stripe_subscription_id,
-      stripe_customer_id: data.stripe_customer_id,
+      plan_id: subscriptionData.plan_id as PlanId,
+      status: subscriptionData.status as SubscriptionStatus,
+      billing_cycle: subscriptionData.billing_cycle as BillingCycle,
+      current_period_start: subscriptionData.current_period_start,
+      current_period_end: subscriptionData.current_period_end,
+      trial_end: subscriptionData.trial_end || null,
+      cancel_at: subscriptionData.cancel_at || null,
+      canceled_at: subscriptionData.canceled_at || null,
+      stripe_subscription_id: subscriptionData.stripe_subscription_id || null,
+      stripe_customer_id: subscriptionData.stripe_customer_id || null,
       plan,
     };
   }
