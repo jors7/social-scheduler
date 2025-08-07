@@ -78,9 +78,9 @@ export async function POST(request: NextRequest) {
         },
         product_data: {
           name: `${plan.name} Plan`,
-          description: plan.description,
           metadata: {
             plan_id: plan.id,
+            description: plan.description,
           },
         },
       })
