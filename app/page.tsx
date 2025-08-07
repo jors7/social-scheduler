@@ -4,10 +4,11 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Check, Calendar, Users, BarChart, Zap, Shield, Star, Menu } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
+import { AuthModals } from '@/components/auth/auth-modals'
 
 const platforms = [
   { name: 'X (Twitter)', icon: '𝕏' },
@@ -143,15 +144,37 @@ const faqs = [
   },
 ]
 
-export default function LandingPage() {
+function LandingPageContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState<string | null>(null)
+  const [signInOpen, setSignInOpen] = useState(false)
+  const [signUpOpen, setSignUpOpen] = useState(false)
+  const [signUpPlanId, setSignUpPlanId] = useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   useEffect(() => {
     checkAuth()
-  }, [])
+    
+    // Check URL parameters for modal triggers
+    const shouldOpenSignIn = searchParams.get('signin') === 'true'
+    const shouldOpenSignUp = searchParams.get('signup') === 'true'
+    const planFromUrl = searchParams.get('plan')
+    
+    if (shouldOpenSignIn) {
+      setSignInOpen(true)
+      // Clean up URL
+      router.replace('/', { scroll: false })
+    } else if (shouldOpenSignUp) {
+      if (planFromUrl) {
+        setSignUpPlanId(planFromUrl)
+      }
+      setSignUpOpen(true)
+      // Clean up URL
+      router.replace('/', { scroll: false })
+    }
+  }, [searchParams, router])
 
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -160,8 +183,9 @@ export default function LandingPage() {
 
   const handleStartTrial = async (planId: string) => {
     if (!isAuthenticated) {
-      // Not logged in, redirect to signup with plan
-      router.push(`/signup?plan=${planId}`)
+      // Not logged in, open signup modal with plan
+      setSignUpPlanId(planId)
+      setSignUpOpen(true)
       return
     }
 
@@ -192,6 +216,13 @@ export default function LandingPage() {
     }
   }
 
+  const scrollToPricing = () => {
+    const pricingSection = document.getElementById('pricing')
+    if (pricingSection) {
+      pricingSection.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       {/* Header */}
@@ -215,12 +246,18 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Link href="/login">
-                <Button variant="outline">Login</Button>
-              </Link>
-              <Link href="/signup">
-                <Button>Start Free Trial</Button>
-              </Link>
+              {isAuthenticated ? (
+                <Button variant="outline" onClick={() => router.push('/dashboard')}>
+                  Dashboard
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={() => setSignInOpen(true)}>
+                  Login
+                </Button>
+              )}
+              <Button onClick={scrollToPricing}>
+                Start Free Trial
+              </Button>
               <Button variant="ghost" size="icon" className="md:hidden">
                 <Menu className="h-5 w-5" />
               </Button>
@@ -240,11 +277,9 @@ export default function LandingPage() {
             Manage all your social media accounts from one dashboard. Schedule, post, and analyze your content across multiple platforms with ease.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Link href="/signup">
-              <Button size="lg" className="text-lg px-8">
-                Start Free Trial
-              </Button>
-            </Link>
+            <Button size="lg" className="text-lg px-8" onClick={scrollToPricing}>
+              Start Free Trial
+            </Button>
             <Button size="lg" variant="outline" className="text-lg px-8">
               Watch Demo
             </Button>
@@ -427,6 +462,27 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Auth Modals */}
+      <AuthModals
+        signInOpen={signInOpen}
+        signUpOpen={signUpOpen}
+        onSignInOpenChange={setSignInOpen}
+        onSignUpOpenChange={setSignUpOpen}
+        signUpPlanId={signUpPlanId}
+      />
     </div>
+  )
+}
+
+export default function LandingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-gray-50">
+        <div className="animate-pulse">Loading...</div>
+      </div>
+    }>
+      <LandingPageContent />
+    </Suspense>
   )
 }
