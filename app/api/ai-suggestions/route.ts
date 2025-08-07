@@ -4,19 +4,20 @@ import { checkAndIncrementUsage } from '@/lib/subscription/usage'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-}) : null
-
 export async function POST(request: NextRequest) {
   try {
     const { content, platforms, tone, includeHashtags, includeEmojis } = await request.json()
+
+    // Initialize OpenAI only when needed
+    const openai = process.env.OPENAI_API_KEY ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    }) : null
 
     if (!openai) {
       return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 })
     }
 
-    // Check authentication
+    // Check authentication - moved inside the handler
     const cookieStore = cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
