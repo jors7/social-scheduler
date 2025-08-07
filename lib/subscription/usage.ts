@@ -1,4 +1,4 @@
-import { subscriptionService } from './service';
+import { SubscriptionService } from './service';
 import { toast } from 'sonner';
 
 export type ResourceType = 'posts' | 'ai_suggestions' | 'connected_accounts';
@@ -16,6 +16,8 @@ export async function checkAndIncrementUsage(
   showToast: boolean = true
 ): Promise<UsageCheck> {
   try {
+    // Create service instance inside the function
+    const subscriptionService = new SubscriptionService();
     const usage = await subscriptionService.getUsageSummary();
     const subscription = await subscriptionService.getUserSubscription();
     

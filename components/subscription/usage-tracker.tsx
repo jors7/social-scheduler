@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { Progress } from '@/components/ui/progress'
-import { subscriptionService } from '@/lib/subscription/service'
+// import { subscriptionService } from '@/lib/subscription/service'
+// Note: This component needs to use a client-side API to get usage data
 import { formatUsageDisplay, getUsagePercentage, isNearLimit } from '@/lib/subscription/usage'
 import { cn } from '@/lib/utils'
 import { AlertCircle, CheckCircle, Infinity as InfinityIcon } from 'lucide-react'
@@ -31,7 +32,16 @@ export function UsageTracker({
 
   const loadUsage = async () => {
     try {
-      const summary = await subscriptionService.getUsageSummary()
+      // TODO: Replace with client-side API call
+      // const summary = await subscriptionService.getUsageSummary()
+      const summary = {
+        posts_used: 0,
+        posts_limit: 100,
+        ai_suggestions_used: 0,
+        ai_suggestions_limit: 20,
+        connected_accounts_used: 0,
+        connected_accounts_limit: 5
+      }
       
       switch (resource) {
         case 'posts':

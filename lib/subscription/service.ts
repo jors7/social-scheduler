@@ -333,4 +333,8 @@ export class SubscriptionService {
 }
 
 // Export singleton instance
-export const subscriptionService = new SubscriptionService();
+// Don't instantiate at module level - create instances inside request handlers
+// export const subscriptionService = new SubscriptionService();
+
+// Export the class instead
+export { SubscriptionService };
