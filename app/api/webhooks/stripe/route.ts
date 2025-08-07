@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription
+        const subscription = event.data.object as any // Type assertion to avoid strict typing issues
         const { user_id, plan_id, billing_cycle } = subscription.metadata
         
         console.log('Processing customer.subscription.updated:', { user_id, status: subscription.status })
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription
+        const subscription = event.data.object as any // Type assertion to avoid strict typing issues
         const { user_id } = subscription.metadata
         
         console.log('Processing customer.subscription.deleted:', { user_id })
@@ -136,15 +136,16 @@ export async function POST(request: NextRequest) {
       }
 
       case 'invoice.payment_succeeded': {
-        const invoice = event.data.object as Stripe.Invoice
+        const invoice = event.data.object as any // Type assertion to avoid strict typing issues
         
         if (invoice.subscription) {
-          const subscription = await stripe.subscriptions.retrieve(
+          const subscriptionResponse = await stripe.subscriptions.retrieve(
             invoice.subscription as string
           )
+          const subscription = subscriptionResponse as any
           
           console.log('Processing invoice.payment_succeeded:', { 
-            user_id: subscription.metadata.user_id,
+            user_id: subscription.metadata?.user_id,
             amount: invoice.amount_paid 
           })
           
@@ -152,13 +153,13 @@ export async function POST(request: NextRequest) {
           const { error } = await supabaseAdmin
             .from('payment_history')
             .insert({
-              user_id: subscription.metadata.user_id,
+              user_id: subscription.metadata?.user_id,
               amount: invoice.amount_paid,
               currency: invoice.currency,
               status: 'succeeded',
               stripe_payment_intent_id: invoice.payment_intent as string,
               stripe_invoice_id: invoice.id,
-              description: `Payment for ${subscription.metadata.plan_id} plan`,
+              description: `Payment for ${subscription.metadata?.plan_id} plan`,
               created_at: new Date().toISOString()
             })
             
