@@ -45,9 +45,11 @@ export async function POST(request: NextRequest) {
         console.log('Processing checkout.session.completed:', { user_id, plan_id, billing_cycle })
         
         if (session.subscription) {
-          const subscription = await stripe.subscriptions.retrieve(
-            session.subscription as string
-          )
+          const subscriptionId = typeof session.subscription === 'string' 
+            ? session.subscription 
+            : session.subscription.id
+          
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId)
           
           const currentPeriodEnd = new Date(subscription.current_period_end * 1000)
           const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null
