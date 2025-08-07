@@ -90,6 +90,8 @@ export async function checkAndIncrementUsage(
 
 export async function checkUsageOnly(resourceType: ResourceType): Promise<UsageCheck> {
   try {
+    // Create service instance inside the function
+    const subscriptionService = new SubscriptionService();
     const usage = await subscriptionService.getUsageSummary();
     
     let currentUsage: number;
