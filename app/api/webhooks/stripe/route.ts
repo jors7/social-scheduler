@@ -47,12 +47,16 @@ export async function POST(request: NextRequest) {
         if (session.subscription) {
           const subscriptionId = typeof session.subscription === 'string' 
             ? session.subscription 
-            : session.subscription.id
+            : (session.subscription as any).id
           
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+          const subscriptionResponse = await stripe.subscriptions.retrieve(subscriptionId)
+          // Handle the Response wrapper if present
+          const subscription = 'current_period_end' in subscriptionResponse 
+            ? subscriptionResponse 
+            : (subscriptionResponse as any).data || subscriptionResponse
           
-          const currentPeriodEnd = new Date(subscription.current_period_end * 1000)
-          const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null
+          const currentPeriodEnd = new Date((subscription as any).current_period_end * 1000)
+          const trialEnd = (subscription as any).trial_end ? new Date((subscription as any).trial_end * 1000) : null
           
           // Create or update subscription in database
           const { data, error } = await supabaseAdmin
@@ -60,11 +64,11 @@ export async function POST(request: NextRequest) {
             .upsert({
               user_id,
               plan_id,
-              status: subscription.status === 'trialing' ? 'trialing' : 'active',
+              status: (subscription as any).status === 'trialing' ? 'trialing' : 'active',
               billing_cycle,
-              stripe_subscription_id: subscription.id,
+              stripe_subscription_id: (subscription as any).id,
               stripe_customer_id: session.customer as string,
-              current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+              current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
               current_period_end: currentPeriodEnd.toISOString(),
               trial_end: trialEnd?.toISOString(),
               updated_at: new Date().toISOString()
