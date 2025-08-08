@@ -241,7 +241,7 @@ export default function MediaLibraryPage() {
         console.log('File uploaded, URL:', publicUrl)
 
         // Get image dimensions if it's an image
-        let dimensions = { width: null, height: null }
+        let dimensions: { width: number | null; height: number | null } = { width: null, height: null }
         if (file.type.startsWith('image/')) {
           dimensions = await getImageDimensions(file)
         }
@@ -285,7 +285,11 @@ export default function MediaLibraryPage() {
 
   const getImageDimensions = (file: File): Promise<{ width: number | null; height: number | null }> => {
     return new Promise((resolve) => {
-      const img = new Image()
+      if (typeof window === 'undefined') {
+        resolve({ width: null, height: null })
+        return
+      }
+      const img = document.createElement('img')
       img.onload = () => {
         resolve({ width: img.width, height: img.height })
       }

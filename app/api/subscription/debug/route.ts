@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
         subscription: stripeSubscription ? {
           id: stripeSubscription.id,
           status: stripeSubscription.status,
-          current_period_end: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+          current_period_end: new Date((stripeSubscription as any).current_period_end * 1000).toISOString(),
           items: stripeSubscription.items.data.map(item => ({
             price_id: item.price.id,
             product: item.price.product

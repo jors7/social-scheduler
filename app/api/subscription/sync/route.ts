@@ -131,16 +131,16 @@ export async function POST(request: NextRequest) {
           billing_cycle: billingCycle,
           stripe_subscription_id: activeSubscription.id,
           stripe_customer_id: customer.id,
-          current_period_start: new Date(activeSubscription.current_period_start * 1000).toISOString(),
-          current_period_end: new Date(activeSubscription.current_period_end * 1000).toISOString(),
-          trial_end: activeSubscription.trial_end 
-            ? new Date(activeSubscription.trial_end * 1000).toISOString() 
+          current_period_start: new Date((activeSubscription as any).current_period_start * 1000).toISOString(),
+          current_period_end: new Date((activeSubscription as any).current_period_end * 1000).toISOString(),
+          trial_end: (activeSubscription as any).trial_end 
+            ? new Date((activeSubscription as any).trial_end * 1000).toISOString() 
             : null,
-          cancel_at: activeSubscription.cancel_at 
-            ? new Date(activeSubscription.cancel_at * 1000).toISOString() 
+          cancel_at: (activeSubscription as any).cancel_at 
+            ? new Date((activeSubscription as any).cancel_at * 1000).toISOString() 
             : null,
-          canceled_at: activeSubscription.canceled_at 
-            ? new Date(activeSubscription.canceled_at * 1000).toISOString() 
+          canceled_at: (activeSubscription as any).canceled_at 
+            ? new Date((activeSubscription as any).canceled_at * 1000).toISOString() 
             : null,
           updated_at: new Date().toISOString()
         }, {
@@ -186,16 +186,16 @@ export async function POST(request: NextRequest) {
           .from('user_subscriptions')
           .update({
             status: subscription.status,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-            trial_end: subscription.trial_end 
-              ? new Date(subscription.trial_end * 1000).toISOString() 
+            current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
+            current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+            trial_end: (subscription as any).trial_end 
+              ? new Date((subscription as any).trial_end * 1000).toISOString() 
               : null,
-            cancel_at: subscription.cancel_at 
-              ? new Date(subscription.cancel_at * 1000).toISOString() 
+            cancel_at: (subscription as any).cancel_at 
+              ? new Date((subscription as any).cancel_at * 1000).toISOString() 
               : null,
-            canceled_at: subscription.canceled_at 
-              ? new Date(subscription.canceled_at * 1000).toISOString() 
+            canceled_at: (subscription as any).canceled_at 
+              ? new Date((subscription as any).canceled_at * 1000).toISOString() 
               : null,
             updated_at: new Date().toISOString()
           })

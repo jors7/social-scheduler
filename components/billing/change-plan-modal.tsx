@@ -189,12 +189,12 @@ export function ChangePlanModal({
                 {proration.upgrade ? (
                   <>
                     <p className="font-medium">Immediate charge</p>
-                    <p>You'll be charged the prorated difference immediately.</p>
+                    <p>You&apos;ll be charged the prorated difference immediately.</p>
                   </>
                 ) : (
                   <>
                     <p className="font-medium">Changes at period end</p>
-                    <p>Your plan will change at the end of your current billing period. You'll continue with your current plan until then.</p>
+                    <p>Your plan will change at the end of your current billing period. You&apos;ll continue with your current plan until then.</p>
                   </>
                 )}
               </div>
@@ -389,7 +389,7 @@ export function ChangePlanModal({
             <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg">
               <Info className="h-4 w-4 text-blue-600 mt-0.5" />
               <div className="text-sm text-blue-900">
-                <p className="font-medium">You're currently in a free trial</p>
+                <p className="font-medium">You&apos;re currently in a free trial</p>
                 <p>Changing your plan will end your trial and start billing immediately.</p>
               </div>
             </div>

@@ -6,7 +6,7 @@ import type { NextRequest } from 'next/server'
 const protectedRoutes = ['/dashboard']
 
 // Routes that require subscription (excluding free features)
-const subscriptionRoutes = [
+const subscriptionRoutes: string[] = [
   // Currently no routes require subscription check in middleware
   // Individual pages can use SubscriptionGate component instead
 ]

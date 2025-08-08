@@ -133,7 +133,7 @@ export function EditScheduledModal({
         <DialogHeader>
           <DialogTitle>Edit Scheduled Post</DialogTitle>
           <DialogDescription>
-            Make changes to your scheduled post. You can only edit posts that haven't been published yet.
+            Make changes to your scheduled post. You can only edit posts that haven&apos;t been published yet.
           </DialogDescription>
         </DialogHeader>
         

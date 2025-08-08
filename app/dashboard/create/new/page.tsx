@@ -630,7 +630,7 @@ function CreateNewPostPageContent() {
       // Load media URLs if any
       if (draft.media_urls && draft.media_urls.length > 0) {
         setUploadedMediaUrls(draft.media_urls)
-        // Note: We can't restore the actual File objects, just the URLs
+        // Note: We can&apos;t restore the actual File objects, just the URLs
         toast.info('Media files from draft have been loaded')
       }
       

@@ -87,16 +87,16 @@ export async function POST(request: NextRequest) {
         plan_id: planId,
         billing_cycle: billingCycle,
         status: stripeSub.status,
-        current_period_start: new Date(stripeSub.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(stripeSub.current_period_end * 1000).toISOString(),
-        trial_end: stripeSub.trial_end 
-          ? new Date(stripeSub.trial_end * 1000).toISOString() 
+        current_period_start: new Date((stripeSub as any).current_period_start * 1000).toISOString(),
+        current_period_end: new Date((stripeSub as any).current_period_end * 1000).toISOString(),
+        trial_end: (stripeSub as any).trial_end 
+          ? new Date((stripeSub as any).trial_end * 1000).toISOString() 
           : null,
-        cancel_at: stripeSub.cancel_at 
-          ? new Date(stripeSub.cancel_at * 1000).toISOString() 
+        cancel_at: (stripeSub as any).cancel_at 
+          ? new Date((stripeSub as any).cancel_at * 1000).toISOString() 
           : null,
-        canceled_at: stripeSub.canceled_at 
-          ? new Date(stripeSub.canceled_at * 1000).toISOString() 
+        canceled_at: (stripeSub as any).canceled_at 
+          ? new Date((stripeSub as any).canceled_at * 1000).toISOString() 
           : null,
         updated_at: new Date().toISOString()
       })

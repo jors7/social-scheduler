@@ -66,7 +66,7 @@ export function ForgotPasswordModal({ open, onOpenChange, onBackToSignIn }: Forg
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center">Reset Password</DialogTitle>
           <DialogDescription className="text-center">
-            Enter your email address and we'll send you a link to reset your password
+            Enter your email address and we&apos;ll send you a link to reset your password
           </DialogDescription>
         </DialogHeader>
         {!success ? (
@@ -108,7 +108,7 @@ export function ForgotPasswordModal({ open, onOpenChange, onBackToSignIn }: Forg
               Password reset link sent! Check your email inbox.
             </div>
             <p className="text-sm text-muted-foreground">
-              If you don't see the email, check your spam folder.
+              If you don&apos;t see the email, check your spam folder.
             </p>
             <Button onClick={handleBackToSignIn} className="w-full">
               Back to sign in

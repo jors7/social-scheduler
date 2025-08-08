@@ -132,7 +132,7 @@ export function MediaPicker({
           .getPublicUrl(fileName)
 
         // Get image dimensions if it's an image
-        let dimensions = { width: null, height: null }
+        let dimensions: { width: number | null; height: number | null } = { width: null, height: null }
         if (file.type.startsWith('image/')) {
           dimensions = await getImageDimensions(file)
         }
@@ -164,7 +164,7 @@ export function MediaPicker({
       // Auto-select uploaded files
       if (uploadedUrls.length > 0) {
         if (multiple) {
-          setSelectedItems(new Set([...selectedItems, ...uploadedUrls]))
+          setSelectedItems(new Set([...Array.from(selectedItems), ...uploadedUrls]))
         } else {
           setSelectedItems(new Set([uploadedUrls[0]]))
         }
@@ -179,7 +179,11 @@ export function MediaPicker({
 
   const getImageDimensions = (file: File): Promise<{ width: number | null; height: number | null }> => {
     return new Promise((resolve) => {
-      const img = new Image()
+      if (typeof window === 'undefined') {
+        resolve({ width: null, height: null })
+        return
+      }
+      const img = document.createElement('img')
       img.onload = () => {
         resolve({ width: img.width, height: img.height })
       }

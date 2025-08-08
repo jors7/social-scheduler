@@ -150,7 +150,7 @@ export default function PostedPostsPage() {
         totalStats.comments += data.engagement.comments || 0
         totalStats.shares += data.engagement.shares || 0
       }
-      // For now, most platforms don't return engagement data immediately
+      // For now, most platforms don&apos;t return engagement data immediately
       // So we'll show 0s which is more honest than fake data
     })
     
