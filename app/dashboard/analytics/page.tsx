@@ -10,6 +10,7 @@ import { TopPosts } from '@/components/dashboard/analytics/top-posts'
 import { ReachChart } from '@/components/dashboard/analytics/reach-chart'
 import { CalendarDays, Download, Filter, BarChart3 } from 'lucide-react'
 import { toast } from 'sonner'
+import { SubscriptionGate } from '@/components/subscription/subscription-gate'
 
 interface AnalyticsData {
   totalPosts: number
@@ -133,29 +134,31 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 space-y-8 p-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
-            <p className="text-muted-foreground">
-              Track your social media performance across all platforms
-            </p>
+      <>
+        <div className="flex-1 space-y-8 p-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
+              <p className="text-muted-foreground">
+                Track your social media performance across all platforms
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader className="pb-2">
+                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-32"></div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader className="pb-2">
-                <div className="h-4 bg-gray-200 rounded w-24"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-32"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      </>
     )
   }
 
@@ -168,7 +171,10 @@ export default function AnalyticsPage() {
             Track your social media performance across all platforms
           </p>
         </div>
-        <div className="flex items-center space-x-2">
+      </div>
+      
+      <SubscriptionGate feature="analytics">
+        <div className="space-y-8">
           <div className="flex items-center space-x-2">
             <CalendarDays className="h-4 w-4" />
             <select 
@@ -182,76 +188,76 @@ export default function AnalyticsPage() {
                 </option>
               ))}
             </select>
+            <Button variant="outline" size="sm">
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+            </Button>
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
           </div>
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
+
+          {/* Overview Cards */}
+          <OverviewCards analyticsData={analyticsData} />
+
+          <div className="grid gap-8 md:grid-cols-2">
+            {/* Engagement Chart */}
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle>Engagement Over Time</CardTitle>
+                <CardDescription>
+                  Track likes, comments, and shares across all platforms
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EngagementChart analyticsData={analyticsData} />
+              </CardContent>
+            </Card>
+
+            {/* Platform Breakdown */}
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle>Platform Performance</CardTitle>
+                <CardDescription>
+                  Compare engagement rates by platform
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PlatformBreakdown analyticsData={analyticsData} />
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-3">
+            {/* Reach Chart */}
+            <Card className="col-span-2">
+              <CardHeader>
+                <CardTitle>Reach & Impressions</CardTitle>
+                <CardDescription>
+                  Monitor your content reach and impressions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ReachChart analyticsData={analyticsData} />
+              </CardContent>
+            </Card>
+
+            {/* Top Posts */}
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle>Top Performing Posts</CardTitle>
+                <CardDescription>
+                  Your best content from the last 30 days
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TopPosts analyticsData={analyticsData} />
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
-
-      {/* Overview Cards */}
-      <OverviewCards analyticsData={analyticsData} />
-
-      <div className="grid gap-8 md:grid-cols-2">
-        {/* Engagement Chart */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Engagement Over Time</CardTitle>
-            <CardDescription>
-              Track likes, comments, and shares across all platforms
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <EngagementChart analyticsData={analyticsData} />
-          </CardContent>
-        </Card>
-
-        {/* Platform Breakdown */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Platform Performance</CardTitle>
-            <CardDescription>
-              Compare engagement rates by platform
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <PlatformBreakdown analyticsData={analyticsData} />
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-8 md:grid-cols-3">
-        {/* Reach Chart */}
-        <Card className="col-span-2">
-          <CardHeader>
-            <CardTitle>Reach & Impressions</CardTitle>
-            <CardDescription>
-              Monitor your content reach and impressions
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ReachChart analyticsData={analyticsData} />
-          </CardContent>
-        </Card>
-
-        {/* Top Posts */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Top Performing Posts</CardTitle>
-            <CardDescription>
-              Your best content from the last 30 days
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <TopPosts analyticsData={analyticsData} />
-          </CardContent>
-        </Card>
-      </div>
+      </SubscriptionGate>
     </div>
   )
 }

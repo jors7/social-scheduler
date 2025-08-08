@@ -26,7 +26,8 @@ import {
   ChevronUp,
   Menu,
   X,
-  Upload
+  Upload,
+  Image
 } from 'lucide-react'
 
 const navigation = [
@@ -53,6 +54,11 @@ const navigation = [
       { name: 'Posted', href: '/dashboard/posts/posted', icon: Send },
       { name: 'Drafts', href: '/dashboard/posts/drafts', icon: Edit },
     ],
+  },
+  {
+    name: 'Media Library',
+    href: '/dashboard/media',
+    icon: Image,
   },
   {
     name: 'Analytics',

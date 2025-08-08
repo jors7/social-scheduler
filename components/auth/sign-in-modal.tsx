@@ -19,9 +19,10 @@ interface SignInModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSwitchToSignUp: () => void
+  onSwitchToForgotPassword?: () => void
 }
 
-export function SignInModal({ open, onOpenChange, onSwitchToSignUp }: SignInModalProps) {
+export function SignInModal({ open, onOpenChange, onSwitchToSignUp, onSwitchToForgotPassword }: SignInModalProps) {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -102,7 +103,14 @@ export function SignInModal({ open, onOpenChange, onSwitchToSignUp }: SignInModa
               <button
                 type="button"
                 className="text-sm text-primary hover:underline"
-                onClick={() => {/* TODO: Implement forgot password */}}
+                onClick={() => {
+                  if (onSwitchToForgotPassword) {
+                    onOpenChange(false)
+                    setTimeout(() => {
+                      onSwitchToForgotPassword()
+                    }, 100)
+                  }
+                }}
               >
                 Forgot password?
               </button>

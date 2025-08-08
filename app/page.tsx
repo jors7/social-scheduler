@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { AuthModals } from '@/components/auth/auth-modals'
+import { CapabilitiesCarousel } from '@/components/landing/capabilities-carousel'
 
 const platforms = [
   { name: 'X (Twitter)', icon: '𝕏' },
@@ -298,6 +299,9 @@ function LandingPageContent() {
           </div>
         </div>
       </section>
+
+      {/* Capabilities Carousel Section */}
+      <CapabilitiesCarousel />
 
       {/* Features Section */}
       <section id="features" className="py-20 px-4 bg-white">

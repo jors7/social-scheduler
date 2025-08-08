@@ -1,0 +1,23 @@
+Local Development:
+  # Always run this when developing locally
+  stripe listen --forward-to localhost:3001/api/webhooks/stripe
+
+  Production (Vercel):
+  1. Go to Stripe Dashboard → Webhooks
+  2. Add endpoint: https://your-vercel-app.vercel.app/api/webhooks/stripe
+  3. Select events:
+    - checkout.session.completed
+    - customer.subscription.updated
+    - customer.subscription.deleted
+    - invoice.payment_succeeded
+  4. Copy the signing secret (starts with whsec_)
+  5. Add to Vercel environment variables as STRIPE_WEBHOOK_SECRET
+
+  This way:
+  - ✅ Local development works with Stripe CLI
+  - ✅ Production works with the dashboard webhook
+  - ✅ Both can run simultaneously without conflicts
+  - ✅ No code changes needed when switching environments
+
+  The webhook handler I just updated will try both secrets, so it's even more flexible
+  now!

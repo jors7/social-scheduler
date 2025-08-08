@@ -18,6 +18,7 @@ import {
   X,
   Play
 } from 'lucide-react'
+import { SubscriptionGate } from '@/components/subscription/subscription-gate'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -375,8 +376,10 @@ export default function PostsPage() {
         <p className="text-gray-600 mt-1">Manage all your social media posts</p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex space-x-1 border-b">
+      <SubscriptionGate feature="post management">
+        <div className="space-y-6">
+          {/* Tabs */}
+          <div className="flex space-x-1 border-b">
         {tabs.map(tab => {
           const Icon = tab.icon
           return (
@@ -563,6 +566,8 @@ export default function PostsPage() {
           </>
         )}
       </div>
+        </div>
+      </SubscriptionGate>
     </div>
   )
 }

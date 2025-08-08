@@ -7,8 +7,8 @@ const protectedRoutes = ['/dashboard']
 
 // Routes that require subscription (excluding free features)
 const subscriptionRoutes = [
-  '/dashboard/create/bulk',
-  '/dashboard/analytics',
+  // Currently no routes require subscription check in middleware
+  // Individual pages can use SubscriptionGate component instead
 ]
 
 // Public routes that should redirect to dashboard if authenticated
@@ -85,29 +85,36 @@ export async function middleware(request: NextRequest) {
   // Check subscription status for subscription-required routes
   if (isSubscriptionRoute && user) {
     try {
-      // Get user's subscription status
-      const { data: subscriptionData } = await supabase
-        .rpc('get_user_subscription', { user_uuid: user.id })
+      // Get user's subscription status directly from the table
+      const { data: subscription, error: subError } = await supabase
+        .from('user_subscriptions')
+        .select('plan_id, status')
+        .eq('user_id', user.id)
+        .in('status', ['active', 'trialing', 'past_due'])
         .single()
 
-      // Type assertion for subscription data
-      const subscription = subscriptionData as {
-        plan_id: string;
-        status: string;
-      } | null
+      console.log('Bulk upload access check:', {
+        userId: user.id,
+        subscription,
+        subError,
+        path: request.nextUrl.pathname
+      })
 
       // If no subscription or on free plan, redirect to homepage pricing
       if (!subscription || subscription.plan_id === 'free') {
+        console.log('Redirecting: No subscription or free plan')
         return NextResponse.redirect(new URL('/#pricing', request.url))
       }
 
       // Check if subscription is active or in trial
       if (!['active', 'trialing'].includes(subscription.status)) {
+        console.log('Redirecting: Invalid subscription status')
         return NextResponse.redirect(new URL('/#pricing', request.url))
       }
     } catch (error) {
       console.error('Error checking subscription:', error)
-      // Allow access but the component will handle subscription checks
+      // No subscription found, redirect to pricing
+      return NextResponse.redirect(new URL('/#pricing', request.url))
     }
   }
 

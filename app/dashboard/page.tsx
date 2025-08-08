@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 import { 
   BarChart3, 
   Calendar, 
@@ -11,7 +12,8 @@ import {
   Users,
   Clock,
   PlusCircle,
-  ArrowUpRight
+  ArrowUpRight,
+  Infinity
 } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
@@ -20,6 +22,8 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { getClientSubscription } from '@/lib/subscription/client'
 import { Crown, Sparkles } from 'lucide-react'
+import { SUBSCRIPTION_PLANS } from '@/lib/subscription/plans'
+import { SubscriptionGate } from '@/components/subscription/subscription-gate'
 
 interface PostData {
   id: string
@@ -41,6 +45,15 @@ interface DashboardStats {
   avgEngagement: number
 }
 
+interface UsageData {
+  posts_used: number
+  posts_limit: number
+  ai_suggestions_used: number
+  ai_suggestions_limit: number
+  connected_accounts_used: number
+  connected_accounts_limit: number
+}
+
 const platformIcons: Record<string, string> = {
   twitter: '𝕏',
   instagram: '📷',
@@ -60,6 +73,7 @@ export default function DashboardPage() {
   const [upcomingSchedule, setUpcomingSchedule] = useState<{date: string, posts: number}[]>([])
   const [loading, setLoading] = useState(true)
   const [subscription, setSubscription] = useState<any>(null)
+  const [usage, setUsage] = useState<UsageData | null>(null)
 
   const fetchDashboardData = async () => {
     try {
@@ -75,6 +89,34 @@ export default function DashboardPage() {
       // Get subscription status
       const subData = await getClientSubscription()
       setSubscription(subData)
+      
+      // Get usage data
+      const { data: usageData, error: usageError } = await supabase
+        .rpc('get_usage_summary', { user_uuid: user.id })
+      
+      if (!usageError && usageData && usageData.length > 0) {
+        const usage = usageData[0]
+        const currentPlan = SUBSCRIPTION_PLANS[subData?.planId || 'free']
+        const enhancedUsage = {
+          posts_used: usage.posts_used || 0,
+          posts_limit: currentPlan.limits.posts_per_month,
+          ai_suggestions_used: usage.ai_suggestions_used || 0,
+          ai_suggestions_limit: currentPlan.limits.ai_suggestions_per_month,
+          connected_accounts_used: usage.connected_accounts_used || 0,
+          connected_accounts_limit: currentPlan.limits.connected_accounts
+        }
+        setUsage(enhancedUsage)
+      } else {
+        const currentPlan = SUBSCRIPTION_PLANS[subData?.planId || 'free']
+        setUsage({
+          posts_used: 0,
+          posts_limit: currentPlan.limits.posts_per_month,
+          ai_suggestions_used: 0,
+          ai_suggestions_limit: currentPlan.limits.ai_suggestions_per_month,
+          connected_accounts_used: 0,
+          connected_accounts_limit: currentPlan.limits.connected_accounts
+        })
+      }
       
       // Fetch all data concurrently
       const [draftsResult, scheduledResult] = await Promise.all([
@@ -278,104 +320,227 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Welcome back! Here&apos;s your social media overview.</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold">Dashboard</h1>
+              {subscription && (
+                <Badge 
+                  variant={subscription.hasSubscription ? "default" : "secondary"}
+                  className={cn(
+                    "font-medium",
+                    subscription.hasSubscription && "bg-primary"
+                  )}
+                >
+                  {subscription.hasSubscription ? (
+                    <>
+                      <Crown className="mr-1 h-3 w-3" />
+                      {subscription.planId ? subscription.planId.charAt(0).toUpperCase() + subscription.planId.slice(1) : 'Free'}
+                      {subscription.isTrialing && ' (Trial)'}
+                    </>
+                  ) : (
+                    'Free Plan'
+                  )}
+                </Badge>
+              )}
+            </div>
+            <p className="text-gray-600 mt-1">
+              Welcome back! 
+              {subscription?.hasSubscription && subscription?.isTrialing && subscription?.trialEndsAt && (
+                <span className="ml-1 text-sm">
+                  Trial ends {new Date(subscription.trialEndsAt).toLocaleDateString()}
+                </span>
+              )}
+              {subscription?.hasSubscription && !subscription?.isTrialing && subscription?.currentPeriodEnd && (
+                <span className="ml-1 text-sm">
+                  Renews {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                </span>
+              )}
+            </p>
+          </div>
         </div>
-        <Link href="/dashboard/create/new">
-          <Button className="mt-4 sm:mt-0">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create Post
-          </Button>
-        </Link>
+        <div className="flex gap-2 mt-4 sm:mt-0">
+          <Link href="/dashboard/create/new">
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Post
+            </Button>
+          </Link>
+          {subscription && !subscription.hasSubscription && (
+            <Link href="/#pricing">
+              <Button variant="outline">
+                <Sparkles className="mr-2 h-4 w-4" />
+                Upgrade
+              </Button>
+            </Link>
+          )}
+          {subscription && subscription.hasSubscription && (
+            <Link href="/dashboard/billing">
+              <Button variant="outline" size="icon">
+                <Crown className="h-4 w-4" />
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
-      {/* Membership Status Card */}
-      {subscription && (
-        <Card className={cn(
-          "border-2",
-          subscription.hasSubscription ? "border-primary bg-gradient-to-r from-primary/5 to-primary/10" : "border-gray-200"
-        )}>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {subscription.hasSubscription ? (
-                  <Crown className="h-5 w-5 text-primary" />
-                ) : (
-                  <Sparkles className="h-5 w-5 text-gray-400" />
-                )}
-                <CardTitle className="text-lg">Your Membership</CardTitle>
-              </div>
-              <Badge 
-                variant={subscription.hasSubscription ? "default" : "secondary"}
-                className={cn(
-                  "font-semibold",
-                  subscription.hasSubscription && "bg-primary"
-                )}
-              >
-                {subscription.planId ? subscription.planId.charAt(0).toUpperCase() + subscription.planId.slice(1) : 'Free'} Plan
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">
-                  {subscription.hasSubscription ? (
-                    subscription.isTrialing ? 
-                      `Trial ends ${subscription.trialEndsAt ? new Date(subscription.trialEndsAt).toLocaleDateString() : 'soon'}` :
-                      'Full access to all premium features'
-                  ) : (
-                    'Upgrade to unlock scheduling, analytics, and more'
-                  )}
-                </p>
-                {subscription.hasSubscription && subscription.currentPeriodEnd && (
-                  <p className="text-xs text-muted-foreground">
-                    Renews on {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
-                  </p>
-                )}
-              </div>
-              <div className="flex gap-2">
-                {subscription.hasSubscription ? (
-                  <Link href="/dashboard/billing">
-                    <Button variant="outline" size="sm">
-                      Manage Billing
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link href="/#pricing">
-                    <Button size="sm">
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Upgrade Now
-                    </Button>
-                  </Link>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <SubscriptionGate feature="dashboard">
+        <div className="space-y-8">
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {statsData.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <Link href="/dashboard/create/new">
+              <Button variant="outline" className="w-full justify-start" size="sm">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                New Post
+              </Button>
+            </Link>
+            <Link href="/dashboard/posts">
+              <Button variant="outline" className="w-full justify-start" size="sm">
+                <FileText className="mr-2 h-4 w-4" />
+                View Posts
+              </Button>
+            </Link>
+            <Link href="/dashboard/calendar">
+              <Button variant="outline" className="w-full justify-start" size="sm">
+                <Calendar className="mr-2 h-4 w-4" />
+                Calendar
+              </Button>
+            </Link>
+            <Link href="/dashboard/analytics">
+              <Button variant="outline" className="w-full justify-start" size="sm">
+                <TrendingUp className="mr-2 h-4 w-4" />
+                Analytics
+              </Button>
+            </Link>
+            <Link href="/dashboard/settings">
+              <Button variant="outline" className="w-full justify-start" size="sm">
+                <Users className="mr-2 h-4 w-4" />
+                Accounts
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Usage Statistics */}
+      {usage && (
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Posts
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className={cn(
-                "text-xs mt-1",
-                stat.trend === 'up' ? 'text-green-600' : 'text-gray-600'
-              )}>
-                {stat.description}
-              </p>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Used this month</span>
+                  <span className={cn(
+                    "font-medium flex items-center gap-1",
+                    usage.posts_used > usage.posts_limit * 0.8 && usage.posts_limit !== -1 ? 'text-red-600' :
+                    usage.posts_used > usage.posts_limit * 0.5 && usage.posts_limit !== -1 ? 'text-yellow-600' : 
+                    'text-green-600'
+                  )}>
+                    <span>{usage.posts_used}</span>
+                    <span>/</span>
+                    {usage.posts_limit === -1 ? (
+                      <Infinity className="h-4 w-4" />
+                    ) : (
+                      <span>{usage.posts_limit}</span>
+                    )}
+                  </span>
+                </div>
+                {usage.posts_limit !== -1 && (
+                  <Progress 
+                    value={(usage.posts_used / usage.posts_limit) * 100} 
+                    className="h-2"
+                  />
+                )}
+              </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Connected Accounts
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Active accounts</span>
+                  <span className={cn(
+                    "font-medium flex items-center gap-1",
+                    usage.connected_accounts_used > usage.connected_accounts_limit * 0.8 && usage.connected_accounts_limit !== -1 ? 'text-red-600' :
+                    usage.connected_accounts_used > usage.connected_accounts_limit * 0.5 && usage.connected_accounts_limit !== -1 ? 'text-yellow-600' : 
+                    'text-green-600'
+                  )}>
+                    <span>{usage.connected_accounts_used}</span>
+                    <span>/</span>
+                    {usage.connected_accounts_limit === -1 ? (
+                      <Infinity className="h-4 w-4" />
+                    ) : (
+                      <span>{usage.connected_accounts_limit}</span>
+                    )}
+                  </span>
+                </div>
+                {usage.connected_accounts_limit !== -1 && (
+                  <Progress 
+                    value={(usage.connected_accounts_used / usage.connected_accounts_limit) * 100} 
+                    className="h-2"
+                  />
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                AI Suggestions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Used this month</span>
+                  <span className={cn(
+                    "font-medium flex items-center gap-1",
+                    usage.ai_suggestions_used > usage.ai_suggestions_limit * 0.8 && usage.ai_suggestions_limit !== -1 && usage.ai_suggestions_limit !== 0 ? 'text-red-600' :
+                    usage.ai_suggestions_used > usage.ai_suggestions_limit * 0.5 && usage.ai_suggestions_limit !== -1 && usage.ai_suggestions_limit !== 0 ? 'text-yellow-600' : 
+                    'text-green-600'
+                  )}>
+                    <span>{usage.ai_suggestions_used}</span>
+                    <span>/</span>
+                    {usage.ai_suggestions_limit === -1 ? (
+                      <Infinity className="h-4 w-4" />
+                    ) : (
+                      <span>{usage.ai_suggestions_limit}</span>
+                    )}
+                  </span>
+                </div>
+                {usage.ai_suggestions_limit !== -1 && usage.ai_suggestions_limit !== 0 && (
+                  <Progress 
+                    value={(usage.ai_suggestions_used / usage.ai_suggestions_limit) * 100} 
+                    className="h-2"
+                  />
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent Posts */}
@@ -484,35 +649,28 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common tasks and shortcuts</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Link href="/dashboard/create/new">
-              <Button variant="outline" className="w-full justify-start">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                New Post
-              </Button>
-            </Link>
-            <Link href="/dashboard/analytics">
-              <Button variant="outline" className="w-full justify-start">
-                <TrendingUp className="mr-2 h-4 w-4" />
-                View Analytics
-              </Button>
-            </Link>
-            <Link href="/dashboard/settings">
-              <Button variant="outline" className="w-full justify-start">
-                <Users className="mr-2 h-4 w-4" />
-                Connect Accounts
-              </Button>
-            </Link>
+          {/* Stats Grid - Activity Metrics */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {statsData.map((stat) => (
+              <Card key={stat.title}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                  <stat.icon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <p className={cn(
+                    "text-xs mt-1",
+                    stat.trend === 'up' ? 'text-green-600' : 'text-gray-600'
+                  )}>
+                    {stat.description}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </SubscriptionGate>
     </div>
   )
 }

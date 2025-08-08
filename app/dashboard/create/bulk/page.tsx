@@ -18,7 +18,9 @@ import {
   AlertCircle,
   CheckCircle
 } from 'lucide-react'
+import { SubscriptionGate } from '@/components/subscription/subscription-gate'
 import { cn } from '@/lib/utils'
+import { BulkEditModal } from '@/components/posts/bulk-edit-modal'
 
 interface BulkPost {
   id: string
@@ -44,11 +46,30 @@ const platforms = [
 ]
 
 export default function BulkUploadPage() {
+  return (
+    <div className="flex-1 space-y-8 p-8">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Bulk Upload & Schedule</h2>
+        <p className="text-muted-foreground">
+          Upload multiple posts at once and schedule them across your social media platforms
+        </p>
+      </div>
+      
+      <SubscriptionGate feature="bulk upload">
+        <BulkUploadContent />
+      </SubscriptionGate>
+    </div>
+  )
+}
+
+function BulkUploadContent() {
   const [bulkPosts, setBulkPosts] = useState<BulkPost[]>([])
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['facebook', 'bluesky'])
   const [defaultScheduleTime, setDefaultScheduleTime] = useState('')
   const [schedulingInterval, setSchedulingInterval] = useState(30) // minutes between posts
   const [isProcessing, setIsProcessing] = useState(false)
+  const [editingPost, setEditingPost] = useState<BulkPost | null>(null)
+  const [editModalOpen, setEditModalOpen] = useState(false)
 
   // Handle CSV file upload
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -275,14 +296,7 @@ export default function BulkUploadPage() {
   }
 
   return (
-    <div className="flex-1 space-y-8 p-8">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Bulk Upload & Schedule</h2>
-        <p className="text-muted-foreground">
-          Upload multiple posts at once and schedule them across your social media platforms
-        </p>
-      </div>
-
+    <>
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left Column - 2/3 width */}
         <div className="lg:col-span-2 space-y-6">
@@ -372,8 +386,8 @@ export default function BulkUploadPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              // TODO: Open edit modal or inline editor
-                              toast.info('Editing individual posts coming soon! For now, edit your CSV and re-upload.')
+                              setEditingPost(post)
+                              setEditModalOpen(true)
                             }}
                             title="Edit post content and add media"
                           >
@@ -585,6 +599,20 @@ export default function BulkUploadPage() {
           </Card>
         </div>
       </div>
-    </div>
+
+      {/* Edit Modal */}
+      <BulkEditModal
+        post={editingPost}
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        onSave={(updatedPost) => {
+          setBulkPosts(prev => 
+            prev.map(p => p.id === updatedPost.id ? updatedPost : p)
+          )
+          toast.success('Post updated')
+        }}
+        availablePlatforms={platforms}
+      />
+    </>
   )
 }

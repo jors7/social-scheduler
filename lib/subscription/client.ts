@@ -5,6 +5,7 @@ export interface ClientSubscription {
   hasSubscription: boolean
   planId: PlanId
   status: string
+  billingCycle?: string
   isTrialing: boolean
   trialEndsAt?: string
   currentPeriodEnd?: string
@@ -46,6 +47,7 @@ export async function getClientSubscription(): Promise<ClientSubscription | null
       hasSubscription: hasActiveSubscription,
       planId: subscription.plan_id as PlanId,
       status: subscription.status,
+      billingCycle: subscription.billing_cycle,
       isTrialing: subscription.status === 'trialing',
       trialEndsAt: subscription.trial_end,
       currentPeriodEnd: subscription.current_period_end

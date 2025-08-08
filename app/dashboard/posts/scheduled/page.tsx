@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ScheduledPostsList } from '@/components/scheduled-posts-list'
+import { SubscriptionGate } from '@/components/subscription/subscription-gate'
 
 interface ScheduledPost {
   id: string
@@ -444,7 +445,9 @@ export default function ScheduledPostsPage() {
         <p className="text-gray-600 mt-1">Manage your upcoming social media posts</p>
       </div>
 
-      {/* Search and Filter Bar */}
+      <SubscriptionGate feature="scheduled posts">
+        <div className="space-y-6">
+          {/* Search and Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -567,6 +570,8 @@ export default function ScheduledPostsPage() {
         onEditPost={handleEditPost}
         loading={loading}
       />
+        </div>
+      </SubscriptionGate>
     </div>
   )
 }

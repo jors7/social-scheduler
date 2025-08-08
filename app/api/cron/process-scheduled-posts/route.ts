@@ -179,6 +179,17 @@ export async function GET(request: NextRequest) {
             })
             .eq('id', post.id);
 
+          // Increment posts usage counter
+          try {
+            await supabase.rpc('increment_usage', {
+              user_uuid: post.user_id,
+              resource: 'posts',
+              increment: 1
+            });
+          } catch (usageError) {
+            console.error('Failed to increment usage counter:', usageError);
+          }
+
           // Clean up uploaded media files if all successful
           if (post.media_urls && post.media_urls.length > 0) {
             try {

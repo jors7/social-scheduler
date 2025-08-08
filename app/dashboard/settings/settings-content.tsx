@@ -400,12 +400,7 @@ export default function SettingsContent() {
   ]
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-gray-600 mt-1">Manage your account and preferences</p>
-      </div>
-
+    <div>
       {/* Navigation Tabs */}
       <div className="mt-8 border-b border-gray-200">
         <nav className="flex space-x-8" aria-label="Tabs">

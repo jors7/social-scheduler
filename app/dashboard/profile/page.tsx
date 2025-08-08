@@ -220,14 +220,22 @@ export default function ProfilePage() {
               </Badge>
             </div>
             {subscription?.isTrialing && subscription?.trialEndsAt && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Trial Ends</span>
-                <span className="text-sm text-gray-600">
-                  {format(new Date(subscription.trialEndsAt), 'MMM d, yyyy')}
-                </span>
-              </div>
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Trial Ends</span>
+                  <span className="text-sm text-gray-600">
+                    {format(new Date(subscription.trialEndsAt), 'MMM d, yyyy')}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">First Payment</span>
+                  <span className="text-sm text-gray-600">
+                    {format(new Date(subscription.trialEndsAt), 'MMM d, yyyy')}
+                  </span>
+                </div>
+              </>
             )}
-            {subscription?.currentPeriodEnd && (
+            {subscription?.hasSubscription && !subscription?.isTrialing && subscription?.currentPeriodEnd && (
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Billing Period Ends</span>
                 <span className="text-sm text-gray-600">

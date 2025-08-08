@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { SubscriptionGate } from '@/components/subscription/subscription-gate'
 
 interface PostedPost {
   id: string
@@ -252,7 +253,9 @@ export default function PostedPostsPage() {
         <p className="text-gray-600 mt-1">View and analyze your published posts</p>
       </div>
 
-      {/* Search and Filter Bar */}
+      <SubscriptionGate feature="posted content">
+        <div className="space-y-6">
+          {/* Search and Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -497,6 +500,8 @@ export default function PostedPostsPage() {
           </>
         )}
       </div>
+        </div>
+      </SubscriptionGate>
     </div>
   )
 }

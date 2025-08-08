@@ -1,26 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase/server'
 import Stripe from 'stripe'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-07-30.basil',
+  apiVersion: '2024-11-20.acacia' as any,
 })
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-        },
-      }
-    )
+    const supabase = await createClient()
 
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -44,17 +32,36 @@ export async function POST(request: NextRequest) {
     }
 
     // Create a portal session
-    const session = await stripe.billingPortal.sessions.create({
-      customer: subscription.stripe_customer_id,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing`,
-    })
+    try {
+      const session = await stripe.billingPortal.sessions.create({
+        customer: subscription.stripe_customer_id,
+        return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/dashboard/billing`,
+      })
 
-    return NextResponse.json({ url: session.url })
+      return NextResponse.json({ url: session.url })
+    } catch (stripeError: any) {
+      console.error('Stripe portal error:', stripeError)
+      
+      // Check if it's a configuration issue
+      if (stripeError.message?.includes('No such customer')) {
+        return NextResponse.json({ 
+          error: 'Customer not found in Stripe. Please contact support.',
+        }, { status: 404 })
+      }
+      
+      if (stripeError.message?.includes('portal')) {
+        return NextResponse.json({ 
+          error: 'Customer portal not configured in Stripe. Please enable it in your Stripe dashboard.',
+        }, { status: 500 })
+      }
+      
+      throw stripeError
+    }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Portal session error:', error)
     return NextResponse.json(
-      { error: 'Failed to create portal session' },
+      { error: error.message || 'Failed to create portal session' },
       { status: 500 }
     )
   }

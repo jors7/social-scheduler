@@ -81,63 +81,65 @@ export function SubscriptionGate({ children, feature = 'premium features', class
   if (!hasSubscription) {
     return (
       <div className={cn("relative", className)}>
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-background/95 backdrop-blur-md z-10 flex items-center justify-center p-8">
-          <Card className="w-full max-w-md shadow-lg">
-            <CardHeader className="text-center">
-              <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Lock className="h-6 w-6 text-primary" />
-              </div>
-              <CardTitle className="text-2xl">Unlock {feature}</CardTitle>
-              <CardDescription className="mt-2">
-                Upgrade to a paid plan to access scheduling and advanced features
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <Sparkles className="h-5 w-5 text-primary mt-0.5" />
-                  <div>
-                    <p className="font-medium">Unlimited Scheduling</p>
-                    <p className="text-sm text-muted-foreground">Schedule posts across all platforms</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <TrendingUp className="h-5 w-5 text-primary mt-0.5" />
-                  <div>
-                    <p className="font-medium">Advanced Analytics</p>
-                    <p className="text-sm text-muted-foreground">Track performance and engagement</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Users className="h-5 w-5 text-primary mt-0.5" />
-                  <div>
-                    <p className="font-medium">Team Collaboration</p>
-                    <p className="text-sm text-muted-foreground">Work together with your team</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="pt-4">
-                <Button 
-                  onClick={handleSubscribe} 
-                  className="w-full" 
-                  size="lg"
-                >
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Subscribe Now - Start 7-Day Trial
-                </Button>
-                <p className="text-center text-xs text-muted-foreground mt-3">
-                  No credit card required for trial
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Blurred content behind */}
+        <div className="pointer-events-none select-none blur-sm">
+          {children}
         </div>
         
-        {/* Blurred content behind */}
-        <div className="opacity-20 pointer-events-none select-none">
-          {children}
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-background/30 backdrop-blur-sm z-10">
+          <div className="absolute top-24 left-64 max-w-md">
+            <Card className="shadow-2xl border-2">
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Lock className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle className="text-2xl">Unlock {feature}</CardTitle>
+                <CardDescription className="mt-2">
+                  Upgrade to a paid plan to access scheduling and advanced features
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <Sparkles className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium">Unlimited Scheduling</p>
+                      <p className="text-sm text-muted-foreground">Schedule posts across all platforms</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <TrendingUp className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium">Advanced Analytics</p>
+                      <p className="text-sm text-muted-foreground">Track performance and engagement</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Users className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium">Team Collaboration</p>
+                      <p className="text-sm text-muted-foreground">Work together with your team</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="pt-2">
+                  <Button 
+                    onClick={handleSubscribe} 
+                    className="w-full" 
+                    size="lg"
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Subscribe Now - Start 7-Day Trial
+                  </Button>
+                  <p className="text-center text-xs text-muted-foreground mt-3">
+                    No credit card required for trial
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     )

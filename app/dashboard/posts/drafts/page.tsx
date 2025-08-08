@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
+import { SubscriptionGate } from '@/components/subscription/subscription-gate'
 
 interface Draft {
   id: string
@@ -108,18 +109,61 @@ export default function DraftPostsPage() {
     }
   }
 
+  const handleDuplicate = async (draftId: string) => {
+    try {
+      const response = await fetch('/api/posts/drafts/duplicate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ draftId })
+      })
+      
+      if (!response.ok) throw new Error('Failed to duplicate')
+      
+      toast.success('Draft duplicated successfully')
+      fetchDrafts() // Refresh the list
+    } catch (error) {
+      console.error('Error duplicating draft:', error)
+      toast.error('Failed to duplicate draft')
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedDrafts.length === 0) {
+      toast.error('No drafts selected')
+      return
+    }
+    
+    if (!confirm(`Are you sure you want to delete ${selectedDrafts.length} draft${selectedDrafts.length > 1 ? 's' : ''}?`)) {
+      return
+    }
+    
+    try {
+      const response = await fetch('/api/posts/drafts/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ draftIds: selectedDrafts })
+      })
+      
+      if (!response.ok) throw new Error('Failed to delete drafts')
+      
+      toast.success(`${selectedDrafts.length} draft${selectedDrafts.length > 1 ? 's' : ''} deleted successfully`)
+      setSelectedDrafts([])
+      fetchDrafts() // Refresh the list
+    } catch (error) {
+      console.error('Error deleting drafts:', error)
+      toast.error('Failed to delete drafts')
+    }
+  }
+
   const handleEdit = (draftId: string) => {
-    // TODO: Navigate to edit page with draft data
     router.push(`/dashboard/create/new?draftId=${draftId}`)
   }
 
   const handleSchedule = (draftId: string) => {
-    // TODO: Navigate to create page with draft data and open schedule section
     router.push(`/dashboard/create/new?draftId=${draftId}&schedule=true`)
   }
 
   const handlePublishNow = (draftId: string) => {
-    // TODO: Navigate to create page with draft data and trigger publish
     router.push(`/dashboard/create/new?draftId=${draftId}&publish=true`)
   }
 
@@ -195,7 +239,9 @@ export default function DraftPostsPage() {
         <p className="text-gray-600 mt-1">Continue working on your saved drafts</p>
       </div>
 
-      {/* Search and Filter Bar */}
+      <SubscriptionGate feature="drafts">
+        <div className="space-y-6">
+          {/* Search and Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -278,16 +324,16 @@ export default function DraftPostsPage() {
               {selectedDrafts.length} draft{selectedDrafts.length > 1 ? 's' : ''} selected
             </span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => {
-                // TODO: Implement bulk delete
-                toast.info('Bulk delete coming soon')
-              }}>
+              <Button variant="outline" size="sm" onClick={handleBulkDelete}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete
               </Button>
               <Button variant="outline" size="sm" onClick={() => {
-                // TODO: Implement duplicate
-                toast.info('Duplicate feature coming soon')
+                if (selectedDrafts.length === 1) {
+                  handleDuplicate(selectedDrafts[0])
+                } else {
+                  toast.error('Please select only one draft to duplicate')
+                }
               }}>
                 <Copy className="mr-2 h-4 w-4" />
                 Duplicate
@@ -434,6 +480,8 @@ export default function DraftPostsPage() {
           </>
         )}
       </div>
+        </div>
+      </SubscriptionGate>
     </div>
   )
 }

@@ -36,8 +36,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check usage limits
-    const usageCheck = await checkAndIncrementUsage('ai_suggestions', 1, false)
+    // Check if we can use AI suggestions (check limit for +1 but don't increment yet)
+    const { checkUsageOnly } = await import('@/lib/subscription/usage')
+    const usageCheck = await checkUsageOnly('ai_suggestions')
+    console.log('AI suggestions usage check:', usageCheck)
+    
     if (!usageCheck.allowed) {
       return NextResponse.json({ 
         error: 'AI suggestion limit exceeded',
@@ -149,7 +152,9 @@ Important: Return ONLY the JSON array, no additional text.
     }))
 
     // Increment usage after successful generation
-    await checkAndIncrementUsage('ai_suggestions', 1, true)
+    console.log('Incrementing AI suggestions usage...')
+    const incrementResult = await checkAndIncrementUsage('ai_suggestions', 1, false)
+    console.log('AI usage incremented:', incrementResult)
 
     return NextResponse.json({ suggestions: formattedSuggestions })
 
