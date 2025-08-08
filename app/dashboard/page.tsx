@@ -23,7 +23,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getClientSubscription } from '@/lib/subscription/client'
 import { Crown, Sparkles } from 'lucide-react'
 import { SUBSCRIPTION_PLANS } from '@/lib/subscription/plans'
-import { SubscriptionGate } from '@/components/subscription/subscription-gate'
+import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 
 interface PostData {
   id: string

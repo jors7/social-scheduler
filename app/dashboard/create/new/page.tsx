@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { toast } from 'sonner'
 import { PostingService, PostData } from '@/lib/posting/service'
@@ -9,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { AISuggestionsModal } from '@/components/dashboard/ai-suggestions-modal'
-import { SubscriptionGate } from '@/components/subscription/subscription-gate'
+import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 import { 
   Calendar,
   Clock,

@@ -10,7 +10,7 @@ import { TopPosts } from '@/components/dashboard/analytics/top-posts'
 import { ReachChart } from '@/components/dashboard/analytics/reach-chart'
 import { CalendarDays, Download, Filter, BarChart3 } from 'lucide-react'
 import { toast } from 'sonner'
-import { SubscriptionGate } from '@/components/subscription/subscription-gate'
+import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 
 interface AnalyticsData {
   totalPosts: number

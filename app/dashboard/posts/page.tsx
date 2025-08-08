@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -18,7 +20,7 @@ import {
   X,
   Play
 } from 'lucide-react'
-import { SubscriptionGate } from '@/components/subscription/subscription-gate'
+import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 

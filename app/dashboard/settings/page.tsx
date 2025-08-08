@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react'
 import SettingsContent from './settings-content'
-import { SubscriptionGate } from '@/components/subscription/subscription-gate'
+import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 
 export default function SettingsPage() {
   return (

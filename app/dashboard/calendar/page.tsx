@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Clock } from 'lucide-react'
@@ -7,7 +9,7 @@ import { toast } from 'sonner'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { DragDropCalendar } from '@/components/dashboard/drag-drop-calendar'
-import { SubscriptionGate } from '@/components/subscription/subscription-gate'
+import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 
 interface ScheduledPost {
   id: string
