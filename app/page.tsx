@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Check, Calendar, Users, BarChart, Zap, Shield, Star, Menu } from 'lucide-react'
+import { Check, Calendar, Users, BarChart, Zap, Shield, Star, Menu, Clock, TrendingUp, ArrowRight } from 'lucide-react'
 import { useEffect, useState, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -296,6 +296,102 @@ function LandingPageContent() {
                 {platform.icon}
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Impact Section */}
+      <section className="relative bg-white py-12 px-4 overflow-hidden min-h-[500px]">
+        {/* Purple gradient background under the curve */}
+        <div className="absolute inset-0 pointer-events-none">
+          <svg 
+            className="w-full h-full" 
+            viewBox="0 0 1440 500" 
+            fill="none" 
+            xmlns="http://www.w3.org/2000/svg"
+            preserveAspectRatio="none"
+          >
+            {/* Gradient fill under the curve - more curved */}
+            <path 
+              d="M0,500 C200,480 400,450 600,400 C800,350 1000,250 1200,100 C1320,25 1380,5 1440,0 L1440,500 L0,500 Z" 
+              fill="url(#purpleGradientFill)"
+              opacity="1"
+            />
+            {/* Curve line - more curved */}
+            <path 
+              d="M0,500 C200,480 400,450 600,400 C800,350 1000,250 1200,100 C1320,25 1380,5 1440,0" 
+              stroke="url(#purpleGradientStroke)" 
+              strokeWidth="3" 
+              fill="none"
+              opacity="0.3"
+              id="curvePath"
+            />
+            {/* Dots on the curve - using exact curve calculations */}
+            <circle cx="0" cy="500" r="2" fill="#9333ea" opacity="0.8" />
+            <circle cx="300" cy="460" r="2" fill="#9333ea" opacity="0.8" />
+            <circle cx="600" cy="400" r="2" fill="#9333ea" opacity="0.8" />
+            <circle cx="900" cy="290" r="2" fill="#9333ea" opacity="0.8" />
+            <circle cx="1200" cy="100" r="2" fill="#9333ea" opacity="0.8" />
+            <circle cx="1440" cy="0" r="2" fill="#9333ea" opacity="0.8" />
+            <defs>
+              <linearGradient id="purpleGradientFill" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#f3e8ff" stopOpacity="0.3" />
+                <stop offset="50%" stopColor="#e9d5ff" stopOpacity="0.5" />
+                <stop offset="100%" stopColor="#f3e8ff" stopOpacity="0.3" />
+              </linearGradient>
+              <linearGradient id="purpleGradientStroke" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#9333ea" stopOpacity="0.5" />
+                <stop offset="50%" stopColor="#a855f7" stopOpacity="0.7" />
+                <stop offset="100%" stopColor="#9333ea" stopOpacity="0.5" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+
+        {/* Content above the curve - positioned much higher */}
+        <div className="container mx-auto max-w-6xl relative z-10 pb-32">
+          <div className="text-left mb-6">
+            <h2 className="text-4xl md:text-5xl font-bold mb-3 text-gray-900">
+              What&apos;s the Social Scheduler impact?
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl">
+              Social Scheduler will save your team hours of work (and lots of headaches) every week
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-0 max-w-3xl">
+            {/* Save Time Metric */}
+            <div className="flex flex-col items-start px-4 py-4 md:border-r border-gray-200">
+              <div className="mb-2">
+                <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">15x</span>
+              </div>
+              <h3 className="text-base font-semibold mb-1 text-gray-900">Save time</h3>
+              <p className="text-gray-600 text-xs leading-relaxed">
+                Create and schedule your social media content 15x faster.
+              </p>
+            </div>
+
+            {/* Get Answers Faster Metric */}
+            <div className="flex flex-col items-start px-4 py-4 md:border-r border-gray-200">
+              <div className="mb-2">
+                <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">67%</span>
+              </div>
+              <h3 className="text-base font-semibold mb-1 text-gray-900">Get answers faster</h3>
+              <p className="text-gray-600 text-xs leading-relaxed">
+                Find and manage all your posts 67% faster.
+              </p>
+            </div>
+
+            {/* Increase Productivity Metric */}
+            <div className="flex flex-col items-start px-4 py-4">
+              <div className="mb-2">
+                <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">25%</span>
+              </div>
+              <h3 className="text-base font-semibold mb-1 text-gray-900">Increase productivity</h3>
+              <p className="text-gray-600 text-xs leading-relaxed">
+                Boost your team&apos;s social media productivity by 25%.
+              </p>
+            </div>
           </div>
         </div>
       </section>

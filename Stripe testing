@@ -1,0 +1,218 @@
+Complete Stripe Integration Testing Guide for localhost:3001                         │ │
+│ │                                                                                      │ │
+│ │ Prerequisites Setup                                                                  │ │
+│ │                                                                                      │ │
+│ │ 1. Environment Variables                                                             │ │
+│ │                                                                                      │ │
+│ │ Ensure your .env.local has these Stripe configurations:                              │ │
+│ │ STRIPE_SECRET_KEY=sk_test_51RtRlsA6BBN8qFjBRHu3LkCT1oKmTovu512OXjxkTe6IengT1FP4nirar │ │
+│ │ rQxTxz4UIwf3wQ9SiqQDBErjO356PPa00V8nXI1Zk                                            │ │
+│ │ STRIPE_WEBHOOK_SECRET=whsec_fc4645ba48d4d262b2932ab4e712984ec38c8f5c6ddfffc5b17f10c1 │ │
+│ │ 90d15466                                                                             │ │
+│ │ STRIPE_WEBHOOK_SECRET_LOCAL=whsec_fc4645ba48d4d262b2932ab4e712984ec38c8f5c6ddfffc5b1 │ │
+│ │ 7f10c190d15466                                                                       │ │
+│ │ NEXT_PUBLIC_APP_URL=http://localhost:3001                                            │ │
+│ │                                                                                      │ │
+│ │ # Price IDs for all plans                                                            │ │
+│ │ STRIPE_STARTER_MONTHLY_PRICE_ID=price_1RtUNnA6BBN8qFjBGLuo3qFM                       │ │
+│ │ STRIPE_STARTER_YEARLY_PRICE_ID=price_1RtUNSA6BBN8qFjBoeFyL3NS                        │ │
+│ │ STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID=price_1RtUOEA6BBN8qFjB0HtMVjLr                  │ │
+│ │ STRIPE_PROFESSIONAL_YEARLY_PRICE_ID=price_1RtUOTA6BBN8qFjBrXkY1ExC                   │ │
+│ │ STRIPE_ENTERPRISE_MONTHLY_PRICE_ID=price_1RtUP4A6BBN8qFjBI2hBmwcT                    │ │
+│ │ STRIPE_ENTERPRISE_YEARLY_PRICE_ID=price_1RtUPFA6BBN8qFjByzefry7H                     │ │
+│ │                                                                                      │ │
+│ │ 2. Stripe CLI Setup                                                                  │ │
+│ │                                                                                      │ │
+│ │ # Install Stripe CLI (if not already installed)                                      │ │
+│ │ brew install stripe/stripe-cli/stripe                                                │ │
+│ │                                                                                      │ │
+│ │ # Login to Stripe                                                                    │ │
+│ │ stripe login                                                                         │ │
+│ │                                                                                      │ │
+│ │ # Start webhook forwarding (in a separate terminal)                                  │ │
+│ │ stripe listen --forward-to localhost:3001/api/webhooks/stripe --skip-verify          │ │
+│ │                                                                                      │ │
+│ │ # Note: The --skip-verify flag uses your existing webhook secret                     │ │
+│ │                                                                                      │ │
+│ │ 3. Start Local Development Server                                                    │ │
+│ │                                                                                      │ │
+│ │ # In main terminal                                                                   │ │
+│ │ npm run dev                                                                          │ │
+│ │ # Server runs on http://localhost:3001                                               │ │
+│ │                                                                                      │ │
+│ │ Testing Scenarios                                                                    │ │
+│ │                                                                                      │ │
+│ │ Scenario 1: New User Sign-up & First Subscription                                    │ │
+│ │                                                                                      │ │
+│ │ 1. Create new account                                                                │ │
+│ │   - Go to http://localhost:3001/signup                                               │ │
+│ │   - Register with test email                                                         │ │
+│ │   - Verify email (check Supabase Auth dashboard)                                     │ │
+│ │ 2. Attempt to access premium features                                                │ │
+│ │   - Navigate to Dashboard > Posts                                                    │ │
+│ │   - Try to create a post                                                             │ │
+│ │   - Should see lock overlay with "Subscribe Now" button                              │ │
+│ │ 3. Subscribe to Starter Plan (Monthly)                                               │ │
+│ │   - Click "Subscribe Now" or go to /#pricing                                         │ │
+│ │   - Select Starter plan ($9/month)                                                   │ │
+│ │   - Use test card: 4242 4242 4242 4242                                               │ │
+│ │   - Any future expiry, any CVC, any ZIP                                              │ │
+│ │   - Complete checkout                                                                │ │
+│ │ 4. Verify subscription activation                                                    │ │
+│ │   - Check webhook terminal for success message                                       │ │
+│ │   - Go to Dashboard > Billing                                                        │ │
+│ │   - Should see "Active" subscription status                                          │ │
+│ │   - Premium features should be unlocked                                              │ │
+│ │                                                                                      │ │
+│ │ Scenario 2: Plan Upgrade (Starter → Professional)                                    │ │
+│ │                                                                                      │ │
+│ │ 1. Current state: User with active Starter subscription                              │ │
+│ │ 2. Upgrade process:                                                                  │ │
+│ │   - Go to Dashboard > Billing                                                        │ │
+│ │   - Click "Change Plan"                                                              │ │
+│ │   - Select Professional ($19/month)                                                  │ │
+│ │   - Confirm upgrade                                                                  │ │
+│ │ 3. Verification:                                                                     │ │
+│ │   - Immediate prorated charge                                                        │ │
+│ │   - New limits applied (15 accounts, 150 AI suggestions)                             │ │
+│ │   - Check payment history for upgrade transaction                                    │ │
+│ │                                                                                      │ │
+│ │ Scenario 3: Plan Downgrade (Professional → Starter)                                  │ │
+│ │                                                                                      │ │
+│ │ 1. Current state: User with Professional subscription                                │ │
+│ │ 2. Downgrade process:                                                                │ │
+│ │   - Dashboard > Billing > "Change Plan"                                              │ │
+│ │   - Select Starter plan                                                              │ │
+│ │   - Confirm downgrade                                                                │ │
+│ │ 3. Verification:                                                                     │ │
+│ │   - Downgrade scheduled for end of billing period                                    │ │
+│ │   - Current plan continues until period end                                          │ │
+│ │   - No immediate charge                                                              │ │
+│ │                                                                                      │ │
+│ │ Scenario 4: Billing Cycle Change (Monthly → Yearly)                                  │ │
+│ │                                                                                      │ │
+│ │ 1. Current state: Monthly subscription                                               │ │
+│ │ 2. Change process:                                                                   │ │
+│ │   - Dashboard > Billing > "Change Plan"                                              │ │
+│ │   - Toggle to "Annual" billing                                                       │ │
+│ │   - Keep same plan tier                                                              │ │
+│ │   - Confirm change                                                                   │ │
+│ │ 3. Verification:                                                                     │ │
+│ │   - Prorated charge for remainder of year                                            │ │
+│ │   - Annual discount applied (20% savings)                                            │ │
+│ │   - Next billing date updated to 1 year out                                          │ │
+│ │                                                                                      │ │
+│ │ Scenario 5: Free Trial Testing                                                       │ │
+│ │                                                                                      │ │
+│ │ 1. New user sign-up                                                                  │ │
+│ │ 2. Start trial:                                                                      │ │
+│ │   - Select any paid plan                                                             │ │
+│ │   - Enter card details (required but not charged)                                    │ │
+│ │   - 7-day trial begins                                                               │ │
+│ │ 3. During trial:                                                                     │ │
+│ │   - Full access to plan features                                                     │ │
+│ │   - Billing page shows "Trialing" status                                             │ │
+│ │   - Shows trial end date                                                             │ │
+│ │ 4. Trial conversion:                                                                 │ │
+│ │   - Wait for trial to end (or use Stripe Dashboard to end early)                     │ │
+│ │   - Automatic charge at trial end                                                    │ │
+│ │   - Status changes to "Active"                                                       │ │
+│ │                                                                                      │ │
+│ │ Scenario 6: Payment Method Management                                                │ │
+│ │                                                                                      │ │
+│ │ 1. Access Customer Portal:                                                           │ │
+│ │   - Dashboard > Billing > "Manage Subscription"                                      │ │
+│ │   - Opens Stripe Customer Portal                                                     │ │
+│ │ 2. Test scenarios:                                                                   │ │
+│ │   - Update payment method                                                            │ │
+│ │   - Add backup payment method                                                        │ │
+│ │   - Download invoices                                                                │ │
+│ │   - View payment history                                                             │ │
+│ │                                                                                      │ │
+│ │ Scenario 7: Subscription Cancellation                                                │ │
+│ │                                                                                      │ │
+│ │ 1. Cancel via Customer Portal:                                                       │ │
+│ │   - Dashboard > Billing > "Manage Subscription"                                      │ │
+│ │   - Click "Cancel plan" in Stripe portal                                             │ │
+│ │   - Choose immediate or end-of-period cancellation                                   │ │
+│ │ 2. Verification:                                                                     │ │
+│ │   - Status shows "Canceled" with end date                                            │ │
+│ │   - Access continues until period end                                                │ │
+│ │   - Can reactivate before expiry                                                     │ │
+│ │                                                                                      │ │
+│ │ Scenario 8: Failed Payment Recovery                                                  │ │
+│ │                                                                                      │ │
+│ │ 1. Simulate failed payment:                                                          │ │
+│ │   - Use test card: 4000 0000 0000 0341 (fails after attach)                          │ │
+│ │   - Subscription enters "past_due" state                                             │ │
+│ │ 2. Recovery:                                                                         │ │
+│ │   - Update payment method in Customer Portal                                         │ │
+│ │   - Retry payment                                                                    │ │
+│ │   - Subscription reactivates                                                         │ │
+│ │                                                                                      │ │
+│ │ Scenario 9: Webhook Testing                                                          │ │
+│ │                                                                                      │ │
+│ │ 1. Monitor webhook events:                                                           │ │
+│ │   - Keep Stripe CLI terminal visible                                                 │ │
+│ │   - Watch for events:                                                                │ │
+│ │       - checkout.session.completed                                                   │ │
+│ │     - customer.subscription.created                                                  │ │
+│ │     - customer.subscription.updated                                                  │ │
+│ │     - invoice.payment_succeeded                                                      │ │
+│ │ 2. Verify database updates:                                                          │ │
+│ │   - Check Supabase dashboard                                                         │ │
+│ │   - user_subscriptions table updates                                                 │ │
+│ │   - payment_history records created                                                  │ │
+│ │                                                                                      │ │
+│ │ Scenario 10: Edge Cases                                                              │ │
+│ │                                                                                      │ │
+│ │ Multiple subscription attempts:                                                      │ │
+│ │ - Try subscribing while already subscribed                                           │ │
+│ │ - Should redirect to billing page                                                    │ │
+│ │                                                                                      │ │
+│ │ Direct URL access:                                                                   │ │
+│ │ - Try accessing /dashboard/billing without subscription                              │ │
+│ │ - Should show free plan state correctly                                              │ │
+│ │                                                                                      │ │
+│ │ Sync issues:                                                                         │ │
+│ │ - Dashboard > Billing > Check for sync status                                        │ │
+│ │ - Manual sync buttons if needed                                                      │ │
+│ │                                                                                      │ │
+│ │ Test Cards for Different Scenarios                                                   │ │
+│ │                                                                                      │ │
+│ │ - Success: 4242 4242 4242 4242                                                       │ │
+│ │ - Decline: 4000 0000 0000 0002                                                       │ │
+│ │ - Requires authentication: 4000 0025 0000 3155                                       │ │
+│ │ - Attach succeeds, payments fail: 4000 0000 0000 0341                                │ │
+│ │                                                                                      │ │
+│ │ Verification Checklist                                                               │ │
+│ │                                                                                      │ │
+│ │ After each test scenario, verify:                                                    │ │
+│ │ - Webhook received and processed                                                     │ │
+│ │ - Database updated correctly                                                         │ │
+│ │ - UI reflects current state                                                          │ │
+│ │ - Feature access matches subscription                                                │ │
+│ │ - Payment history recorded                                                           │ │
+│ │ - Invoice available in portal                                                        │ │
+│ │ - Email notifications sent (check Stripe dashboard)                                  │ │
+│ │                                                                                      │ │
+│ │ Troubleshooting                                                                      │ │
+│ │                                                                                      │ │
+│ │ If webhooks aren't working:                                                          │ │
+│ │ 1. Check Stripe CLI is running                                                       │ │
+│ │ 2. Verify webhook secret matches                                                     │ │
+│ │ 3. Check /api/webhooks/stripe endpoint logs                                          │ │
+│ │ 4. Verify Supabase service role key is set                                           │ │
+│ │                                                                                      │ │
+│ │ If subscription doesn't activate:                                                    │ │
+│ │ 1. Check browser console for errors                                                  │ │
+│ │ 2. Check webhook terminal for errors                                                 │ │
+│ │ 3. Verify price IDs match Stripe dashboard                                           │ │
+│ │ 4. Try manual sync: Dashboard > Billing                                              │ │
+│ │                                                                                      │ │
+│ │ Database Verification                                                                │ │
+│ │                                                                                      │ │
+│ │ Check these tables in Supabase:                                                      │ │
+│ │ - user_subscriptions: Current subscription state                                     │ │
+│ │ - payment_history: All transactions                                                  │ │
+│ │ - subscription_plans: Plan configurations (if using DB plans) 
