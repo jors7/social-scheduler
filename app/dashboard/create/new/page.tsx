@@ -1063,7 +1063,7 @@ function CreateNewPostPageContent() {
                     <div className="mt-3 text-xs text-blue-700 bg-blue-100 rounded-lg p-3 border border-blue-200">
                       <div className="flex items-start gap-2">
                         <span className="text-blue-600">💡</span>
-                        <div>These times are based on general best practices. As you post more, suggestions will improve based on your audience's engagement patterns.</div>
+                        <div>These times are based on general best practices. As you post more, suggestions will improve based on your audience&apos;s engagement patterns.</div>
                       </div>
                     </div>
                   </CardContent>
