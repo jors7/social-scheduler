@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -141,13 +142,14 @@ export function Sidebar() {
     <>
       {/* Logo Section */}
       <div className="h-16 flex items-center px-6 bg-white border-b">
-        <Link href="/" className="flex items-center space-x-3">
-          <div className="relative">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Zap className="h-6 w-6 text-white" />
-            </div>
-            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
-          </div>
+        <Link href="/" className="flex items-center gap-2">
+          <Image 
+            src="/SocialCal.png" 
+            alt="SocialPulse Logo" 
+            width={32} 
+            height={32}
+            className="w-8 h-8"
+          />
           <div>
             <span className="text-xl font-bold text-gray-900">SocialPulse</span>
             <p className="text-xs text-gray-500">Dashboard</p>
@@ -178,7 +180,7 @@ export function Sidebar() {
                     className={cn(
                       'w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 group',
                       expandedItems.includes(item.name) 
-                        ? 'bg-purple-50 border border-purple-200 text-purple-700' 
+                        ? 'bg-gray-100 text-gray-900' 
                         : 'hover:bg-white hover:shadow-sm text-gray-700 hover:text-purple-600'
                     )}
                   >
@@ -186,7 +188,7 @@ export function Sidebar() {
                       <div className={cn(
                         'p-2 rounded-lg mr-3 transition-colors',
                         expandedItems.includes(item.name)
-                          ? 'bg-purple-200 text-purple-700'
+                          ? 'bg-gray-200 text-gray-700'
                           : 'bg-gray-100 text-gray-500 group-hover:bg-purple-100 group-hover:text-purple-600'
                       )}>
                         <item.icon className="h-4 w-4" />
@@ -194,7 +196,7 @@ export function Sidebar() {
                       {item.name}
                     </div>
                     <ChevronRight className={cn(
-                      'h-4 w-4 transition-transform',
+                      'h-4 w-4 transition-transform text-gray-400',
                       expandedItems.includes(item.name) && 'rotate-90'
                     )} />
                   </button>
@@ -224,7 +226,7 @@ export function Sidebar() {
                   className={cn(
                     'flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 group',
                     pathname === item.href 
-                      ? 'bg-white shadow-sm text-purple-600' 
+                      ? 'bg-purple-50 border border-purple-200 text-purple-700' 
                       : 'hover:bg-white hover:shadow-sm text-gray-700 hover:text-purple-600'
                   )}
                 >
@@ -232,7 +234,7 @@ export function Sidebar() {
                     <div className={cn(
                       'p-2 rounded-lg mr-3 transition-colors',
                       pathname === item.href
-                        ? 'bg-purple-100 text-purple-600'
+                        ? 'bg-purple-200 text-purple-700'
                         : 'bg-gray-100 text-gray-500 group-hover:bg-purple-100 group-hover:text-purple-600'
                     )}>
                       <item.icon className="h-4 w-4" />

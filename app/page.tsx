@@ -1,9 +1,10 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Calendar, Users, BarChart, Zap, Shield, Menu, Clock, TrendingUp, ArrowRight } from 'lucide-react'
+import { Calendar, Users, BarChart, Zap, Shield, Menu, Clock, TrendingUp, ArrowRight, Layers, Sparkles } from 'lucide-react'
 import { useEffect, useState, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -26,33 +27,46 @@ const platforms = [
 const features = [
   {
     title: 'Multi-Platform Publishing',
-    description: 'Post to all your social media accounts with one click',
+    description: 'Post to all your social media accounts with one click. Save time and maintain consistency across all platforms.',
     icon: Zap,
+    iconBg: 'bg-pink-50',
+    iconColor: 'text-pink-600',
   },
   {
     title: 'Smart Scheduling',
-    description: 'Schedule posts in advance for optimal engagement times',
+    description: 'Schedule posts in advance for optimal engagement times. Our AI analyzes your audience for the best posting schedule.',
     icon: Calendar,
+    iconBg: 'bg-red-50',
+    iconColor: 'text-red-600',
   },
   {
     title: 'AI Caption Suggestions',
-    description: 'Get AI-powered caption suggestions tailored to each platform',
-    icon: Users,
+    description: 'Get AI-powered caption suggestions tailored to each platform. Boost engagement with optimized content.',
+    icon: Sparkles,
+    iconBg: 'bg-orange-50',
+    iconColor: 'text-orange-600',
   },
   {
     title: 'Analytics Dashboard',
-    description: 'Track performance across all platforms in one place',
+    description: 'Track performance across all platforms in one place. Get insights to improve your social media strategy.',
     icon: BarChart,
+    iconBg: 'bg-pink-50',
+    iconColor: 'text-pink-600',
   },
   {
-    title: 'Platform Customization',
-    description: 'Customize content for each platform before posting',
-    icon: Shield,
+    title: 'Content Library',
+    description: 'Store and organize your media assets. Access your images, videos, and templates anytime from anywhere.',
+    icon: Layers,
+    iconBg: 'bg-red-50',
+    iconColor: 'text-red-600',
   },
   {
     title: 'Team Collaboration',
-    description: 'Work with your team to create and approve content',
+    description: 'Work with your team to create and approve content. Assign roles, review drafts, and streamline your workflow.',
     icon: Users,
+    iconBg: 'bg-orange-50',
+    iconColor: 'text-orange-600',
+    isPro: true,
   },
 ]
 
@@ -118,54 +132,41 @@ function LandingPageContent() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-lg border-b border-gray-200 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-lg border-b border-gray-200 shadow-lg">
         <div className="container mx-auto px-6">
           <nav className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-10">
-              <Link href="/" className="flex items-center space-x-3">
-                <div className="relative">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform">
-                    <Zap className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
-                </div>
-                <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                  SocialPulse
-                </span>
-              </Link>
+            <Link href="/" className="flex items-center gap-2">
+              <Image 
+                src="/SocialCal.png" 
+                alt="SocialPulse Logo" 
+                width={32} 
+                height={32}
+                className="w-8 h-8"
+              />
+              <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                SocialPulse
+              </span>
+            </Link>
+            <div className="flex items-center space-x-1">
               <div className="hidden md:flex items-center space-x-1">
                 <Link 
                   href="#features" 
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                  className="px-4 py-2 text-[15px] font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
                 >
                   Features
                 </Link>
                 <Link 
                   href="/pricing" 
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                  className="px-4 py-2 text-[15px] font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
                 >
                   Pricing
                 </Link>
-                <Link 
-                  href="#testimonials" 
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
-                >
-                  Testimonials
-                </Link>
-                <Link 
-                  href="#contact" 
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
-                >
-                  Contact
-                </Link>
               </div>
-            </div>
-            <div className="flex items-center space-x-3">
               {isAuthenticated ? (
                 <Button 
                   variant="outline" 
                   onClick={() => router.push('/dashboard')}
-                  className="border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200"
+                  className="border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 ml-1"
                 >
                   <BarChart className="h-4 w-4 mr-2" />
                   Dashboard
@@ -181,7 +182,7 @@ function LandingPageContent() {
                   </Button>
                   <Button 
                     onClick={() => router.push('/pricing')}
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 ml-2"
                   >
                     Start Free Trial
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -200,7 +201,7 @@ function LandingPageContent() {
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* Hero Section - Two Column Layout */}
       <section className="relative py-16 px-4 overflow-hidden">
         {/* Animated gradient background */}
         <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50">
@@ -212,72 +213,84 @@ function LandingPageContent() {
         </div>
         
         <div className="container mx-auto relative z-10">
-          <div className="text-center max-w-5xl mx-auto">
-            {/* Main headline with gradient */}
-            <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold mb-8 leading-tight">
-              <span className="text-gray-900">Schedule</span>
-              <br />
-              <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent animate-gradient">
-                Everywhere
-              </span>
-              <br />
-              <span className="text-gray-900">at Once</span>
-            </h1>
-            
-            <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-              One click. Nine platforms. Unlimited possibilities.
-              <br className="hidden md:block" />
-              Save 15+ hours weekly on social media management.
-            </p>
-            
-            {/* CTA buttons with better styling */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-              <Button 
-                size="lg" 
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-lg px-10 py-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
-                onClick={() => router.push('/pricing')}
-              >
-                Start Free Trial
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="text-lg px-10 py-6 rounded-xl border-2 hover:bg-gray-50 transition-all duration-200"
-              >
-                <Clock className="mr-2 h-5 w-5" />
-                Watch 2-min Demo
-              </Button>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left Column - Text Content */}
+            <div className="max-w-xl lg:ml-16">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+                <span className="text-gray-900">
+                  Post Everywhere
+                </span>
+              </h1>
+              
+              <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed">
+                One click. Nine platforms. Unlimited possibilities.
+                <br className="hidden md:block" />
+                Save 15+ hours weekly on social media management.
+              </p>
+              
+              {/* CTA button */}
+              <div className="mb-12">
+                <Button 
+                  size="lg" 
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-lg px-10 py-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+                  onClick={() => router.push('/pricing')}
+                >
+                  Start Free Trial
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
             </div>
             
-            {/* Platform icons in a more elegant grid */}
+            {/* Right Column - Image Placeholder */}
             <div className="relative">
-              <p className="text-sm text-gray-500 mb-6 font-medium uppercase tracking-wider">Works seamlessly with</p>
-              <div className="flex flex-wrap justify-center gap-4">
-                {platforms.map((platform, index) => (
-                  <div
-                    key={platform.name}
-                    className="group relative"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-400 rounded-xl opacity-0 group-hover:opacity-100 blur transition-opacity duration-300"></div>
-                    <div className="relative flex items-center justify-center w-14 h-14 bg-white rounded-xl shadow-sm group-hover:shadow-lg transform group-hover:-translate-y-1 transition-all duration-300 border border-gray-100">
-                      <span className="text-xl font-bold text-gray-700 group-hover:text-gray-900">
-                        {platform.icon}
-                      </span>
-                    </div>
-                    <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                      {platform.name}
+              {/* 
+                IMPORTANT: Place your hero image here
+                File location: /public/images/hero-dashboard.png (or .jpg)
+                The image should showcase the dashboard or main features
+                Recommended size: 1200x800px
+              */}
+              <div className="bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl p-8 shadow-2xl">
+                <div className="bg-white rounded-lg shadow-inner h-96 flex items-center justify-center text-gray-400">
+                  <div className="text-center">
+                    <p className="text-lg font-semibold mb-2">Hero Image Placeholder</p>
+                    <p className="text-sm">Place image at: /public/images/hero-dashboard.png</p>
+                    <p className="text-sm">Recommended: 1200x800px</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Platform icons - moved to center */}
+          <div className="text-center mt-16">
+            <p className="text-sm text-gray-500 mb-6 font-medium uppercase tracking-wider">Works seamlessly with</p>
+            <div className="flex flex-wrap justify-center gap-4">
+              {platforms.map((platform, index) => (
+                <div
+                  key={platform.name}
+                  className="group relative"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-400 rounded-xl opacity-0 group-hover:opacity-100 blur transition-opacity duration-300"></div>
+                  <div className="relative flex items-center justify-center w-14 h-14 bg-white rounded-xl shadow-sm group-hover:shadow-lg transform group-hover:-translate-y-1 transition-all duration-300 border border-gray-100">
+                    <span className="text-xl font-bold text-gray-700 group-hover:text-gray-900">
+                      {platform.icon}
                     </span>
                   </div>
-                ))}
-              </div>
+                  <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                    {platform.name}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Impact Section */}
+      {/* Capabilities Carousel Section - MOVED UP */}
+      <CapabilitiesCarousel />
+
+      {/* Impact Section - MOVED DOWN */}
       <section className="relative bg-white py-12 px-4 overflow-hidden min-h-[500px]">
         {/* Purple gradient background under the curve */}
         <div className="absolute inset-0 pointer-events-none">
@@ -373,24 +386,36 @@ function LandingPageContent() {
         </div>
       </section>
 
-      {/* Capabilities Carousel Section */}
-      <CapabilitiesCarousel />
-
-      {/* Features Section */}
+      {/* Features Section - Redesigned to match image */}
       <section id="features" className="py-20 px-4 bg-white">
-        <div className="container mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-12">
-            Everything You Need to Manage Social Media
-          </h2>
+        <div className="container mx-auto max-w-7xl">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature) => (
-              <Card key={feature.title}>
-                <CardHeader>
-                  <feature.icon className="h-10 w-10 text-primary mb-4" />
-                  <CardTitle>{feature.title}</CardTitle>
-                  <CardDescription>{feature.description}</CardDescription>
-                </CardHeader>
-              </Card>
+            {features.map((feature, index) => (
+              <div 
+                key={feature.title}
+                className="group p-8 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-all duration-300"
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`p-3 rounded-xl ${feature.iconBg} flex-shrink-0`}>
+                    <feature.icon className={`h-6 w-6 ${feature.iconColor}`} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <h3 className="text-xl font-bold text-gray-900">
+                        {feature.title}
+                      </h3>
+                      {feature.isPro && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                          Pro
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-gray-600 leading-relaxed">
+                      {feature.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </div>

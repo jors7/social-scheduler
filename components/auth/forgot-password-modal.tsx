@@ -62,7 +62,7 @@ export function ForgotPasswordModal({ open, onOpenChange, onBackToSignIn }: Forg
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[420px]">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center">Reset Password</DialogTitle>
           <DialogDescription className="text-center">
