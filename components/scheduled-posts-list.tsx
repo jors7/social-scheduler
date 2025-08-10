@@ -145,12 +145,17 @@ export function ScheduledPostsList({
 
   if (posts.length === 0) {
     return (
-      <Card>
-        <CardContent className="text-center py-12">
-          <Clock className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-gray-500 mb-2">No scheduled posts found</p>
-          <p className="text-sm text-gray-400">Schedule your first post to see it here</p>
-          <Button className="mt-4" onClick={() => window.location.href = '/dashboard/create/new'}>
+      <Card className="bg-gradient-to-br from-purple-50 to-blue-50">
+        <CardContent className="text-center py-16">
+          <div className="inline-flex items-center justify-center p-6 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full mb-6">
+            <Clock className="h-12 w-12 text-purple-600" />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">No scheduled posts found</h3>
+          <p className="text-gray-600 mb-6">Schedule your first post to see it here</p>
+          <Button 
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg" 
+            onClick={() => window.location.href = '/dashboard/create/new'}
+          >
             <Calendar className="mr-2 h-4 w-4" />
             Schedule a Post
           </Button>

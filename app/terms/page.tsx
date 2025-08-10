@@ -14,12 +14,12 @@ export default function TermsOfService() {
         <div className="mt-12 prose prose-lg mx-auto">
           <h2>Acceptance of Terms</h2>
           <p>
-            By accessing and using Social Scheduler (&quot;the Service&quot;), you accept and agree to be bound by the terms and provision of this agreement.
+            By accessing and using SocialPulse (&quot;the Service&quot;), you accept and agree to be bound by the terms and provision of this agreement.
           </p>
 
           <h2>Description of Service</h2>
           <p>
-            Social Scheduler is a web application that allows users to schedule and manage posts across multiple social media platforms. Our service enables you to:
+            SocialPulse is a web application that allows users to schedule and manage posts across multiple social media platforms. Our service enables you to:
           </p>
           <ul>
             <li>Connect your social media accounts</li>
@@ -79,7 +79,7 @@ export default function TermsOfService() {
 
           <h2>Limitation of Liability</h2>
           <p>
-            Social Scheduler is provided &quot;as is&quot; without warranties of any kind. We shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the Service.
+            SocialPulse is provided &quot;as is&quot; without warranties of any kind. We shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the Service.
           </p>
 
           <h2>Termination</h2>

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Social Scheduler is a web application that allows users to schedule and post content across major social media platforms with one click. Built with Next.js 14, TypeScript, and Tailwind CSS.
+SocialPulse is a web application that allows users to schedule and post content across major social media platforms with one click. Built with Next.js 14, TypeScript, and Tailwind CSS.
 
 ## Tech Stack
 

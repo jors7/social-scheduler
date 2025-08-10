@@ -103,13 +103,13 @@ export async function middleware(request: NextRequest) {
       // If no subscription or on free plan, redirect to homepage pricing
       if (!subscription || subscription.plan_id === 'free') {
         console.log('Redirecting: No subscription or free plan')
-        return NextResponse.redirect(new URL('/#pricing', request.url))
+        return NextResponse.redirect(new URL('/pricing', request.url))
       }
 
       // Check if subscription is active or in trial
       if (!['active', 'trialing'].includes(subscription.status)) {
         console.log('Redirecting: Invalid subscription status')
-        return NextResponse.redirect(new URL('/#pricing', request.url))
+        return NextResponse.redirect(new URL('/pricing', request.url))
       }
     } catch (error) {
       console.error('Error checking subscription:', error)

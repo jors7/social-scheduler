@@ -17,7 +17,9 @@ import {
   ExternalLink,
   TrendingUp,
   Clock,
-  X
+  X,
+  Heart,
+  MessageCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -249,133 +251,156 @@ export default function PostedPostsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Posted</h1>
-        <p className="text-gray-600 mt-1">View and analyze your published posts</p>
+    <div className="space-y-8">
+      {/* Header with gradient title */}
+      <div className="space-y-4">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl text-white">
+            <Send className="h-8 w-8" />
+          </div>
+          Published Posts
+        </h1>
+        <p className="text-gray-600 text-lg">
+          View and analyze your published content across all platforms
+        </p>
       </div>
 
       <SubscriptionGate feature="posted content">
         <div className="space-y-6">
           {/* Search and Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search posted content..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Button variant="outline">
-          <Filter className="mr-2 h-4 w-4" />
-          Filter
-        </Button>
-      </div>
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <Send className="h-8 w-8 text-green-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Posts</p>
-                <p className="text-2xl font-bold">{filteredPosts.length}</p>
-              </div>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search posted content..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <TrendingUp className="h-8 w-8 text-blue-500" />
-              <div className="ml-4">
+            <Button 
+              variant="outline" 
+              className="opacity-50 cursor-not-allowed"
+              onClick={(e) => {
+                e.preventDefault()
+                toast.info('Advanced filtering coming soon')
+              }}
+            >
+              <Filter className="mr-2 h-4 w-4" />
+              Filter
+            </Button>
+          </div>
+
+          {/* Summary Stats - Elevated cards with gradients */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
+                    <Send className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Total Posts</p>
+                    <p className="text-2xl font-bold text-gray-900">{filteredPosts.length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                    <TrendingUp className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Views</p>
-                <p className="text-2xl font-bold">
+                    <p className="text-2xl font-bold text-gray-900">
                   {filteredPosts.reduce((sum, post) => sum + getPostStats(post).views, 0).toLocaleString()}
                 </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
-                <span className="text-purple-600 font-bold">❤️</span>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Likes</p>
-                <p className="text-2xl font-bold">
-                  {filteredPosts.reduce((sum, post) => sum + getPostStats(post).likes, 0)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <div className="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
-                <span className="text-orange-600 font-bold">💬</span>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Engagement</p>
-                <p className="text-2xl font-bold">
-                  {(() => {
-                    const totalViews = filteredPosts.reduce((sum, post) => sum + getPostStats(post).views, 0)
-                    const totalEngagement = filteredPosts.reduce((sum, post) => sum + getTotalEngagement(getPostStats(post)), 0)
-                    return totalViews > 0 ? Math.round((totalEngagement / totalViews) * 100) : 0
-                  })()}%
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl shadow-lg">
+                    <Heart className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Total Likes</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {filteredPosts.reduce((sum, post) => sum + getPostStats(post).likes, 0)}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-lg">
+                    <MessageCircle className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Engagement</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {(() => {
+                        const totalViews = filteredPosts.reduce((sum, post) => sum + getPostStats(post).views, 0)
+                        const totalEngagement = filteredPosts.reduce((sum, post) => sum + getTotalEngagement(getPostStats(post)), 0)
+                        return totalViews > 0 ? Math.round((totalEngagement / totalViews) * 100) : 0
+                      })()}%
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-      {/* Bulk Actions */}
-      {selectedPosts.length > 0 && (
-        <Card className="bg-primary/10 border-primary">
-          <CardContent className="flex items-center justify-between py-4">
-            <span className="text-sm font-medium">
+          {/* Bulk Actions - Glass morphism effect */}
+          {selectedPosts.length > 0 && (
+            <Card variant="glass" className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
+              <CardContent className="flex items-center justify-between py-4">
+                <span className="text-sm font-medium text-purple-900">
               {selectedPosts.length} post{selectedPosts.length > 1 ? 's' : ''} selected
-            </span>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleBulkDelete}>
+                </span>
+                <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleBulkDelete} className="hover:bg-red-50 hover:border-red-300">
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete
               </Button>
-              <Button variant="outline" size="sm" onClick={handleBulkDuplicate}>
+              <Button variant="outline" size="sm" onClick={handleBulkDuplicate} className="hover:bg-blue-50 hover:border-blue-300">
                 <Copy className="mr-2 h-4 w-4" />
                 Duplicate
               </Button>
-              <Button variant="outline" size="sm" onClick={handleBulkViewOriginal}>
+              <Button variant="outline" size="sm" onClick={handleBulkViewOriginal} className="hover:bg-purple-50 hover:border-purple-300">
                 <ExternalLink className="mr-2 h-4 w-4" />
                 View Original
               </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-      {/* Posts List */}
-      <div className="space-y-4">
+          {/* Posts List */}
+          <div className="space-y-4">
         {loading ? (
-          <Card>
+          <Card variant="glass" className="border-blue-200">
             <CardContent className="text-center py-12">
-              <Clock className="mx-auto h-12 w-12 text-gray-400 mb-4 animate-spin" />
-              <p className="text-gray-500">Loading posted content...</p>
+              <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full mb-4">
+                <Clock className="h-8 w-8 text-blue-600 animate-spin" />
+              </div>
+              <p className="text-gray-600 font-medium">Loading published content...</p>
             </CardContent>
           </Card>
         ) : filteredPosts.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <Send className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-gray-500 mb-2">No posted content found</p>
-              <p className="text-sm text-gray-400">Your published posts will appear here</p>
+          <Card variant="gradient" className="from-gray-50 to-gray-100">
+            <CardContent className="text-center py-16">
+              <div className="inline-flex items-center justify-center p-6 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full mb-6">
+                <Send className="h-12 w-12 text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No published content yet</h3>
+              <p className="text-gray-600">Your successfully published posts will appear here with analytics</p>
             </CardContent>
           </Card>
         ) : (
@@ -393,7 +418,7 @@ export default function PostedPostsPage() {
             {filteredPosts.map(post => {
               const stats = getPostStats(post)           
               return (
-                <Card key={post.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                <Card key={post.id} variant="elevated" className="overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
                   <CardContent className="p-0">
                     <div className="flex items-start p-4 gap-4">
                       <input
@@ -452,7 +477,7 @@ export default function PostedPostsPage() {
                             )}
                             
                             {/* Performance Stats - show for all posts, but note when no data available */}
-                            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                            <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
                               {post.status === 'posted' ? (
                                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                   <div className="text-center">
@@ -501,7 +526,7 @@ export default function PostedPostsPage() {
             })}
           </>
         )}
-      </div>
+          </div>
         </div>
       </SubscriptionGate>
     </div>

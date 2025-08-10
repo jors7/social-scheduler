@@ -105,7 +105,7 @@ export default function SupportPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="text-center">
         <h1 className="text-3xl font-bold">Help & Support</h1>
-        <p className="text-gray-600 mt-2">Get help with Social Scheduler and find answers to common questions</p>
+        <p className="text-gray-600 mt-2">Get help with SocialPulse and find answers to common questions</p>
       </div>
 
       {/* Quick Actions */}

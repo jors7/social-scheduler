@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
+import { CustomSelect } from '@/components/ui/custom-select'
 import { 
   Search, 
   Filter,
@@ -20,8 +21,10 @@ import {
   Pause,
   Eye,
   Send,
-  X
+  X,
+  Plus
 } from 'lucide-react'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { ScheduledPostsList } from '@/components/scheduled-posts-list'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
@@ -441,137 +444,151 @@ export default function ScheduledPostsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Scheduled Posts</h1>
-        <p className="text-gray-600 mt-1">Manage your upcoming social media posts</p>
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white">
+              <Clock className="h-8 w-8" />
+            </div>
+            Scheduled Posts
+          </h1>
+          <p className="text-gray-600 mt-2 text-lg">Manage your upcoming social media posts</p>
+        </div>
+        <Link href="/dashboard/create/new">
+          <Button variant="gradient" size="lg">
+            <Plus className="mr-2 h-5 w-5" />
+            Create Post
+          </Button>
+        </Link>
       </div>
 
       <SubscriptionGate feature="scheduled posts">
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Search and Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search scheduled posts..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+          <Card variant="elevated" className="p-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 p-1 bg-purple-100 rounded-lg">
+                  <Search className="h-4 w-4 text-purple-600" />
+                </div>
+                <Input
+                  placeholder="Search scheduled posts..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-14 h-12 rounded-xl border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent shadow-sm"
+                />
+              </div>
+              <CustomSelect
+                value={filterStatus}
+                onChange={setFilterStatus}
+                options={[
+                  { value: 'all', label: 'All Posts' },
+                  { value: 'active', label: 'Active' },
+                  { value: 'paused', label: 'Paused' }
+                ]}
+                className="min-w-[150px]"
+              />
+              <Button onClick={processDuePosts} className="bg-green-600 hover:bg-green-700 h-12">
+                <Send className="mr-2 h-4 w-4" />
+                Process Due Posts
+              </Button>
+            </div>
+          </Card>
+
+          {/* Summary Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center">
+                  <Clock className="h-8 w-8 text-blue-500" />
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Total Scheduled</p>
+                    <p className="text-2xl font-bold">{filteredPosts.length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center">
+                  <Play className="h-8 w-8 text-green-500" />
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Active</p>
+                    <p className="text-2xl font-bold">{activePosts}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center">
+                  <Pause className="h-8 w-8 text-orange-500" />
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Paused</p>
+                    <p className="text-2xl font-bold">{pausedPosts}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center">
+                  <Calendar className="h-8 w-8 text-purple-500" />
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">This Week</p>
+                    <p className="text-2xl font-bold">3</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Bulk Actions */}
+          {selectedPosts.length > 0 && (
+            <Card className="bg-primary/10 border-primary">
+              <CardContent className="flex items-center justify-between py-4">
+                <span className="text-sm font-medium">
+                  {selectedPosts.length} post{selectedPosts.length > 1 ? 's' : ''} selected
+                </span>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleBulkPause}>
+                    <Pause className="mr-2 h-4 w-4" />
+                    Pause
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleBulkResume}>
+                    <Play className="mr-2 h-4 w-4" />
+                    Resume
+                  </Button>
+                  <Button variant="outline" size="sm" disabled>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
+                  </Button>
+                  <Button variant="outline" size="sm" disabled>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Duplicate
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleBulkDelete}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Posts List */}
+          <ScheduledPostsList
+            posts={filteredPosts}
+            selectedPosts={selectedPosts}
+            onTogglePostSelection={togglePostSelection}
+            onToggleAllPosts={toggleAllPosts}
+            onPostNow={handlePostNow}
+            onPausePost={handlePausePost}
+            onResumePost={handleResumePost}
+            onEditPost={handleEditPost}
+            loading={loading}
           />
-        </div>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md"
-        >
-          <option value="all">All Posts</option>
-          <option value="active">Active</option>
-          <option value="paused">Paused</option>
-        </select>
-        <Button variant="outline">
-          <Filter className="mr-2 h-4 w-4" />
-          More Filters
-        </Button>
-        <Button onClick={processDuePosts} className="bg-green-600 hover:bg-green-700">
-          <Send className="mr-2 h-4 w-4" />
-          Process Due Posts
-        </Button>
-      </div>
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <Clock className="h-8 w-8 text-blue-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Scheduled</p>
-                <p className="text-2xl font-bold">{filteredPosts.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <Play className="h-8 w-8 text-green-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active</p>
-                <p className="text-2xl font-bold">{activePosts}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <Pause className="h-8 w-8 text-orange-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Paused</p>
-                <p className="text-2xl font-bold">{pausedPosts}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-purple-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">This Week</p>
-                <p className="text-2xl font-bold">3</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Bulk Actions */}
-      {selectedPosts.length > 0 && (
-        <Card className="bg-primary/10 border-primary">
-          <CardContent className="flex items-center justify-between py-4">
-            <span className="text-sm font-medium">
-              {selectedPosts.length} post{selectedPosts.length > 1 ? 's' : ''} selected
-            </span>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleBulkPause}>
-                <Pause className="mr-2 h-4 w-4" />
-                Pause
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleBulkResume}>
-                <Play className="mr-2 h-4 w-4" />
-                Resume
-              </Button>
-              <Button variant="outline" size="sm" disabled>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </Button>
-              <Button variant="outline" size="sm" disabled>
-                <Copy className="mr-2 h-4 w-4" />
-                Duplicate
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleBulkDelete}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Posts List */}
-      <ScheduledPostsList
-        posts={filteredPosts}
-        selectedPosts={selectedPosts}
-        onTogglePostSelection={togglePostSelection}
-        onToggleAllPosts={toggleAllPosts}
-        onPostNow={handlePostNow}
-        onPausePost={handlePausePost}
-        onResumePost={handleResumePost}
-        onEditPost={handleEditPost}
-        loading={loading}
-      />
         </div>
       </SubscriptionGate>
     </div>

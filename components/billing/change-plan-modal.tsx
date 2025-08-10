@@ -50,7 +50,11 @@ export function ChangePlanModal({
   isTrialing,
   onPlanChange
 }: ChangePlanModalProps) {
-  const [selectedBillingCycle, setSelectedBillingCycle] = useState<BillingCycle>(currentBillingCycle || 'monthly')
+  // If user is on annual plan, they can only switch to other annual plans
+  const isLockedToAnnual = currentBillingCycle === 'yearly' && !isTrialing
+  const [selectedBillingCycle, setSelectedBillingCycle] = useState<BillingCycle>(
+    isLockedToAnnual ? 'yearly' : (currentBillingCycle || 'monthly')
+  )
   const [selectedPlan, setSelectedPlan] = useState<PlanId | null>(null)
   const [loading, setLoading] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
@@ -242,25 +246,34 @@ export function ChangePlanModal({
         </DialogHeader>
         
         <div className="space-y-6">
-          {/* Billing Cycle Toggle */}
-          <div className="flex items-center justify-center gap-4 p-4 bg-gray-50 rounded-lg">
-            <Label htmlFor="billing-toggle" className="text-base">
-              Monthly
-            </Label>
-            <Switch
-              id="billing-toggle"
-              checked={selectedBillingCycle === 'yearly'}
-              onCheckedChange={(checked) => setSelectedBillingCycle(checked ? 'yearly' : 'monthly')}
-            />
-            <div className="flex items-center gap-2">
+          {/* Billing Cycle Toggle - Hidden if locked to annual */}
+          {!isLockedToAnnual ? (
+            <div className="flex items-center justify-center gap-4 p-4 bg-gray-50 rounded-lg">
               <Label htmlFor="billing-toggle" className="text-base">
-                Annual
+                Monthly
               </Label>
-              <Badge variant="default" className="bg-green-600">
-                Save up to 20%
-              </Badge>
+              <Switch
+                id="billing-toggle"
+                checked={selectedBillingCycle === 'yearly'}
+                onCheckedChange={(checked) => setSelectedBillingCycle(checked ? 'yearly' : 'monthly')}
+              />
+              <div className="flex items-center gap-2">
+                <Label htmlFor="billing-toggle" className="text-base">
+                  Annual
+                </Label>
+                <Badge variant="default" className="bg-green-600">
+                  Save up to 20%
+                </Badge>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2 p-4 bg-amber-50 rounded-lg border border-amber-200">
+              <Info className="h-4 w-4 text-amber-600" />
+              <p className="text-sm text-amber-900">
+                <span className="font-medium">Annual billing only:</span> You can switch between annual plans. To change to monthly billing, please contact support.
+              </p>
+            </div>
+          )}
 
           {/* Plans Grid */}
           <div className="grid md:grid-cols-3 gap-4">
@@ -392,6 +405,12 @@ export function ChangePlanModal({
                 <p className="font-medium">You&apos;re currently in a free trial</p>
                 <p>Changing your plan will end your trial and start billing immediately.</p>
               </div>
+            </div>
+          )}
+          
+          {isLockedToAnnual && (
+            <div className="text-center text-sm text-gray-600">
+              <p>All plans shown are annual billing with discounted rates.</p>
             </div>
           )}
         </div>

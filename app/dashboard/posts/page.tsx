@@ -18,7 +18,8 @@ import {
   FileText,
   Pause,
   X,
-  Play
+  Play,
+  PlusCircle
 } from 'lucide-react'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 import { cn } from '@/lib/utils'
@@ -372,66 +373,98 @@ export default function PostsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Posts</h1>
-        <p className="text-gray-600 mt-1">Manage all your social media posts</p>
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white">
+              <FileText className="h-8 w-8" />
+            </div>
+            Posts
+          </h1>
+          <p className="text-gray-600 mt-2 text-lg">Manage all your social media posts</p>
+        </div>
       </div>
 
       <SubscriptionGate feature="post management">
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Tabs */}
-          <div className="flex space-x-1 border-b">
-        {tabs.map(tab => {
-          const Icon = tab.icon
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 border-b-2 transition-colors",
-                activeTab === tab.id
-                  ? "border-primary text-primary"
-                  : "border-transparent text-gray-600 hover:text-gray-900"
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          )
-        })}
-      </div>
+          <Card variant="glass" className="p-2">
+            <div className="flex space-x-2">
+              {tabs.map(tab => {
+                const Icon = tab.icon
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      "flex items-center gap-3 px-6 py-3 rounded-xl transition-all duration-200 font-medium",
+                      activeTab === tab.id
+                        ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg"
+                        : "text-gray-600 hover:text-purple-600 hover:bg-purple-50"
+                    )}
+                  >
+                    <div className={cn(
+                      "p-1 rounded-lg",
+                      activeTab === tab.id 
+                        ? "bg-white/20" 
+                        : "bg-gray-100"
+                    )}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    {tab.label}
+                  </button>
+                )
+              })}
+            </div>
+          </Card>
 
       {/* Search and Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search posts..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+      <Card variant="elevated" className="p-6">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <div className="absolute left-4 top-1/2 transform -translate-y-1/2 p-1 bg-purple-100 rounded-lg">
+              <Search className="h-4 w-4 text-purple-600" />
+            </div>
+            <Input
+              placeholder="Search posts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-14 h-12 rounded-xl border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent shadow-sm"
+            />
+          </div>
+          <Button 
+            variant="outline" 
+            className="h-12 px-6 opacity-50 cursor-not-allowed"
+            onClick={(e) => {
+              e.preventDefault()
+              toast.info('Advanced filtering coming soon')
+            }}
+          >
+            <Filter className="mr-2 h-4 w-4" />
+            Filter
+          </Button>
         </div>
-        <Button variant="outline">
-          <Filter className="mr-2 h-4 w-4" />
-          Filter
-        </Button>
-      </div>
+      </Card>
 
       {/* Bulk Actions */}
       {selectedPosts.length > 0 && (
-        <Card className="bg-primary/10 border-primary">
-          <CardContent className="flex items-center justify-between py-4">
-            <span className="text-sm font-medium">
-              {selectedPosts.length} post{selectedPosts.length > 1 ? 's' : ''} selected
-            </span>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+        <Card variant="gradient" className="border-2 border-purple-200 shadow-lg">
+          <CardContent className="flex items-center justify-between py-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <FileText className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-white font-semibold text-lg">
+                {selectedPosts.length} post{selectedPosts.length > 1 ? 's' : ''} selected
+              </span>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" size="sm" className="bg-white/20 border-white/30 text-white hover:bg-white/30 backdrop-blur-sm" onClick={handleBulkDelete}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="bg-white/20 border-white/30 text-white hover:bg-white/30 backdrop-blur-sm" onClick={handleBulkDuplicate}>
                 <Copy className="mr-2 h-4 w-4" />
                 Duplicate
               </Button>
@@ -443,23 +476,34 @@ export default function PostsPage() {
       {/* Posts List */}
       <div className="space-y-4">
         {loading ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <Clock className="mx-auto h-12 w-12 text-gray-400 mb-4 animate-spin" />
-              <p className="text-gray-500">Loading posts...</p>
+          <Card variant="elevated">
+            <CardContent className="text-center py-16 bg-gradient-to-br from-purple-50 to-blue-50">
+              <div className="p-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full w-fit mx-auto mb-6">
+                <Clock className="h-12 w-12 text-white animate-spin" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Loading posts...</h3>
+              <p className="text-gray-600">Please wait while we fetch your content</p>
             </CardContent>
           </Card>
         ) : filteredPosts.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-gray-500 mb-2">No posts found</p>
-              <p className="text-sm text-gray-400">
+          <Card variant="elevated" className="overflow-hidden">
+            <CardContent className="text-center py-16 bg-gradient-to-br from-purple-50 to-blue-50">
+              <div className="p-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full w-fit mx-auto mb-6">
+                <FileText className="h-12 w-12 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No posts found</h3>
+              <p className="text-gray-600 mb-6">
                 {activeTab === 'all' ? 'Create your first post to get started' : 
                  activeTab === 'draft' ? 'No drafts found' :
                  activeTab === 'scheduled' ? 'No scheduled posts found' :
                  'No posted content found'}
               </p>
+              {activeTab === 'all' && (
+                <Button variant="gradient" size="lg" onClick={() => window.location.href = '/dashboard/create/new'}>
+                  <PlusCircle className="mr-2 h-5 w-5" />
+                  Create Your First Post
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -479,9 +523,10 @@ export default function PostsPage() {
               const stats = getPostStats(post)
               
               return (
-                <Card key={post.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                <Card key={post.id} variant="interactive" className="overflow-hidden group border border-gray-100">
                   <CardContent className="p-0">
-                    <div className="flex items-start p-4 gap-4">
+                    <div className="flex items-start p-6 gap-4 relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent to-purple-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       <input
                         type="checkbox"
                         checked={selectedPosts.includes(post.id)}
@@ -489,42 +534,65 @@ export default function PostsPage() {
                         className="mt-1 rounded border-gray-300"
                       />
                       
-                      <div className="flex-1">
+                      <div className="flex-1 relative z-10">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <h3 className="font-semibold text-lg line-clamp-1">
+                            <h3 className="font-bold text-xl text-gray-900 line-clamp-1 mb-2">
                               {stripHtml(post.content).slice(0, 60)}...
                             </h3>
-                            <p className="text-gray-600 mt-1 line-clamp-2">{stripHtml(post.content)}</p>
+                            <p className="text-gray-600 text-base leading-relaxed line-clamp-2">{stripHtml(post.content)}</p>
                             
-                            <div className="flex items-center gap-4 mt-3">
-                              <div className="flex items-center gap-2">
-                                <StatusIcon className="h-4 w-4 text-gray-400" />
+                            <div className="flex items-center gap-6 mt-4">
+                              <div className="flex items-center gap-3">
+                                <div className={cn(
+                                  "p-2 rounded-lg",
+                                  post.status === 'posted' ? 'bg-green-100' :
+                                  post.status === 'pending' ? 'bg-blue-100' :
+                                  'bg-gray-100'
+                                )}>
+                                  <StatusIcon className={cn(
+                                    "h-4 w-4",
+                                    post.status === 'posted' ? 'text-green-600' :
+                                    post.status === 'pending' ? 'text-blue-600' :
+                                    'text-gray-600'
+                                  )} />
+                                </div>
                                 <span className={cn(
-                                  "text-xs px-2 py-1 rounded-full font-medium",
-                                  getStatusColor(post.status)
+                                  "text-sm px-3 py-1.5 rounded-full font-semibold border",
+                                  post.status === 'posted' ? 'bg-green-50 text-green-700 border-green-200' :
+                                  post.status === 'pending' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                  'bg-gray-50 text-gray-700 border-gray-200'
                                 )}>
                                   {getStatusDisplayText(post.status)}
                                 </span>
                               </div>
                               
-                              <span className="text-sm text-gray-500">
-                                {post.scheduled_for && ['pending', 'posting', 'cancelled'].includes(post.status) 
-                                  ? `Scheduled: ${formatDate(post.scheduled_for, true)}`
-                                  : post.posted_at 
-                                  ? `Posted: ${formatDate(post.posted_at, true)}`
-                                  : `Created: ${formatDate(post.created_at)}`}
-                              </span>
+                              <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <Clock className="h-4 w-4" />
+                                <span className="font-medium">
+                                  {post.scheduled_for && ['pending', 'posting', 'cancelled'].includes(post.status) 
+                                    ? `Scheduled: ${formatDate(post.scheduled_for, true)}`
+                                    : post.posted_at 
+                                    ? `Posted: ${formatDate(post.posted_at, true)}`
+                                    : `Created: ${formatDate(post.created_at)}`}
+                                </span>
+                              </div>
                               
-                              <div className="flex gap-1">
-                                {post.platforms.map(platform => (
-                                  <span
+                              <div className="flex gap-2">
+                                {post.platforms.map((platform, index) => (
+                                  <div
                                     key={platform}
-                                    className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-xs"
+                                    className={cn(
+                                      "w-8 h-8 rounded-xl flex items-center justify-center text-sm font-medium shadow-sm border-2 border-white",
+                                      index === 0 ? 'bg-purple-100 text-purple-700' :
+                                      index === 1 ? 'bg-blue-100 text-blue-700' :
+                                      index === 2 ? 'bg-green-100 text-green-700' :
+                                      'bg-orange-100 text-orange-700'
+                                    )}
                                     title={platform}
                                   >
                                     {platformIcons[platform] || platform[0].toUpperCase()}
-                                  </span>
+                                  </div>
                                 ))}
                               </div>
                             </div>
@@ -545,16 +613,17 @@ export default function PostsPage() {
                             )}
                           </div>
                           
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-3 relative z-10">
                             <Button 
                               variant="outline" 
                               size="sm"
                               onClick={() => handleEditPost(post)}
+                              className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border-gray-200"
                             >
-                              <Edit className="mr-1 h-3 w-3" />
+                              <Edit className="mr-2 h-4 w-4" />
                               Edit
                             </Button>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" className="hover:bg-purple-50 hover:text-purple-600">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </div>

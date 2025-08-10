@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { getClientSubscription, refreshSubscriptionStatus } from '@/lib/subscription/client'
+import { useSubscriptionContext } from '@/providers/subscription-provider'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Lock, Sparkles, TrendingUp, Users } from 'lucide-react'
@@ -16,14 +16,11 @@ interface SubscriptionGateProps {
 }
 
 export function SubscriptionGate({ children, feature = 'premium features', className }: SubscriptionGateProps) {
-  const [hasSubscription, setHasSubscription] = useState<boolean | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { subscription, loading, refresh } = useSubscriptionContext()
   const router = useRouter()
   const searchParams = useSearchParams()
 
   useEffect(() => {
-    checkSubscription()
-    
     // Check if we just returned from a successful payment
     const subscriptionParam = searchParams.get('subscription')
     if (subscriptionParam === 'success') {
@@ -31,54 +28,35 @@ export function SubscriptionGate({ children, feature = 'premium features', class
     }
   }, [searchParams])
 
-  const checkSubscription = async () => {
-    try {
-      const subscription = await getClientSubscription()
-      
-      if (!subscription) {
-        setHasSubscription(false)
-      } else {
-        setHasSubscription(subscription.hasSubscription)
-      }
-    } catch (error) {
-      console.error('Error checking subscription:', error)
-      setHasSubscription(false)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handlePaymentSuccess = async () => {
     toast.success('Payment successful! Your subscription is now active.')
     
-    // Wait a moment for webhook to process
+    // Wait a moment for webhook to process then refresh
     setTimeout(async () => {
-      await refreshSubscriptionStatus()
-      await checkSubscription()
+      await refresh()
     }, 2000)
   }
 
   const handleSubscribe = () => {
-    // Redirect to homepage pricing section
-    router.push('/#pricing')
+    // Redirect to pricing page
+    router.push('/pricing')
   }
 
-  if (loading) {
+  // Don't show loading state if we have cached data
+  if (loading && !subscription) {
     return (
-      <div className={cn("relative", className)}>
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
-          <div className="animate-pulse">
-            <Lock className="h-8 w-8 text-muted-foreground" />
+      <div className={cn("relative min-h-[400px]", className)}>
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-sm text-muted-foreground">Loading...</p>
           </div>
-        </div>
-        <div className="opacity-50 pointer-events-none">
-          {children}
         </div>
       </div>
     )
   }
 
-  if (!hasSubscription) {
+  if (!subscription?.hasSubscription) {
     return (
       <div className={cn("relative", className)}>
         {/* Blurred content behind */}
@@ -150,49 +128,6 @@ export function SubscriptionGate({ children, feature = 'premium features', class
 }
 
 export function useSubscription() {
-  const [subscription, setSubscription] = useState<{
-    hasSubscription: boolean
-    planId: string | null
-    status: string | null
-    isTrialing: boolean
-  } | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    checkSubscription()
-  }, [])
-
-  const checkSubscription = async () => {
-    try {
-      const sub = await getClientSubscription()
-      
-      if (!sub) {
-        setSubscription({ 
-          hasSubscription: false, 
-          planId: null, 
-          status: null,
-          isTrialing: false 
-        })
-      } else {
-        setSubscription({
-          hasSubscription: sub.hasSubscription,
-          planId: sub.planId,
-          status: sub.status,
-          isTrialing: sub.isTrialing
-        })
-      }
-    } catch (error) {
-      console.error('Error checking subscription:', error)
-      setSubscription({ 
-        hasSubscription: false, 
-        planId: null, 
-        status: null,
-        isTrialing: false 
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return { subscription, loading, refetch: checkSubscription }
+  const { subscription, loading, refresh } = useSubscriptionContext()
+  return { subscription, loading, refetch: refresh }
 }

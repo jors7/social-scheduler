@@ -13,7 +13,8 @@ import {
   Clock,
   PlusCircle,
   ArrowUpRight,
-  Infinity
+  Infinity,
+  Zap
 } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
@@ -259,25 +260,25 @@ export default function DashboardPage() {
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-gray-600 mt-1">Welcome back! Here&apos;s your social media overview.</p>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Dashboard</h1>
+            <p className="text-gray-600 mt-2 text-lg">Welcome back! Here&apos;s your social media overview.</p>
           </div>
           <Link href="/dashboard/create/new">
-            <Button className="mt-4 sm:mt-0">
-              <PlusCircle className="mr-2 h-4 w-4" />
+            <Button variant="gradient" size="lg" className="mt-6 sm:mt-0">
+              <PlusCircle className="mr-2 h-5 w-5" />
               Create Post
             </Button>
           </Link>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader className="pb-2">
-                <div className="h-4 bg-gray-200 rounded w-24"></div>
+            <Card key={i} variant="elevated" className="animate-pulse">
+              <CardHeader className="pb-3">
+                <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-24"></div>
               </CardHeader>
               <CardContent>
-                <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-32"></div>
+                <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-16 mb-2"></div>
+                <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-32"></div>
               </CardContent>
             </Card>
           ))}
@@ -323,53 +324,45 @@ export default function DashboardPage() {
         <div className="flex items-center gap-3">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold">Dashboard</h1>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Dashboard</h1>
               {subscription && (
-                <Badge 
-                  variant={subscription.hasSubscription ? "default" : "secondary"}
-                  className={cn(
-                    "font-medium",
-                    subscription.hasSubscription && "bg-primary"
-                  )}
-                >
+                <div className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold",
+                  subscription.hasSubscription 
+                    ? "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 border border-purple-200"
+                    : "bg-gray-100 text-gray-600 border border-gray-200"
+                )}>
                   {subscription.hasSubscription ? (
                     <>
-                      <Crown className="mr-1 h-3 w-3" />
+                      <Crown className="h-3 w-3" />
                       {subscription.planId ? subscription.planId.charAt(0).toUpperCase() + subscription.planId.slice(1) : 'Free'}
-                      {subscription.isTrialing && ' (Trial)'}
+                      {subscription.isTrialing && ' Trial'}
                     </>
                   ) : (
-                    'Free Plan'
+                    <>
+                      <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+                      Free Plan
+                    </>
                   )}
-                </Badge>
+                </div>
               )}
             </div>
-            <p className="text-gray-600 mt-1">
-              Welcome back! 
-              {subscription?.hasSubscription && subscription?.isTrialing && subscription?.trialEndsAt && (
-                <span className="ml-1 text-sm">
-                  Trial ends {new Date(subscription.trialEndsAt).toLocaleDateString()}
-                </span>
-              )}
-              {subscription?.hasSubscription && !subscription?.isTrialing && subscription?.currentPeriodEnd && (
-                <span className="ml-1 text-sm">
-                  Renews {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
-                </span>
-              )}
+            <p className="text-gray-600 mt-2 text-lg">
+              Welcome back! Here&apos;s your social media overview.
             </p>
           </div>
         </div>
-        <div className="flex gap-2 mt-4 sm:mt-0">
+        <div className="flex gap-3 mt-6 sm:mt-0">
           <Link href="/dashboard/create/new">
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
+            <Button variant="gradient" size="lg">
+              <PlusCircle className="mr-2 h-5 w-5" />
               Create Post
             </Button>
           </Link>
           {subscription && !subscription.hasSubscription && (
             <Link href="/#pricing">
-              <Button variant="outline">
-                <Sparkles className="mr-2 h-4 w-4" />
+              <Button variant="gradient-outline" size="lg">
+                <Sparkles className="mr-2 h-5 w-5" />
                 Upgrade
               </Button>
             </Link>
@@ -388,39 +381,52 @@ export default function DashboardPage() {
         <div className="space-y-8">
 
       {/* Quick Actions */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Quick Actions</CardTitle>
+      <Card variant="elevated">
+        <CardHeader className="pb-4">
+          <CardTitle variant="gradient" className="text-xl flex items-center gap-2">
+            <Zap className="h-5 w-5" />
+            Quick Actions
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
             <Link href="/dashboard/create/new">
-              <Button variant="outline" className="w-full justify-start" size="sm">
-                <PlusCircle className="mr-2 h-4 w-4" />
+              <Button variant="outline" className="w-full justify-start hover:shadow-md hover:-translate-y-0.5 transition-all duration-200" size="sm">
+                <div className="p-1 bg-purple-100 rounded-lg mr-3">
+                  <PlusCircle className="h-4 w-4 text-purple-600" />
+                </div>
                 New Post
               </Button>
             </Link>
             <Link href="/dashboard/posts">
-              <Button variant="outline" className="w-full justify-start" size="sm">
-                <FileText className="mr-2 h-4 w-4" />
+              <Button variant="outline" className="w-full justify-start hover:shadow-md hover:-translate-y-0.5 transition-all duration-200" size="sm">
+                <div className="p-1 bg-blue-100 rounded-lg mr-3">
+                  <FileText className="h-4 w-4 text-blue-600" />
+                </div>
                 View Posts
               </Button>
             </Link>
             <Link href="/dashboard/calendar">
-              <Button variant="outline" className="w-full justify-start" size="sm">
-                <Calendar className="mr-2 h-4 w-4" />
+              <Button variant="outline" className="w-full justify-start hover:shadow-md hover:-translate-y-0.5 transition-all duration-200" size="sm">
+                <div className="p-1 bg-green-100 rounded-lg mr-3">
+                  <Calendar className="h-4 w-4 text-green-600" />
+                </div>
                 Calendar
               </Button>
             </Link>
             <Link href="/dashboard/analytics">
-              <Button variant="outline" className="w-full justify-start" size="sm">
-                <TrendingUp className="mr-2 h-4 w-4" />
+              <Button variant="outline" className="w-full justify-start hover:shadow-md hover:-translate-y-0.5 transition-all duration-200" size="sm">
+                <div className="p-1 bg-orange-100 rounded-lg mr-3">
+                  <TrendingUp className="h-4 w-4 text-orange-600" />
+                </div>
                 Analytics
               </Button>
             </Link>
             <Link href="/dashboard/settings">
-              <Button variant="outline" className="w-full justify-start" size="sm">
-                <Users className="mr-2 h-4 w-4" />
+              <Button variant="outline" className="w-full justify-start hover:shadow-md hover:-translate-y-0.5 transition-all duration-200" size="sm">
+                <div className="p-1 bg-indigo-100 rounded-lg mr-3">
+                  <Users className="h-4 w-4 text-indigo-600" />
+                </div>
                 Accounts
               </Button>
             </Link>
@@ -430,12 +436,14 @@ export default function DashboardPage() {
 
       {/* Usage Statistics */}
       {usage && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Posts
+        <div className="grid gap-6 md:grid-cols-3">
+          <Card variant="gradient" className="overflow-hidden">
+            <CardHeader className="pb-4 bg-white/50 backdrop-blur-sm">
+              <CardTitle className="text-lg flex items-center gap-3">
+                <div className="p-2 bg-purple-500 rounded-lg text-white">
+                  <FileText className="h-5 w-5" />
+                </div>
+                Posts This Month
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -467,10 +475,12 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Users className="h-4 w-4" />
+          <Card variant="gradient" className="overflow-hidden">
+            <CardHeader className="pb-4 bg-white/50 backdrop-blur-sm">
+              <CardTitle className="text-lg flex items-center gap-3">
+                <div className="p-2 bg-blue-500 rounded-lg text-white">
+                  <Users className="h-5 w-5" />
+                </div>
                 Connected Accounts
               </CardTitle>
             </CardHeader>
@@ -503,10 +513,12 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
+          <Card variant="gradient" className="overflow-hidden">
+            <CardHeader className="pb-4 bg-white/50 backdrop-blur-sm">
+              <CardTitle className="text-lg flex items-center gap-3">
+                <div className="p-2 bg-indigo-500 rounded-lg text-white">
+                  <Sparkles className="h-5 w-5" />
+                </div>
                 AI Suggestions
               </CardTitle>
             </CardHeader>
@@ -542,16 +554,16 @@ export default function DashboardPage() {
       )}
 
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-2">
         {/* Recent Posts */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card variant="elevated" className="overflow-hidden">
+          <CardHeader variant="gradient" className="flex flex-row items-center justify-between text-white">
             <div>
-              <CardTitle>Recent Posts</CardTitle>
-              <CardDescription>Your latest social media activity</CardDescription>
+              <CardTitle className="text-white text-xl">Recent Posts</CardTitle>
+              <CardDescription className="text-purple-100">Your latest social media activity</CardDescription>
             </div>
             <Link href="/dashboard/posts">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
                 View all
                 <ArrowUpRight className="ml-1 h-4 w-4" />
               </Button>
@@ -569,7 +581,7 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 recentPosts.map((post) => (
-                  <div key={post.id} className="flex items-center justify-between p-4 border rounded-lg hover:shadow-sm transition-shadow">
+                  <div key={post.id} className="flex items-center justify-between p-5 border border-gray-100 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-gradient-to-r from-gray-50 to-white">
                     <div className="flex-1">
                       <p className="font-medium line-clamp-1">{stripHtml(post.content).slice(0, 60)}...</p>
                       <div className="flex items-center gap-2 mt-1">
@@ -611,14 +623,14 @@ export default function DashboardPage() {
         </Card>
 
         {/* Upcoming Schedule */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card variant="elevated" className="overflow-hidden">
+          <CardHeader variant="gradient" className="flex flex-row items-center justify-between text-white">
             <div>
-              <CardTitle>Upcoming Schedule</CardTitle>
-              <CardDescription>Posts scheduled for the next few days</CardDescription>
+              <CardTitle className="text-white text-xl">Upcoming Schedule</CardTitle>
+              <CardDescription className="text-purple-100">Posts scheduled for the next few days</CardDescription>
             </div>
             <Link href="/dashboard/calendar">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
                 <Calendar className="mr-1 h-4 w-4" />
                 Calendar
               </Button>
@@ -636,7 +648,7 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 upcomingSchedule.map((day) => (
-                  <div key={day.date} className="flex items-center justify-between p-4 border rounded-lg hover:shadow-sm transition-shadow">
+                  <div key={day.date} className="flex items-center justify-between p-5 border border-gray-100 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-gradient-to-r from-gray-50 to-white">
                     <span className="font-medium">{day.date}</span>
                     <span className="text-sm text-gray-600">
                       {day.posts} post{day.posts !== 1 ? 's' : ''}
@@ -650,24 +662,35 @@ export default function DashboardPage() {
       </div>
 
           {/* Stats Grid - Activity Metrics */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {statsData.map((stat) => (
-              <Card key={stat.title}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                  <stat.icon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className={cn(
-                    "text-xs mt-1",
-                    stat.trend === 'up' ? 'text-green-600' : 'text-gray-600'
-                  )}>
-                    {stat.description}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {statsData.map((stat, index) => {
+              const gradientColors = [
+                'from-purple-500 to-purple-600',
+                'from-blue-500 to-blue-600', 
+                'from-green-500 to-green-600',
+                'from-orange-500 to-orange-600'
+              ]
+              return (
+                <Card key={stat.title} variant="interactive" className="overflow-hidden group">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative">
+                    <div className={`absolute inset-0 bg-gradient-to-r ${gradientColors[index]} opacity-5 group-hover:opacity-10 transition-opacity duration-200`}></div>
+                    <CardTitle className="text-sm font-medium relative z-10">{stat.title}</CardTitle>
+                    <div className={`p-2 rounded-lg bg-gradient-to-r ${gradientColors[index]} relative z-10`}>
+                      <stat.icon className="h-4 w-4 text-white" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="relative z-10">
+                    <div className="text-3xl font-bold mb-1">{stat.value}</div>
+                    <p className={cn(
+                      "text-sm",
+                      stat.trend === 'up' ? 'text-green-600' : 'text-gray-600'
+                    )}>
+                      {stat.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         </div>
       </SubscriptionGate>

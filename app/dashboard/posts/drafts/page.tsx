@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
+import { CustomSelect } from '@/components/ui/custom-select'
 import { 
   Search, 
   Filter,
@@ -225,20 +226,40 @@ export default function DraftPostsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4 animate-pulse" />
-          <p className="text-gray-500">Loading drafts...</p>
+      <div className="space-y-8">
+        <div className="space-y-4">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-r from-orange-600 to-amber-600 rounded-xl text-white">
+              <FileText className="h-8 w-8" />
+            </div>
+            Draft Content
+          </h1>
         </div>
+        <Card variant="glass" className="border-orange-200">
+          <CardContent className="text-center py-12">
+            <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-orange-100 to-amber-100 rounded-full mb-4">
+              <FileText className="h-8 w-8 text-orange-600 animate-pulse" />
+            </div>
+            <p className="text-gray-600 font-medium">Loading your drafts...</p>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Drafts</h1>
-        <p className="text-gray-600 mt-1">Continue working on your saved drafts</p>
+    <div className="space-y-8">
+      {/* Header with gradient title */}
+      <div className="space-y-4">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-r from-orange-600 to-amber-600 rounded-xl text-white">
+            <FileText className="h-8 w-8" />
+          </div>
+          Draft Content
+        </h1>
+        <p className="text-gray-600 text-lg">
+          Continue working on your saved drafts and bring your ideas to life
+        </p>
       </div>
 
       <SubscriptionGate feature="drafts">
@@ -254,41 +275,42 @@ export default function DraftPostsPage() {
             className="pl-10"
           />
         </div>
-        <select
+        <CustomSelect
           value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md"
-        >
-          <option value="modified">Sort by Last Modified</option>
-          <option value="created">Sort by Created Date</option>
-          <option value="title">Sort by Title</option>
-        </select>
-        <Button variant="outline">
-          <Filter className="mr-2 h-4 w-4" />
-          Filter
-        </Button>
+          onChange={setSortBy}
+          options={[
+            { value: 'modified', label: 'Sort by Last Modified' },
+            { value: 'created', label: 'Sort by Created Date' },
+            { value: 'title', label: 'Sort by Title' }
+          ]}
+          className="min-w-[200px] h-10"
+        />
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
+      {/* Summary Stats - Elevated cards with gradients */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+          <CardContent className="p-6">
             <div className="flex items-center">
-              <FileText className="h-8 w-8 text-gray-500" />
+              <div className="p-3 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl shadow-lg">
+                <FileText className="h-6 w-6 text-white" />
+              </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Drafts</p>
-                <p className="text-2xl font-bold">{filteredDrafts.length}</p>
+                <p className="text-2xl font-bold text-gray-900">{filteredDrafts.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
+        <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+          <CardContent className="p-6">
             <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-blue-500" />
+              <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                <Calendar className="h-6 w-6 text-white" />
+              </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Created Today</p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold text-gray-900">
                   {filteredDrafts.filter(d => {
                     const today = new Date()
                     const created = new Date(d.created_at)
@@ -299,13 +321,15 @@ export default function DraftPostsPage() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
+        <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+          <CardContent className="p-6">
             <div className="flex items-center">
-              <Clock className="h-8 w-8 text-orange-500" />
+              <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl shadow-lg">
+                <Clock className="h-6 w-6 text-white" />
+              </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Modified This Week</p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold text-gray-900">
                   {filteredDrafts.filter(d => {
                     const weekAgo = new Date()
                     weekAgo.setDate(weekAgo.getDate() - 7)
@@ -318,15 +342,15 @@ export default function DraftPostsPage() {
         </Card>
       </div>
 
-      {/* Bulk Actions */}
+      {/* Bulk Actions - Glass morphism effect */}
       {selectedDrafts.length > 0 && (
-        <Card className="bg-primary/10 border-primary">
+        <Card variant="glass" className="border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50">
           <CardContent className="flex items-center justify-between py-4">
-            <span className="text-sm font-medium">
+            <span className="text-sm font-medium text-orange-900">
               {selectedDrafts.length} draft{selectedDrafts.length > 1 ? 's' : ''} selected
             </span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleBulkDelete}>
+              <Button variant="outline" size="sm" onClick={handleBulkDelete} className="hover:bg-red-50 hover:border-red-300">
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete
               </Button>
@@ -336,7 +360,7 @@ export default function DraftPostsPage() {
                 } else {
                   toast.error('Please select only one draft to duplicate')
                 }
-              }}>
+              }} className="hover:bg-blue-50 hover:border-blue-300">
                 <Copy className="mr-2 h-4 w-4" />
                 Duplicate
               </Button>
@@ -348,12 +372,14 @@ export default function DraftPostsPage() {
       {/* Drafts List */}
       <div className="space-y-4">
         {filteredDrafts.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-gray-500 mb-2">No drafts found</p>
-              <p className="text-sm text-gray-400">Start creating content to see your drafts here</p>
-              <Button className="mt-4" onClick={() => router.push('/dashboard/create/new')}>
+          <Card variant="gradient" className="from-orange-50 to-amber-50">
+            <CardContent className="text-center py-16">
+              <div className="inline-flex items-center justify-center p-6 bg-gradient-to-br from-orange-100 to-amber-100 rounded-full mb-6">
+                <FileText className="h-12 w-12 text-orange-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No drafts found</h3>
+              <p className="text-gray-600 mb-6">Start creating content to see your drafts here</p>
+              <Button className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white shadow-lg" onClick={() => router.push('/dashboard/create/new')}>
                 <Edit className="mr-2 h-4 w-4" />
                 Create New Post
               </Button>
@@ -376,7 +402,7 @@ export default function DraftPostsPage() {
               const plainContent = stripHtml(draft.content)
               
               return (
-                <Card key={draft.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                <Card key={draft.id} variant="elevated" className="overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
                   <CardContent className="p-0">
                     <div className="flex items-start p-4 gap-4">
                       <input
@@ -434,7 +460,7 @@ export default function DraftPostsPage() {
                               <Button 
                                 size="sm" 
                                 variant="outline" 
-                                className="text-xs"
+                                className="text-xs hover:bg-blue-50 hover:border-blue-300"
                                 onClick={() => handleEdit(draft.id)}
                               >
                                 <Edit className="mr-1 h-3 w-3" />
@@ -443,7 +469,7 @@ export default function DraftPostsPage() {
                               <Button 
                                 size="sm" 
                                 variant="outline" 
-                                className="text-xs"
+                                className="text-xs hover:bg-purple-50 hover:border-purple-300"
                                 onClick={() => handleSchedule(draft.id)}
                               >
                                 <Calendar className="mr-1 h-3 w-3" />
@@ -451,7 +477,7 @@ export default function DraftPostsPage() {
                               </Button>
                               <Button 
                                 size="sm" 
-                                className="text-xs"
+                                className="text-xs bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-sm"
                                 onClick={() => handlePublishNow(draft.id)}
                               >
                                 <Send className="mr-1 h-3 w-3" />
@@ -460,7 +486,7 @@ export default function DraftPostsPage() {
                               <Button 
                                 size="sm" 
                                 variant="ghost" 
-                                className="text-xs text-red-600 hover:text-red-700"
+                                className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
                                 onClick={() => handleDelete(draft.id)}
                               >
                                 <Trash2 className="mr-1 h-3 w-3" />

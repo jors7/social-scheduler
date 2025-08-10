@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
+import { MediaLibraryGate } from '@/components/subscription/media-library-gate'
 import {
   Upload,
   Search,
@@ -380,16 +380,29 @@ export default function MediaLibraryPage() {
   }
 
   return (
-    <SubscriptionGate feature="media_library">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Media Library</h1>
-          <p className="text-gray-600 mt-1">Manage your uploaded images and videos</p>
+    <MediaLibraryGate>
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white">
+                <ImageIcon className="h-8 w-8" />
+              </div>
+              Media Library
+            </h1>
+            <p className="text-gray-600 mt-2 text-lg">Manage your uploaded images and videos</p>
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" size="lg" onClick={() => document.getElementById('file-upload')?.click()} className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+              <Upload className="mr-2 h-5 w-5" />
+              Upload Files
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -809,6 +822,6 @@ export default function MediaLibraryPage() {
           </Dialog>
         )}
       </div>
-    </SubscriptionGate>
+    </MediaLibraryGate>
   )
 }

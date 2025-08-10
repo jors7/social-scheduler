@@ -155,9 +155,15 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
+      <Card variant="elevated">
+        <CardContent className="text-center py-16 bg-gradient-to-br from-purple-50 to-blue-50">
+          <div className="p-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full w-fit mx-auto mb-6">
+            <Loader2 className="h-12 w-12 text-white animate-spin" />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Loading billing information...</h3>
+          <p className="text-gray-600">Please wait while we load your subscription details</p>
+        </CardContent>
+      </Card>
     )
   }
 
@@ -178,41 +184,54 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Billing & Subscription</h1>
-        <p className="text-gray-600 mt-1">Manage your subscription, billing, and usage</p>
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900">
+            Billing & Subscription
+          </h1>
+          <p className="text-gray-600 mt-2 text-lg">Manage your subscription, billing, and usage</p>
+        </div>
       </div>
 
       {/* Main Layout Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-8 lg:grid-cols-3">
         {/* Left Column - Plan Details */}
         <div className="lg:col-span-2 space-y-6">
           {/* Current Plan Card */}
-          <Card>
-            <CardHeader>
+          <Card className="bg-white shadow-xl hover:shadow-2xl transition-all duration-300 border-0 overflow-hidden hover:-translate-y-0.5">
+            <CardHeader className="border-b pb-6">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl">Subscription Plan</CardTitle>
+                <CardTitle className="text-xl">
+                  Subscription Plan
+                </CardTitle>
                 <Badge 
                   variant={subscription?.hasSubscription ? "default" : "secondary"}
-                  className="text-sm"
+                  className={cn(
+                    "text-sm font-semibold px-4 py-2 rounded-xl shadow-lg border-0 min-w-[80px] justify-center",
+                    subscription?.hasSubscription 
+                      ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700 shadow-emerald-200" 
+                      : "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300 shadow-gray-200"
+                  )}
                 >
                   {subscription?.hasSubscription ? 'Active' : 'Free'}
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 pt-6">
               {/* Plan Info */}
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl hover:shadow-md transition-all duration-200">
                 <div className="flex items-center gap-4">
                   <div className={cn(
-                    "p-3 rounded-lg",
-                    subscription?.hasSubscription ? "bg-primary/10" : "bg-muted"
+                    "p-3 rounded-xl shadow-sm",
+                    subscription?.hasSubscription 
+                      ? "bg-gradient-to-r from-purple-100 to-blue-100" 
+                      : "bg-white"
                   )}>
                     {subscription?.hasSubscription ? (
-                      <Crown className="h-6 w-6 text-primary" />
+                      <Crown className="h-6 w-6 text-purple-600" />
                     ) : (
-                      <Sparkles className="h-6 w-6 text-muted-foreground" />
+                      <Sparkles className="h-6 w-6 text-gray-500" />
                     )}
                   </div>
                   <div>
@@ -257,12 +276,13 @@ export default function BillingPage() {
                   <>
                     <Button 
                       onClick={() => setShowChangePlanModal(true)}
-                      className="flex-1"
+                      className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
                     >
                       Change Plan
                     </Button>
                     <Button 
                       variant="outline"
+                      className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                       onClick={() => {
                         fetch('/api/stripe/portal', {
                           method: 'POST',
@@ -284,7 +304,7 @@ export default function BillingPage() {
                     </Button>
                   </>
                 ) : (
-                  <Button asChild className="flex-1">
+                  <Button asChild className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
                     <Link href="/#pricing">
                       <Sparkles className="mr-2 h-4 w-4" />
                       Upgrade Plan
@@ -296,15 +316,14 @@ export default function BillingPage() {
           </Card>
 
           {/* Payment History */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                <CardTitle>Payment History</CardTitle>
-              </div>
-              <CardDescription>Your recent transactions and invoices</CardDescription>
+          <Card className="bg-white shadow-xl hover:shadow-2xl transition-all duration-300 border-0 overflow-hidden hover:-translate-y-0.5">
+            <CardHeader className="border-b pb-6">
+              <CardTitle className="text-xl">
+                Payment History
+              </CardTitle>
+              <CardDescription className="mt-2">Your recent transactions and invoices</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               {paymentHistory.length === 0 ? (
                 <div className="text-center py-8">
                   <DollarSign className="mx-auto h-12 w-12 text-gray-300" />
@@ -329,6 +348,7 @@ export default function BillingPage() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="hover:bg-gray-100 hover:-translate-y-0.5 transition-all duration-200"
                             onClick={() => {
                               // Open Stripe customer portal or invoice URL
                               fetch('/api/stripe/invoice-url', {
@@ -362,11 +382,13 @@ export default function BillingPage() {
 
         {/* Right Column - Usage Stats */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Usage This Month</CardTitle>
+          <Card className="bg-white shadow-xl hover:shadow-2xl transition-all duration-300 border-0 rounded-xl hover:-translate-y-0.5">
+            <CardHeader className="border-b pb-6">
+              <CardTitle className="text-lg">
+                Usage This Month
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
               {/* Posts Usage */}
               <div>
                 <div className="flex justify-between mb-2">
@@ -427,11 +449,13 @@ export default function BillingPage() {
           </Card>
 
           {/* Plan Features */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Plan Features</CardTitle>
+          <Card className="bg-white shadow-xl hover:shadow-2xl transition-all duration-300 border-0 rounded-xl hover:-translate-y-0.5">
+            <CardHeader className="border-b pb-6">
+              <CardTitle className="text-lg">
+                Plan Features
+              </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <ul className="space-y-2">
                 {currentPlan.features.posts_per_month !== 0 && (
                   <li className="flex items-start gap-2">
@@ -489,7 +513,7 @@ export default function BillingPage() {
                 )}
               </ul>
               {!subscription?.hasSubscription && (
-                <Button asChild variant="outline" className="w-full mt-4">
+                <Button asChild variant="outline" className="w-full mt-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                   <Link href="/#pricing">
                     View all plans
                     <ChevronRight className="ml-2 h-4 w-4" />

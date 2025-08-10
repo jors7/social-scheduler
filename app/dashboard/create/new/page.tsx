@@ -729,11 +729,24 @@ function CreateNewPostPageContent() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Create New Post</h1>
-        <p className="text-gray-600 mt-1">Share your content across multiple social media platforms</p>
-        {loadingDraft && <p className="text-blue-600 mt-2">Loading draft...</p>}
+    <div className="space-y-8">
+      {/* Header with gradient title */}
+      <div className="space-y-4">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl text-white">
+            <Send className="h-8 w-8" />
+          </div>
+          Create New Post
+        </h1>
+        <p className="text-gray-600 text-lg">
+          Share your content across multiple social media platforms with one click
+        </p>
+        {loadingDraft && (
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full">
+            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-blue-700 text-sm font-medium">Loading draft...</span>
+          </div>
+        )}
       </div>
 
       <SubscriptionGate feature="post scheduling">
@@ -741,20 +754,21 @@ function CreateNewPostPageContent() {
         {/* Left Column - Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Post Content */}
-          <Card>
-            <CardHeader>
+          <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
+            <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Post Content</CardTitle>
-                  <CardDescription>Write your message</CardDescription>
+                  <CardTitle className="text-xl font-semibold text-gray-900">Post Content</CardTitle>
+                  <CardDescription className="text-gray-600">Write your message</CardDescription>
                 </div>
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => setShowAISuggestions(true)}
                   disabled={selectedPlatforms.length === 0}
+                  className="bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 border-purple-200 hover:border-purple-300"
                 >
-                  <Sparkles className="mr-2 h-4 w-4" />
+                  <Sparkles className="mr-2 h-4 w-4 text-purple-600" />
                   AI Suggestions
                 </Button>
               </div>
@@ -826,10 +840,10 @@ function CreateNewPostPageContent() {
           </Card>
 
           {/* Media Upload */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Media</CardTitle>
-              <CardDescription>Add images and videos to your post</CardDescription>
+          <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-semibold text-gray-900">Media</CardTitle>
+              <CardDescription className="text-gray-600">Add images and videos to your post</CardDescription>
             </CardHeader>
             <CardContent>
               <div 
@@ -932,10 +946,10 @@ function CreateNewPostPageContent() {
           </Card>
 
           {/* Scheduling */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Schedule</CardTitle>
-              <CardDescription>When to publish</CardDescription>
+          <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-semibold text-gray-900">Schedule</CardTitle>
+              <CardDescription className="text-gray-600">When to publish</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
@@ -986,21 +1000,24 @@ function CreateNewPostPageContent() {
 
               {/* Smart Suggestions */}
               {showSmartSuggestions && smartSuggestions.length > 0 && (
-                <div className="border rounded-lg p-4 bg-blue-50">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium text-blue-900 flex items-center gap-2">
-                      <Zap className="h-4 w-4" />
-                      Smart Schedule Suggestions
-                    </h4>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowSmartSuggestions(false)}
-                      className="h-6 w-6 p-0 text-blue-600"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
+                <Card variant="glass" className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium text-blue-900 flex items-center gap-2">
+                        <div className="p-1 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
+                          <Zap className="h-3 w-3 text-white" />
+                        </div>
+                        Smart Schedule Suggestions
+                      </h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowSmartSuggestions(false)}
+                        className="h-6 w-6 p-0 text-blue-600 hover:bg-blue-100"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {smartSuggestions.map((suggestion, index) => {
                       const date = new Date(suggestion.datetime)
@@ -1042,11 +1059,15 @@ function CreateNewPostPageContent() {
                         </button>
                       )
                     })}
-                  </div>
-                  <div className="mt-3 text-xs text-blue-700 bg-blue-100 rounded p-2">
-                    💡 These times are based on general best practices. As you post more, suggestions will improve based on your audience&apos;s engagement patterns.
-                  </div>
-                </div>
+                    </div>
+                    <div className="mt-3 text-xs text-blue-700 bg-blue-100 rounded-lg p-3 border border-blue-200">
+                      <div className="flex items-start gap-2">
+                        <span className="text-blue-600">💡</span>
+                        <div>These times are based on general best practices. As you post more, suggestions will improve based on your audience's engagement patterns.</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
               
               {scheduledDate && scheduledTime && (
@@ -1061,16 +1082,16 @@ function CreateNewPostPageContent() {
           </Card>
 
           {/* Action Buttons */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Actions</CardTitle>
-              <CardDescription>Publish or save your post</CardDescription>
+          <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-semibold text-gray-900">Actions</CardTitle>
+              <CardDescription className="text-gray-600">Publish or save your post</CardDescription>
             </CardHeader>
             <CardContent className="flex gap-4">
               {scheduledDate && scheduledTime ? (
                 <>
                   <Button 
-                    className="flex-1" 
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg" 
                     disabled={
                       selectedPlatforms.length === 0 || 
                       isPosting || 
@@ -1088,6 +1109,7 @@ function CreateNewPostPageContent() {
                       setScheduledDate('')
                       setScheduledTime('')
                     }}
+                    className="hover:bg-red-50 hover:border-red-300"
                   >
                     <X className="mr-2 h-4 w-4" />
                     Clear Schedule
@@ -1095,7 +1117,7 @@ function CreateNewPostPageContent() {
                 </>
               ) : (
                 <Button 
-                  className="flex-1" 
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg" 
                   disabled={
                     selectedPlatforms.length === 0 || 
                     isPosting || 
@@ -1110,7 +1132,7 @@ function CreateNewPostPageContent() {
               )}
               <Button 
                 variant="outline" 
-                className="flex-1" 
+                className="flex-1 hover:bg-orange-50 hover:border-orange-300" 
                 disabled={selectedPlatforms.length === 0 || isPosting || loadingDraft}
                 onClick={handleSaveAsDraft}
               >
@@ -1124,10 +1146,10 @@ function CreateNewPostPageContent() {
         {/* Right Column - Sidebar */}
         <div className="lg:col-span-1">
           {/* Platform Selection */}
-          <Card className="sticky top-6">
-            <CardHeader>
-              <CardTitle>Platforms</CardTitle>
-              <CardDescription>Choose where to publish</CardDescription>
+          <Card variant="elevated" className="sticky top-6 hover:shadow-xl transition-all duration-300">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-semibold text-gray-900">Platforms</CardTitle>
+              <CardDescription className="text-gray-600">Choose where to publish</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -1157,15 +1179,15 @@ function CreateNewPostPageContent() {
               </div>
               
               {selectedPlatforms.length > 0 && (
-                <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
                   <p className="text-sm font-medium text-green-800">
                     {selectedPlatforms.length} platform{selectedPlatforms.length > 1 ? 's' : ''} selected
                   </p>
-                  <div className="flex flex-wrap gap-1 mt-2">
+                  <div className="flex flex-wrap gap-2 mt-3">
                     {selectedPlatforms.map(id => {
                       const platform = platforms.find(p => p.id === id)
                       return (
-                        <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-white rounded text-xs">
+                        <span key={id} className="inline-flex items-center gap-1 px-3 py-1.5 bg-white rounded-lg text-xs font-medium shadow-sm border border-green-100">
                           <span>{platform?.icon}</span>
                           <span>{platform?.name}</span>
                         </span>

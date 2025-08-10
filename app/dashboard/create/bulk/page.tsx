@@ -49,10 +49,16 @@ const platforms = [
 
 export default function BulkUploadPage() {
   return (
-    <div className="flex-1 space-y-8 p-8">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Bulk Upload & Schedule</h2>
-        <p className="text-muted-foreground">
+    <div className="space-y-8">
+      {/* Header with gradient title */}
+      <div className="space-y-4">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl text-white">
+            <Upload className="h-8 w-8" />
+          </div>
+          Bulk Upload & Schedule
+        </h1>
+        <p className="text-gray-600 text-lg">
           Upload multiple posts at once and schedule them across your social media platforms
         </p>
       </div>
@@ -331,9 +337,9 @@ function BulkUploadContent() {
               <Button 
                 variant="outline" 
                 onClick={downloadTemplate}
-                className="w-full"
+                className="w-full bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border-indigo-200 hover:border-indigo-300"
               >
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 mr-2 text-indigo-600" />
                 Download Template
               </Button>
             </CardContent>

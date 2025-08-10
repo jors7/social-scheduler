@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Check, Calendar, Users, BarChart, Zap, Shield, Star, Menu, Clock, TrendingUp, ArrowRight } from 'lucide-react'
+import { Calendar, Users, BarChart, Zap, Shield, Menu, Clock, TrendingUp, ArrowRight } from 'lucide-react'
 import { useEffect, useState, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -57,97 +57,29 @@ const features = [
 ]
 
 const testimonials = [
-  {
-    name: 'Sarah Johnson',
-    role: 'Marketing Director',
-    content: 'Social Scheduler has transformed how we manage our social media presence. We save hours every week!',
-    rating: 5,
-  },
-  {
-    name: 'Mike Chen',
-    role: 'Content Creator',
-    content: 'The AI caption suggestions are incredible. They help me maintain consistency across all platforms.',
-    rating: 5,
-  },
-  {
-    name: 'Emily Rodriguez',
-    role: 'Small Business Owner',
-    content: 'Finally, a tool that makes social media manageable for small businesses. Highly recommend!',
-    rating: 5,
-  },
+  // First row testimonials
+  [
+    "SocialPulse has completely transformed our social media strategy. We're saving 15+ hours every week!",
+    "The AI suggestions are spot on! My engagement has increased by 200% in just two months.",
+    "Finally, a tool that understands small businesses. Simple, powerful, and affordable.",
+    "Scheduling across 9 platforms used to be a nightmare. Now it takes me 10 minutes.",
+    "The analytics dashboard alone is worth the price. I can finally track ROI properly.",
+    "My team loves how intuitive everything is. Zero learning curve!",
+  ],
+  // Second row testimonials
+  [
+    "Game-changer for content creators! I can focus on creating instead of posting.",
+    "Doubled my client base since using SocialPulse. The time savings are incredible.",
+    "The bulk upload feature is a lifesaver. I schedule a month's content in one go.",
+    "Customer support is exceptional. They actually listen and implement feedback.",
+    "Best investment for my personal brand. Period.",
+    "Switched from Hootsuite and never looked back. This is so much better!",
+  ],
 ]
 
-const pricingPlans = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    price: '$9',
-    description: 'Perfect for individuals and small businesses',
-    features: [
-      'Up to 5 social accounts',
-      'Unlimited posts',
-      'Basic analytics',
-      '7-day free trial',
-    ],
-  },
-  {
-    id: 'professional',
-    name: 'Professional',
-    price: '$19',
-    description: 'For growing businesses and teams',
-    features: [
-      'Up to 15 social accounts',
-      'Unlimited posts',
-      'Advanced analytics',
-      'AI caption suggestions',
-      'Priority support',
-      '7-day free trial',
-    ],
-    popular: true,
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: '$29',
-    description: 'Everything you need for large teams',
-    features: [
-      'Unlimited social accounts',
-      'Unlimited posts',
-      'Advanced analytics',
-      'Unlimited AI suggestions',
-      'Team collaboration',
-      'Priority support',
-      '7-day free trial',
-    ],
-  },
-]
-
-const faqs = [
-  {
-    question: 'Which social media platforms do you support?',
-    answer: 'We support all major platforms including X (Twitter), Instagram, Facebook, LinkedIn, YouTube, TikTok, Threads, Bluesky, and Pinterest.',
-  },
-  {
-    question: 'Can I customize content for each platform?',
-    answer: 'Yes! You can customize your content for each platform before posting, ensuring your message is optimized for each audience.',
-  },
-  {
-    question: 'How does the AI caption suggestion work?',
-    answer: 'Our AI analyzes your content and suggests captions tailored to each platform\'s best practices and your brand voice.',
-  },
-  {
-    question: 'Can I collaborate with my team?',
-    answer: 'Absolutely! Our Professional and Enterprise plans include team collaboration features for content creation and approval workflows.',
-  },
-  {
-    question: 'Is there a free trial?',
-    answer: 'Yes, we offer a 14-day free trial for all plans. No credit card required.',
-  },
-]
 
 function LandingPageContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [loading, setLoading] = useState<string | null>(null)
   const [signInOpen, setSignInOpen] = useState(false)
   const [signUpOpen, setSignUpOpen] = useState(false)
   const [signUpPlanId, setSignUpPlanId] = useState<string | null>(null)
@@ -182,84 +114,85 @@ function LandingPageContent() {
     setIsAuthenticated(!!user)
   }
 
-  const handleStartTrial = async (planId: string) => {
-    if (!isAuthenticated) {
-      // Not logged in, open signup modal with plan
-      setSignUpPlanId(planId)
-      setSignUpOpen(true)
-      return
-    }
-
-    // User is logged in, proceed to Stripe checkout
-    setLoading(planId)
-    
-    try {
-      const response = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          planId,
-          billingCycle: 'monthly', // Default to monthly
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to create checkout session')
-      }
-
-      const { url } = await response.json()
-      window.location.href = url
-    } catch (error) {
-      console.error('Checkout error:', error)
-      toast.error('Failed to start checkout. Please try again.')
-    } finally {
-      setLoading(null)
-    }
-  }
-
-  const scrollToPricing = () => {
-    const pricingSection = document.getElementById('pricing')
-    if (pricingSection) {
-      pricingSection.scrollIntoView({ behavior: 'smooth' })
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b">
-        <div className="container mx-auto px-4 py-4">
-          <nav className="flex items-center justify-between">
-            <div className="flex items-center space-x-8">
-              <Link href="/" className="text-2xl font-bold text-primary">
-                Social Scheduler
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-lg border-b border-gray-200 shadow-sm">
+        <div className="container mx-auto px-6">
+          <nav className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-10">
+              <Link href="/" className="flex items-center space-x-3">
+                <div className="relative">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform">
+                    <Zap className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
+                </div>
+                <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  SocialPulse
+                </span>
               </Link>
-              <div className="hidden md:flex items-center space-x-6">
-                <Link href="#features" className="text-sm font-medium hover:text-primary">
+              <div className="hidden md:flex items-center space-x-1">
+                <Link 
+                  href="#features" 
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                >
                   Features
                 </Link>
-                <Link href="#pricing" className="text-sm font-medium hover:text-primary">
+                <Link 
+                  href="/pricing" 
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                >
                   Pricing
                 </Link>
-                <Link href="#faq" className="text-sm font-medium hover:text-primary">
-                  FAQ
+                <Link 
+                  href="#testimonials" 
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                >
+                  Testimonials
+                </Link>
+                <Link 
+                  href="#contact" 
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                >
+                  Contact
                 </Link>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               {isAuthenticated ? (
-                <Button variant="outline" onClick={() => router.push('/dashboard')}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => router.push('/dashboard')}
+                  className="border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200"
+                >
+                  <BarChart className="h-4 w-4 mr-2" />
                   Dashboard
                 </Button>
               ) : (
-                <Button variant="outline" onClick={() => setSignInOpen(true)}>
-                  Login
-                </Button>
+                <>
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setSignInOpen(true)}
+                    className="text-gray-700 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200"
+                  >
+                    Sign In
+                  </Button>
+                  <Button 
+                    onClick={() => router.push('/pricing')}
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+                  >
+                    Start Free Trial
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </>
               )}
-              <Button onClick={scrollToPricing}>
-                Start Free Trial
-              </Button>
-              <Button variant="ghost" size="icon" className="md:hidden">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="md:hidden hover:bg-gray-100 transition-colors"
+              >
                 <Menu className="h-5 w-5" />
               </Button>
             </div>
@@ -268,34 +201,78 @@ function LandingPageContent() {
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6">
-            Schedule Posts Across All
-            <span className="text-primary"> Social Media Platforms</span>
-          </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Manage all your social media accounts from one dashboard. Schedule, post, and analyze your content across multiple platforms with ease.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button size="lg" className="text-lg px-8" onClick={scrollToPricing}>
-              Start Free Trial
-            </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8">
-              Watch Demo
-            </Button>
+      <section className="relative py-16 px-4 overflow-hidden">
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50">
+          <div className="absolute inset-0">
+            <div className="absolute top-20 left-20 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
+            <div className="absolute top-40 right-20 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
+            <div className="absolute -bottom-8 left-40 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
           </div>
-          <div className="flex flex-wrap justify-center gap-6 items-center">
-            <p className="text-sm text-gray-500">Supports:</p>
-            {platforms.map((platform) => (
-              <div
-                key={platform.name}
-                className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-lg font-bold text-gray-700"
-                title={platform.name}
+        </div>
+        
+        <div className="container mx-auto relative z-10">
+          <div className="text-center max-w-5xl mx-auto">
+            {/* Main headline with gradient */}
+            <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold mb-8 leading-tight">
+              <span className="text-gray-900">Schedule</span>
+              <br />
+              <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent animate-gradient">
+                Everywhere
+              </span>
+              <br />
+              <span className="text-gray-900">at Once</span>
+            </h1>
+            
+            <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
+              One click. Nine platforms. Unlimited possibilities.
+              <br className="hidden md:block" />
+              Save 15+ hours weekly on social media management.
+            </p>
+            
+            {/* CTA buttons with better styling */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+              <Button 
+                size="lg" 
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-lg px-10 py-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+                onClick={() => router.push('/pricing')}
               >
-                {platform.icon}
+                Start Free Trial
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="text-lg px-10 py-6 rounded-xl border-2 hover:bg-gray-50 transition-all duration-200"
+              >
+                <Clock className="mr-2 h-5 w-5" />
+                Watch 2-min Demo
+              </Button>
+            </div>
+            
+            {/* Platform icons in a more elegant grid */}
+            <div className="relative">
+              <p className="text-sm text-gray-500 mb-6 font-medium uppercase tracking-wider">Works seamlessly with</p>
+              <div className="flex flex-wrap justify-center gap-4">
+                {platforms.map((platform, index) => (
+                  <div
+                    key={platform.name}
+                    className="group relative"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-400 rounded-xl opacity-0 group-hover:opacity-100 blur transition-opacity duration-300"></div>
+                    <div className="relative flex items-center justify-center w-14 h-14 bg-white rounded-xl shadow-sm group-hover:shadow-lg transform group-hover:-translate-y-1 transition-all duration-300 border border-gray-100">
+                      <span className="text-xl font-bold text-gray-700 group-hover:text-gray-900">
+                        {platform.icon}
+                      </span>
+                    </div>
+                    <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                      {platform.name}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </section>
@@ -352,10 +329,10 @@ function LandingPageContent() {
         <div className="container mx-auto max-w-6xl relative z-10 pb-32">
           <div className="text-left mb-6">
             <h2 className="text-4xl md:text-5xl font-bold mb-3 text-gray-900">
-              What&apos;s the Social Scheduler impact?
+              What&apos;s the SocialPulse impact?
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl">
-              Social Scheduler will save your team hours of work (and lots of headaches) every week
+              SocialPulse will save your team hours of work (and lots of headaches) every week
             </p>
           </div>
           
@@ -419,105 +396,63 @@ function LandingPageContent() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-12">
-            Trusted by Thousands of Users
+      {/* Horizontal Scrolling Testimonials Section */}
+      <section className="py-20 bg-gradient-to-b from-gray-50 to-white overflow-hidden relative">
+        <div className="mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold text-center mb-4">
+            Loved by content creators worldwide
           </h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial) => (
-              <Card key={testimonial.name}>
-                <CardHeader>
-                  <div className="flex mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                    ))}
-                  </div>
-                  <CardDescription className="text-base">
-                    &ldquo;{testimonial.content}&rdquo;
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="font-semibold">{testimonial.name}</p>
-                  <p className="text-sm text-gray-500">{testimonial.role}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20 px-4 bg-white">
-        <div className="container mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-4">
-            Simple, Transparent Pricing
-          </h2>
-          <p className="text-xl text-gray-600 text-center mb-12">
-            Start with a 7-day free trial. No credit card required.
+          <p className="text-lg text-gray-600 text-center max-w-2xl mx-auto">
+            Join thousands of satisfied users who have transformed their social media game
           </p>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {pricingPlans.map((plan) => (
-              <Card
-                key={plan.name}
-                className={plan.popular ? 'border-primary shadow-lg scale-105' : ''}
-              >
-                {plan.popular && (
-                  <div className="bg-primary text-white text-center py-2 rounded-t-lg">
-                    Most Popular
-                  </div>
-                )}
-                <CardHeader>
-                  <CardTitle>{plan.name}</CardTitle>
-                  <CardDescription>{plan.description}</CardDescription>
-                  <div className="mt-4">
-                    <span className="text-4xl font-bold">{plan.price}</span>
-                    {plan.price !== 'Custom' && <span className="text-gray-500">/month</span>}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-3">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-center">
-                        <Check className="h-5 w-5 text-green-500 mr-2" />
-                        <span className="text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button 
-                    className="w-full mt-6" 
-                    variant={plan.popular ? 'default' : 'outline'}
-                    onClick={() => handleStartTrial(plan.id)}
-                    disabled={loading === plan.id}
-                  >
-                    {loading === plan.id ? 'Loading...' : 'Start Free Trial'}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section id="faq" className="py-20 px-4">
-        <div className="container mx-auto max-w-3xl">
-          <h2 className="text-4xl font-bold text-center mb-12">
-            Frequently Asked Questions
-          </h2>
-          <div className="space-y-6">
-            {faqs.map((faq) => (
-              <Card key={faq.question}>
-                <CardHeader>
-                  <CardTitle className="text-lg">{faq.question}</CardTitle>
-                  <CardDescription className="text-base mt-2">
-                    {faq.answer}
-                  </CardDescription>
-                </CardHeader>
-              </Card>
+        
+        {/* First row - scrolling left to right */}
+        <div className="relative mb-8">
+          <div className="flex animate-scroll-right">
+            {/* Duplicate the testimonials for seamless loop */}
+            {[...testimonials[0], ...testimonials[0]].map((testimonial, index) => (
+              <div
+                key={index}
+                className="flex-shrink-0 w-[380px] mx-3"
+              >
+                <Card className="bg-white shadow-md hover:shadow-lg transition-shadow duration-300 h-[120px] border-gray-100">
+                  <CardContent className="h-full flex items-center justify-center p-5">
+                    <p className="text-gray-600 text-sm leading-relaxed font-normal text-center">
+                      {testimonial}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             ))}
           </div>
+          {/* Fade gradients on both sides */}
+          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-gray-50 to-transparent pointer-events-none z-10" />
+          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none z-10" />
+        </div>
+        
+        {/* Second row - scrolling right to left */}
+        <div className="relative">
+          <div className="flex animate-scroll-left">
+            {/* Duplicate the testimonials for seamless loop */}
+            {[...testimonials[1], ...testimonials[1]].map((testimonial, index) => (
+              <div
+                key={index}
+                className="flex-shrink-0 w-[380px] mx-3"
+              >
+                <Card className="bg-white shadow-md hover:shadow-lg transition-shadow duration-300 h-[120px] border-gray-100">
+                  <CardContent className="h-full flex items-center justify-center p-5">
+                    <p className="text-gray-600 text-sm leading-relaxed font-normal text-center">
+                      {testimonial}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            ))}
+          </div>
+          {/* Fade gradients on both sides */}
+          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-gray-50 to-transparent pointer-events-none z-10" />
+          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none z-10" />
         </div>
       </section>
 
@@ -526,7 +461,7 @@ function LandingPageContent() {
         <div className="container mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-2xl font-bold mb-4">Social Scheduler</h3>
+              <h3 className="text-2xl font-bold mb-4">SocialPulse</h3>
               <p className="text-gray-400">
                 The all-in-one social media management platform for modern businesses.
               </p>
@@ -535,7 +470,7 @@ function LandingPageContent() {
               <h4 className="font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="#features" className="hover:text-white">Features</Link></li>
-                <li><Link href="#pricing" className="hover:text-white">Pricing</Link></li>
+                <li><Link href="/pricing" className="hover:text-white">Pricing</Link></li>
                 <li><Link href="#" className="hover:text-white">API</Link></li>
               </ul>
             </div>
@@ -558,7 +493,7 @@ function LandingPageContent() {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
-            <p>&copy; 2024 Social Scheduler. All rights reserved.</p>
+            <p>&copy; 2024 SocialPulse. All rights reserved.</p>
           </div>
         </div>
       </footer>

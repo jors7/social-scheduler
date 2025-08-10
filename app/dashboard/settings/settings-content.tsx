@@ -10,7 +10,9 @@ import {
   X,
   Link2,
   Bell,
-  AlertCircle
+  AlertCircle,
+  Clock,
+  BarChart
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -402,8 +404,8 @@ export default function SettingsContent() {
   return (
     <div>
       {/* Navigation Tabs */}
-      <div className="mt-8 border-b border-gray-200">
-        <nav className="flex space-x-8" aria-label="Tabs">
+      <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+        <nav className="flex p-2 gap-2" aria-label="Tabs">
           {settingsSections.map(section => {
             const Icon = section.icon
             return (
@@ -411,13 +413,20 @@ export default function SettingsContent() {
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
                 className={cn(
-                  "flex items-center gap-2 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors",
+                  "flex items-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200",
                   activeSection === section.id
-                    ? "border-primary text-primary"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md transform scale-105"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                 )}
               >
-                <Icon className="h-5 w-5" />
+                <div className={cn(
+                  "p-1 rounded-lg",
+                  activeSection === section.id
+                    ? "bg-white/20"
+                    : "bg-gray-100"
+                )}>
+                  <Icon className="h-4 w-4" />
+                </div>
                 {section.label}
               </button>
             )
@@ -429,12 +438,17 @@ export default function SettingsContent() {
       <div className="mt-8 space-y-6">
           {activeSection === 'accounts' && (
             <>
-              <Card>
-                <CardHeader>
+              <Card className="bg-white shadow-xl hover:shadow-2xl transition-all duration-300 border-0 overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50 border-b">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle>Connected Social Media Accounts</CardTitle>
-                      <CardDescription>
+                      <CardTitle className="text-xl flex items-center gap-2">
+                        <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg">
+                          <Link2 className="h-5 w-5 text-white" />
+                        </div>
+                        Connected Social Media Accounts
+                      </CardTitle>
+                      <CardDescription className="mt-2">
                         Connect your social media accounts to start scheduling posts
                       </CardDescription>
                     </div>
@@ -443,12 +457,13 @@ export default function SettingsContent() {
                       size="sm"
                       onClick={() => fetchConnectedAccounts(true)}
                       disabled={refreshing}
+                      className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                     >
                       {refreshing ? 'Refreshing...' : 'Refresh'}
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <div className="grid gap-4 sm:grid-cols-2">
                     {socialPlatforms.map(platform => {
                       const connectedAccount = connectedAccounts.find(acc => acc.platform === platform.id)
@@ -457,17 +472,22 @@ export default function SettingsContent() {
                       return (
                       <div
                         key={platform.id}
-                        className="flex items-center justify-between p-4 border rounded-lg"
+                        className={cn(
+                          "flex items-center justify-between p-4 rounded-xl transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5",
+                          isConnected 
+                            ? "bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200" 
+                            : "bg-gray-50 border-2 border-gray-200 hover:border-purple-300"
+                        )}
                       >
                         <div className="flex items-center gap-3">
                           <div className={cn(
-                            "w-10 h-10 rounded-lg flex items-center justify-center text-white",
+                            "w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-md",
                             platform.color
                           )}>
-                            <span className="text-lg">{platform.icon}</span>
+                            <span className="text-xl">{platform.icon}</span>
                           </div>
                           <div>
-                            <p className="font-medium">{platform.name}</p>
+                            <p className="font-semibold text-gray-900">{platform.name}</p>
                             {isConnected && connectedAccount && (
                               <p className="text-sm text-gray-600">@{connectedAccount.username}</p>
                             )}
@@ -484,7 +504,7 @@ export default function SettingsContent() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleDisconnect(platform.id)}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300"
                             disabled={loading}
                           >
                             <X className="mr-1 h-4 w-4" />
@@ -492,10 +512,10 @@ export default function SettingsContent() {
                           </Button>
                         ) : (
                           <Button
-                            variant="outline"
                             size="sm"
                             onClick={() => handleConnect(platform.id)}
                             disabled={loading}
+                            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md hover:shadow-lg"
                           >
                             <Plus className="mr-1 h-4 w-4" />
                             Connect
@@ -508,15 +528,20 @@ export default function SettingsContent() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>API Access</CardTitle>
-                  <CardDescription>
+              <Card className="bg-white shadow-xl hover:shadow-2xl transition-all duration-300 border-0 overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 border-b">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <div className="p-2 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg">
+                      <AlertCircle className="h-5 w-5 text-white" />
+                    </div>
+                    API Access
+                  </CardTitle>
+                  <CardDescription className="mt-2">
                     Generate API keys to integrate with external tools
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <Button variant="outline">
+                <CardContent className="p-6">
+                  <Button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
                     Generate API Key
                   </Button>
                 </CardContent>
@@ -526,39 +551,69 @@ export default function SettingsContent() {
 
 
           {activeSection === 'notifications' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Preferences</CardTitle>
-                <CardDescription>
+            <Card className="bg-white shadow-xl hover:shadow-2xl transition-all duration-300 border-0 overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <div className="p-2 bg-gradient-to-r from-amber-600 to-orange-600 rounded-lg">
+                    <Bell className="h-5 w-5 text-white" />
+                  </div>
+                  Notification Preferences
+                </CardTitle>
+                <CardDescription className="mt-2">
                   Choose how you want to be notified
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Email Notifications</p>
-                      <p className="text-sm text-gray-600">Receive updates via email</p>
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white rounded-lg shadow-sm">
+                        <Bell className="h-5 w-5 text-gray-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">Email Notifications</p>
+                        <p className="text-sm text-gray-600">Receive updates via email</p>
+                      </div>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      size="sm" 
+                      className="bg-green-100 text-green-700 hover:bg-green-200 border-green-300"
+                    >
                       Enabled
                     </Button>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Post Reminders</p>
-                      <p className="text-sm text-gray-600">Get notified before scheduled posts</p>
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white rounded-lg shadow-sm">
+                        <Clock className="h-5 w-5 text-gray-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">Post Reminders</p>
+                        <p className="text-sm text-gray-600">Get notified before scheduled posts</p>
+                      </div>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      size="sm" 
+                      className="bg-green-100 text-green-700 hover:bg-green-200 border-green-300"
+                    >
                       Enabled
                     </Button>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Weekly Reports</p>
-                      <p className="text-sm text-gray-600">Receive weekly performance summaries</p>
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white rounded-lg shadow-sm">
+                        <BarChart className="h-5 w-5 text-gray-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">Weekly Reports</p>
+                        <p className="text-sm text-gray-600">Receive weekly performance summaries</p>
+                      </div>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="hover:bg-gray-100"
+                    >
                       Disabled
                     </Button>
                   </div>

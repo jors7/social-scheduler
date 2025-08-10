@@ -14,7 +14,7 @@ export default function PrivacyPolicy() {
         <div className="mt-12 prose prose-lg mx-auto">
           <h2>Information We Collect</h2>
           <p>
-            Social Scheduler collects information you provide directly to us, such as when you:
+            SocialPulse collects information you provide directly to us, such as when you:
           </p>
           <ul>
             <li>Create an account</li>

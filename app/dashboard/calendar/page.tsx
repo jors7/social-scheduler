@@ -4,7 +4,8 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Plus, Clock } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Plus, Clock, Calendar } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -103,43 +104,60 @@ export default function CalendarPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 space-y-8 p-8">
+      <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Calendar</h1>
-            <p className="text-gray-600 mt-1">View and manage your scheduled posts</p>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white">
+                <Calendar className="h-8 w-8" />
+              </div>
+              Calendar
+            </h1>
+            <p className="text-gray-600 mt-2 text-lg">View and manage your scheduled posts</p>
           </div>
         </div>
-        <div className="flex items-center justify-center h-64">
-          <Clock className="h-8 w-8 text-gray-400 animate-spin mr-2" />
-          <p className="text-gray-500">Loading calendar...</p>
-        </div>
+        <Card variant="elevated">
+          <CardContent className="text-center py-16 bg-gradient-to-br from-purple-50 to-blue-50">
+            <div className="p-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full w-fit mx-auto mb-6">
+              <Clock className="h-12 w-12 text-white animate-spin" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Loading calendar...</h3>
+            <p className="text-gray-600">Please wait while we fetch your scheduled posts</p>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
-    <div className="flex-1 space-y-8 p-8">
+    <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Calendar</h1>
-          <p className="text-gray-600 mt-1">Drag and drop posts to reschedule them instantly</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white">
+              <Calendar className="h-8 w-8" />
+            </div>
+            Calendar
+          </h1>
+          <p className="text-gray-600 mt-2 text-lg">Drag and drop posts to reschedule them instantly</p>
         </div>
         <Link href="/dashboard/create/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button variant="gradient" size="lg">
+            <Plus className="mr-2 h-5 w-5" />
             New Post
           </Button>
         </Link>
       </div>
 
       <SubscriptionGate feature="calendar scheduling">
-        <DragDropCalendar
-          scheduledPosts={scheduledPosts}
-          onPostUpdate={handlePostUpdate}
-          onPostEdit={handleEditPost}
-          onPostDelete={handleDeletePost}
-        />
+        <Card variant="glass" className="p-6 min-h-[600px]">
+          <DragDropCalendar
+            scheduledPosts={scheduledPosts}
+            onPostUpdate={handlePostUpdate}
+            onPostEdit={handleEditPost}
+            onPostDelete={handleDeletePost}
+          />
+        </Card>
       </SubscriptionGate>
     </div>
   )
