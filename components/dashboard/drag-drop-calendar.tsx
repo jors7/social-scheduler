@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, Plus, Edit, Clock, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Edit, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
@@ -11,19 +11,15 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
-  MouseSensor,
-  TouchSensor,
+  PointerSensor,
   useSensor,
   useSensors,
-  closestCenter,
-  useDroppable
+  closestCorners
 } from '@dnd-kit/core'
 import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+  useDraggable,
+  useDroppable
+} from '@dnd-kit/core'
 
 interface ScheduledPost {
   id: string
@@ -45,6 +41,7 @@ interface DraggablePostProps {
   post: ScheduledPost
   onEdit: (postId: string) => void
   onDelete: (postId: string) => void
+  isDragging?: boolean
 }
 
 const platformColors = {
@@ -59,20 +56,20 @@ const platformColors = {
   pinterest: 'bg-red-600'
 }
 
-function DraggablePost({ post, onEdit, onDelete }: DraggablePostProps) {
+function DraggablePost({ post, onEdit, onDelete, isDragging = false }: DraggablePostProps) {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
-    transition,
-    isDragging
-  } = useSortable({ id: post.id })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
+    isDragging: isBeingDragged
+  } = useDraggable({
+    id: post.id,
+    data: {
+      type: 'post',
+      post
+    }
+  })
 
   const stripHtml = (html: string) => {
     return html
@@ -99,16 +96,19 @@ function DraggablePost({ post, onEdit, onDelete }: DraggablePostProps) {
     return platformColors[primaryPlatform] || 'bg-gray-500'
   }
 
+  // Don't apply transform to the actual element - let DragOverlay handle positioning
+  const style = isBeingDragged ? { opacity: 0.4 } : undefined
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
       {...listeners}
+      {...attributes}
       className={cn(
-        "group text-xs p-2 rounded text-white cursor-grab active:cursor-grabbing transition-all hover:shadow-lg",
+        "group text-xs p-2 rounded text-white cursor-grab active:cursor-grabbing transition-all hover:shadow-lg relative select-none",
         getPostColor(post),
-        isDragging && "opacity-50 shadow-xl scale-105"
+        isDragging && "opacity-80"
       )}
     >
       <div className="flex items-start justify-between">
@@ -136,24 +136,20 @@ function DraggablePost({ post, onEdit, onDelete }: DraggablePostProps) {
           <button
             onClick={(e) => {
               e.stopPropagation()
-              e.preventDefault()
               onEdit(post.id)
             }}
             onPointerDown={(e) => e.stopPropagation()}
-            className="p-1 hover:bg-white/20 rounded z-10"
-            style={{ pointerEvents: 'auto' }}
+            className="p-1 hover:bg-white/20 rounded"
           >
             <Edit className="h-3 w-3" />
           </button>
           <button
             onClick={(e) => {
               e.stopPropagation()
-              e.preventDefault()
               onDelete(post.id)
             }}
             onPointerDown={(e) => e.stopPropagation()}
-            className="p-1 hover:bg-white/20 rounded z-10"
-            style={{ pointerEvents: 'auto' }}
+            className="p-1 hover:bg-white/20 rounded"
           >
             <Trash2 className="h-3 w-3" />
           </button>
@@ -187,17 +183,21 @@ function DroppableCalendarDay({
   const dayString = date.toISOString().split('T')[0]
   const { isOver, setNodeRef } = useDroppable({
     id: `day-${dayString}`,
+    data: {
+      type: 'day',
+      date: dayString
+    }
   })
 
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "min-h-[140px] bg-white p-2 border-r border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors",
+        "relative min-h-[140px] bg-white p-2 border-r border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-all duration-200",
         !isCurrentMonth ? "bg-gray-50 text-gray-400" : "",
         isToday ? "ring-2 ring-primary ring-inset" : "",
         isSelected ? "bg-primary/10" : "",
-        isOver ? "bg-blue-50 ring-2 ring-blue-300 ring-inset" : ""
+        isOver ? "bg-blue-50 ring-2 ring-blue-300 ring-inset shadow-inner" : ""
       )}
       onClick={() => onDateSelect(date)}
     >
@@ -206,14 +206,14 @@ function DroppableCalendarDay({
           {date.getDate()}
         </div>
         {posts.length > 0 && (
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full">
             {posts.length}
           </div>
         )}
       </div>
       
-      <div className="space-y-1 overflow-y-auto max-h-[100px]">
-        {posts.slice(0, 3).map(post => (
+      <div className="space-y-1.5">
+        {posts.slice(0, 3).map((post) => (
           <DraggablePost
             key={post.id}
             post={post}
@@ -222,7 +222,7 @@ function DroppableCalendarDay({
           />
         ))}
         {posts.length > 3 && (
-          <div className="text-xs text-gray-500 text-center py-1">
+          <div className="text-xs text-gray-500 text-center py-1 bg-gray-100 rounded">
             +{posts.length - 3} more
           </div>
         )}
@@ -242,15 +242,9 @@ export function DragDropCalendar({
   const [draggedPost, setDraggedPost] = useState<ScheduledPost | null>(null)
 
   const sensors = useSensors(
-    useSensor(MouseSensor, {
+    useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 200,
-        tolerance: 6,
       },
     })
   )
@@ -287,10 +281,12 @@ export function DragDropCalendar({
 
   const getPostsForDate = (date: Date) => {
     const dateString = date.toISOString().split('T')[0]
-    return scheduledPosts.filter(post => {
-      const postDate = new Date(post.scheduled_for).toISOString().split('T')[0]
-      return postDate === dateString && post.status === 'pending'
-    }).sort((a, b) => new Date(a.scheduled_for).getTime() - new Date(b.scheduled_for).getTime())
+    return scheduledPosts
+      .filter(post => {
+        const postDate = new Date(post.scheduled_for).toISOString().split('T')[0]
+        return postDate === dateString && post.status === 'pending'
+      })
+      .sort((a, b) => new Date(a.scheduled_for).getTime() - new Date(b.scheduled_for).getTime())
   }
 
   const isCurrentMonth = (date: Date) => {
@@ -311,53 +307,63 @@ export function DragDropCalendar({
   }
 
   const handleDragStart = (event: DragStartEvent) => {
-    const post = scheduledPosts.find(p => p.id === event.active.id)
-    setDraggedPost(post || null)
+    const { active } = event
+    const post = scheduledPosts.find(p => p.id === active.id)
+    if (post) {
+      setDraggedPost(post)
+      // Add visual feedback
+      document.body.style.cursor = 'grabbing'
+    }
   }
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
     
-    console.log('Drag end:', { active: active?.id, over: over?.id })
+    // Reset cursor and clear dragged post
+    document.body.style.cursor = ''
+    setDraggedPost(null)
     
     if (!over || !active) {
-      setDraggedPost(null)
       return
     }
 
-    // Check if we're dropping on a calendar day
     const overId = over.id as string
     const activeId = active.id as string
 
-    console.log('Processing drop:', { overId, activeId })
-
-    if (overId.startsWith('day-')) {
+    // Check if dropping on a valid day
+    if (overId.startsWith('day-') && over.data?.current?.type === 'day') {
       const targetDateString = overId.replace('day-', '')
-      const targetDate = new Date(targetDateString + 'T12:00:00')
-      
-      console.log('Target date:', targetDate)
+      const targetDate = new Date(targetDateString + 'T00:00:00.000Z')
       
       const post = scheduledPosts.find(p => p.id === activeId)
+      
       if (post) {
-        // Keep the same time but change the date
-        const originalTime = new Date(post.scheduled_for)
+        const originalDateTime = new Date(post.scheduled_for)
         const newDateTime = new Date(targetDate)
-        newDateTime.setHours(originalTime.getHours())
-        newDateTime.setMinutes(originalTime.getMinutes())
         
-        console.log('Rescheduling from:', originalTime, 'to:', newDateTime)
+        // Keep the same time, just change the date
+        newDateTime.setUTCHours(originalDateTime.getUTCHours())
+        newDateTime.setUTCMinutes(originalDateTime.getUTCMinutes())
+        newDateTime.setUTCSeconds(0)
+        newDateTime.setUTCMilliseconds(0)
+        
+        // Don't reschedule if dropping on the same date
+        const originalDate = originalDateTime.toISOString().split('T')[0]
+        const newDate = newDateTime.toISOString().split('T')[0]
+        
+        if (originalDate === newDate) {
+          return
+        }
         
         try {
-          await onPostUpdate(activeId, newDateTime)
+          await onPostUpdate(post.id, newDateTime)
           toast.success('Post rescheduled successfully')
-        } catch (error) {
+        } catch (error: any) {
           console.error('Reschedule error:', error)
-          toast.error('Failed to reschedule post')
+          toast.error(error.message || 'Failed to reschedule post')
         }
       }
     }
-    
-    setDraggedPost(null)
   }
 
   return (
@@ -396,59 +402,60 @@ export function DragDropCalendar({
 
       <DndContext 
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext items={scheduledPosts.map(p => p.id)} strategy={verticalListSortingStrategy}>
-          {/* Calendar Grid */}
-          <Card>
-            <CardContent className="p-0">
-              {/* Day headers */}
-              <div className="grid grid-cols-7 border-b border-gray-200">
-                {weekDays.map(day => (
-                  <div
-                    key={day}
-                    className="bg-gray-50 p-3 text-center text-sm font-semibold text-gray-700 border-r border-gray-100 last:border-r-0"
-                  >
-                    {day}
-                  </div>
-                ))}
-              </div>
-              
-              {/* Calendar days */}
-              <div className="grid grid-cols-7">
-                {getDaysInMonth.map((date, index) => {
-                  const posts = getPostsForDate(date)
-                  const dayString = date.toISOString().split('T')[0]
-                  
-                  return (
-                    <div key={index} id={`day-${dayString}`}>
-                      <DroppableCalendarDay
-                        date={date}
-                        posts={posts}
-                        isCurrentMonth={isCurrentMonth(date)}
-                        isToday={isToday(date)}
-                        isSelected={selectedDate?.getTime() === date.getTime()}
-                        onDateSelect={setSelectedDate}
-                        onEdit={onPostEdit}
-                        onDelete={onPostDelete}
-                      />
-                    </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </SortableContext>
-
-        <DragOverlay>
+        {/* Calendar Grid */}
+        <Card>
+          <CardContent className="p-0">
+            {/* Day headers */}
+            <div className="grid grid-cols-7 border-b border-gray-200">
+              {weekDays.map(day => (
+                <div
+                  key={day}
+                  className="bg-gray-50 p-3 text-center text-sm font-semibold text-gray-700 border-r border-gray-100 last:border-r-0"
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+            
+            {/* Calendar days */}
+            <div className="grid grid-cols-7">
+              {getDaysInMonth.map((date) => {
+                const posts = getPostsForDate(date)
+                const dayString = date.toISOString().split('T')[0]
+                
+                return (
+                  <DroppableCalendarDay
+                    key={dayString}
+                    date={date}
+                    posts={posts}
+                    isCurrentMonth={isCurrentMonth(date)}
+                    isToday={isToday(date)}
+                    isSelected={selectedDate?.toDateString() === date.toDateString()}
+                    onDateSelect={setSelectedDate}
+                    onEdit={onPostEdit}
+                    onDelete={onPostDelete}
+                  />
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+        <DragOverlay
+          style={{
+            cursor: 'grabbing',
+          }}
+        >
           {draggedPost && (
-            <div className="transform rotate-2 shadow-2xl">
+            <div className="transform-none">
               <DraggablePost
                 post={draggedPost}
                 onEdit={() => {}}
                 onDelete={() => {}}
+                isDragging={true}
               />
             </div>
           )}

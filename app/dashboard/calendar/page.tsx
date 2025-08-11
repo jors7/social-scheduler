@@ -9,7 +9,7 @@ import { Plus, Clock, Calendar } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { DragDropCalendar } from '@/components/dashboard/drag-drop-calendar'
+import { SimpleDragCalendar } from '@/components/dashboard/simple-drag-calendar'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 
 interface ScheduledPost {
@@ -63,7 +63,14 @@ export default function CalendarPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to update post')
+        const errorData = await response.json().catch(() => null)
+        console.error('Server error response:', errorData)
+        console.error('Full error details:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData
+        })
+        throw new Error(errorData?.error || 'Failed to update post')
       }
 
       // Refresh posts
@@ -84,10 +91,8 @@ export default function CalendarPage() {
     }
 
     try {
-      const response = await fetch(`/api/posts/schedule`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId: postId })
+      const response = await fetch(`/api/posts/schedule?id=${postId}`, {
+        method: 'DELETE'
       })
 
       if (!response.ok) {
@@ -151,7 +156,7 @@ export default function CalendarPage() {
 
       <SubscriptionGate feature="calendar scheduling">
         <Card variant="glass" className="p-6 min-h-[600px]">
-          <DragDropCalendar
+          <SimpleDragCalendar
             scheduledPosts={scheduledPosts}
             onPostUpdate={handlePostUpdate}
             onPostEdit={handleEditPost}
