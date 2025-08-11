@@ -14,14 +14,14 @@ import { CapabilitiesCarousel } from '@/components/landing/capabilities-carousel
 
 const platforms = [
   { name: 'X (Twitter)', icon: '𝕏' },
-  { name: 'Instagram', icon: '📷' },
+  { name: 'Instagram', icon: '📸' },
   { name: 'Facebook', icon: 'f' },
   { name: 'LinkedIn', icon: 'in' },
   { name: 'YouTube', icon: '▶' },
-  { name: 'TikTok', icon: '♪' },
+  { name: 'TikTok', icon: '♫' },
   { name: 'Threads', icon: '@' },
   { name: 'Bluesky', icon: '🦋' },
-  { name: 'Pinterest', icon: 'P' },
+  { name: 'Pinterest', icon: '📌' },
 ]
 
 const features = [
@@ -146,24 +146,24 @@ function LandingPageContent() {
               <span 
                 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent"
                 style={{ 
-                  fontFamily: '"Vanquish W00 Bold", system-ui, -apple-system, sans-serif',
+                  fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif',
                   fontWeight: 800 
                 }}
               >
                 SocialCal
               </span>
             </Link>
-            <div className="flex items-center space-x-1">
-              <div className="hidden md:flex items-center space-x-1">
+            <div className="flex items-center space-x-8">
+              <div className="hidden md:flex items-center space-x-8">
                 <Link 
                   href="#features" 
-                  className="px-4 py-2 text-[15px] font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                  className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Features
                 </Link>
                 <Link 
                   href="/pricing" 
-                  className="px-4 py-2 text-[15px] font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                  className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Pricing
                 </Link>
@@ -172,23 +172,22 @@ function LandingPageContent() {
                 <Button 
                   variant="outline" 
                   onClick={() => router.push('/dashboard')}
-                  className="border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 ml-1"
+                  className="border-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
                 >
                   <BarChart className="h-4 w-4 mr-2" />
                   Dashboard
                 </Button>
               ) : (
                 <>
-                  <Button 
-                    variant="ghost" 
+                  <button 
                     onClick={() => setSignInOpen(true)}
-                    className="text-gray-700 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200"
+                    className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                   >
                     Sign In
-                  </Button>
+                  </button>
                   <Button 
                     onClick={() => router.push('/pricing')}
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 ml-2"
+                    className="text-base font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 px-5 py-2"
                   >
                     Start Free Trial
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -208,7 +207,7 @@ function LandingPageContent() {
       </header>
 
       {/* Hero Section - Two Column Layout */}
-      <section className="relative py-16 px-4 overflow-hidden">
+      <section className="relative pt-12 pb-10 px-4 overflow-hidden">
         {/* Animated gradient background */}
         <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50">
           <div className="absolute inset-0">
@@ -218,63 +217,57 @@ function LandingPageContent() {
           </div>
         </div>
         
-        <div className="container mx-auto relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="max-w-[1500px] mx-auto px-6 relative z-10">
+          <div className="flex flex-col lg:flex-row gap-0 items-center justify-center lg:pl-8">
             {/* Left Column - Text Content */}
-            <div className="max-w-xl lg:ml-16">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-                <span className="text-gray-900">
-                  Post Everywhere
-                </span>
+            <div className="max-w-[600px]">
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-5 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-full mb-3 shadow-md">
+                <span className="text-yellow-500 text-lg">✨</span>
+                <span className="text-indigo-700 font-semibold text-sm">All-in-One Scheduler</span>
+              </div>
+              
+              <h1 className="text-4xl lg:text-6xl font-bold mb-4 leading-tight text-gray-900">
+                Post Your Content Everywhere
               </h1>
               
-              <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed">
+              <p className="text-lg md:text-xl text-gray-600 mb-6 leading-relaxed">
                 One click. Nine platforms. Unlimited possibilities.
                 <br className="hidden md:block" />
                 Save 15+ hours weekly on social media management.
               </p>
               
               {/* CTA button */}
-              <div className="mb-12">
+              <div className="mb-8">
                 <Button 
                   size="lg" 
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-lg px-10 py-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+                  className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-xl px-12 py-7 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
                   onClick={() => router.push('/pricing')}
                 >
                   Start Free Trial
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="ml-2 h-6 w-6" />
                 </Button>
               </div>
             </div>
             
-            {/* Right Column - Image Placeholder */}
-            <div className="relative">
-              {/* 
-                IMPORTANT: Place your hero image here
-                File location: /public/images/hero-dashboard.png (or .jpg)
-                The image should showcase the dashboard or main features
-                Recommended size: 1200x800px
-              */}
-              <div className="bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl p-8 shadow-2xl">
-                <div className="bg-white rounded-lg shadow-inner h-96 flex items-center justify-center text-gray-400">
-                  <div className="text-center">
-                    <p className="text-lg font-semibold mb-2">Hero Image Placeholder</p>
-                    <p className="text-sm">Place image at: /public/images/hero-dashboard.png</p>
-                    <p className="text-sm">Recommended: 1200x800px</p>
-                  </div>
-                </div>
-              </div>
+            {/* Right Column - Hero Image */}
+            <div className="w-full max-w-[900px] lg:-ml-32">
+              <img 
+                src="/hero-dashboard.png"
+                alt="SocialCal Dashboard"
+                className="w-full h-auto scale-[1.2] origin-left"
+              />
             </div>
           </div>
           
           {/* Platform icons - moved to center */}
-          <div className="text-center mt-16">
+          <div className="text-center mt-16 pb-6">
             <p className="text-sm text-gray-500 mb-6 font-medium uppercase tracking-wider">Works seamlessly with</p>
             <div className="flex flex-wrap justify-center gap-4">
               {platforms.map((platform, index) => (
                 <div
                   key={platform.name}
-                  className="group relative"
+                  className="group relative mb-6"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-400 rounded-xl opacity-0 group-hover:opacity-100 blur transition-opacity duration-300"></div>
@@ -283,7 +276,7 @@ function LandingPageContent() {
                       {platform.icon}
                     </span>
                   </div>
-                  <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                  <span className="absolute top-16 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap z-10">
                     {platform.name}
                   </span>
                 </div>
@@ -347,7 +340,7 @@ function LandingPageContent() {
         {/* Content above the curve - positioned much higher */}
         <div className="container mx-auto max-w-6xl relative z-10 pb-32">
           <div className="text-left mb-6">
-            <h2 className="text-4xl md:text-5xl font-bold mb-3 text-gray-900">
+            <h2 className="text-3xl lg:text-4xl font-bold mb-3 text-gray-900">
               What&apos;s the SocialCal impact?
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl">
@@ -361,7 +354,7 @@ function LandingPageContent() {
               <div className="mb-2">
                 <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">15x</span>
               </div>
-              <h3 className="text-base font-semibold mb-1 text-gray-900">Save time</h3>
+              <h3 className="text-lg font-semibold mb-1 text-gray-900">Save time</h3>
               <p className="text-gray-600 text-xs leading-relaxed">
                 Create and schedule your social media content 15x faster.
               </p>
@@ -372,7 +365,7 @@ function LandingPageContent() {
               <div className="mb-2">
                 <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">67%</span>
               </div>
-              <h3 className="text-base font-semibold mb-1 text-gray-900">Get answers faster</h3>
+              <h3 className="text-lg font-semibold mb-1 text-gray-900">Get answers faster</h3>
               <p className="text-gray-600 text-xs leading-relaxed">
                 Find and manage all your posts 67% faster.
               </p>
@@ -383,7 +376,7 @@ function LandingPageContent() {
               <div className="mb-2">
                 <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">25%</span>
               </div>
-              <h3 className="text-base font-semibold mb-1 text-gray-900">Increase productivity</h3>
+              <h3 className="text-lg font-semibold mb-1 text-gray-900">Increase productivity</h3>
               <p className="text-gray-600 text-xs leading-relaxed">
                 Boost your team&apos;s social media productivity by 25%.
               </p>
@@ -407,7 +400,7 @@ function LandingPageContent() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-3">
-                      <h3 className="text-xl font-bold text-gray-900">
+                      <h3 className="text-2xl font-bold text-gray-900">
                         {feature.title}
                       </h3>
                       {feature.isPro && (
@@ -430,7 +423,7 @@ function LandingPageContent() {
       {/* Horizontal Scrolling Testimonials Section */}
       <section className="py-20 bg-gradient-to-b from-gray-50 to-white overflow-hidden relative">
         <div className="mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-center mb-4">
+          <h2 className="text-3xl lg:text-4xl font-bold text-center mb-4 text-gray-900">
             Loved by content creators worldwide
           </h2>
           <p className="text-lg text-gray-600 text-center max-w-2xl mx-auto">
@@ -492,7 +485,7 @@ function LandingPageContent() {
         <div className="container mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-2xl font-bold mb-4">SocialCal</h3>
+              <h3 className="text-2xl font-bold mb-4 text-white">SocialCal</h3>
               <p className="text-gray-400">
                 The all-in-one social media management platform for modern businesses.
               </p>

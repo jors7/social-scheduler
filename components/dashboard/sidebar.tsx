@@ -151,9 +151,9 @@ export function Sidebar() {
             className="w-7 h-7"
           />
           <span 
-            className="text-lg font-extrabold tracking-tight text-gray-900"
+            className="text-lg font-extrabold tracking-tight bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent"
             style={{ 
-              fontFamily: '"Vanquish W00 Bold", system-ui, -apple-system, sans-serif',
+              fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif',
               fontWeight: 800 
             }}
           >
@@ -272,8 +272,7 @@ export function Sidebar() {
               <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
             </div>
             <div className="ml-3 text-left">
-              <p className="text-sm font-semibold text-gray-900">{user?.user_metadata?.full_name || 'User'}</p>
-              <p className="text-xs text-gray-500">Online</p>
+              <p className="text-sm font-semibold text-gray-900">My Account</p>
             </div>
           </div>
           <ChevronRight className={cn(

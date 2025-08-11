@@ -179,24 +179,24 @@ function PricingPageContent() {
               <span 
                 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent"
                 style={{ 
-                  fontFamily: '"Vanquish W00 Bold", system-ui, -apple-system, sans-serif',
+                  fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif',
                   fontWeight: 800 
                 }}
               >
                 SocialCal
               </span>
             </Link>
-            <div className="flex items-center space-x-1">
-              <div className="hidden md:flex items-center space-x-1">
+            <div className="flex items-center space-x-8">
+              <div className="hidden md:flex items-center space-x-8">
                 <Link 
                   href="/#features" 
-                  className="px-4 py-2 text-[15px] font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                  className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Features
                 </Link>
                 <Link 
                   href="/pricing" 
-                  className="px-4 py-2 text-[15px] font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                  className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Pricing
                 </Link>
@@ -205,23 +205,22 @@ function PricingPageContent() {
                 <Button 
                   variant="outline" 
                   onClick={() => router.push('/dashboard')}
-                  className="border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 ml-1"
+                  className="border-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
                 >
                   <BarChart className="h-4 w-4 mr-2" />
                   Dashboard
                 </Button>
               ) : (
                 <>
-                  <Button 
-                    variant="ghost" 
+                  <button 
                     onClick={() => setSignInOpen(true)}
-                    className="text-gray-700 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200"
+                    className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                   >
                     Sign In
-                  </Button>
+                  </button>
                   <Button 
                     onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 ml-2"
+                    className="text-base font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 px-5 py-2"
                   >
                     Start Free Trial
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -246,16 +245,13 @@ function PricingPageContent() {
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 rounded-full mb-6">
               <Sparkles className="h-4 w-4 text-purple-600" />
-              <span className="text-sm font-semibold text-purple-700">LIMITED TIME OFFER</span>
+              <span className="text-sm font-semibold text-purple-700">14-Day Money-Back Guarantee</span>
             </div>
-            <h2 className="text-5xl font-bold mb-4 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              Simple, Transparent Pricing
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4 text-gray-900">
+              Plan, Schedule & Post — Without the Stress
             </h2>
-            <p className="text-xl text-gray-600 mb-2">
-              Start with a 7-day free trial. No credit card required.
-            </p>
-            <p className="text-sm text-gray-500 max-w-2xl mx-auto">
-              Save up to 20% with annual billing. Switch between plans anytime.
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Pick the perfect plan to automate your posting, free your time, and grow your audience on autopilot. Start with a 7-day free trial. No credit card required.
             </p>
           </div>
 
@@ -303,7 +299,7 @@ function PricingPageContent() {
                   plan.popular ? 'border-2 border-purple-200 shadow-xl' : 'border border-gray-200'
                 }`}>
                   <CardHeader className="pb-8 pt-8">
-                    <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
+                    <CardTitle className="text-2xl font-bold mb-2 text-gray-900">{plan.name}</CardTitle>
                     <CardDescription className="text-gray-600">{plan.description}</CardDescription>
                     <div className="mt-6">
                       <div className="flex items-baseline">
@@ -380,7 +376,7 @@ function PricingPageContent() {
       <section id="faq" className="py-20 px-4 bg-gray-50">
         <div className="container mx-auto max-w-4xl">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4 text-gray-900">
               Frequently Asked Questions
             </h2>
             <p className="text-gray-600">
@@ -423,7 +419,7 @@ function PricingPageContent() {
         <div className="container mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-2xl font-bold mb-4">SocialCal</h3>
+              <h3 className="text-2xl font-bold mb-4 text-white">SocialCal</h3>
               <p className="text-gray-400">
                 The all-in-one social media management platform for modern businesses.
               </p>
