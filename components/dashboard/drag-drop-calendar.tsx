@@ -193,7 +193,7 @@ function DroppableCalendarDay({
     <div
       ref={setNodeRef}
       className={cn(
-        "min-h-[120px] bg-white p-2 border-r border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors",
+        "min-h-[140px] bg-white p-2 border-r border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors",
         !isCurrentMonth ? "bg-gray-50 text-gray-400" : "",
         isToday ? "ring-2 ring-primary ring-inset" : "",
         isSelected ? "bg-primary/10" : "",
@@ -212,7 +212,7 @@ function DroppableCalendarDay({
         )}
       </div>
       
-      <div className="space-y-1">
+      <div className="space-y-1 overflow-y-auto max-h-[100px]">
         {posts.slice(0, 3).map(post => (
           <DraggablePost
             key={post.id}

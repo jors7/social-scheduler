@@ -6,7 +6,7 @@ import { Toaster } from 'sonner'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'SocialPulse - Schedule Posts Across All Social Media Platforms',
+  title: 'SocialCal - Schedule Posts Across All Social Media Platforms',
   description: 'Schedule and manage your social media posts across Twitter/X, Instagram, Facebook, LinkedIn, YouTube, TikTok, and more from one dashboard.',
 }
 

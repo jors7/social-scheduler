@@ -15,7 +15,7 @@ import {
   BarChart
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import { toast } from 'sonner'
 import {
@@ -35,6 +35,9 @@ interface SocialAccount {
   username: string
   profile_image_url?: string
   is_active: boolean
+  account_label?: string
+  is_primary?: boolean
+  display_order?: number
 }
 
 const settingsSections = [
@@ -47,17 +50,73 @@ export default function SettingsContent() {
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [connectedAccounts, setConnectedAccounts] = useState<SocialAccount[]>([])
+  const [accountLimits, setAccountLimits] = useState<{ maxAccounts: number; currentCount: number; canAddMore: boolean } | null>(null)
+  const [expandedPlatforms, setExpandedPlatforms] = useState<string[]>([])
   const [showBlueskyDialog, setShowBlueskyDialog] = useState(false)
   const [blueskyCredentials, setBlueskyCredentials] = useState({
     identifier: '', // handle or email
     password: ''    // app password
   })
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
+  
+  const fetchAccountLimits = async (userId: string) => {
+    try {
+      // Get current count
+      const { data: accounts } = await supabase
+        .from('social_accounts')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+      
+      const currentCount = accounts?.length || 0
+      
+      // Get subscription limits
+      const { data: subscription } = await supabase
+        .from('user_subscriptions')
+        .select(`
+          subscription_plans!inner(
+            limits
+          )
+        `)
+        .eq('user_id', userId)
+        .in('status', ['active', 'trialing'])
+        .single()
+      
+      let maxAccounts = 1 // Free plan default
+      
+      if (subscription && subscription.subscription_plans) {
+        const plans = subscription.subscription_plans as any
+        const limits = Array.isArray(plans) ? plans[0]?.limits : plans.limits
+        maxAccounts = limits?.connected_accounts || 1
+      } else {
+        // Get free plan limits
+        const { data: freePlan } = await supabase
+          .from('subscription_plans')
+          .select('limits')
+          .eq('id', 'free')
+          .single()
+        
+        if (freePlan) {
+          const limits = freePlan.limits as any
+          maxAccounts = limits?.connected_accounts || 1
+        }
+      }
+      
+      const isUnlimited = maxAccounts === -1
+      
+      setAccountLimits({
+        maxAccounts: isUnlimited ? Infinity : maxAccounts,
+        currentCount,
+        canAddMore: isUnlimited || currentCount < maxAccounts
+      })
+    } catch (error) {
+      console.error('Error fetching account limits:', error)
+    }
+  }
 
   const fetchConnectedAccounts = useCallback(async (showSuccessToast = false) => {
     setRefreshing(true)
@@ -70,10 +129,16 @@ export default function SettingsContent() {
         .select('*')
         .eq('user_id', user.id)
         .eq('is_active', true)
+        .order('platform', { ascending: true })
+        .order('created_at', { ascending: true })
 
       if (error) throw error
       console.log('Fetched connected accounts:', data)
       setConnectedAccounts(data || [])
+      
+      // Fetch account limits
+      await fetchAccountLimits(user.id)
+      
       if (showSuccessToast) {
         toast.success('Accounts refreshed')
       }
@@ -86,54 +151,18 @@ export default function SettingsContent() {
   }, [supabase])
 
   useEffect(() => {
+    // Fetch accounts on mount
     fetchConnectedAccounts()
-    
-    // Handle success/error messages from OAuth callback
-    const success = searchParams.get('success')
-    const error = searchParams.get('error')
-    
-    if (success === 'twitter_connected') {
-      toast.success('Twitter account connected successfully!')
-      router.replace('/dashboard/settings')
-    } else if (success === 'bluesky_connected') {
-      toast.success('Bluesky account connected successfully!')
-      router.replace('/dashboard/settings')
-    } else if (success === 'threads_connected') {
-      toast.success('Threads account connected successfully!')
-      router.replace('/dashboard/settings')
-    } else if (success === 'instagram_connected') {
-      toast.success('Instagram account connected successfully!')
-      router.replace('/dashboard/settings')
-    } else if (success === 'facebook_connected') {
-      toast.success('Facebook page connected successfully!')
-      router.replace('/dashboard/settings')
-    } else if (success === 'pinterest_connected') {
-      toast.success('Pinterest account connected successfully!')
-      router.replace('/dashboard/settings')
-    } else if (error) {
-      const errorMessages: Record<string, string> = {
-        twitter_auth_failed: 'Twitter authentication failed. Please try again.',
-        twitter_session_expired: 'Authentication session expired. Please try again.',
-        unauthorized: 'You must be logged in to connect social accounts.',
-        database_error: 'Failed to save account information. Please try again.',
-        twitter_callback_failed: 'Failed to complete Twitter authentication.',
-        threads_auth_failed: 'Threads authentication failed. Please try again.',
-        threads_callback_failed: 'Failed to complete Threads authentication.',
-        instagram_auth_failed: 'Instagram authentication failed. Please try again.',
-        instagram_callback_failed: 'Failed to complete Instagram authentication.',
-        instagram_no_pages: 'No Facebook pages found. Please create a Facebook page first.',
-        instagram_not_connected: 'No Instagram account connected to your Facebook page.',
-        instagram_not_business: 'Please convert your Instagram account to a Business account.',
-        facebook_auth_failed: 'Facebook authentication failed. Please try again.',
-        facebook_callback_failed: 'Failed to complete Facebook authentication.',
-      }
-      toast.error(errorMessages[error] || 'An error occurred. Please try again.')
-      router.replace('/dashboard/settings')
-    }
-  }, [searchParams, router])
+  }, [])
 
   const handleConnect = async (platformId: string) => {
     console.log('Connect button clicked for:', platformId)
+    
+    // Check account limits
+    if (accountLimits && !accountLimits.canAddMore) {
+      toast.error(`Account limit reached. Your plan allows ${accountLimits.maxAccounts} social account(s).`)
+      return
+    }
     if (platformId === 'twitter') {
       setLoading(true)
       try {
@@ -315,8 +344,8 @@ export default function SettingsContent() {
     }
   }
 
-  const handleDisconnect = async (platformId: string) => {
-    if (!confirm(`Are you sure you want to disconnect your ${platformId} account?`)) {
+  const handleDisconnect = async (accountId: string, platformName?: string) => {
+    if (!confirm(`Are you sure you want to disconnect this ${platformName || 'social'} account?`)) {
       return
     }
 
@@ -328,12 +357,12 @@ export default function SettingsContent() {
       const { error } = await supabase
         .from('social_accounts')
         .update({ is_active: false })
+        .eq('id', accountId)
         .eq('user_id', user.id)
-        .eq('platform', platformId)
 
       if (error) throw error
 
-      toast.success(`${platformId} account disconnected`)
+      toast.success(`Account disconnected`)
       fetchConnectedAccounts()
     } catch (error) {
       console.error('Error disconnecting account:', error)
@@ -405,12 +434,15 @@ export default function SettingsContent() {
     <div>
       {/* Navigation Tabs */}
       <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-        <nav className="flex p-2 gap-2" aria-label="Tabs">
+        <div className="flex p-2 gap-2" role="tablist">
           {settingsSections.map(section => {
             const Icon = section.icon
             return (
               <button
                 key={section.id}
+                role="tab"
+                aria-selected={activeSection === section.id}
+                aria-controls={`${section.id}-panel`}
                 onClick={() => setActiveSection(section.id)}
                 className={cn(
                   "flex items-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200",
@@ -431,13 +463,13 @@ export default function SettingsContent() {
               </button>
             )
           })}
-        </nav>
+        </div>
       </div>
 
       {/* Main Content */}
       <div className="mt-8 space-y-6">
           {activeSection === 'accounts' && (
-            <>
+            <div id="accounts-panel" role="tabpanel" aria-labelledby="accounts-tab">
               <Card className="bg-white shadow-xl hover:shadow-2xl transition-all duration-300 border-0 overflow-hidden">
                 <CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50 border-b">
                   <div className="flex items-center justify-between">
@@ -464,62 +496,168 @@ export default function SettingsContent() {
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {socialPlatforms.map(platform => {
-                      const connectedAccount = connectedAccounts.find(acc => acc.platform === platform.id)
-                      const isConnected = !!connectedAccount
-                      
-                      return (
-                      <div
-                        key={platform.id}
-                        className={cn(
-                          "flex items-center justify-between p-4 rounded-xl transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5",
-                          isConnected 
-                            ? "bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200" 
-                            : "bg-gray-50 border-2 border-gray-200 hover:border-purple-300"
-                        )}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={cn(
-                            "w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-md",
-                            platform.color
-                          )}>
-                            <span className="text-xl">{platform.icon}</span>
+                  {/* Account Limits Display */}
+                  {accountLimits && (
+                    <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 bg-white rounded-lg shadow-sm">
+                            <Link2 className="h-4 w-4 text-purple-600" />
                           </div>
                           <div>
-                            <p className="font-semibold text-gray-900">{platform.name}</p>
-                            {isConnected && connectedAccount && (
-                              <p className="text-sm text-gray-600">@{connectedAccount.username}</p>
-                            )}
-                            {platform.note && (
-                              <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
-                                <AlertCircle className="h-3 w-3" />
-                                {platform.note}
-                              </p>
-                            )}
+                            <p className="text-sm font-semibold text-gray-900">
+                              Connected Accounts
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {accountLimits.currentCount} of {accountLimits.maxAccounts === Infinity ? 'Unlimited' : accountLimits.maxAccounts} accounts used
+                            </p>
                           </div>
                         </div>
-                        {isConnected ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDisconnect(platform.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300"
-                            disabled={loading}
-                          >
-                            <X className="mr-1 h-4 w-4" />
-                            Disconnect
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            onClick={() => handleConnect(platform.id)}
-                            disabled={loading}
-                            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md hover:shadow-lg"
-                          >
-                            <Plus className="mr-1 h-4 w-4" />
-                            Connect
-                          </Button>
+                        {accountLimits.maxAccounts !== Infinity && (
+                          <div className="text-right">
+                            <p className="text-xs text-gray-600">
+                              {accountLimits.canAddMore 
+                                ? `${accountLimits.maxAccounts - accountLimits.currentCount} slots remaining`
+                                : 'Limit reached'}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-4">
+                    {socialPlatforms.map(platform => {
+                      const platformAccounts = connectedAccounts.filter(acc => acc.platform === platform.id)
+                      const hasAccounts = platformAccounts.length > 0
+                      const isExpanded = expandedPlatforms.includes(platform.id)
+                      
+                      return (
+                      <div key={platform.id} className="border rounded-xl overflow-hidden">
+                        <div
+                          className={cn(
+                            "p-4 transition-all duration-200",
+                            hasAccounts 
+                              ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-200" 
+                              : "bg-gray-50 hover:bg-gray-100"
+                          )}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className={cn(
+                                "w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-md",
+                                platform.color
+                              )}>
+                                <span className="text-xl">{platform.icon}</span>
+                              </div>
+                              <div>
+                                <p className="font-semibold text-gray-900">{platform.name}</p>
+                                {hasAccounts && (
+                                  <p className="text-sm text-gray-600">
+                                    {platformAccounts.length} account{platformAccounts.length !== 1 ? 's' : ''} connected
+                                  </p>
+                                )}
+                                {platform.note && (
+                                  <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
+                                    <AlertCircle className="h-3 w-3" />
+                                    {platform.note}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {hasAccounts && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setExpandedPlatforms(prev => 
+                                      prev.includes(platform.id) 
+                                        ? prev.filter(p => p !== platform.id)
+                                        : [...prev, platform.id]
+                                    )
+                                  }}
+                                  className="text-gray-600 hover:text-gray-900"
+                                >
+                                  {isExpanded ? 'Hide' : 'Show'} Accounts
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                onClick={() => handleConnect(platform.id)}
+                                disabled={loading || (!!accountLimits && !accountLimits.canAddMore)}
+                                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md hover:shadow-lg"
+                              >
+                                <Plus className="mr-1 h-4 w-4" />
+                                Add Account
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Expanded Account List */}
+                        {hasAccounts && isExpanded && (
+                          <div className="border-t bg-white p-4 space-y-2">
+                            {platformAccounts.map((account, index) => (
+                              <div key={account.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                  <div className="text-sm">
+                                    <span className="font-medium text-gray-900">
+                                      {account.account_label || account.username || account.account_name || `Account ${index + 1}`}
+                                    </span>
+                                    {account.username && (
+                                      <span className="text-gray-600 ml-2">@{account.username}</span>
+                                    )}
+                                    {account.is_primary && (
+                                      <span className="ml-2 px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded-full">
+                                        Primary
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {account.is_primary !== true && platformAccounts.length > 1 && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={async () => {
+                                        try {
+                                          // This will only work if the migration has been applied
+                                          const { error } = await supabase
+                                            .from('social_accounts')
+                                            .update({ is_primary: true })
+                                            .eq('id', account.id)
+                                          
+                                          if (error) {
+                                            console.error('Error setting primary:', error)
+                                            toast.error('This feature requires database migration')
+                                          } else {
+                                            toast.success('Set as primary account')
+                                            fetchConnectedAccounts()
+                                          }
+                                        } catch (error) {
+                                          toast.error('Failed to update account')
+                                        }
+                                      }}
+                                      className="text-xs"
+                                    >
+                                      Set as Primary
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDisconnect(account.id, platform.name)}
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300"
+                                    disabled={loading}
+                                  >
+                                    <X className="mr-1 h-3 w-3" />
+                                    Remove
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
                       )
@@ -546,11 +684,12 @@ export default function SettingsContent() {
                   </Button>
                 </CardContent>
               </Card>
-            </>
+            </div>
           )}
 
 
           {activeSection === 'notifications' && (
+            <div id="notifications-panel" role="tabpanel" aria-labelledby="notifications-tab">
             <Card className="bg-white shadow-xl hover:shadow-2xl transition-all duration-300 border-0 overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 border-b">
                 <CardTitle className="text-xl flex items-center gap-2">
@@ -576,10 +715,12 @@ export default function SettingsContent() {
                       </div>
                     </div>
                     <Button 
-                      size="sm" 
-                      className="bg-green-100 text-green-700 hover:bg-green-200 border-green-300"
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => toast.info('Email notifications coming soon!')}
+                      className="hover:bg-gray-100"
                     >
-                      Enabled
+                      Disabled
                     </Button>
                   </div>
                   <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl hover:shadow-md transition-all duration-200">
@@ -593,10 +734,12 @@ export default function SettingsContent() {
                       </div>
                     </div>
                     <Button 
-                      size="sm" 
-                      className="bg-green-100 text-green-700 hover:bg-green-200 border-green-300"
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => toast.info('Post reminders coming soon!')}
+                      className="hover:bg-gray-100"
                     >
-                      Enabled
+                      Disabled
                     </Button>
                   </div>
                   <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl hover:shadow-md transition-all duration-200">
@@ -612,6 +755,7 @@ export default function SettingsContent() {
                     <Button 
                       variant="outline" 
                       size="sm"
+                      onClick={() => toast.info('Weekly reports coming soon!')}
                       className="hover:bg-gray-100"
                     >
                       Disabled
@@ -620,6 +764,7 @@ export default function SettingsContent() {
                 </div>
               </CardContent>
             </Card>
+            </div>
           )}
 
       </div>

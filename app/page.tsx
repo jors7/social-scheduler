@@ -73,7 +73,7 @@ const features = [
 const testimonials = [
   // First row testimonials
   [
-    "SocialPulse has completely transformed our social media strategy. We're saving 15+ hours every week!",
+    "SocialCal has completely transformed our social media strategy. We're saving 15+ hours every week!",
     "The AI suggestions are spot on! My engagement has increased by 200% in just two months.",
     "Finally, a tool that understands small businesses. Simple, powerful, and affordable.",
     "Scheduling across 9 platforms used to be a nightmare. Now it takes me 10 minutes.",
@@ -83,7 +83,7 @@ const testimonials = [
   // Second row testimonials
   [
     "Game-changer for content creators! I can focus on creating instead of posting.",
-    "Doubled my client base since using SocialPulse. The time savings are incredible.",
+    "Doubled my client base since using SocialCal. The time savings are incredible.",
     "The bulk upload feature is a lifesaver. I schedule a month's content in one go.",
     "Customer support is exceptional. They actually listen and implement feedback.",
     "Best investment for my personal brand. Period.",
@@ -138,13 +138,19 @@ function LandingPageContent() {
             <Link href="/" className="flex items-center gap-2">
               <Image 
                 src="/SocialCal.png" 
-                alt="SocialPulse Logo" 
+                alt="SocialCal Logo" 
                 width={32} 
                 height={32}
                 className="w-8 h-8"
               />
-              <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                SocialPulse
+              <span 
+                className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent"
+                style={{ 
+                  fontFamily: '"Vanquish W00 Bold", system-ui, -apple-system, sans-serif',
+                  fontWeight: 800 
+                }}
+              >
+                SocialCal
               </span>
             </Link>
             <div className="flex items-center space-x-1">
@@ -342,10 +348,10 @@ function LandingPageContent() {
         <div className="container mx-auto max-w-6xl relative z-10 pb-32">
           <div className="text-left mb-6">
             <h2 className="text-4xl md:text-5xl font-bold mb-3 text-gray-900">
-              What&apos;s the SocialPulse impact?
+              What&apos;s the SocialCal impact?
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl">
-              SocialPulse will save your team hours of work (and lots of headaches) every week
+              SocialCal will save your team hours of work (and lots of headaches) every week
             </p>
           </div>
           
@@ -486,7 +492,7 @@ function LandingPageContent() {
         <div className="container mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-2xl font-bold mb-4">SocialPulse</h3>
+              <h3 className="text-2xl font-bold mb-4">SocialCal</h3>
               <p className="text-gray-400">
                 The all-in-one social media management platform for modern businesses.
               </p>
@@ -518,7 +524,7 @@ function LandingPageContent() {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
-            <p>&copy; 2024 SocialPulse. All rights reserved.</p>
+            <p>&copy; 2024 SocialCal. All rights reserved.</p>
           </div>
         </div>
       </footer>

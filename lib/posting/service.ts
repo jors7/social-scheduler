@@ -8,6 +8,7 @@ export interface PostData {
   platformContent?: Record<string, string>;
   scheduledFor?: Date;
   mediaUrls?: string[];
+  selectedAccounts?: Record<string, string[]>; // platform -> array of account IDs
 }
 
 export interface PostResult {
@@ -49,9 +50,9 @@ export class PostingService {
 
     // Post to each platform
     for (const platform of postData.platforms) {
-      const account = accounts?.find(acc => acc.platform === platform);
+      const platformAccounts = accounts?.filter(acc => acc.platform === platform) || [];
       
-      if (!account) {
+      if (platformAccounts.length === 0) {
         results.push({
           platform,
           success: false,
@@ -60,16 +61,46 @@ export class PostingService {
         continue;
       }
 
-      try {
-        const content = postData.platformContent?.[platform] || postData.content;
-        const result = await this.postToPlatform(platform, content, account, postData.mediaUrls);
-        results.push(result);
-      } catch (error) {
-        results.push({
-          platform,
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
+      // Get selected accounts for this platform, or use primary/all accounts
+      let accountsToPost = platformAccounts;
+      
+      if (postData.selectedAccounts?.[platform]) {
+        // Filter to only selected accounts
+        accountsToPost = platformAccounts.filter(acc => 
+          postData.selectedAccounts![platform].includes(acc.id)
+        );
+      } else if (platformAccounts.length > 1) {
+        // If multiple accounts but none selected, use primary account only
+        const primaryAccount = platformAccounts.find(acc => acc.is_primary);
+        accountsToPost = primaryAccount ? [primaryAccount] : [platformAccounts[0]];
+      }
+
+      // Post to each selected account
+      for (const account of accountsToPost) {
+        try {
+          const content = postData.platformContent?.[platform] || postData.content;
+          const result = await this.postToPlatform(
+            platform, 
+            content, 
+            account, 
+            postData.mediaUrls
+          );
+          // Add account info to result
+          results.push({
+            ...result,
+            platform: account.account_label 
+              ? `${platform} (${account.account_label})`
+              : platform
+          });
+        } catch (error) {
+          results.push({
+            platform: account.account_label 
+              ? `${platform} (${account.account_label})`
+              : platform,
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
       }
     }
 

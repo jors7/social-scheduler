@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Vanquish Font - Add this if you have the font file */
+@font-face {
+  font-family: 'Vanquish W00 Bold';
+  src: url('/fonts/vanquish-bold.woff2') format('woff2'),
+       url('/fonts/vanquish-bold.woff') format('woff');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

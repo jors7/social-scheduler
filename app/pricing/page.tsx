@@ -171,13 +171,19 @@ function PricingPageContent() {
             <Link href="/" className="flex items-center gap-2">
               <Image 
                 src="/SocialCal.png" 
-                alt="SocialPulse Logo" 
+                alt="SocialCal Logo" 
                 width={32} 
                 height={32}
                 className="w-8 h-8"
               />
-              <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                SocialPulse
+              <span 
+                className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent"
+                style={{ 
+                  fontFamily: '"Vanquish W00 Bold", system-ui, -apple-system, sans-serif',
+                  fontWeight: 800 
+                }}
+              >
+                SocialCal
               </span>
             </Link>
             <div className="flex items-center space-x-1">
@@ -378,7 +384,7 @@ function PricingPageContent() {
               Frequently Asked Questions
             </h2>
             <p className="text-gray-600">
-              Everything you need to know about SocialPulse
+              Everything you need to know about SocialCal
             </p>
           </div>
           <div className="space-y-4">
@@ -417,7 +423,7 @@ function PricingPageContent() {
         <div className="container mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-2xl font-bold mb-4">SocialPulse</h3>
+              <h3 className="text-2xl font-bold mb-4">SocialCal</h3>
               <p className="text-gray-400">
                 The all-in-one social media management platform for modern businesses.
               </p>
@@ -449,7 +455,7 @@ function PricingPageContent() {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
-            <p>&copy; 2024 SocialPulse. All rights reserved.</p>
+            <p>&copy; 2024 SocialCal. All rights reserved.</p>
           </div>
         </div>
       </footer>

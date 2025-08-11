@@ -145,15 +145,20 @@ export function Sidebar() {
         <Link href="/" className="flex items-center gap-2">
           <Image 
             src="/SocialCal.png" 
-            alt="SocialPulse Logo" 
-            width={32} 
-            height={32}
-            className="w-8 h-8"
+            alt="SocialCal Logo" 
+            width={28} 
+            height={28}
+            className="w-7 h-7"
           />
-          <div>
-            <span className="text-xl font-bold text-gray-900">SocialPulse</span>
-            <p className="text-xs text-gray-500">Dashboard</p>
-          </div>
+          <span 
+            className="text-lg font-extrabold tracking-tight text-gray-900"
+            style={{ 
+              fontFamily: '"Vanquish W00 Bold", system-ui, -apple-system, sans-serif',
+              fontWeight: 800 
+            }}
+          >
+            SocialCal
+          </span>
         </Link>
       </div>
 
