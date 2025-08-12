@@ -306,7 +306,7 @@ export default function AdminUsersPage() {
                         {formatDate(user.last_sign_in_at)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <Link href={`/admin/users/${user.id}`}>
+                        <Link href={`/admin/user-details?id=${user.id}`}>
                           <Button variant="ghost" size="sm">
                             <Eye className="h-4 w-4" />
                           </Button>
