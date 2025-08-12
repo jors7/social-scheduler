@@ -53,7 +53,14 @@ export default function UserDetailsPage() {
 
   const fetchUserDetails = async () => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}`)
+      let response = await fetch(`/api/admin/users/${userId}`)
+      
+      // If main endpoint fails, try simple endpoint
+      if (!response.ok) {
+        console.log('Main endpoint failed, trying simple endpoint...')
+        response = await fetch(`/api/admin/users/${userId}/simple`)
+      }
+      
       if (!response.ok) throw new Error('Failed to fetch user details')
       
       const data = await response.json()
