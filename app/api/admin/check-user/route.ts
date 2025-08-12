@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     try {
       const Stripe = await import('stripe')
       const stripe = new Stripe.default(process.env.STRIPE_SECRET_KEY!, {
-        apiVersion: '2024-12-18.acacia'
+        apiVersion: '2025-07-30.basil'
       })
       
       const stripeSub = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id)
