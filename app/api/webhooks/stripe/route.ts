@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
             .upsert({
               user_id,
               plan_id,
-              status: (subscription as any).status === 'trialing' ? 'trialing' : 'active',
+              subscription_status: (subscription as any).status, // Use the actual Stripe status
               billing_cycle,
               stripe_subscription_id: (subscription as any).id,
               stripe_customer_id: session.customer as string,
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
         const { error } = await supabaseAdmin
           .from('user_subscriptions')
           .update({
-            status: subscription.status,
+            subscription_status: subscription.status, // Use subscription_status field
             current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
             cancel_at: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null,
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
         const { error } = await supabaseAdmin
           .from('user_subscriptions')
           .update({
-            status: 'canceled',
+            subscription_status: 'canceled', // Use subscription_status field
             canceled_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
