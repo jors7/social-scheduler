@@ -208,19 +208,19 @@ export default function AdminTestPage() {
           <div>
             <p className="text-sm font-medium mb-2">Test User Stats:</p>
             <code className="block bg-gray-100 p-2 rounded text-xs">
-              fetch('/api/admin/users?stats=true').then(r => r.json()).then(console.log)
+              {`fetch('/api/admin/users?stats=true').then(r => r.json()).then(console.log)`}
             </code>
           </div>
           <div>
             <p className="text-sm font-medium mb-2">Test Audit Logs:</p>
             <code className="block bg-gray-100 p-2 rounded text-xs">
-              fetch('/api/admin/audit?page=1&limit=10').then(r => r.json()).then(console.log)
+              {`fetch('/api/admin/audit?page=1&limit=10').then(r => r.json()).then(console.log)`}
             </code>
           </div>
           <div>
             <p className="text-sm font-medium mb-2">Test Settings:</p>
             <code className="block bg-gray-100 p-2 rounded text-xs">
-              fetch('/api/admin/settings').then(r => r.json()).then(console.log)
+              {`fetch('/api/admin/settings').then(r => r.json()).then(console.log)`}
             </code>
           </div>
         </CardContent>
