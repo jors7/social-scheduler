@@ -1,3 +1,5 @@
+'use client'
+
 import AdminLayoutClient from './layout-client'
 
 export default function AdminLayout({
