@@ -84,7 +84,7 @@ export async function getAuditLogs(
     console.log('Raw audit logs fetched:', logs?.length || 0, 'Total count:', count)
     
     // Get admin emails for the logs
-    const adminIds = [...new Set(logs?.map(log => log.admin_id) || [])]
+    const adminIds = Array.from(new Set(logs?.map(log => log.admin_id) || []))
     const adminEmails: Record<string, string> = {}
     
     if (adminIds.length > 0) {
