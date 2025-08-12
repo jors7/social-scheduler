@@ -23,49 +23,43 @@ export async function GET(request: NextRequest) {
     .eq('user_id', userId)
     .single()
   
-  // Get Stripe subscription if exists
+  // Get Stripe subscription if exists - simplified version
   let stripeData = null
-  if (subscription?.stripe_subscription_id) {
+  if (subscription?.stripe_subscription_id && process.env.STRIPE_SECRET_KEY) {
     try {
-      const Stripe = await import('stripe')
-      const stripe = new Stripe.default(process.env.STRIPE_SECRET_KEY!, {
-        apiVersion: '2025-07-30.basil'
+      // Use fetch directly to avoid type issues
+      const response = await fetch(`https://api.stripe.com/v1/subscriptions/${subscription.stripe_subscription_id}`, {
+        headers: {
+          'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+        }
       })
       
-      const stripeSub = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id)
-      stripeData = {
-        id: stripeSub.id,
-        status: stripeSub.status,
-        current_period_end: new Date(stripeSub.current_period_end * 1000).toISOString(),
-        items: stripeSub.items.data.map(item => ({
-          price_id: item.price.id,
-          product_id: item.price.product,
-          interval: item.price.recurring?.interval,
-          amount: item.price.unit_amount
-        }))
+      if (response.ok) {
+        const stripeSub = await response.json()
+        stripeData = {
+          id: stripeSub.id,
+          status: stripeSub.status,
+          current_period_end: stripeSub.current_period_end ? new Date(stripeSub.current_period_end * 1000).toISOString() : null,
+          items: stripeSub.items?.data?.length > 0 ? stripeSub.items.data[0].price : null
+        }
       }
     } catch (error) {
       stripeData = { error: 'Failed to fetch Stripe data' }
     }
   }
   
-  // Check what plan this should be based on Stripe
-  let expectedPlan = 'free'
-  if (stripeData && !('error' in stripeData)) {
-    const priceId = stripeData.items[0]?.price_id
-    if (priceId) {
-      // Map price IDs to plans (you'll need to adjust these based on your actual price IDs)
-      if (priceId.includes('starter')) expectedPlan = 'starter'
-      else if (priceId.includes('professional')) expectedPlan = 'professional'
-      else if (priceId.includes('enterprise')) expectedPlan = 'enterprise'
-    }
-  }
+  // Check what plan this should be based on plan_id
+  const expectedPlan = subscription?.plan_id || 'free'
   
   return NextResponse.json({
     userId,
     user_subscriptions_table: subscription,
     stripe_data: stripeData,
     expected_plan: expectedPlan,
-    mismatch: subscription?.subscription_plan !== expectedPlan
+    columns_in_table: {
+      plan_column: subscription?.plan_id ? 'plan_id' : 'subscription_plan',
+      status_column: subscription?.status ? 'status' : 'subscription_status',
+      trial_column: subscription?.trial_end ? 'trial_end' : 'trial_ends_at'
+    }
   })
 }
