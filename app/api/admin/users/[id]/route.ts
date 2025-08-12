@@ -89,15 +89,15 @@ async function getUserDetailsWithAnon(userId: string) {
       email: subscription?.email || 'Unknown',
       created_at: subscription?.created_at || new Date().toISOString(),
       last_sign_in_at: subscription?.updated_at || new Date().toISOString(),
-      subscription_plan: subscription?.subscription_plan || 'free',
-      subscription_status: subscription?.subscription_status || 'inactive',
+      subscription_plan: subscription?.plan_id || subscription?.subscription_plan || 'free',
+      subscription_status: subscription?.status || subscription?.subscription_status || 'inactive',
       billing_cycle: subscription?.billing_cycle,
       role: subscription?.role || 'user',
       posts_count: postsCount || 0,
       drafts_count: draftsCount || 0,
       connected_accounts: accountsCount || 0,
       stripe_customer_id: subscription?.stripe_customer_id,
-      trial_ends_at: subscription?.trial_ends_at,
+      trial_ends_at: subscription?.trial_end || subscription?.trial_ends_at,
       is_suspended: subscription?.is_suspended || false
     }
   }
@@ -155,15 +155,15 @@ export async function GET(
         email: user.user.email || '',
         created_at: user.user.created_at,
         last_sign_in_at: user.user.last_sign_in_at || user.user.created_at,
-        subscription_plan: subscription?.subscription_plan || 'free',
-        subscription_status: subscription?.subscription_status || 'inactive',
+        subscription_plan: subscription?.plan_id || subscription?.subscription_plan || 'free',
+        subscription_status: subscription?.status || subscription?.subscription_status || 'inactive',
         billing_cycle: subscription?.billing_cycle,
         role: subscription?.role || 'user',
         posts_count: postsCount || 0,
         drafts_count: draftsCount || 0,
         connected_accounts: accountsCount || 0,
         stripe_customer_id: subscription?.stripe_customer_id,
-        trial_ends_at: subscription?.trial_ends_at,
+        trial_ends_at: subscription?.trial_end || subscription?.trial_ends_at,
         is_suspended: subscription?.is_suspended || false
       }
 

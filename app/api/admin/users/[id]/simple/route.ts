@@ -83,15 +83,15 @@ export async function GET(
       email,
       created_at,
       last_sign_in_at,
-      subscription_plan: subscription?.subscription_plan || 'free',
-      subscription_status: subscription?.subscription_status || 'inactive',
+      subscription_plan: subscription?.plan_id || subscription?.subscription_plan || 'free',
+      subscription_status: subscription?.status || subscription?.subscription_status || 'inactive',
       billing_cycle: subscription?.billing_cycle,
       role: subscription?.role || 'user',
       posts_count: postsCount,
       drafts_count: draftsCount,
       connected_accounts: accountsCount,
       stripe_customer_id: subscription?.stripe_customer_id,
-      trial_ends_at: subscription?.trial_ends_at,
+      trial_ends_at: subscription?.trial_end || subscription?.trial_ends_at,
       is_suspended: subscription?.is_suspended || false
     }
     
