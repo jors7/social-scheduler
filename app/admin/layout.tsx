@@ -18,13 +18,14 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Check if user is admin
-  const isUserAdmin = await isAdmin()
-  if (!isUserAdmin) {
-    redirect('/dashboard')
-  }
+  try {
+    // Check if user is admin
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) {
+      redirect('/dashboard')
+    }
 
-  const adminUser = await getAdminUser()
+    const adminUser = await getAdminUser()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -116,4 +117,9 @@ export default async function AdminLayout({
       </div>
     </div>
   )
+  } catch (error) {
+    console.error('Admin layout error:', error)
+    // Fallback to redirect if there's an error
+    redirect('/dashboard')
+  }
 }
