@@ -274,13 +274,12 @@ export default function UserDetailsPage() {
               <p className="text-sm text-gray-500 mb-2">Role</p>
               <CustomSelect
                 value={user.role}
-                onChange={handleRoleChange}
+                onChange={updating ? () => {} : handleRoleChange}
                 options={[
                   { value: 'user', label: 'User' },
                   { value: 'admin', label: 'Admin' },
                   { value: 'super_admin', label: 'Super Admin' }
                 ]}
-                disabled={updating}
               />
               <p className="text-xs text-gray-400 mt-1">
                 Only super admins can change roles
