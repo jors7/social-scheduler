@@ -385,37 +385,87 @@ function LandingPageContent() {
         </div>
       </section>
 
-      {/* Features Section - Redesigned to match image */}
-      <section id="features" className="py-20 px-4 bg-white">
+      {/* Features Section - Enhanced Design */}
+      <section id="features" className="py-24 px-4 bg-gradient-to-b from-white via-gray-50/50 to-white">
         <div className="container mx-auto max-w-7xl">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Section Header */}
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 border border-blue-200 rounded-full mb-4">
+              <Sparkles className="h-4 w-4 text-blue-600" />
+              <span className="text-blue-700 font-semibold text-sm">Core Features</span>
+            </div>
+            <h2 className="text-4xl lg:text-5xl font-bold mb-4 text-gray-900">
+              Everything you need to succeed
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Powerful features designed to streamline your social media workflow and boost engagement
+            </p>
+          </div>
+
+          {/* Feature Cards Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
               <div 
                 key={feature.title}
-                className="group p-8 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-all duration-300"
+                className="group relative"
+                style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="flex items-start gap-4">
-                  <div className={`p-3 rounded-xl ${feature.iconBg} flex-shrink-0`}>
-                    <feature.icon className={`h-6 w-6 ${feature.iconColor}`} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-3">
-                      <h3 className="text-2xl font-bold text-gray-900">
+                {/* Gradient border effect on hover */}
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl opacity-0 group-hover:opacity-100 blur transition duration-500"></div>
+                
+                {/* Card Content */}
+                <div className="relative h-full p-8 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1">
+                  {/* Title with Icon and Badge */}
+                  <div className="mb-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      {/* Icon */}
+                      <div className={`p-2.5 rounded-lg ${feature.iconBg} group-hover:scale-110 transition-transform duration-300`}>
+                        <feature.icon className={`h-6 w-6 ${feature.iconColor}`} />
+                      </div>
+                      
+                      {/* Title */}
+                      <h3 className="text-xl font-bold text-gray-900 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 transition-all duration-300 flex-1">
                         {feature.title}
                       </h3>
+                      
+                      {/* Pro Badge */}
                       {feature.isPro && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white">
-                          Pro
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-sm">
+                          PRO
                         </span>
                       )}
                     </div>
-                    <p className="text-gray-600 leading-relaxed">
-                      {feature.description}
-                    </p>
+                  </div>
+                  
+                  {/* Description */}
+                  <p className="text-gray-600 leading-relaxed text-sm">
+                    {feature.description}
+                  </p>
+                  
+                  {/* Hover indicator */}
+                  <div className="mt-6 flex items-center text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <span className="text-blue-600">Learn more</span>
+                    <ArrowRight className="ml-1 h-4 w-4 text-blue-600 group-hover:translate-x-1 transition-transform duration-300" />
                   </div>
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Bottom CTA */}
+          <div className="text-center mt-16">
+            <p className="text-gray-600 mb-6">
+              Ready to transform your social media strategy?
+            </p>
+            <Link href="/pricing">
+              <Button 
+                size="lg"
+                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+              >
+              Get Started Free
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            </Link>
           </div>
         </div>
       </section>

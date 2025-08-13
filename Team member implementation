@@ -1,0 +1,199 @@
+📋 DETAILED IMPLEMENTATION PLAN FOR TEAM COLLABORATION
+
+Based on my analysis, team collaboration is completely unimplemented. Here's my comprehensive plan:
+
+
+🗄️ Phase 1: Database Schema Changes
+
+sql
+
+-- 1. Organizations table (the team workspace)
+CREATE TABLE organizations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  owner_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  subscription_plan TEXT DEFAULT 'free',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+-- 2. Organization members with roles
+CREATE TABLE organization_members (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  role TEXT CHECK (role IN ('owner', 'admin', 'editor', 'viewer')) NOT NULL,
+  invited_by UUID REFERENCES auth.users(id),
+  joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(organization_id, user_id)
+);
+-- 3. Team invitations
+CREATE TABLE team_invitations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  role TEXT NOT NULL,
+  invited_by UUID REFERENCES auth.users(id),
+  token TEXT UNIQUE NOT NULL DEFAULT encode(gen_random_bytes(32), 'hex'),
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (NOW() + INTERVAL '7 days'),
+  accepted_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+-- 4. Migrate existing tables to be team-aware
+ALTER TABLE scheduled_posts ADD COLUMN organization_id UUID REFERENCES organizations(id);
+ALTER TABLE drafts ADD COLUMN organization_id UUID REFERENCES organizations(id);
+ALTER TABLE social_accounts ADD COLUMN organization_id UUID REFERENCES organizations(id);
+ALTER TABLE posts ADD COLUMN organization_id UUID REFERENCES organizations(id);
+
+🎨 Phase 2: UI/UX Changes
+
+New Pages to Create:
+/dashboard/team - Team overview dashboard
+/dashboard/team/members - Member management
+/dashboard/team/invitations - Pending invitations
+/dashboard/team/settings - Team settings
+/dashboard/organization/switch - Organization switcher
+
+Component Updates:
+Sidebar Navigation - Add team section with:
+Team Overview
+Members
+Invitations (with badge for pending)
+Settings
+Organization switcher dropdown
+
+Content Pages - Update existing pages:
+Show author attribution on posts/drafts
+Add "Shared with team" indicators
+Filter content by team member
+Show collaboration status
+
+Permission Gates - Create components for:
+Role-based feature access
+View-only mode for viewers
+Edit restrictions for non-admins
+
+🔌 Phase 3: API Endpoints
+
+typescript
+
+// Organization Management
+POST   /api/organizations          - Create new organization
+GET    /api/organizations          - List user's organizations
+GET    /api/organizations/[id]     - Get organization details
+PATCH  /api/organizations/[id]     - Update organization
+DELETE /api/organizations/[id]     - Delete organization
+// Member Management
+GET    /api/organizations/[id]/members     - List members
+POST   /api/organizations/[id]/members     - Invite member
+PATCH  /api/organizations/[id]/members/[memberId] - Update role
+DELETE /api/organizations/[id]/members/[memberId] - Remove member
+// Invitations
+GET    /api/invitations            - List pending invitations
+POST   /api/invitations/accept     - Accept invitation
+POST   /api/invitations/resend     - Resend invitation
+DELETE /api/invitations/[id]       - Cancel invitation
+// Team Context
+POST   /api/organizations/switch   - Switch active organization
+GET    /api/organizations/current  - Get current organization
+
+🔐 Phase 4: Security & Permissions
+
+Role Definitions:
+Owner: Full access, billing, delete organization
+Admin: Manage members, settings, all content
+Editor: Create/edit/delete content, view analytics
+Viewer: Read-only access to content and analytics
+
+RLS Policies Update:
+sql
+
+-- Example for posts table
+CREATE POLICY "Team members can view posts" ON posts
+  FOR SELECT USING (
+    organization_id IN (
+      SELECT organization_id FROM organization_members
+      WHERE user_id = auth.uid()
+    )
+  );
+CREATE POLICY "Editors can create posts" ON posts
+  FOR INSERT WITH CHECK (
+    organization_id IN (
+      SELECT organization_id FROM organization_members
+      WHERE user_id = auth.uid() 
+      AND role IN ('owner', 'admin', 'editor')
+    )
+  );
+
+📝 Phase 5: Implementation Steps
+
+Step 1: Foundation (Week 1)
+[ ] Create database tables and migrations
+[ ] Set up RLS policies for team access
+[ ] Create organization service layer
+[ ] Migrate existing user data to personal orgs
+
+Step 2: Core Team Management (Week 2)
+[ ] Build organization creation flow
+[ ] Implement member invitation system
+[ ] Create team dashboard UI
+[ ] Add organization switcher
+
+Step 3: Content Collaboration (Week 3)
+[ ] Update post/draft creation for teams
+[ ] Add author attribution
+[ ] Implement shared content views
+[ ] Add team activity feed
+
+Step 4: Advanced Features (Week 4)
+[ ] Approval workflows for editors
+[ ] Team-level analytics
+[ ] Shared media library
+[ ] Notification system
+
+💰 Subscription Gate Integration
+
+typescript
+
+// Check team features availability
+const canUseTeamFeatures = (plan: string) => {
+  return ['professional', 'enterprise'].includes(plan);
+};
+// Member limits per plan
+const getMemberLimit = (plan: string) => {
+  switch(plan) {
+    case 'professional': return 3;
+    case 'enterprise': return Infinity;
+    default: return 1;
+  }
+};
+
+🚀 Files to Create/Modify
+
+New Files:
+
+/app/dashboard/team/page.tsx
+/app/dashboard/team/members/page.tsx
+/app/dashboard/team/invitations/page.tsx
+/app/dashboard/team/settings/page.tsx
+/lib/organizations/service.ts
+/lib/organizations/client.ts
+/components/team/member-list.tsx
+/components/team/invitation-form.tsx
+/components/team/organization-switcher.tsx
+
+Modified Files:
+
+/components/dashboard/sidebar.tsx - Add team section
+/app/dashboard/create/page.tsx - Add team context
+/app/dashboard/drafts/page.tsx - Show team drafts
+/app/dashboard/scheduled/page.tsx - Show team scheduled posts
+All existing RLS policies need updates
+
+⚠️ Important Considerations
+
+Migration Strategy: Existing users need automatic personal organization creation
+Backward Compatibility: Single-user mode should still work
+Performance: Team queries need proper indexing
+Billing: Stripe webhooks need to handle team subscriptions
+Email Notifications: Invitation and team activity emails
