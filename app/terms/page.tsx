@@ -116,7 +116,7 @@ export default function TermsOfService() {
             <section className="mb-10">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Acceptance of Terms</h2>
               <p className="text-gray-600 leading-relaxed mb-4">
-                By accessing and using SocialCal ("the Service"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to these terms, please do not use our Service.
+                By accessing and using SocialCal (&quot;the Service&quot;), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to these terms, please do not use our Service.
               </p>
             </section>
 
@@ -155,7 +155,7 @@ export default function TermsOfService() {
               <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
                 <li>You grant us permission to post content on your behalf</li>
                 <li>You remain responsible for all content posted through our Service</li>
-                <li>You must comply with each platform's terms of service</li>
+                <li>You must comply with each platform&apos;s terms of service</li>
                 <li>You can revoke access at any time through your account settings</li>
               </ul>
             </section>
@@ -197,7 +197,7 @@ export default function TermsOfService() {
               </p>
               <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
                 <li>We encrypt sensitive data</li>
-                <li>We don't sell your personal information</li>
+                <li>We don&apos;t sell your personal information</li>
                 <li>We comply with GDPR and CCPA regulations</li>
                 <li>You can request data deletion at any time</li>
               </ul>
