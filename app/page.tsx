@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Calendar, Users, BarChart, Zap, Shield, Menu, Clock, TrendingUp, ArrowRight, Layers, Sparkles } from 'lucide-react'
+import { Calendar, Users, BarChart, Zap, Shield, Menu, Clock, TrendingUp, ArrowRight, Layers, Sparkles, ChevronRight } from 'lucide-react'
 import { useEffect, useState, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -29,43 +29,43 @@ const features = [
     title: 'Multi-Platform Publishing',
     description: 'Post to all your social media accounts with one click. Save time and maintain consistency across all platforms.',
     icon: Zap,
-    iconBg: 'bg-pink-50',
-    iconColor: 'text-pink-600',
+    iconBg: 'bg-blue-50',
+    iconColor: 'text-blue-600',
   },
   {
     title: 'Smart Scheduling',
     description: 'Schedule posts in advance for optimal engagement times. Our AI analyzes your audience for the best posting schedule.',
     icon: Calendar,
-    iconBg: 'bg-red-50',
-    iconColor: 'text-red-600',
+    iconBg: 'bg-green-50',
+    iconColor: 'text-green-600',
   },
   {
     title: 'AI Caption Suggestions',
     description: 'Get AI-powered caption suggestions tailored to each platform. Boost engagement with optimized content.',
     icon: Sparkles,
-    iconBg: 'bg-orange-50',
-    iconColor: 'text-orange-600',
+    iconBg: 'bg-purple-50',
+    iconColor: 'text-purple-600',
   },
   {
     title: 'Analytics Dashboard',
     description: 'Track performance across all platforms in one place. Get insights to improve your social media strategy.',
     icon: BarChart,
-    iconBg: 'bg-pink-50',
-    iconColor: 'text-pink-600',
+    iconBg: 'bg-blue-50',
+    iconColor: 'text-blue-600',
   },
   {
     title: 'Content Library',
     description: 'Store and organize your media assets. Access your images, videos, and templates anytime from anywhere.',
     icon: Layers,
-    iconBg: 'bg-red-50',
-    iconColor: 'text-red-600',
+    iconBg: 'bg-green-50',
+    iconColor: 'text-green-600',
   },
   {
     title: 'Team Collaboration',
     description: 'Work with your team to create and approve content. Assign roles, review drafts, and streamline your workflow.',
     icon: Users,
-    iconBg: 'bg-orange-50',
-    iconColor: 'text-orange-600',
+    iconBg: 'bg-purple-50',
+    iconColor: 'text-purple-600',
     isPro: true,
   },
 ]
@@ -187,10 +187,9 @@ function LandingPageContent() {
                   </button>
                   <Button 
                     onClick={() => router.push('/pricing')}
-                    className="text-base font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 px-5 py-2"
+                    className="text-base font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 px-6 py-2"
                   >
                     Start Free Trial
-                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </>
               )}
@@ -245,7 +244,6 @@ function LandingPageContent() {
                   onClick={() => router.push('/pricing')}
                 >
                   Start Free Trial
-                  <ArrowRight className="ml-2 h-6 w-6" />
                 </Button>
               </div>
             </div>
@@ -441,12 +439,6 @@ function LandingPageContent() {
                   <p className="text-gray-600 leading-relaxed text-sm">
                     {feature.description}
                   </p>
-                  
-                  {/* Hover indicator */}
-                  <div className="mt-6 flex items-center text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <span className="text-blue-600">Learn more</span>
-                    <ArrowRight className="ml-1 h-4 w-4 text-blue-600 group-hover:translate-x-1 transition-transform duration-300" />
-                  </div>
                 </div>
               </div>
             ))}
@@ -463,7 +455,6 @@ function LandingPageContent() {
                 className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
               >
               Get Started Free
-              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             </Link>
           </div>
@@ -471,8 +462,17 @@ function LandingPageContent() {
       </section>
 
       {/* Horizontal Scrolling Testimonials Section */}
-      <section className="py-20 bg-gradient-to-b from-gray-50 to-white overflow-hidden relative">
-        <div className="mb-16">
+      <section className="py-20 overflow-hidden relative">
+        {/* Animated gradient background with white at top for smooth transition */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white via-blue-50/30 to-purple-50">
+          <div className="absolute inset-0">
+            <div className="absolute top-40 right-20 w-72 h-72 bg-blue-100 rounded-full mix-blend-multiply filter blur-xl opacity-15 animate-blob"></div>
+            <div className="absolute bottom-20 left-20 w-72 h-72 bg-purple-100 rounded-full mix-blend-multiply filter blur-xl opacity-15 animate-blob animation-delay-2000"></div>
+            <div className="absolute bottom-1/3 right-1/3 w-72 h-72 bg-pink-100 rounded-full mix-blend-multiply filter blur-xl opacity-15 animate-blob animation-delay-4000"></div>
+          </div>
+        </div>
+        
+        <div className="relative z-10 mb-16">
           <h2 className="text-3xl lg:text-4xl font-bold text-center mb-4 text-gray-900">
             Loved by content creators worldwide
           </h2>
@@ -482,7 +482,7 @@ function LandingPageContent() {
         </div>
         
         {/* First row - scrolling left to right */}
-        <div className="relative mb-8">
+        <div className="relative z-10 mb-8">
           <div className="flex animate-scroll-right">
             {/* Duplicate the testimonials for seamless loop */}
             {[...testimonials[0], ...testimonials[0]].map((testimonial, index) => (
@@ -501,12 +501,12 @@ function LandingPageContent() {
             ))}
           </div>
           {/* Fade gradients on both sides */}
-          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-gray-50 to-transparent pointer-events-none z-10" />
-          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none z-10" />
+          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white/90 via-white/50 to-transparent pointer-events-none z-10" />
+          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white/90 via-white/50 to-transparent pointer-events-none z-10" />
         </div>
         
         {/* Second row - scrolling right to left */}
-        <div className="relative">
+        <div className="relative z-10">
           <div className="flex animate-scroll-left">
             {/* Duplicate the testimonials for seamless loop */}
             {[...testimonials[1], ...testimonials[1]].map((testimonial, index) => (
@@ -525,8 +525,8 @@ function LandingPageContent() {
             ))}
           </div>
           {/* Fade gradients on both sides */}
-          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-gray-50 to-transparent pointer-events-none z-10" />
-          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none z-10" />
+          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white/90 via-white/50 to-transparent pointer-events-none z-10" />
+          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white/90 via-white/50 to-transparent pointer-events-none z-10" />
         </div>
       </section>
 

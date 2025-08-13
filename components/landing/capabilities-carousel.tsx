@@ -144,6 +144,26 @@ export function CapabilitiesCarousel() {
   return (
     <section className="pt-12 pb-20 px-4 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
       <div className="container mx-auto">
+        {/* Stats Bar - Moved to top */}
+        <div className="mb-16 grid grid-cols-2 md:grid-cols-4 gap-8 p-8 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-2xl shadow-lg">
+          <div className="text-center">
+            <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">5K+</div>
+            <div className="text-sm text-gray-700 font-semibold mt-1">Posts Scheduled</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">20+ Hours</div>
+            <div className="text-sm text-gray-700 font-semibold mt-1">Saved Each Month</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">2x More</div>
+            <div className="text-sm text-gray-700 font-semibold mt-1">Engagement</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">24/7</div>
+            <div className="text-sm text-gray-700 font-semibold mt-1">Support Available</div>
+          </div>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -284,26 +304,6 @@ export function CapabilitiesCarousel() {
                 aria-label={`Go to capability ${idx + 1}`}
               />
             ))}
-          </div>
-        </div>
-
-        {/* Stats Bar */}
-        <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 p-8 bg-white rounded-2xl shadow-lg">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-primary">50K+</div>
-            <div className="text-sm text-gray-600 mt-1">Active Users</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-primary">10M+</div>
-            <div className="text-sm text-gray-600 mt-1">Posts Scheduled</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-primary">99.9%</div>
-            <div className="text-sm text-gray-600 mt-1">Uptime SLA</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-primary">24/7</div>
-            <div className="text-sm text-gray-600 mt-1">Support Available</div>
           </div>
         </div>
       </div>
