@@ -49,10 +49,16 @@ export default function AboutPage() {
             <div className="flex items-center space-x-8">
               <div className="hidden md:flex items-center space-x-8">
                 <Link 
-                  href="/#features" 
+                  href="/#features"
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Features
+                </Link>
+                <Link 
+                  href="/#platforms"
+                  className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
+                >
+                  Platforms
                 </Link>
                 <Link 
                   href="/pricing" 
@@ -61,10 +67,10 @@ export default function AboutPage() {
                   Pricing
                 </Link>
                 <Link 
-                  href="/about" 
-                  className="text-base font-semibold text-gray-900 transition-all duration-200"
+                  href="/pricing#faq" 
+                  className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
-                  About
+                  FAQ
                 </Link>
               </div>
               {isAuthenticated ? (

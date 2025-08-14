@@ -6,105 +6,59 @@ import { Card } from '@/components/ui/card'
 import { 
   ChevronLeft, 
   ChevronRight,
-  BarChart3,
-  Users,
   Calendar,
-  Zap,
-  MessageSquare,
   TrendingUp,
   Globe,
-  Shield,
-  Clock,
   Target,
-  Palette,
-  BrainCircuit
+  Palette
 } from 'lucide-react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
 const capabilities = [
   {
-    id: 'analytics',
-    icon: BarChart3,
-    title: 'Advanced Analytics & Reporting',
-    description: 'Track performance across all platforms with detailed insights',
-    features: [
-      'Real-time engagement metrics',
-      'Cross-platform analytics',
-      'Custom report generation',
-      'Performance predictions'
-    ],
-    image: '/images/analytics-dashboard.png',
+    id: 'cross-platform',
+    icon: Globe,
+    title: 'Cross-Platform Scheduling',
+    shortTitle: 'Cross-Platform',
+    description: 'Plan and schedule once — post across Instagram, LinkedIn, TikTok, Threads, YouTube, and more.',
+    longDescription: 'All in one simple dashboard. No need to jump between tabs or tools — just create, schedule, and let your content go live everywhere from one place.',
     color: 'from-blue-500 to-cyan-500'
   },
   {
-    id: 'collaboration',
-    icon: Users,
-    title: 'Team Collaboration Hub',
-    description: 'Work seamlessly with your team on content creation and approval',
-    features: [
-      'Role-based permissions',
-      'Content approval workflows',
-      'Team activity tracking',
-      'Internal notes & comments'
-    ],
-    image: '/images/team-collaboration.png',
+    id: 'customization',
+    icon: Palette,
+    title: 'Flexible Post Customization',
+    shortTitle: 'Customization',
+    description: 'Tweak your content per platform so everything sounds native — not copied and pasted.',
+    longDescription: 'Adjust captions, hashtags, visuals, and tone for each channel to make sure your content feels tailored, not generic.',
     color: 'from-purple-500 to-pink-500'
   },
   {
-    id: 'scheduling',
+    id: 'calendar',
     icon: Calendar,
-    title: 'Smart Content Calendar',
-    description: 'Visual calendar with drag-and-drop scheduling and optimal timing',
-    features: [
-      'Best time to post suggestions',
-      'Bulk scheduling',
-      'Content recycling',
-      'Holiday calendar integration'
-    ],
-    image: '/images/content-calendar.png',
+    title: 'Drag-and-Drop Calendar',
+    shortTitle: 'Drag-and-Drop',
+    description: 'See your entire content month at a glance. Move things around. Stay consistent with zero chaos.',
+    longDescription: 'Easily fill content gaps, avoid last-minute stress, and keep your social presence on track — visually and intuitively.',
     color: 'from-green-500 to-emerald-500'
   },
   {
-    id: 'automation',
-    icon: Zap,
-    title: 'Powerful Automation',
-    description: 'Automate repetitive tasks and focus on strategy',
-    features: [
-      'Auto-publish from RSS feeds',
-      'Content queue management',
-      'Automated responses',
-      'Workflow automation'
-    ],
-    image: '/images/automation.png',
-    color: 'from-orange-500 to-red-500'
-  },
-  {
-    id: 'engagement',
-    icon: MessageSquare,
-    title: 'Unified Inbox',
-    description: 'Manage all social conversations from one place',
-    features: [
-      'All messages in one inbox',
-      'Quick reply templates',
-      'Sentiment analysis',
-      'Priority filtering'
-    ],
-    image: '/images/unified-inbox.png',
+    id: 'pricing',
+    icon: TrendingUp,
+    title: 'Low-Cost, High-Impact',
+    shortTitle: 'Low-Cost',
+    description: 'All the essential features at a fraction of the price of traditional schedulers. No paywalls, no bloat, no surprises.',
+    longDescription: 'Whether you\'re a creator just starting out or a team with big ambitions, our pricing is built to scale with you — not against you.',
     color: 'from-indigo-500 to-purple-500'
   },
   {
-    id: 'ai-assistant',
-    icon: BrainCircuit,
-    title: 'AI Content Assistant',
-    description: 'Generate engaging content with AI-powered suggestions',
-    features: [
-      'Smart caption generation',
-      'Hashtag recommendations',
-      'Content optimization tips',
-      'Trending topics analysis'
-    ],
-    image: '/images/ai-assistant.png',
+    id: 'ux',
+    icon: Target,
+    title: 'Clean, Creator-First UX',
+    shortTitle: 'Clean UX',
+    description: 'Built for speed and clarity — no overwhelming menus, no agency jargon. Just smooth workflows and tools that make sense.',
+    longDescription: 'You\'ll never feel lost or buried under features you don\'t need. Just log in, get things done, and get back to creating.',
     color: 'from-pink-500 to-rose-500'
   }
 ]
@@ -142,36 +96,59 @@ export function CapabilitiesCarousel() {
   const currentCapability = capabilities[currentIndex]
 
   return (
-    <section className="pt-12 pb-20 px-4 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
+    <section className="pt-16 pb-20 px-4 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
       <div className="container mx-auto">
-        {/* Stats Bar - Moved to top */}
-        <div className="mb-16 grid grid-cols-2 md:grid-cols-4 gap-8 p-8 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-2xl shadow-lg">
-          <div className="text-center">
-            <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">5K+</div>
-            <div className="text-sm text-gray-700 font-semibold mt-1">Posts Scheduled</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">20+ Hours</div>
-            <div className="text-sm text-gray-700 font-semibold mt-1">Saved Each Month</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">2x More</div>
-            <div className="text-sm text-gray-700 font-semibold mt-1">Engagement</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">24/7</div>
-            <div className="text-sm text-gray-700 font-semibold mt-1">Support Available</div>
-          </div>
-        </div>
-
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            Enterprise-Grade Capabilities
+            Smart Scheduling. Streamlined Features.
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Designed for scaling marketing agencies and brands that demand excellence
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-12">
+            Everything you need to schedule, organize, and repurpose your content — built for simplicity, speed, and results
           </p>
+          
+          {/* Capability Navigation Buttons - Moved under subheadline */}
+          <div className="flex flex-wrap justify-center gap-8 mb-16">
+            {capabilities.map((capability, idx) => (
+              <button
+                key={capability.id}
+                onClick={() => handleDotClick(idx)}
+                className={cn(
+                  "group relative px-4 py-2.5 transition-all",
+                  "hover:text-primary",
+                  currentIndex === idx
+                    ? "text-primary"
+                    : "text-gray-600"
+                )}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={cn(
+                    "p-1 rounded bg-gradient-to-br",
+                    capability.color
+                  )}>
+                    <capability.icon className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <span 
+                    className="text-[18px] tracking-wide"
+                    style={{ 
+                      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                      fontWeight: 500,
+                      letterSpacing: '0.3px'
+                    }}
+                  >
+                    {capability.shortTitle}
+                  </span>
+                </div>
+                {/* Beautiful underline for selected item */}
+                <div 
+                  className={cn(
+                    "absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/0 via-primary to-primary/0 transition-all duration-300",
+                    currentIndex === idx ? "opacity-100" : "opacity-0"
+                  )}
+                />
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Carousel Container */}
@@ -194,8 +171,8 @@ export function CapabilitiesCarousel() {
             <ChevronRight className="h-6 w-6 text-gray-700" />
           </button>
 
-          {/* Main Content */}
-          <div className="grid lg:grid-cols-2 gap-12 items-center px-12">
+          {/* Main Content - Reduced width and centered */}
+          <div className="grid lg:grid-cols-2 gap-8 items-center max-w-6xl mx-auto">
             {/* Left Side - Text Content */}
             <div className="space-y-6 transition-all duration-500 ease-in-out" key={`content-${currentIndex}`}>
               {/* Icon and Title */}
@@ -217,36 +194,23 @@ export function CapabilitiesCarousel() {
                 {currentCapability.title}
               </h3>
               
-              <p className="text-lg text-gray-600">
-                {currentCapability.description}
-              </p>
-
-              {/* Features List */}
-              <ul className="space-y-3">
-                {currentCapability.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-start gap-3">
-                    <div className="mt-1">
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                    </div>
-                    <span className="text-gray-700">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* CTA Button */}
-              <div className="pt-4">
-                <Button size="lg" className="group">
-                  Explore {currentCapability.title}
-                  <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
+              <div className="space-y-4">
+                <p className="text-base text-gray-600 leading-relaxed">
+                  {currentCapability.description}
+                </p>
+                
+                <p className="text-base text-gray-600 leading-relaxed">
+                  {currentCapability.longDescription}
+                </p>
               </div>
+
             </div>
 
-            {/* Right Side - Visual */}
+            {/* Right Side - Visual with reduced height */}
             <div className="relative">
               <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-gray-100 to-gray-200">
-                {/* Placeholder for actual screenshots */}
-                <div className="aspect-[4/3] flex items-center justify-center">
+                {/* Placeholder with reduced height */}
+                <div className="aspect-[16/9] flex items-center justify-center">
                   <div className={cn(
                     "absolute inset-0 opacity-10 bg-gradient-to-br",
                     currentCapability.color
@@ -269,37 +233,17 @@ export function CapabilitiesCarousel() {
             </div>
           </div>
 
-          {/* Capability Tabs */}
-          <div className="mt-12 flex flex-wrap justify-center gap-2">
-            {capabilities.map((capability, idx) => (
-              <button
-                key={capability.id}
-                onClick={() => handleDotClick(idx)}
-                className={cn(
-                  "px-4 py-2 rounded-full text-sm font-medium transition-all",
-                  "hover:bg-gray-100",
-                  currentIndex === idx
-                    ? "bg-primary text-white hover:bg-primary"
-                    : "bg-white text-gray-600 border"
-                )}
-              >
-                <capability.icon className="inline h-4 w-4 mr-2" />
-                {capability.title.split(' ').slice(0, 2).join(' ')}
-              </button>
-            ))}
-          </div>
-
-          {/* Progress Dots */}
-          <div className="flex justify-center gap-2 mt-8">
+          {/* Progress Dots only - removed duplicate capability tabs */}
+          <div className="flex justify-center gap-2 mt-16">
             {capabilities.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => handleDotClick(idx)}
                 className={cn(
-                  "h-2 transition-all rounded-full",
+                  "w-2 h-2 rounded-full transition-all",
                   currentIndex === idx
-                    ? "w-8 bg-primary"
-                    : "w-2 bg-gray-300 hover:bg-gray-400"
+                    ? "bg-gray-600"
+                    : "bg-gray-300 hover:bg-gray-400"
                 )}
                 aria-label={`Go to capability ${idx + 1}`}
               />

@@ -121,6 +121,18 @@ function LandingPageContent() {
       // Clean up URL
       router.replace('/', { scroll: false })
     }
+    
+    // Handle hash navigation after page loads
+    const hash = window.location.hash
+    if (hash) {
+      setTimeout(() => {
+        const id = hash.substring(1)
+        const element = document.getElementById(id)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 100)
+    }
   }, [searchParams, router])
 
   const checkAuth = async () => {
@@ -155,17 +167,29 @@ function LandingPageContent() {
             </Link>
             <div className="flex items-center space-x-8">
               <div className="hidden md:flex items-center space-x-8">
-                <Link 
-                  href="#features" 
+                <button 
+                  onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Features
-                </Link>
+                </button>
+                <button 
+                  onClick={() => document.getElementById('platforms')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
+                >
+                  Platforms
+                </button>
                 <Link 
                   href="/pricing" 
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Pricing
+                </Link>
+                <Link 
+                  href="/pricing#faq" 
+                  className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
+                >
+                  FAQ
                 </Link>
               </div>
               {isAuthenticated ? (
@@ -384,7 +408,7 @@ function LandingPageContent() {
       </section>
 
       {/* Features Section - Enhanced Design */}
-      <section id="features" className="py-24 px-4 bg-gradient-to-b from-white via-gray-50/50 to-white">
+      <section id="features" className="py-24 px-4 bg-gradient-to-b from-white via-gray-50/50 to-white scroll-mt-20">
         <div className="container mx-auto max-w-7xl">
           {/* Section Header */}
           <div className="text-center mb-16">
@@ -457,6 +481,125 @@ function LandingPageContent() {
               Get Started Free
             </Button>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Supported Platforms Section */}
+      <section id="platforms" className="py-6 px-4 bg-gradient-to-b from-white to-gray-50 scroll-mt-20">
+        <div className="container mx-auto max-w-7xl">
+          {/* Section Header */}
+          <div className="text-center mb-12">
+            <h2 className="text-4xl lg:text-5xl font-bold mb-4 text-gray-900">
+              Supported Platforms
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Use SocialCal to schedule and post your content across all of these social media platforms at the same time - all from one place.
+            </p>
+          </div>
+
+          {/* Platform Logos Grid */}
+          <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-4 lg:gap-6">
+            {/* Twitter/X */}
+            <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-100 group">
+              <div className="w-12 h-12 flex items-center justify-center mb-2">
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="#000000"/>
+                </svg>
+              </div>
+              <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900">X (Twitter)</span>
+            </div>
+
+            {/* Instagram */}
+            <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-100 group">
+              <div className="w-12 h-12 flex items-center justify-center mb-2">
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <linearGradient id="instagram-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#FED576"/>
+                    <stop offset="26%" stopColor="#F47133"/>
+                    <stop offset="61%" stopColor="#BC3081"/>
+                    <stop offset="100%" stopColor="#4F5BD5"/>
+                  </linearGradient>
+                  <rect x="2" y="2" width="20" height="20" rx="5" fill="url(#instagram-gradient)"/>
+                  <circle cx="12" cy="12" r="3.5" stroke="white" strokeWidth="2"/>
+                  <circle cx="17.5" cy="6.5" r="1.5" fill="white"/>
+                  <rect x="5" y="5" width="14" height="14" rx="3.5" stroke="white" strokeWidth="2" fill="none"/>
+                </svg>
+              </div>
+              <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900">Instagram</span>
+            </div>
+
+            {/* Facebook */}
+            <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-100 group">
+              <div className="w-12 h-12 flex items-center justify-center mb-2">
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="#1877F2"/>
+                </svg>
+              </div>
+              <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900">Facebook</span>
+            </div>
+
+            {/* LinkedIn */}
+            <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-100 group">
+              <div className="w-12 h-12 flex items-center justify-center mb-2">
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" fill="#0A66C2"/>
+                </svg>
+              </div>
+              <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900">LinkedIn</span>
+            </div>
+
+            {/* TikTok */}
+            <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-100 group">
+              <div className="w-12 h-12 flex items-center justify-center mb-2">
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743 2.896 2.896 0 0 1 3.183-4.51v-3.5a6.329 6.329 0 0 0-5.394 10.692 6.33 6.33 0 0 0 10.857-4.424V8.687a8.182 8.182 0 0 0 4.773 1.526V6.79a4.831 4.831 0 0 1-1.003-.104z" fill="#000000"/>
+                </svg>
+              </div>
+              <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900">TikTok</span>
+            </div>
+
+            {/* YouTube */}
+            <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-100 group">
+              <div className="w-12 h-12 flex items-center justify-center mb-2">
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="2" y="5" width="20" height="14" rx="3" fill="#FF0000"/>
+                  <path d="M10 9V15L15 12L10 9Z" fill="white"/>
+                </svg>
+              </div>
+              <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900">YouTube</span>
+            </div>
+
+            {/* Threads */}
+            <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-100 group">
+              <div className="w-12 h-12 flex items-center justify-center mb-2">
+                <svg className="w-10 h-10" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M141.537 88.9883C140.71 88.5919 139.87 88.2104 139.019 87.8451C137.537 60.5382 122.616 44.905 97.5619 44.745C97.4484 44.7443 97.3355 44.7443 97.222 44.7443C82.2364 44.7443 69.7731 51.1409 62.102 62.7807L75.881 72.2328C81.6116 63.5625 90.4659 58.8257 97.2286 58.8257C97.3046 58.8257 97.381 58.8268 97.4577 58.8279C106.323 58.8882 114.536 63.0941 119.777 70.3394C122.844 74.6121 124.605 79.7724 124.93 85.5369C122.224 84.9795 119.436 84.6932 116.596 84.6932C96.757 84.6932 77.463 94.5173 77.463 111.79C77.463 126.742 89.543 134.814 103.328 134.814C120.162 134.814 130.629 124.949 130.629 111.708C130.629 110.765 130.578 109.836 130.478 108.925C132.065 109.611 133.618 110.397 135.087 111.275C141.243 114.894 144.242 118.663 144.242 124.13C144.242 128.884 142.013 133.534 138.23 136.933C131.985 142.512 122.391 145.668 109.918 145.668C99.6509 145.668 90.8726 142.632 84.0416 136.784C77.1106 130.845 72.7387 122.684 72.7387 113.516C72.7387 104.411 77.1346 96.292 84.0951 90.0328L71.0156 79.2978C60.8386 88.8992 55.2122 101.221 55.2122 113.516C55.2122 128.084 61.5445 140.733 72.2768 149.792C82.5641 158.497 95.6523 163.069 109.918 163.069C128.523 163.069 142.878 158.406 153.139 149.356C160.951 142.284 164.987 132.935 164.987 124.13C164.987 107.586 153.434 96.5972 141.537 88.9883ZM113.672 121.056C107.978 121.056 103.006 118.064 103.006 111.371C103.006 102.199 111.484 97.9634 118.351 97.9634C120.767 97.9634 123.049 98.2152 125.182 98.7003C124.82 106.093 122.452 121.056 113.672 121.056Z" fill="#000000"/>
+                </svg>
+              </div>
+              <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900">Threads</span>
+            </div>
+
+            {/* Pinterest */}
+            <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-100 group">
+              <div className="w-12 h-12 flex items-center justify-center mb-2">
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" fill="#E60023"/>
+                  <path d="M12 2C6.477 2 2 6.477 2 12c0 4.237 2.636 7.855 6.356 9.312-.088-.791-.167-2.005.035-2.868.181-.78 1.172-4.97 1.172-4.97s-.299-.6-.299-1.486c0-1.39.806-2.428 1.81-2.428.852 0 1.264.64 1.264 1.408 0 .858-.545 2.14-.828 3.33-.236.995.5 1.807 1.48 1.807 1.778 0 3.144-1.874 3.144-4.58 0-2.393-1.72-4.068-4.177-4.068-2.845 0-4.515 2.135-4.515 4.34 0 .859.331 1.781.745 2.281a.3.3 0 01.069.288l-.278 1.133c-.044.183-.145.223-.335.134-1.249-.581-2.03-2.407-2.03-3.874 0-3.154 2.292-6.052 6.608-6.052 3.469 0 6.165 2.473 6.165 5.776 0 3.447-2.173 6.22-5.19 6.22-1.013 0-1.965-.525-2.291-1.148l-.623 2.378c-.226.869-.835 1.958-1.244 2.621.937.29 1.931.446 2.962.446 5.523 0 10-4.477 10-10S17.523 2 12 2z" fill="white"/>
+                </svg>
+              </div>
+              <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900">Pinterest</span>
+            </div>
+
+            {/* Bluesky */}
+            <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-100 group">
+              <div className="w-12 h-12 flex items-center justify-center mb-2">
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 01-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8z" fill="#00A8E8"/>
+                </svg>
+              </div>
+              <span className="text-xs text-gray-600 font-medium group-hover:text-gray-900">Bluesky</span>
+            </div>
           </div>
         </div>
       </section>

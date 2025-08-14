@@ -166,11 +166,35 @@ function PricingPageContent() {
       // Clean up URL
       router.replace('/pricing', { scroll: false })
     }
+    
+    // Handle hash navigation after page loads
+    const hash = window.location.hash
+    if (hash) {
+      setTimeout(() => {
+        const id = hash.substring(1)
+        const element = document.getElementById(id)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 100)
+    }
   }, [searchParams, router])
 
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     setIsAuthenticated(!!user)
+  }
+
+  const handleNavClick = (href: string) => {
+    if (href.startsWith('/#')) {
+      router.push('/')
+      setTimeout(() => {
+        const id = href.substring(2)
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100)
+    } else if (href === '#faq') {
+      document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
   }
 
   const handleStartTrial = async (planId: string) => {
@@ -235,10 +259,16 @@ function PricingPageContent() {
             <div className="flex items-center space-x-8">
               <div className="hidden md:flex items-center space-x-8">
                 <Link 
-                  href="/#features" 
+                  href="/#features"
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Features
+                </Link>
+                <Link 
+                  href="/#platforms"
+                  className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
+                >
+                  Platforms
                 </Link>
                 <Link 
                   href="/pricing" 
@@ -246,6 +276,12 @@ function PricingPageContent() {
                 >
                   Pricing
                 </Link>
+                <button 
+                  onClick={() => handleNavClick('#faq')}
+                  className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
+                >
+                  FAQ
+                </button>
               </div>
               {isAuthenticated ? (
                 <Button 
@@ -422,7 +458,7 @@ function PricingPageContent() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-20 px-4 bg-gradient-to-b from-gray-50 to-white">
+      <section id="faq" className="py-20 px-4 bg-gradient-to-b from-gray-50 to-white scroll-mt-20">
         <div className="container mx-auto max-w-4xl">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-6">
@@ -524,7 +560,7 @@ function PricingPageContent() {
             <div>
               <h4 className="font-semibold mb-4">Company</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><Link href="#" className="hover:text-white">About</Link></li>
+                <li><Link href="/about" className="hover:text-white">About</Link></li>
                 <li><Link href="#" className="hover:text-white">Blog</Link></li>
                 <li><Link href="#" className="hover:text-white">Careers</Link></li>
               </ul>
