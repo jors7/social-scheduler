@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Check, Menu, ArrowRight, Sparkles, BarChart } from 'lucide-react'
+import { Check, Menu, Sparkles, BarChart, ChevronDown } from 'lucide-react'
 import { useEffect, useState, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -68,24 +68,68 @@ const pricingPlans = [
 
 const faqs = [
   {
-    question: 'Which social media platforms do you support?',
-    answer: 'We support all major platforms including X (Twitter), Instagram, Facebook, LinkedIn, YouTube, TikTok, Threads, Bluesky, and Pinterest.',
+    question: 'What does your scheduler actually do?',
+    answer: 'Our platform helps creators, solopreneurs, and small teams schedule and manage their social media content across all major platforms — all from one clean, easy-to-use dashboard. You can plan posts, organize campaigns, schedule content in advance, and repurpose your top-performing posts across multiple channels — without logging into 5 different apps every day.',
   },
   {
-    question: 'Can I customize content for each platform?',
-    answer: 'Yes! You can customize your content for each platform before posting, ensuring your message is optimized for each audience.',
+    question: 'Who is this for?',
+    answer: 'We built this for creators, small business owners, marketers, personal brands, and teams who want to stay consistent on social media — without wasting time. If you are posting across multiple platforms and tired of managing it all manually, this tool is for you.',
   },
   {
-    question: 'How does the AI caption suggestion work?',
-    answer: 'Our AI analyzes your content and suggests captions tailored to each platform\'s best practices and your brand voice.',
+    question: 'What platforms do you support?',
+    answer: 'We support all major platforms, including: X (formerly Twitter), Instagram, Facebook, LinkedIn, TikTok, YouTube (Shorts and Posts), Threads, Pinterest, and Bluesky. You can schedule to one or all — depending on your plan and workflow.',
   },
   {
-    question: 'Can I collaborate with my team?',
-    answer: 'Absolutely! Our Professional and Enterprise plans include team collaboration features for content creation and approval workflows.',
+    question: 'What makes your scheduler different from others?',
+    answer: 'Simple: we are the most affordable scheduler for the features we offer. Most platforms charge you more as you grow. We do not. Our pricing is transparent, flat, and built to support creators — not agencies with huge budgets. We also designed this platform to be lightweight, fast, and intuitive — with none of the bloat, complexity, or unnecessary upsells.',
   },
   {
-    question: 'Is there a free trial?',
-    answer: 'Yes, we offer a 14-day free trial for all plans. No credit card required.',
+    question: 'Can I post to multiple platforms at once?',
+    answer: 'Yes. You can schedule one post and push it to multiple platforms at the same time — or tailor it per platform to match the format and voice.',
+  },
+  {
+    question: 'Can I customize posts per platform?',
+    answer: 'Absolutely. You can tweak your copy, hashtags, formatting, or visuals for each platform in a single view — so you never have to sacrifice quality just to save time.',
+  },
+  {
+    question: 'Do you offer analytics or performance insights?',
+    answer: 'Basic performance tracking is included depending on your plan. You will be able to see post status, engagement metrics (likes, comments, views), and track what is working best. We are currently building deeper analytics and will be rolling out advanced insights soon.',
+  },
+  {
+    question: 'Can I schedule Reels, Threads, or Shorts?',
+    answer: 'Yes — we support all major content types including: Instagram Reels, TikTok videos, YouTube Shorts, Threads, Carousels, Single-image posts, and Facebook/LinkedIn native video. Stories support is on our roadmap.',
+  },
+  {
+    question: 'Can I repurpose my content inside the scheduler?',
+    answer: 'Yes. You can duplicate and adapt existing posts for different platforms with just a few clicks — no need to start over. This helps you show up everywhere without burning out.',
+  },
+  {
+    question: 'What plans do you offer?',
+    answer: 'We offer three simple pricing plans to fit any stage of your content journey. Each plan gives you a monthly or annual option and access to different posting volumes and platform support. You can compare the details directly on our Pricing Page.',
+  },
+  {
+    question: 'How much does it cost?',
+    answer: 'Our plans are designed to be the most affordable in the market — starting at just $7 per month. We are proud to give creators pro-level scheduling tools at a fraction of what other platforms charge.',
+  },
+  {
+    question: 'Do you offer a free trial?',
+    answer: 'Yes — we offer a 7-day free trial on all plans. No credit card required. Try the full app and see if it fits your workflow before committing.',
+  },
+  {
+    question: 'Is there a money-back guarantee?',
+    answer: 'Yes. If you decide the platform is not for you, we offer a 14-day no-questions-asked money-back guarantee on all paid plans. You have got nothing to lose by trying it out.',
+  },
+  {
+    question: 'Can I upgrade, downgrade, or cancel anytime?',
+    answer: 'Yes — you are in full control of your subscription. Upgrade or downgrade plans anytime directly from your account dashboard. Cancel anytime before your renewal date and you will not be charged again.',
+  },
+  {
+    question: 'Do you offer customer support?',
+    answer: 'Yes. We offer fast, human support via email. You will also find a growing knowledge base and tutorials to help you get the most out of the platform.',
+  },
+  {
+    question: 'Can I suggest new features?',
+    answer: 'Absolutely. We are building this product in collaboration with our users. If there is something you would love to see — let us know. Many of our current features were requested by creators just like you.',
   },
 ]
 
@@ -96,6 +140,8 @@ function PricingPageContent() {
   const [signUpOpen, setSignUpOpen] = useState(false)
   const [signUpPlanId, setSignUpPlanId] = useState<string | null>(null)
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly')
+  const [selectedPlan, setSelectedPlan] = useState<string>('professional')
+  const [expandedFaq, setExpandedFaq] = useState<number | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -223,7 +269,6 @@ function PricingPageContent() {
                     className="text-base font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 px-5 py-2"
                   >
                     Start Free Trial
-                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </>
               )}
@@ -251,7 +296,7 @@ function PricingPageContent() {
               Plan, Schedule & Post — Without the Stress
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Pick the perfect plan to automate your posting, free your time, and grow your audience on autopilot. Start with a 7-day free trial. No credit card required.
+              Pick the perfect plan to automate your posting, free your time, and grow your audience on autopilot. Start with a 7-day free trial.
             </p>
           </div>
 
@@ -286,17 +331,22 @@ function PricingPageContent() {
             {pricingPlans.map((plan) => (
               <div
                 key={plan.name}
-                className={`relative ${plan.popular ? 'md:-mt-4' : ''}`}
+                className={`relative transition-all duration-300 ${
+                  selectedPlan === plan.id ? 'md:-mt-2 md:scale-[1.02] z-10' : 'md:scale-[0.98]'
+                }`}
+                onClick={() => setSelectedPlan(plan.id)}
               >
-                {plan.popular && (
+                {selectedPlan === plan.id && (
                   <div className="absolute -top-3 left-0 right-0 flex justify-center z-10">
                     <div className="bg-white border border-purple-200 text-purple-600 px-3 py-1 rounded-full text-xs font-semibold shadow-sm">
-                      MOST POPULAR
+                      {plan.popular ? 'MOST POPULAR' : 'SELECTED'}
                     </div>
                   </div>
                 )}
-                <Card className={`h-full relative overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${
-                  plan.popular ? 'border-2 border-purple-200 shadow-xl' : 'border border-gray-200'
+                <Card className={`h-full relative overflow-hidden transition-all duration-300 cursor-pointer ${
+                  selectedPlan === plan.id 
+                    ? 'border-2 border-purple-300 shadow-2xl' 
+                    : 'border border-gray-200 hover:border-purple-200 hover:shadow-lg'
                 }`}>
                   <CardHeader className="pb-8 pt-8">
                     <CardTitle className="text-2xl font-bold mb-2 text-gray-900">{plan.name}</CardTitle>
@@ -330,7 +380,7 @@ function PricingPageContent() {
                     </ul>
                     <Button 
                       className={`w-full h-12 font-semibold text-base transition-all duration-200 ${
-                        plan.popular 
+                        selectedPlan === plan.id 
                           ? `bg-gradient-to-r ${plan.gradient} hover:shadow-lg hover:scale-[1.02] text-white` 
                           : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
                       }`}
@@ -342,7 +392,6 @@ function PricingPageContent() {
                       ) : (
                         <span className="flex items-center justify-center gap-2">
                           Start Free Trial
-                          <ArrowRight className="h-4 w-4" />
                         </span>
                       )}
                     </Button>
@@ -357,7 +406,7 @@ function PricingPageContent() {
             <div className="inline-flex flex-wrap justify-center gap-6 text-sm text-gray-600">
               <div className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-green-500" />
-                <span>No credit card required</span>
+                <span>14-day money back guarantee</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-green-500" />
@@ -373,42 +422,82 @@ function PricingPageContent() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-20 px-4 bg-gray-50">
+      <section id="faq" className="py-20 px-4 bg-gradient-to-b from-gray-50 to-white">
         <div className="container mx-auto max-w-4xl">
-          <div className="text-center mb-12">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-6">
+              <Sparkles className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-semibold text-blue-700">Got Questions?</span>
+            </div>
             <h2 className="text-3xl lg:text-4xl font-bold mb-4 text-gray-900">
               Frequently Asked Questions
             </h2>
-            <p className="text-gray-600">
-              Everything you need to know about SocialCal
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Everything you need to know about SocialCal and how it can transform your social media workflow
             </p>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {faqs.map((faq, index) => (
-              <Card key={faq.question} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-                <CardHeader className="pb-4">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
-                      {index + 1}
-                    </div>
-                    <div className="flex-1">
-                      <CardTitle className="text-lg font-semibold text-gray-900 mb-2">
-                        {faq.question}
-                      </CardTitle>
-                      <CardDescription className="text-base text-gray-600 leading-relaxed">
-                        {faq.answer}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-              </Card>
+              <div
+                key={faq.question}
+                className={`group relative transition-all duration-300 ${
+                  expandedFaq === index ? 'mb-2' : ''
+                }`}
+              >
+                <button
+                  onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
+                  className={`w-full text-left transition-all duration-300 ${
+                    expandedFaq === index 
+                      ? 'shadow-lg' 
+                      : 'shadow-md hover:shadow-lg'
+                  }`}
+                >
+                  <Card className={`border-0 overflow-hidden transition-all duration-300 ${
+                    expandedFaq === index 
+                      ? 'bg-gradient-to-br from-white to-blue-50/30 ring-2 ring-blue-100' 
+                      : 'bg-white hover:bg-gray-50/50'
+                  }`}>
+                    <CardHeader className="p-6">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 flex-1">
+                          <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm transition-all duration-300 ${
+                            expandedFaq === index
+                              ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
+                              : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 group-hover:from-blue-100 group-hover:to-purple-100 group-hover:text-blue-700'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          <CardTitle className={`text-lg font-semibold transition-colors duration-300 ${
+                            expandedFaq === index ? 'text-gray-900' : 'text-gray-800 group-hover:text-gray-900'
+                          }`}>
+                            {faq.question}
+                          </CardTitle>
+                        </div>
+                        <ChevronDown className={`h-5 w-5 flex-shrink-0 transition-all duration-300 ${
+                          expandedFaq === index 
+                            ? 'rotate-180 text-blue-600' 
+                            : 'text-gray-400 group-hover:text-gray-600'
+                        }`} />
+                      </div>
+                    </CardHeader>
+                    {expandedFaq === index && (
+                      <CardContent className="px-6 pb-6 pt-0 animate-in slide-in-from-top-2 duration-300">
+                        <div className="pl-14 pr-2">
+                          <p className="text-gray-600 leading-relaxed">
+                            {faq.answer}
+                          </p>
+                        </div>
+                      </CardContent>
+                    )}
+                  </Card>
+                </button>
+              </div>
             ))}
           </div>
           <div className="mt-12 text-center">
             <p className="text-gray-600 mb-4">Still have questions?</p>
             <Button variant="outline" className="gap-2">
               Contact Support
-              <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
