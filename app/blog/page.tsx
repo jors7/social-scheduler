@@ -87,13 +87,24 @@ export default async function BlogPage({
     }
 
     const totalPages = Math.ceil((count || 0) / limit)
+    
+    // Fix author data structure - Supabase returns arrays for joined data
+    const processedPosts = posts?.map(post => ({
+      ...post,
+      author: Array.isArray(post.author) ? post.author[0] : post.author
+    }))
+    
+    const processedFeaturedPost = featuredPost ? {
+      ...featuredPost,
+      author: Array.isArray(featuredPost.author) ? featuredPost.author[0] : featuredPost.author
+    } : null
 
   return (
     <BlogLayout>
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
         {/* Hero Section with Featured Post */}
-        {featuredPost && !searchParams.category && !searchParams.search && page === 1 && (
-          <BlogHero post={featuredPost} />
+        {processedFeaturedPost && !searchParams.category && !searchParams.search && page === 1 && (
+          <BlogHero post={processedFeaturedPost} />
         )}
 
         {/* Main Content */}
@@ -112,7 +123,7 @@ export default async function BlogPage({
 
           {/* Blog Posts Grid */}
           <BlogGrid 
-            posts={posts || []}
+            posts={processedPosts || []}
             currentPage={page}
             totalPages={totalPages}
             searchParams={searchParams}
@@ -123,6 +134,10 @@ export default async function BlogPage({
   )
   } catch (error) {
     console.error('Error loading blog page:', error)
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
     
     // Fallback UI when there's an error
     return (
