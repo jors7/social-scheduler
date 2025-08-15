@@ -47,7 +47,7 @@ export default async function BlogPage() {
             <div className="container mx-auto px-4 py-12">
               <div className="text-center">
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">Error Loading Blog</h1>
-                <p className="text-gray-600">We're having trouble loading our blog posts. Please try again later.</p>
+                <p className="text-gray-600">We&apos;re having trouble loading our blog posts. Please try again later.</p>
               </div>
             </div>
           </div>
@@ -92,7 +92,7 @@ export default async function BlogPage() {
           <div className="container mx-auto px-4 py-12">
             <div className="text-center">
               <h1 className="text-3xl font-bold text-gray-900 mb-4">Something went wrong</h1>
-              <p className="text-gray-600">We're having trouble loading our blog. Please try again later.</p>
+              <p className="text-gray-600">We&apos;re having trouble loading our blog. Please try again later.</p>
             </div>
           </div>
         </div>
