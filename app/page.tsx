@@ -11,6 +11,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { AuthModals } from '@/components/auth/auth-modals'
 import { CapabilitiesCarousel } from '@/components/landing/capabilities-carousel'
+import HowItWorksSection from '@/components/landing/how-it-works-section'
 
 const platforms = [
   { name: 'X (Twitter)', icon: '𝕏' },
@@ -313,6 +314,9 @@ function LandingPageContent() {
 
       {/* Capabilities Carousel Section - MOVED UP */}
       <CapabilitiesCarousel />
+
+      {/* How It Works Section */}
+      <HowItWorksSection />
 
       {/* Impact Section - MOVED DOWN */}
       <section className="relative bg-white py-12 px-4 overflow-hidden min-h-[500px]">
