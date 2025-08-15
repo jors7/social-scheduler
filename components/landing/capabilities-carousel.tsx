@@ -175,21 +175,6 @@ export function CapabilitiesCarousel() {
           <div className="grid lg:grid-cols-2 gap-8 items-center max-w-6xl mx-auto">
             {/* Left Side - Text Content */}
             <div className="space-y-6 transition-all duration-500 ease-in-out" key={`content-${currentIndex}`}>
-              {/* Icon and Title */}
-              <div className="flex items-center gap-4">
-                <div className={cn(
-                  "p-4 rounded-2xl bg-gradient-to-br transition-all duration-300",
-                  currentCapability.color
-                )}>
-                  <currentCapability.icon className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-                    Capability {currentIndex + 1} of {capabilities.length}
-                  </span>
-                </div>
-              </div>
-
               <h3 className="text-3xl md:text-4xl font-bold">
                 {currentCapability.title}
               </h3>
