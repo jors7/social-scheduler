@@ -134,7 +134,7 @@ export default async function BlogPage({
                 Blog Coming Soon
               </h1>
               <p className="text-gray-600">
-                We're working on bringing you great content. Please check back later.
+                We&apos;re working on bringing you great content. Please check back later.
               </p>
             </div>
           </div>
