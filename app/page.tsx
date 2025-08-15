@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { AuthModals } from '@/components/auth/auth-modals'
 import { CapabilitiesCarousel } from '@/components/landing/capabilities-carousel'
 import HowItWorksSection from '@/components/landing/how-it-works-section'
+import GradientCTA from '@/components/landing/gradient-cta'
 
 const platforms = [
   { name: 'X (Twitter)', icon: '𝕏' },
@@ -679,6 +680,9 @@ function LandingPageContent() {
           <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white/90 via-white/50 to-transparent pointer-events-none z-10" />
         </div>
       </section>
+
+      {/* Gradient CTA Section */}
+      <GradientCTA />
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12 px-4">
