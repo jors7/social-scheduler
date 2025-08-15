@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Calendar, Clock, ArrowRight } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -62,10 +63,12 @@ export function BlogCard({ post }: BlogCardProps) {
                 {post.author && (
                   <div className="flex items-center gap-2">
                     {post.author.avatar_url ? (
-                      <img
+                      <Image
                         src={post.author.avatar_url}
                         alt={post.author.display_name}
-                        className="w-6 h-6 rounded-full"
+                        width={24}
+                        height={24}
+                        className="rounded-full object-cover"
                       />
                     ) : (
                       <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">

@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Twitter, Linkedin } from 'lucide-react'
 
 interface BlogPostAuthorProps {
@@ -18,10 +19,12 @@ export function BlogPostAuthor({ author }: BlogPostAuthorProps) {
       <h3 className="text-lg font-semibold text-gray-900 mb-4">About the Author</h3>
       <div className="flex gap-4">
         {author.avatar_url ? (
-          <img
+          <Image
             src={author.avatar_url}
             alt={author.display_name}
-            className="w-20 h-20 rounded-full flex-shrink-0"
+            width={80}
+            height={80}
+            className="rounded-full flex-shrink-0 object-cover"
           />
         ) : (
           <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">

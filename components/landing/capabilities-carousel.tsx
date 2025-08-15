@@ -107,47 +107,81 @@ export function CapabilitiesCarousel() {
             Everything you need to schedule, organize, and repurpose your content — built for simplicity, speed, and results
           </p>
           
-          {/* Capability Navigation Buttons - Moved under subheadline */}
-          <div className="flex flex-wrap justify-center gap-8 mb-16">
-            {capabilities.map((capability, idx) => (
-              <button
-                key={capability.id}
-                onClick={() => handleDotClick(idx)}
-                className={cn(
-                  "group relative px-4 py-2.5 transition-all",
-                  "hover:text-primary",
-                  currentIndex === idx
-                    ? "text-primary"
-                    : "text-gray-600"
-                )}
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className={cn(
-                    "p-1 rounded bg-gradient-to-br",
-                    capability.color
-                  )}>
-                    <capability.icon className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <span 
-                    className="text-[18px] tracking-wide"
-                    style={{ 
-                      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                      fontWeight: 500,
-                      letterSpacing: '0.3px'
-                    }}
+          {/* Capability Navigation Buttons - Mobile optimized */}
+          <div className="mb-16">
+            {/* Mobile: Compact grid layout */}
+            <div className="md:hidden">
+              <div className="flex flex-wrap justify-center gap-2">
+                {capabilities.map((capability, idx) => (
+                  <button
+                    key={capability.id}
+                    onClick={() => handleDotClick(idx)}
+                    className={cn(
+                      "group relative px-2 py-1.5 transition-all flex-shrink-0",
+                      "hover:text-primary",
+                      currentIndex === idx
+                        ? "text-primary"
+                        : "text-gray-600"
+                    )}
                   >
-                    {capability.shortTitle}
-                  </span>
-                </div>
-                {/* Beautiful underline for selected item */}
-                <div 
+                    <div className="flex flex-col items-center gap-1">
+                      <div className={cn(
+                        "p-1.5 rounded-lg bg-gradient-to-br",
+                        capability.color
+                      )}>
+                        <capability.icon className="h-4 w-4 text-white" />
+                      </div>
+                      <span className="text-xs font-medium">
+                        {capability.shortTitle}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Desktop: Centered flex */}
+            <div className="hidden md:flex flex-wrap justify-center gap-8">
+              {capabilities.map((capability, idx) => (
+                <button
+                  key={capability.id}
+                  onClick={() => handleDotClick(idx)}
                   className={cn(
-                    "absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/0 via-primary to-primary/0 transition-all duration-300",
-                    currentIndex === idx ? "opacity-100" : "opacity-0"
+                    "group relative px-4 py-2.5 transition-all",
+                    "hover:text-primary",
+                    currentIndex === idx
+                      ? "text-primary"
+                      : "text-gray-600"
                   )}
-                />
-              </button>
-            ))}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className={cn(
+                      "p-1 rounded bg-gradient-to-br",
+                      capability.color
+                    )}>
+                      <capability.icon className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <span 
+                      className="text-[18px] tracking-wide"
+                      style={{ 
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                        fontWeight: 500,
+                        letterSpacing: '0.3px'
+                      }}
+                    >
+                      {capability.shortTitle}
+                    </span>
+                  </div>
+                  {/* Beautiful underline for selected item */}
+                  <div 
+                    className={cn(
+                      "absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/0 via-primary to-primary/0 transition-all duration-300",
+                      currentIndex === idx ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

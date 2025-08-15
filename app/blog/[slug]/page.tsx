@@ -8,6 +8,10 @@ import { BlogTableOfContents } from '@/components/blog/blog-table-of-contents'
 import { BlogShareButtons } from '@/components/blog/blog-share-buttons'
 import { createClient } from '@/lib/supabase/server'
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 interface BlogPostPageProps {
   params: { slug: string }
 }

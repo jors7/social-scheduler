@@ -38,7 +38,7 @@ const HowItWorksSection = () => {
               {/* Content */}
               <div className="flex-1 lg:pl-8">
                 <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4">
-                  No Bloat. No Learning Curve.
+                  No Confusion. No Learning Curve.
                 </h3>
                 <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
                   Get set up in minutes — not hours. Our clean, creator-first dashboard lets you start scheduling right away. No overwhelming menus, no clunky setup.

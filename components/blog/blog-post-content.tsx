@@ -1,12 +1,26 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 
 interface BlogPostContentProps {
   content: string
 }
 
 export function BlogPostContent({ content }: BlogPostContentProps) {
+  // Add IDs to headings for table of contents navigation
+  const processedContent = useMemo(() => {
+    return content.replace(/<h([2-3])([^>]*)>(.*?)<\/h\1>/gi, (match, level, attrs, text) => {
+      // Generate ID from heading text
+      const id = text.toLowerCase().replace(/<[^>]*>/g, '').replace(/[^a-z0-9]+/g, '-')
+      // Check if an ID already exists in the attributes
+      if (attrs.includes('id=')) {
+        return match
+      }
+      // Add the ID to the heading
+      return `<h${level}${attrs} id="${id}">${text}</h${level}>`
+    })
+  }, [content])
+
   useEffect(() => {
     // Add syntax highlighting or other content enhancements here if needed
   }, [content])
@@ -30,7 +44,7 @@ export function BlogPostContent({ content }: BlogPostContentProps) {
           prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:p-4 prose-pre:rounded-lg prose-pre:overflow-x-auto prose-pre:my-8
           prose-img:rounded-lg prose-img:shadow-lg prose-img:my-8
         "
-        dangerouslySetInnerHTML={{ __html: content }}
+        dangerouslySetInnerHTML={{ __html: processedContent }}
       />
     </article>
   )

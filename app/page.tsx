@@ -63,12 +63,11 @@ const features = [
     iconColor: 'text-green-600',
   },
   {
-    title: 'Team Collaboration',
-    description: 'Work with your team to create and approve content. Assign roles, review drafts, and streamline your workflow.',
-    icon: Users,
-    iconBg: 'bg-purple-50',
-    iconColor: 'text-purple-600',
-    isPro: true,
+    title: 'Draft Management',
+    description: 'Save your ideas as drafts and perfect them over time. Organize, search, and quickly turn drafts into scheduled posts.',
+    icon: Shield,
+    iconBg: 'bg-orange-50',
+    iconColor: 'text-orange-600',
   },
 ]
 
@@ -208,12 +207,13 @@ function LandingPageContent() {
                 </Button>
               ) : (
                 <>
-                  <button 
+                  <Button 
+                    variant="outline"
                     onClick={() => setSignInOpen(true)}
-                    className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
+                    className="text-base font-semibold border-2 border-blue-500 text-blue-500 hover:bg-blue-50 transition-all duration-200 px-6 py-2"
                   >
                     Sign In
-                  </button>
+                  </Button>
                   <Button 
                     onClick={() => router.push('/pricing')}
                     className="text-base font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 px-6 py-2"
@@ -494,7 +494,7 @@ function LandingPageContent() {
       </section>
 
       {/* Supported Platforms Section */}
-      <section id="platforms" className="py-6 px-4 bg-gradient-to-b from-white to-gray-50 scroll-mt-20">
+      <section id="platforms" className="py-6 pb-24 px-4 bg-gradient-to-b from-white to-gray-50 scroll-mt-20">
         <div className="container mx-auto max-w-7xl">
           {/* Section Header */}
           <div className="text-center mb-12">

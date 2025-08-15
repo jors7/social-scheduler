@@ -1,17 +1,40 @@
--- Insert sample blog posts
--- Note: You'll need to update the author_id with an actual ID from your blog_authors table
+-- Insert blog data for production
+-- This script checks for existing data before inserting
 
 DO $$
 DECLARE
   author_uuid UUID;
+  existing_posts_count INTEGER;
 BEGIN
+  -- Check if we already have blog posts
+  SELECT COUNT(*) INTO existing_posts_count FROM public.blog_posts;
+  
+  IF existing_posts_count > 0 THEN
+    RAISE NOTICE 'Blog posts already exist, skipping insertion';
+    RETURN;
+  END IF;
+
   -- Get the first author or create one if none exists
-  SELECT id INTO author_uuid FROM public.blog_authors LIMIT 1;
+  SELECT id INTO author_uuid FROM public.blog_authors WHERE display_name = 'Jan Orsula' LIMIT 1;
   
   IF author_uuid IS NULL THEN
-    INSERT INTO public.blog_authors (display_name, bio, avatar_url)
-    VALUES ('Jan Orsula', 'Founder of SocialCal, passionate about helping businesses and creators master social media scheduling.', '/Jan-Orsula.png')
-    RETURNING id INTO author_uuid;
+    -- Try to get any existing author
+    SELECT id INTO author_uuid FROM public.blog_authors LIMIT 1;
+    
+    IF author_uuid IS NULL THEN
+      -- Create Jan Orsula as author
+      INSERT INTO public.blog_authors (display_name, bio, avatar_url)
+      VALUES ('Jan Orsula', 'Founder of SocialCal, passionate about helping businesses and creators master social media scheduling.', '/Jan-Orsula.png')
+      RETURNING id INTO author_uuid;
+    ELSE
+      -- Update existing author to Jan Orsula
+      UPDATE public.blog_authors 
+      SET 
+        display_name = 'Jan Orsula',
+        bio = 'Founder of SocialCal, passionate about helping businesses and creators master social media scheduling.',
+        avatar_url = '/Jan-Orsula.png'
+      WHERE id = author_uuid;
+    END IF;
   END IF;
 
   -- Insert sample blog posts
@@ -319,5 +342,7 @@ BEGIN
     NOW() - INTERVAL '14 days',
     false
   );
+
+  RAISE NOTICE 'Blog posts inserted successfully';
 
 END $$;
