@@ -10,7 +10,7 @@ const HowItWorksSection = () => {
             Why Smart Creators Are Ditching Overpriced Schedulers
           </h2>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Your time matters. Your money matters. Your content deserves a tool that respects both. Here's how SocialCal makes it happen:
+            Your time matters. Your money matters. Your content deserves a tool that respects both. Here&apos;s how SocialCal makes it happen:
           </p>
         </div>
 
@@ -124,7 +124,7 @@ const HowItWorksSection = () => {
                   The Most Affordable Scheduler on the Market
                 </h3>
                 <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
-                  Why pay $50+/mo for features you'll never use? SocialCal packs the essentials — cross-platform scheduling, smart calendar, and repurposing tools — for a fraction of the price.
+                  Why pay $50+/mo for features you&apos;ll never use? SocialCal packs the essentials — cross-platform scheduling, smart calendar, and repurposing tools — for a fraction of the price.
                 </p>
               </div>
 
@@ -158,7 +158,7 @@ const HowItWorksSection = () => {
                   Built for All Major Platforms (Yes, Even Threads & Bluesky)
                 </h3>
                 <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
-                  Schedule once and publish across Instagram, X (Twitter), LinkedIn, Facebook, TikTok, Pinterest, YouTube, Threads, and Bluesky. We've got you covered everywhere.
+                  Schedule once and publish across Instagram, X (Twitter), LinkedIn, Facebook, TikTok, Pinterest, YouTube, Threads, and Bluesky. We&apos;ve got you covered everywhere.
                 </p>
               </div>
 
