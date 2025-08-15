@@ -67,7 +67,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   await supabase.rpc('increment_post_view_count', { post_id: post.id })
 
   // Fetch related posts
-  const { data: relatedPosts } = await supabase
+  const { data: relatedPostsData } = await supabase
     .from('blog_posts')
     .select(`
       id,
@@ -84,6 +84,12 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     .neq('id', post.id)
     .order('published_at', { ascending: false })
     .limit(3)
+
+  // Transform the data to match the expected type
+  const relatedPosts = relatedPostsData?.map(post => ({
+    ...post,
+    author: Array.isArray(post.author) ? post.author[0] : post.author
+  }))
 
   // Generate table of contents from content
   const headings = extractHeadings(post.content)
