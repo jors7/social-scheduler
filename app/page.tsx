@@ -319,7 +319,7 @@ function LandingPageContent() {
       <HowItWorksSection />
 
       {/* Impact Section - MOVED DOWN */}
-      <section className="relative bg-white py-12 px-4 overflow-hidden min-h-[500px]">
+      <section className="relative bg-white pt-24 pb-12 px-4 overflow-hidden min-h-[500px]">
         {/* Purple gradient background under the curve */}
         <div className="absolute inset-0 pointer-events-none">
           <svg 

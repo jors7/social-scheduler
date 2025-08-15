@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 
 const HowItWorksSection = () => {
   return (
-    <section className="py-20 bg-gray-50">
+    <section className="py-20 pb-24 bg-gray-50">
       <div className="max-w-6xl mx-auto px-8 sm:px-12 lg:px-16">
         <div className="text-center mb-12">
           <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
@@ -47,36 +47,49 @@ const HowItWorksSection = () => {
 
               {/* Visual mockup */}
               <div className="w-full lg:w-80">
-                <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
-                  <div className="space-y-4">
-                    {/* Simple dashboard mockup */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-blue-500 rounded-lg"></div>
-                        <span className="text-sm font-semibold">SocialCal</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <div className="w-20 h-8 bg-gray-100 rounded-lg"></div>
-                        <div className="w-20 h-8 bg-blue-500 rounded-lg"></div>
+                <div className="bg-gradient-to-br from-blue-50 to-white rounded-3xl p-8 shadow-2xl border border-blue-100">
+                  <div className="space-y-5">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-gray-700">Quick Setup</h4>
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="h-20 bg-gray-50 rounded-lg flex flex-col items-center justify-center">
-                        <div className="w-8 h-8 bg-blue-100 rounded-lg mb-2"></div>
-                        <div className="w-12 h-2 bg-gray-200 rounded"></div>
-                      </div>
-                      <div className="h-20 bg-gray-50 rounded-lg flex flex-col items-center justify-center">
-                        <div className="w-8 h-8 bg-green-100 rounded-lg mb-2"></div>
-                        <div className="w-12 h-2 bg-gray-200 rounded"></div>
-                      </div>
-                      <div className="h-20 bg-gray-50 rounded-lg flex flex-col items-center justify-center">
-                        <div className="w-8 h-8 bg-purple-100 rounded-lg mb-2"></div>
-                        <div className="w-12 h-2 bg-gray-200 rounded"></div>
+                    
+                    {/* Progress visualization */}
+                    <div className="bg-white rounded-2xl p-5 shadow-sm">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="h-1.5 bg-gray-100 rounded-full flex-1 overflow-hidden">
+                            <div className="h-full w-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full"></div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="h-1.5 bg-gray-100 rounded-full flex-1 overflow-hidden">
+                            <div className="h-full w-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full"></div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div className="h-1.5 bg-gray-100 rounded-full flex-1 overflow-hidden">
+                            <div className="h-full w-3/4 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full"></div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div className="text-center pt-2">
-                      <span className="text-xs text-green-600 font-medium">✓ Setup complete in 2 minutes</span>
-                    </div>
+
+                    {/* CTA Button */}
+                    <button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-xl font-medium shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center gap-2">
+                      <span>Get Started</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -91,26 +104,44 @@ const HowItWorksSection = () => {
             >
               {/* Visual mockup - Pricing comparison (moved left to align with circle above) */}
               <div className="w-full lg:w-80 lg:ml-0">
-                <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
-                  <div className="space-y-4">
-                    <div className="text-center mb-4">
-                      <span className="text-xs text-gray-500 uppercase tracking-wider">Price Comparison</span>
+                <div className="bg-gradient-to-br from-green-50 to-white rounded-3xl p-8 shadow-2xl border border-green-100">
+                  <div className="space-y-5">
+                    {/* Header with icon */}
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-gray-700">Save More</h4>
+                      <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
                     </div>
-                    {/* Competitor pricing */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <span className="text-sm text-gray-600">Competitor A</span>
-                        <span className="text-sm font-bold text-gray-900">$59/mo</span>
+                    
+                    {/* Price comparison bars */}
+                    <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500">Others</span>
+                          <span className="text-xs font-semibold text-gray-700">$50+</span>
+                        </div>
+                        <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-full w-full bg-gradient-to-r from-gray-300 to-gray-400 rounded-full"></div>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <span className="text-sm text-gray-600">Competitor B</span>
-                        <span className="text-sm font-bold text-gray-900">$49/mo</span>
+                      
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-green-600">SocialCal</span>
+                          <span className="text-xs font-bold text-green-600">$9</span>
+                        </div>
+                        <div className="h-3 bg-green-50 rounded-full overflow-hidden">
+                          <div className="h-full w-1/5 bg-gradient-to-r from-green-400 to-green-500 rounded-full"></div>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between p-3 bg-green-50 border-2 border-green-500 rounded-lg">
-                        <span className="text-sm font-semibold text-green-700">SocialCal</span>
-                        <div className="text-right">
-                          <span className="text-lg font-bold text-green-600">$9/mo</span>
-                          <div className="text-xs text-green-600">Save 80%+</div>
+                      
+                      {/* Savings badge */}
+                      <div className="flex items-center justify-center pt-2">
+                        <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-full text-xs font-semibold shadow-md">
+                          Save 80%+
                         </div>
                       </div>
                     </div>
@@ -164,24 +195,36 @@ const HowItWorksSection = () => {
 
               {/* Visual mockup - Platform grid */}
               <div className="w-full lg:w-80">
-                <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
-                  <div className="space-y-4">
-                    <div className="text-center mb-2">
-                      <span className="text-xs text-purple-600 font-medium">9 Platforms Connected</span>
+                <div className="bg-gradient-to-br from-purple-50 to-white rounded-3xl p-8 shadow-2xl border border-purple-100">
+                  <div className="space-y-5">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-gray-700">All Platforms</h4>
+                      <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      {['Instagram', 'X', 'LinkedIn', 'Facebook', 'TikTok', 'Pinterest', 'YouTube', 'Threads', 'Bluesky'].map((platform, i) => (
-                        <div key={platform} className="relative">
-                          <div className="h-14 bg-gradient-to-br from-purple-50 to-white rounded-lg border border-purple-100 flex flex-col items-center justify-center p-2">
-                            <div className="w-5 h-5 bg-purple-400 rounded mb-1"></div>
-                            <span className="text-[9px] text-gray-600">{platform}</span>
+                    
+                    {/* Platform icons grid */}
+                    <div className="bg-white rounded-2xl p-5 shadow-sm">
+                      <div className="grid grid-cols-3 gap-3">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+                          <div key={i} className="relative">
+                            <div className="aspect-square bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-100 flex items-center justify-center hover:shadow-md transition-shadow">
+                              <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-500 rounded-lg shadow-sm"></div>
+                            </div>
+                            {/* Connected dot */}
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full shadow-sm"></div>
                           </div>
-                          {/* Connected indicator */}
-                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
-                            <span className="text-white text-[7px]">✓</span>
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Status text */}
+                    <div className="text-center">
+                      <span className="text-xs font-semibold text-purple-600">9 Platforms Ready</span>
                     </div>
                   </div>
                 </div>
@@ -197,39 +240,59 @@ const HowItWorksSection = () => {
             >
               {/* Visual mockup - User types (moved left to align with circle above) */}
               <div className="w-full lg:w-80 lg:ml-0">
-                <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
-                  <div className="space-y-4">
-                    <div className="text-center mb-2">
-                      <span className="text-xs text-pink-600 font-medium">Built for You</span>
+                <div className="bg-gradient-to-br from-pink-50 to-white rounded-3xl p-8 shadow-2xl border border-pink-100">
+                  <div className="space-y-5">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-gray-700">Made for You</h4>
+                      <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3 p-3 bg-pink-50 rounded-lg">
-                        <div className="w-10 h-10 bg-pink-200 rounded-full flex items-center justify-center">
-                          <span className="text-lg">👤</span>
+                    
+                    {/* User segments */}
+                    <div className="bg-white rounded-2xl p-5 shadow-sm">
+                      <div className="space-y-3">
+                        {/* Solo */}
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-pink-100 to-pink-50 rounded-xl flex items-center justify-center">
+                            <div className="w-5 h-5 bg-gradient-to-br from-pink-400 to-pink-500 rounded"></div>
+                          </div>
+                          <div className="flex-1">
+                            <div className="h-2 bg-gray-100 rounded w-24"></div>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <div className="text-sm font-semibold text-gray-900">Solopreneurs</div>
-                          <div className="text-xs text-gray-600">Manage everything yourself</div>
+                        
+                        {/* Creators */}
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-pink-100 to-pink-50 rounded-xl flex items-center justify-center">
+                            <div className="w-5 h-5 bg-gradient-to-br from-pink-400 to-pink-500 rounded-full"></div>
+                          </div>
+                          <div className="flex-1">
+                            <div className="h-2 bg-gray-100 rounded w-32"></div>
+                          </div>
+                        </div>
+                        
+                        {/* Teams */}
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-pink-100 to-pink-50 rounded-xl flex items-center justify-center">
+                            <div className="flex gap-0.5">
+                              <div className="w-2 h-2 bg-gradient-to-br from-pink-400 to-pink-500 rounded-sm"></div>
+                              <div className="w-2 h-2 bg-gradient-to-br from-pink-400 to-pink-500 rounded-sm"></div>
+                            </div>
+                          </div>
+                          <div className="flex-1">
+                            <div className="h-2 bg-gray-100 rounded w-20"></div>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 p-3 bg-pink-50 rounded-lg">
-                        <div className="w-10 h-10 bg-pink-200 rounded-full flex items-center justify-center">
-                          <span className="text-lg">🎨</span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-sm font-semibold text-gray-900">Content Creators</div>
-                          <div className="text-xs text-gray-600">Focus on creating, not posting</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 p-3 bg-pink-50 rounded-lg">
-                        <div className="w-10 h-10 bg-pink-200 rounded-full flex items-center justify-center">
-                          <span className="text-lg">👥</span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-sm font-semibold text-gray-900">Small Teams</div>
-                          <div className="text-xs text-gray-600">Collaborate efficiently</div>
-                        </div>
-                      </div>
+                    </div>
+
+                    {/* Bottom text */}
+                    <div className="text-center">
+                      <span className="text-xs font-semibold text-pink-600">Perfect Fit</span>
                     </div>
                   </div>
                 </div>
