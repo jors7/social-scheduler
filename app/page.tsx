@@ -454,16 +454,9 @@ function LandingPageContent() {
                       </div>
                       
                       {/* Title */}
-                      <h3 className="text-xl font-bold text-gray-900 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 transition-all duration-300 flex-1">
+                      <h3 className="text-xl font-bold text-gray-900 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 transition-all duration-300">
                         {feature.title}
                       </h3>
-                      
-                      {/* Pro Badge */}
-                      {feature.isPro && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-sm">
-                          PRO
-                        </span>
-                      )}
                     </div>
                   </div>
                   
