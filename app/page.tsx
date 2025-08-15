@@ -93,7 +93,7 @@ const testimonials = [
 
 
 function LandingPageContent() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [signInOpen, setSignInOpen] = useState(false)
   const [signUpOpen, setSignUpOpen] = useState(false)
   const [signUpPlanId, setSignUpPlanId] = useState<string | null>(null)
@@ -192,7 +192,10 @@ function LandingPageContent() {
                   FAQ
                 </Link>
               </div>
-              {isAuthenticated ? (
+              {/* Show nothing while loading auth state */}
+              {isAuthenticated === null ? (
+                <div className="w-48 h-10" />
+              ) : isAuthenticated ? (
                 <Button 
                   variant="outline" 
                   onClick={() => router.push('/dashboard')}
@@ -695,7 +698,7 @@ function LandingPageContent() {
               <h4 className="font-semibold mb-4">Company</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="/about" className="hover:text-white">About</Link></li>
-                <li><Link href="#" className="hover:text-white">Blog</Link></li>
+                <li><Link href="/blog" className="hover:text-white">Blog</Link></li>
                 <li><Link href="#" className="hover:text-white">Careers</Link></li>
               </ul>
             </div>
