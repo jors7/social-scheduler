@@ -1,23 +1,42 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { createClient } from '@supabase/supabase-js'
 import { BlogLayout } from '@/components/blog/blog-layout'
 import { BlogPostHeader } from '@/components/blog/blog-post-header'
 import { BlogPostContent } from '@/components/blog/blog-post-content'
 import { RelatedPosts } from '@/components/blog/related-posts'
 import { BlogTableOfContents } from '@/components/blog/blog-table-of-contents'
 import { BlogShareButtons } from '@/components/blog/blog-share-buttons'
-import { createClient } from '@/lib/supabase/server'
+
+// Create a direct Supabase client for server-side rendering
+// This avoids cookie dependencies that cause issues on Vercel
+function createServerClient() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    throw new Error('Missing Supabase environment variables')
+  }
+  
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    }
+  )
+}
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
+export const revalidate = 60 // Revalidate every 60 seconds
 
 interface BlogPostPageProps {
   params: { slug: string }
 }
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
-  const supabase = createClient()
+  const supabase = createServerClient()
   const { data: post } = await supabase
     .from('blog_posts')
     .select('title, excerpt, featured_image')
@@ -50,7 +69,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
-  const supabase = createClient()
+  const supabase = createServerClient()
 
   // Fetch the blog post with author details
   const { data: post, error } = await supabase
