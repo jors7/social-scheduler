@@ -8,35 +8,32 @@ import { RelatedPosts } from '@/components/blog/related-posts'
 import { BlogTableOfContents } from '@/components/blog/blog-table-of-contents'
 import { BlogShareButtons } from '@/components/blog/blog-share-buttons'
 
-// Create a direct Supabase client for server-side rendering
-// This avoids cookie dependencies that cause issues on Vercel
-function createServerClient() {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+// Static generation with ISR - revalidate every 60 seconds
+export const revalidate = 60
+
+// Create a direct Supabase client for build-time data fetching
+function getSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
+  if (!url || !key) {
     throw new Error('Missing Supabase environment variables')
   }
   
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    }
-  )
+  return createClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  })
 }
-
-// Force dynamic rendering for this page
-export const dynamic = 'force-dynamic'
-export const revalidate = 60 // Revalidate every 60 seconds
 
 interface BlogPostPageProps {
   params: { slug: string }
 }
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
-  const supabase = createServerClient()
+  const supabase = getSupabaseClient()
   const { data: post } = await supabase
     .from('blog_posts')
     .select('title, excerpt, featured_image')
@@ -68,8 +65,21 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   }
 }
 
+// Generate static params for all blog posts
+export async function generateStaticParams() {
+  const supabase = getSupabaseClient()
+  const { data: posts } = await supabase
+    .from('blog_posts')
+    .select('slug')
+    .eq('status', 'published')
+  
+  return posts?.map((post) => ({
+    slug: post.slug,
+  })) || []
+}
+
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
-  const supabase = createServerClient()
+  const supabase = getSupabaseClient()
 
   // Fetch the blog post with author details
   const { data: post, error } = await supabase
