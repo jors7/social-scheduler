@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { BlogLayout } from '@/components/blog/blog-layout'
 import { BlogGrid } from '@/components/blog/blog-grid'
+import { BlogHero } from '@/components/blog/blog-hero'
 import { Metadata } from 'next'
 
 // Static generation with ISR - revalidate every 60 seconds
@@ -30,10 +31,13 @@ function getSupabaseClient() {
 
 export default async function BlogPage() {
   let posts = []
+  let featuredPost = null
   let error = null
   
   try {
     const supabase = getSupabaseClient()
+    
+    // Fetch regular posts
     const { data, error: fetchError } = await supabase
       .from('blog_posts')
       .select(`
@@ -54,6 +58,30 @@ export default async function BlogPage() {
         author: Array.isArray(post.author) ? post.author[0] : post.author
       })) || []
     }
+    
+    // Fetch featured post
+    const { data: featured, error: featuredError } = await supabase
+      .from('blog_posts')
+      .select(`
+        *,
+        author:blog_authors(display_name, avatar_url)
+      `)
+      .eq('status', 'published')
+      .eq('featured', true)
+      .order('published_at', { ascending: false })
+      .limit(1)
+      .single()
+    
+    if (featuredError && featuredError.code !== 'PGRST116') {
+      // PGRST116 means no rows found, which is okay
+      console.error('Error fetching featured post:', featuredError)
+    } else if (featured) {
+      // Process the featured post author
+      featuredPost = {
+        ...featured,
+        author: Array.isArray(featured.author) ? featured.author[0] : featured.author
+      }
+    }
   } catch (err) {
     console.error('Error fetching blog posts:', err)
     error = err
@@ -62,6 +90,11 @@ export default async function BlogPage() {
   return (
     <BlogLayout>
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+        {/* Hero Section with Featured Post */}
+        {featuredPost && (
+          <BlogHero post={featuredPost} />
+        )}
+        
         <div className="container mx-auto px-4 py-12">
           <div className="mb-12">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 text-left">
