@@ -368,7 +368,7 @@ export default function BlogManagementPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => router.push(`/dashboard/blog/${post.id}/edit`)}>
+                            <DropdownMenuItem onClick={() => router.push(`/dashboard/blog/edit-post?id=${post.id}`)}>
                               <Edit className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
