@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { checkIsAdmin } from '@/lib/auth/admin'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -60,12 +61,41 @@ export default function BlogManagementPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [deletePostId, setDeletePostId] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
-    loadPosts()
+    checkAdminAccess()
   }, [])
+
+  const checkAdminAccess = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/login')
+        return
+      }
+
+      // Check if user is admin
+      const { data: adminUser } = await supabase
+        .from('admin_users')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (!adminUser) {
+        router.push('/dashboard?error=unauthorized')
+        return
+      }
+
+      setIsAdmin(true)
+      loadPosts()
+    } catch (error) {
+      console.error('Error checking admin access:', error)
+      router.push('/dashboard?error=unauthorized')
+    }
+  }
 
   const loadPosts = async () => {
     try {

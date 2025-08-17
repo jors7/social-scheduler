@@ -5,6 +5,9 @@ import type { NextRequest } from 'next/server'
 // Routes that require authentication
 const protectedRoutes = ['/dashboard']
 
+// Routes that require admin access
+const adminRoutes = ['/dashboard/blog']
+
 // Routes that require subscription (excluding free features)
 const subscriptionRoutes: string[] = [
   // Currently no routes require subscription check in middleware
@@ -70,6 +73,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))
   const isAuthRoute = authRoutes.includes(request.nextUrl.pathname)
+  const isAdminRoute = adminRoutes.some(route => request.nextUrl.pathname.startsWith(route))
   const isSubscriptionRoute = subscriptionRoutes.some(route => request.nextUrl.pathname.startsWith(route))
 
   // If user is not signed in and the current path is on the dashboard, redirect to login
@@ -80,6 +84,20 @@ export async function middleware(request: NextRequest) {
   // If user is signed in and the current path is login or signup, redirect to dashboard
   if (isAuthRoute && user) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // Check admin access for blog management routes
+  if (isAdminRoute && user) {
+    const { data: adminUser } = await supabase
+      .from('admin_users')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!adminUser) {
+      // Not an admin, redirect to dashboard with error
+      return NextResponse.redirect(new URL('/dashboard?error=unauthorized', request.url))
+    }
   }
 
   // Check subscription status for subscription-required routes
