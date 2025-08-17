@@ -95,15 +95,15 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   // If post not found, check if there's a redirect for this slug
   if (error || !post) {
-    const { data: redirect } = await supabase
+    const { data: redirectData } = await supabase
       .from('blog_slug_redirects')
       .select('new_slug')
       .eq('old_slug', params.slug)
       .single()
     
-    if (redirect) {
+    if (redirectData) {
       // Redirect to the new slug
-      redirect(`/blog/${redirect.new_slug}`)
+      redirect(`/blog/${redirectData.new_slug}`)
     }
     
     // No post and no redirect found

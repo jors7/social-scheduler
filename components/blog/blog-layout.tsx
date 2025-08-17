@@ -409,11 +409,10 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
       {/* Auth Modals */}
       <AuthModals
         signInOpen={signInOpen}
-        setSignInOpen={setSignInOpen}
+        onSignInOpenChange={setSignInOpen}
         signUpOpen={signUpOpen}
-        setSignUpOpen={setSignUpOpen}
+        onSignUpOpenChange={setSignUpOpen}
         signUpPlanId={signUpPlanId}
-        setSignUpPlanId={setSignUpPlanId}
       />
 
       {/* Footer - Same as homepage */}

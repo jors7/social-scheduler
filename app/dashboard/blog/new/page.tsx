@@ -213,7 +213,7 @@ export default function NewBlogPostPage() {
         tags,
         featured,
         featured_image: featuredImage,
-        author_id: author.id,
+        author_id: author?.id,
         status: publishNow ? 'published' : status,
         published_at: publishNow ? new Date().toISOString() : (publishDate || null),
         reading_time: calculateReadingTime(content)
