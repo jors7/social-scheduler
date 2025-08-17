@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { BlogEditor } from '@/components/blog/blog-editor'
@@ -90,13 +90,24 @@ export default function EditBlogPostPage() {
 
   const loadPost = async () => {
     try {
+      // Check if postId is valid
+      if (!postId || postId === 'undefined') {
+        console.error('Invalid post ID:', postId)
+        toast.error('Invalid post ID')
+        router.push('/dashboard/blog')
+        return
+      }
+
       const { data, error } = await supabase
         .from('blog_posts')
         .select('*')
         .eq('id', postId)
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Error fetching post:', error)
+        throw error
+      }
 
       if (data) {
         setTitle(data.title)
