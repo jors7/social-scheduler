@@ -21,7 +21,20 @@ interface BlogPostHeaderProps {
 
 export function BlogPostHeader({ post }: BlogPostHeaderProps) {
   return (
-    <header className="py-12 border-b">
+    <header className="py-8 border-b">
+      {/* Breadcrumbs */}
+      <nav className="flex items-center space-x-2 text-sm mb-4">
+        <a href="/" className="text-gray-500 hover:text-gray-700 transition-colors">
+          Home
+        </a>
+        <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+        <a href="/blog" className="text-gray-900 font-medium hover:text-gray-700 transition-colors">
+          Blog
+        </a>
+      </nav>
+      
       <div className="grid lg:grid-cols-2 gap-12 items-center">
         {/* Left Column - Text Content */}
         <div className="space-y-6">
