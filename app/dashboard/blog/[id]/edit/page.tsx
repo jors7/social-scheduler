@@ -73,7 +73,8 @@ export default function SimpleEditBlogPostPage() {
         </Button>
       </div>
       
-      <h1 className="text-3xl font-bold mb-4">Edit Blog Post (Simplified)</h1>
+      <h1 className="text-3xl font-bold mb-4">Edit Blog Post (Debug Mode)</h1>
+      <div className="text-sm text-gray-500 mb-4">Version: {new Date().toISOString()}</div>
       
       {post && (
         <div className="space-y-4">
