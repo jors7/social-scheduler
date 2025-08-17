@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { BlogLayout } from '@/components/blog/blog-layout'
 import { BlogPostHeader } from '@/components/blog/blog-post-header'
@@ -8,8 +8,9 @@ import { RelatedPosts } from '@/components/blog/related-posts'
 import { BlogTableOfContents } from '@/components/blog/blog-table-of-contents'
 import { BlogShareButtons } from '@/components/blog/blog-share-buttons'
 
-// Static generation with ISR - revalidate every 60 seconds
-export const revalidate = 60
+// Dynamic in development, ISR in production
+export const revalidate = process.env.NODE_ENV === 'development' ? 0 : 60
+export const dynamicParams = true // Allow new slugs to be generated on-demand
 
 // Create a direct Supabase client for build-time data fetching
 function getSupabaseClient() {
@@ -81,7 +82,7 @@ export async function generateStaticParams() {
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const supabase = getSupabaseClient()
 
-  // Fetch the blog post with author details
+  // First, try to fetch the blog post with author details
   const { data: post, error } = await supabase
     .from('blog_posts')
     .select(`
@@ -92,7 +93,20 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     .eq('status', 'published')
     .single()
 
+  // If post not found, check if there's a redirect for this slug
   if (error || !post) {
+    const { data: redirect } = await supabase
+      .from('blog_slug_redirects')
+      .select('new_slug')
+      .eq('old_slug', params.slug)
+      .single()
+    
+    if (redirect) {
+      // Redirect to the new slug
+      redirect(`/blog/${redirect.new_slug}`)
+    }
+    
+    // No post and no redirect found
     notFound()
   }
 

@@ -1,0 +1,148 @@
+.editor {
+  min-height: 400px;
+  padding: 12px 16px;
+  outline: none;
+  font-size: 1rem;
+  line-height: 1.75;
+  color: #1f2937;
+}
+
+/* Ensure headings are styled properly */
+.editor h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+.editor h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+
+.editor h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.editor h4 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.editor p {
+  font-size: 1rem;
+  line-height: 1.75;
+  margin-bottom: 1rem;
+}
+
+.editor ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.editor ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.editor li {
+  margin-bottom: 0.5rem;
+}
+
+.editor blockquote {
+  border-left: 4px solid #d1d5db;
+  padding-left: 1rem;
+  font-style: italic;
+  margin: 1rem 0;
+  color: #6b7280;
+}
+
+.editor pre {
+  background-color: #111827;
+  color: #f3f4f6;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+.editor code {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.editor a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.editor a:hover {
+  text-decoration: underline;
+}
+
+.editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+/* Text alignment classes */
+.editor [style*="text-align: left"] {
+  text-align: left !important;
+}
+
+.editor [style*="text-align: center"] {
+  text-align: center !important;
+}
+
+.editor [style*="text-align: right"] {
+  text-align: right !important;
+}
+
+.editor .ProseMirror-focused {
+  outline: none;
+}
+
+/* Table styles */
+.editor table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.editor th,
+.editor td {
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 1rem;
+  text-align: left;
+}
+
+.editor th {
+  background-color: #f9fafb;
+  font-weight: 600;
+}
+
+/* Placeholder text */
+.editor .is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #9ca3af;
+  pointer-events: none;
+  height: 0;
+}
