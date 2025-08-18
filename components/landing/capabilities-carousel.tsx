@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { 
@@ -10,12 +10,25 @@ import {
   TrendingUp,
   Globe,
   Target,
-  Palette
+  Palette,
+  PlayCircle
 } from 'lucide-react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
 const capabilities = [
+  {
+    id: 'ux',
+    icon: Target,
+    title: 'Clean, Creator-First UX',
+    shortTitle: 'Clean UX',
+    description: 'Built for speed and clarity — no overwhelming menus, no agency jargon. Just smooth workflows and tools that make sense.',
+    longDescription: 'You\'ll never feel lost or buried under features you don\'t need. Just log in, get things done, and get back to creating.',
+    color: 'from-pink-500 to-rose-500',
+    iconColor: 'text-rose-500',
+    image: '/Clean UX.webp',
+    video: '/Clean UX.mp4'
+  },
   {
     id: 'cross-platform',
     icon: Globe,
@@ -23,16 +36,10 @@ const capabilities = [
     shortTitle: 'Cross-Platform',
     description: 'Plan and schedule once — post across Instagram, LinkedIn, TikTok, Threads, YouTube, and more.',
     longDescription: 'All in one simple dashboard. No need to jump between tabs or tools — just create, schedule, and let your content go live everywhere from one place.',
-    color: 'from-blue-500 to-cyan-500'
-  },
-  {
-    id: 'customization',
-    icon: Palette,
-    title: 'Flexible Post Customization',
-    shortTitle: 'Customization',
-    description: 'Tweak your content per platform so everything sounds native — not copied and pasted.',
-    longDescription: 'Adjust captions, hashtags, visuals, and tone for each channel to make sure your content feels tailored, not generic.',
-    color: 'from-purple-500 to-pink-500'
+    color: 'from-blue-500 to-cyan-500',
+    iconColor: 'text-blue-500',
+    image: '/Cross-Platform.webp',
+    video: '/Cross-Platform.mp4'
   },
   {
     id: 'calendar',
@@ -41,7 +48,10 @@ const capabilities = [
     shortTitle: 'Drag-and-Drop',
     description: 'See your entire content month at a glance. Move things around. Stay consistent with zero chaos.',
     longDescription: 'Easily fill content gaps, avoid last-minute stress, and keep your social presence on track — visually and intuitively.',
-    color: 'from-green-500 to-emerald-500'
+    color: 'from-green-500 to-emerald-500',
+    iconColor: 'text-emerald-500',
+    image: '/Drag-and-Drop.webp',
+    video: '/Drag-and-Drop.mp4'
   },
   {
     id: 'pricing',
@@ -50,46 +60,193 @@ const capabilities = [
     shortTitle: 'Low-Cost',
     description: 'All the essential features at a fraction of the price of traditional schedulers. No paywalls, no bloat, no surprises.',
     longDescription: 'Whether you\'re a creator just starting out or a team with big ambitions, our pricing is built to scale with you — not against you.',
-    color: 'from-indigo-500 to-purple-500'
+    color: 'from-indigo-500 to-purple-500',
+    iconColor: 'text-indigo-500',
+    image: '/Low-Cost.webp',
+    video: '/Low-Cost.mp4'
   },
   {
-    id: 'ux',
-    icon: Target,
-    title: 'Clean, Creator-First UX',
-    shortTitle: 'Clean UX',
-    description: 'Built for speed and clarity — no overwhelming menus, no agency jargon. Just smooth workflows and tools that make sense.',
-    longDescription: 'You\'ll never feel lost or buried under features you don\'t need. Just log in, get things done, and get back to creating.',
-    color: 'from-pink-500 to-rose-500'
+    id: 'customization',
+    icon: Palette,
+    title: 'Flexible Post Customization',
+    shortTitle: 'Customization',
+    description: 'Tweak your content per platform so everything sounds native — not copied and pasted.',
+    longDescription: 'Adjust captions, hashtags, visuals, and tone for each channel to make sure your content feels tailored, not generic.',
+    color: 'from-purple-500 to-pink-500',
+    iconColor: 'text-purple-500',
+    image: '/Customization.webp',
+    video: '/Customization.mp4'
   }
 ]
 
+// Demo Player Component with lazy loading
+function DemoPlayer({ capability }: { capability: typeof capabilities[0] }) {
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [isInView, setIsInView] = useState(false)
+  const [videoLoaded, setVideoLoaded] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const posterVideoRef = useRef<HTMLVideoElement>(null)
+
+  // Intersection Observer for lazy loading
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true)
+        }
+      },
+      { threshold: 0.1, rootMargin: '50px' }
+    )
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current)
+    }
+
+    return () => {
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current)
+      }
+    }
+  }, [])
+
+  // Handle play button click
+  const handlePlayClick = async () => {
+    setIsPlaying(true)
+    // Small delay to ensure video element is mounted
+    setTimeout(() => {
+      if (videoRef.current) {
+        videoRef.current.play().catch((error) => {
+          console.error('Error playing video:', error)
+          setIsPlaying(false)
+        })
+      }
+    }, 100)
+  }
+
+  // Handle close button click
+  const handleCloseClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    console.log('Close button clicked') // Debug log
+    // Stop the video
+    if (videoRef.current) {
+      videoRef.current.pause()
+      videoRef.current.currentTime = 0
+    }
+    setIsPlaying(false)
+    setVideoLoaded(false)
+  }
+
+  // Reset when capability changes
+  useEffect(() => {
+    setIsPlaying(false)
+    setVideoLoaded(false)
+    // Force poster video to reload with new source
+    if (posterVideoRef.current) {
+      posterVideoRef.current.load()
+    }
+  }, [capability.id])
+
+  return (
+    <div ref={containerRef} className="relative aspect-[16/9] rounded-2xl overflow-hidden shadow-2xl bg-black">
+      {!isPlaying ? (
+        // Show video poster with play button overlay
+        <div className="relative w-full h-full group cursor-pointer" onClick={handlePlayClick}>
+          {isInView && (
+            <video
+              ref={posterVideoRef}
+              key={capability.id} // Force re-render when capability changes
+              className="w-full h-full object-cover"
+              muted
+              playsInline
+              preload="metadata"
+            >
+              <source src={capability.video} type="video/mp4" />
+            </video>
+          )}
+          {/* Dark overlay with play button */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent transition-opacity duration-300 flex items-center justify-center">
+            <div className="transform transition-all group-hover:scale-110 duration-300">
+              <div className="relative">
+                {/* Shadow underneath */}
+                <div className="absolute inset-0 translate-y-2 bg-black/20 rounded-full blur-2xl"></div>
+                {/* Main play button with gradient */}
+                <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-purple-400 via-blue-500 to-cyan-400 p-[2px] shadow-2xl">
+                  <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 via-blue-600 to-cyan-500 flex items-center justify-center">
+                    <svg 
+                      className="h-8 w-8 text-white ml-1" 
+                      fill="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                </div>
+                {/* Subtle glow effect */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-400/30 via-blue-500/30 to-cyan-400/30 blur-xl scale-125 animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // Show video when playing
+        <>
+          <div className="relative w-full h-full bg-black">
+            <video
+              ref={videoRef}
+              key={`playing-${capability.id}`} // Force re-render with new key
+              className="w-full h-full object-cover"
+              autoPlay
+              loop
+              muted
+              playsInline
+              onLoadedData={() => setVideoLoaded(true)}
+              onError={(e) => {
+                console.error('Video failed to load:', e)
+                setIsPlaying(false)
+              }}
+            >
+              <source src={capability.video} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+            {/* Loading spinner while video loads */}
+            {!videoLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 pointer-events-none">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+              </div>
+            )}
+          </div>
+          {/* Close button - placed outside video container for better z-index control */}
+          <button
+            type="button"
+            onClick={handleCloseClick}
+            className="absolute top-4 right-4 z-[100] bg-black/50 backdrop-blur-sm text-white p-3 rounded-full hover:bg-black/70 transition-all duration-200 border border-white/30 cursor-pointer"
+            style={{ zIndex: 100 }}
+            aria-label="Stop video"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
 export function CapabilitiesCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true)
-
-  // Auto-play effect
-  useEffect(() => {
-    if (!isAutoPlaying) return
-
-    const interval = setInterval(() => {
-      setCurrentIndex(prev => (prev + 1) % capabilities.length)
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [isAutoPlaying])
 
   const handlePrevious = () => {
-    setIsAutoPlaying(false)
     setCurrentIndex(prev => prev === 0 ? capabilities.length - 1 : prev - 1)
   }
 
   const handleNext = () => {
-    setIsAutoPlaying(false)
     setCurrentIndex(prev => (prev + 1) % capabilities.length)
   }
 
   const handleDotClick = (index: number) => {
-    setIsAutoPlaying(false)
     setCurrentIndex(index)
   }
 
@@ -111,27 +268,32 @@ export function CapabilitiesCarousel() {
           <div className="mb-16">
             {/* Mobile: Compact grid layout */}
             <div className="md:hidden">
-              <div className="flex flex-wrap justify-center gap-2">
+              <div className="flex flex-wrap justify-center gap-3">
                 {capabilities.map((capability, idx) => (
                   <button
                     key={capability.id}
                     onClick={() => handleDotClick(idx)}
                     className={cn(
-                      "group relative px-2 py-1.5 transition-all flex-shrink-0",
-                      "hover:text-primary",
+                      "group relative px-3 py-2 transition-all flex-shrink-0",
                       currentIndex === idx
-                        ? "text-primary"
-                        : "text-gray-600"
+                        ? "scale-110"
+                        : "opacity-70 hover:opacity-100"
                     )}
                   >
-                    <div className="flex flex-col items-center gap-1">
-                      <div className={cn(
-                        "p-1.5 rounded-lg bg-gradient-to-br",
-                        capability.color
+                    <div className="flex flex-col items-center gap-1.5">
+                      <capability.icon className={cn(
+                        "h-6 w-6 transition-all",
+                        capability.iconColor,
+                        currentIndex === idx 
+                          ? "opacity-100" 
+                          : "opacity-50 group-hover:opacity-100"
+                      )} />
+                      <span className={cn(
+                        "text-xs font-medium transition-colors",
+                        currentIndex === idx
+                          ? "text-gray-900"
+                          : "text-gray-500 group-hover:text-gray-700"
                       )}>
-                        <capability.icon className="h-4 w-4 text-white" />
-                      </div>
-                      <span className="text-xs font-medium">
                         {capability.shortTitle}
                       </span>
                     </div>
@@ -141,31 +303,35 @@ export function CapabilitiesCarousel() {
             </div>
 
             {/* Desktop: Centered flex */}
-            <div className="hidden md:flex flex-wrap justify-center gap-8">
+            <div className="hidden md:flex flex-wrap justify-center gap-10">
               {capabilities.map((capability, idx) => (
                 <button
                   key={capability.id}
                   onClick={() => handleDotClick(idx)}
                   className={cn(
                     "group relative px-4 py-2.5 transition-all",
-                    "hover:text-primary",
                     currentIndex === idx
-                      ? "text-primary"
-                      : "text-gray-600"
+                      ? "scale-105"
+                      : "opacity-75 hover:opacity-100"
                   )}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <div className={cn(
-                      "p-1 rounded bg-gradient-to-br",
-                      capability.color
-                    )}>
-                      <capability.icon className="h-3.5 w-3.5 text-white" />
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <capability.icon className={cn(
+                      "h-7 w-7 transition-all",
+                      capability.iconColor,
+                      currentIndex === idx 
+                        ? "opacity-100" 
+                        : "opacity-60 group-hover:opacity-100"
+                    )} />
                     <span 
-                      className="text-[18px] tracking-wide"
+                      className={cn(
+                        "text-[18px] tracking-wide transition-colors",
+                        currentIndex === idx
+                          ? "text-gray-900 font-semibold"
+                          : "text-gray-600 group-hover:text-gray-800"
+                      )}
                       style={{ 
                         fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                        fontWeight: 500,
                         letterSpacing: '0.3px'
                       }}
                     >
@@ -175,9 +341,20 @@ export function CapabilitiesCarousel() {
                   {/* Beautiful underline for selected item */}
                   <div 
                     className={cn(
-                      "absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/0 via-primary to-primary/0 transition-all duration-300",
+                      "absolute -bottom-1 left-0 right-0 h-0.5 transition-all duration-300",
                       currentIndex === idx ? "opacity-100" : "opacity-0"
                     )}
+                    style={{
+                      background: currentIndex === idx 
+                        ? `linear-gradient(90deg, transparent, ${
+                            capability.iconColor === 'text-blue-500' ? '#3b82f6' :
+                            capability.iconColor === 'text-purple-500' ? '#a855f7' :
+                            capability.iconColor === 'text-emerald-500' ? '#10b981' :
+                            capability.iconColor === 'text-indigo-500' ? '#6366f1' :
+                            capability.iconColor === 'text-rose-500' ? '#f43f5e' : '#3b82f6'
+                          }, transparent)` 
+                        : ''
+                    }}
                   />
                 </button>
               ))}
@@ -225,26 +402,9 @@ export function CapabilitiesCarousel() {
 
             </div>
 
-            {/* Right Side - Visual with reduced height */}
+            {/* Right Side - Visual with Demo Player */}
             <div className="relative">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-gray-100 to-gray-200">
-                {/* Placeholder with reduced height */}
-                <div className="aspect-[16/9] flex items-center justify-center">
-                  <div className={cn(
-                    "absolute inset-0 opacity-10 bg-gradient-to-br",
-                    currentCapability.color
-                  )} />
-                  <div className="relative z-10 text-center p-8">
-                    <currentCapability.icon className="h-24 w-24 mx-auto mb-4 text-gray-400" />
-                    <p className="text-gray-500 text-lg font-medium">
-                      {currentCapability.title} Preview
-                    </p>
-                    <p className="text-gray-400 text-sm mt-2">
-                      Interactive demo coming soon
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <DemoPlayer capability={currentCapability} />
 
               {/* Decorative Elements */}
               <div className="absolute -top-4 -right-4 h-24 w-24 bg-primary/10 rounded-full blur-2xl" />
