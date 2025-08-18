@@ -404,11 +404,21 @@ export function CapabilitiesCarousel() {
 
             {/* Right Side - Visual with Demo Player */}
             <div className="relative">
-              <DemoPlayer capability={currentCapability} />
-
-              {/* Decorative Elements */}
-              <div className="absolute -top-4 -right-4 h-24 w-24 bg-primary/10 rounded-full blur-2xl" />
-              <div className="absolute -bottom-4 -left-4 h-32 w-32 bg-primary/10 rounded-full blur-3xl" />
+              {/* Decorative background shapes */}
+              {/* Top left blue rounded shape */}
+              <div className="absolute -top-12 -left-12 w-64 h-64 bg-gradient-to-br from-blue-400/20 to-cyan-400/10 rounded-[100px] blur-2xl" />
+              
+              {/* Bottom right purple rounded shape */}
+              <div className="absolute -bottom-16 -right-16 w-72 h-72 bg-gradient-to-tl from-purple-400/20 to-pink-400/10 rounded-[120px] blur-2xl" />
+              
+              {/* Additional accent shapes */}
+              <div className="absolute top-1/2 -left-8 w-32 h-32 bg-gradient-to-r from-indigo-400/15 to-blue-400/15 rounded-full blur-xl" />
+              <div className="absolute -top-8 right-1/3 w-24 h-24 bg-gradient-to-b from-cyan-400/15 to-teal-400/15 rounded-full blur-xl" />
+              
+              {/* Demo Player */}
+              <div className="relative z-10">
+                <DemoPlayer capability={currentCapability} />
+              </div>
             </div>
           </div>
 
