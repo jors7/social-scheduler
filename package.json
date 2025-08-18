@@ -9,7 +9,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "convert-images": "node scripts/convert-to-webp.js"
+    "convert-images": "node scripts/convert-to-webp.js",
+    "migrate-to-r2": "node scripts/migrate-to-r2.js",
+    "update-r2-refs": "node scripts/update-r2-refs.js",
+    "cleanup-local-images": "node scripts/cleanup-local-images.js"
   },
   "dependencies": {
     "@atproto/api": "^0.16.0",
@@ -74,6 +77,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "dotenv": "^17.2.1",
     "eslint": "^8",
     "eslint-config-next": "14.2.0",
     "sharp": "^0.34.3"

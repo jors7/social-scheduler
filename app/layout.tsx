@@ -9,8 +9,8 @@ export const metadata: Metadata = {
   title: 'SocialCal - Schedule Posts Across All Social Media Platforms',
   description: 'Schedule and manage your social media posts across Twitter/X, Instagram, Facebook, LinkedIn, YouTube, TikTok, and more from one dashboard.',
   icons: {
-    icon: '/SocialCal.webp',
-    apple: '/SocialCal.webp',
+    icon: 'https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/SocialCal.webp',
+    apple: 'https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/SocialCal.webp',
   },
 }
 

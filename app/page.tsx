@@ -195,7 +195,7 @@ function LandingPageContent() {
           <nav className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2">
               <Image 
-                src="/SocialCal.webp" 
+                src="https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/SocialCal.webp" 
                 alt="SocialCal Logo" 
                 width={32} 
                 height={32}
@@ -305,7 +305,7 @@ function LandingPageContent() {
           <div className="flex items-center justify-between mb-4">
             <Link href="/" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
               <Image 
-                src="/SocialCal.webp" 
+                src="https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/SocialCal.webp" 
                 alt="SocialCal Logo" 
                 width={32} 
                 height={32}
@@ -564,7 +564,7 @@ function LandingPageContent() {
             {/* Right Column - Hero Image */}
             <div className="w-full max-w-[900px] lg:-ml-32">
               <img 
-                src="/hero-dashboard.webp"
+                src="https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard.webp"
                 alt="SocialCal Dashboard"
                 className="w-full h-auto scale-[1.2] origin-left"
               />

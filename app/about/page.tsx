@@ -30,7 +30,7 @@ export default function AboutPage() {
           <nav className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2">
               <Image 
-                src="/SocialCal.webp" 
+                src="https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/SocialCal.webp" 
                 alt="SocialCal Logo" 
                 width={32} 
                 height={32}

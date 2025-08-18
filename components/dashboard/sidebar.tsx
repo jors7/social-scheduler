@@ -144,7 +144,7 @@ export function Sidebar() {
       <div className="h-16 flex items-center px-6 bg-white border-b">
         <Link href="/" className="flex items-center gap-2">
           <Image 
-            src="/SocialCal.webp" 
+            src="https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/SocialCal.webp" 
             alt="SocialCal Logo" 
             width={28} 
             height={28}
