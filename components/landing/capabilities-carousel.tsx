@@ -253,7 +253,7 @@ export function CapabilitiesCarousel() {
   const currentCapability = capabilities[currentIndex]
 
   return (
-    <section className="pt-16 pb-20 px-4 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
+    <section className="pt-12 pb-20 px-4 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
       <div className="container mx-auto">
         {/* Header */}
         <div className="text-center mb-12">

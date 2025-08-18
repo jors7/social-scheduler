@@ -519,7 +519,7 @@ function LandingPageContent() {
       </div>
 
       {/* Hero Section - Two Column Layout */}
-      <section className="relative pt-12 pb-10 px-4 overflow-hidden">
+      <section className="relative pt-4 pb-10 px-4 overflow-hidden">
         {/* Animated gradient background */}
         <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50">
           <div className="absolute inset-0">
@@ -530,7 +530,7 @@ function LandingPageContent() {
         </div>
         
         <div className="max-w-[1500px] mx-auto px-6 relative z-10">
-          <div className="flex flex-col lg:flex-row gap-0 items-center justify-center lg:pl-8">
+          <div className="flex flex-col lg:flex-row gap-0 items-center justify-center lg:pl-32">
             {/* Left Column - Text Content */}
             <div className="max-w-[600px]">
               {/* Badge */}
@@ -544,8 +544,12 @@ function LandingPageContent() {
               </h1>
               
               <p className="text-lg md:text-xl text-gray-600 mb-6 leading-relaxed">
-                One click. Nine platforms. Unlimited possibilities.
-                <br className="hidden md:block" />
+                One click.
+                <br />
+                Nine platforms.
+                <br />
+                Unlimited possibilities.
+                <br />
                 Save 15+ hours weekly on social media management.
               </p>
               
@@ -562,17 +566,17 @@ function LandingPageContent() {
             </div>
             
             {/* Right Column - Hero Image */}
-            <div className="w-full max-w-[900px] lg:-ml-32">
+            <div className="w-full max-w-[900px] lg:-ml-20 lg:mt-4">
               <img 
                 src="https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard.webp"
                 alt="SocialCal Dashboard"
-                className="w-full h-auto scale-[1.2] origin-left"
+                className="w-full h-auto scale-[1.24] origin-left"
               />
             </div>
           </div>
           
           {/* Platform icons - moved to center */}
-          <div className="text-center mt-16 pb-6 px-4">
+          <div className="text-center mt-16 pb-2 px-4">
             <p className="text-sm text-gray-500 mb-6 font-medium uppercase tracking-wider">Works seamlessly with</p>
             {/* Mobile: Two rows with centered bottom row, Desktop: Single row */}
             <div className="sm:flex sm:flex-wrap sm:justify-center sm:gap-4">
