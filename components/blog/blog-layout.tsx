@@ -80,7 +80,7 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
           <nav className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2">
               <Image 
-                src="/SocialCal.png" 
+                src="/SocialCal.webp" 
                 alt="SocialCal Logo" 
                 width={32} 
                 height={32}
@@ -190,7 +190,7 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center justify-between mb-4">
             <Link href="/" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
               <Image 
-                src="/SocialCal.png" 
+                src="/SocialCal.webp" 
                 alt="SocialCal Logo" 
                 width={32} 
                 height={32}
