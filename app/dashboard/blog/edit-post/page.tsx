@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 
-export default function EditPostPage() {
+function EditPostContent() {
   const [loading, setLoading] = useState(true)
   const [post, setPost] = useState<any>(null)
   const router = useRouter()
@@ -87,5 +87,17 @@ export default function EditPostPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function EditPostPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto py-6">
+        <div className="text-center">Loading...</div>
+      </div>
+    }>
+      <EditPostContent />
+    </Suspense>
   )
 }
