@@ -1,7 +1,7 @@
 // Auto-generated R2 URL mappings
 // Generated on: 2025-08-18T10:34:59.253Z
 
-export const R2_IMAGE_URLS = {
+export const R2_IMAGE_URLS: Record<string, string> = {
   "/Jan-Orsula.png": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/Jan-Orsula.png",
   "/Jan-Orsula.webp": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/Jan-Orsula.webp",
   "/SocialCal.png": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/SocialCal.png",
