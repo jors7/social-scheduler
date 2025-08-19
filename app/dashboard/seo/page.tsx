@@ -78,6 +78,7 @@ export default function SEOSettingsPage() {
 
   useEffect(() => {
     checkAuthorization()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -822,7 +823,7 @@ export default function SEOSettingsPage() {
                 <ol className="list-decimal list-inside text-sm text-gray-600 space-y-1">
                   <li>Your sitemap updates automatically when you modify pages</li>
                   <li>Search engines check your sitemap periodically</li>
-                  <li>Use "Ping Search Engines" after major updates for faster indexing</li>
+                  <li>Use &quot;Ping Search Engines&quot; after major updates for faster indexing</li>
                   <li>Submit sitemap URL to Search Console for best results</li>
                 </ol>
               </div>
