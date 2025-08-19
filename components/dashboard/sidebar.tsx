@@ -266,14 +266,16 @@ export function Sidebar() {
                     )}
                   >
                     <div className="flex items-center">
-                      <div className={cn(
-                        'p-2 rounded-lg mr-3 transition-colors',
-                        expandedItems.includes(item.name)
-                          ? 'bg-gray-200 text-gray-700'
-                          : 'bg-gray-100 text-gray-500 group-hover:bg-purple-100 group-hover:text-purple-600'
-                      )}>
-                        <item.icon className="h-4 w-4" />
-                      </div>
+                      {item.icon && (
+                        <div className={cn(
+                          'p-2 rounded-lg mr-3 transition-colors',
+                          expandedItems.includes(item.name)
+                            ? 'bg-gray-200 text-gray-700'
+                            : 'bg-gray-100 text-gray-500 group-hover:bg-purple-100 group-hover:text-purple-600'
+                        )}>
+                          <item.icon className="h-4 w-4" />
+                        </div>
+                      )}
                       {item.name}
                     </div>
                     <ChevronRight className={cn(
@@ -312,14 +314,16 @@ export function Sidebar() {
                   )}
                 >
                   <div className="flex items-center">
-                    <div className={cn(
-                      'p-2 rounded-lg mr-3 transition-colors',
-                      pathname === item.href
-                        ? 'bg-purple-200 text-purple-700'
-                        : 'bg-gray-100 text-gray-500 group-hover:bg-purple-100 group-hover:text-purple-600'
-                    )}>
-                      <item.icon className="h-4 w-4" />
-                    </div>
+                    {item.icon && (
+                      <div className={cn(
+                        'p-2 rounded-lg mr-3 transition-colors',
+                        pathname === item.href
+                          ? 'bg-purple-200 text-purple-700'
+                          : 'bg-gray-100 text-gray-500 group-hover:bg-purple-100 group-hover:text-purple-600'
+                      )}>
+                        <item.icon className="h-4 w-4" />
+                      </div>
+                    )}
                     {item.name}
                   </div>
                   {item.badge && (
