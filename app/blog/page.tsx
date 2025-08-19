@@ -112,13 +112,26 @@ export default async function BlogPage() {
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 {/* Text Content */}
                 <div className="space-y-6">
-                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+                  <h1 
+                    className="text-4xl md:text-5xl lg:text-6xl font-bold"
+                    style={{ 
+                      fontFamily: 'Stolzl Medium, Stolzl, -apple-system, BlinkMacSystemFont, sans-serif',
+                      fontWeight: '500',
+                      lineHeight: '1.1',
+                      letterSpacing: '-0.02em'
+                    }}
+                  >
                     <Link href={`/blog/${featuredPost.slug}`} className="hover:text-blue-400 transition-colors">
                       {featuredPost.title}
                     </Link>
                   </h1>
                   
-                  <p className="text-xl text-gray-300 leading-relaxed">
+                  <p 
+                    className="text-xl text-gray-300 leading-relaxed"
+                    style={{ 
+                      fontFamily: 'var(--font-figtree), Figtree, -apple-system, BlinkMacSystemFont, sans-serif'
+                    }}
+                  >
                     {featuredPost.excerpt}
                   </p>
 
@@ -174,10 +187,23 @@ export default async function BlogPage() {
             ) : (
               /* Fallback if no featured post */
               <div className="max-w-4xl">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+                <h1 
+                  className="text-4xl md:text-5xl lg:text-6xl mb-6"
+                  style={{ 
+                    fontFamily: 'Stolzl Medium, Stolzl, -apple-system, BlinkMacSystemFont, sans-serif',
+                    fontWeight: '500',
+                    lineHeight: '1.1',
+                    letterSpacing: '-0.02em'
+                  }}
+                >
                   Social Media Insights & Updates
                 </h1>
-                <p className="text-xl text-gray-300 leading-relaxed">
+                <p 
+                  className="text-xl text-gray-300 leading-relaxed"
+                  style={{ 
+                    fontFamily: 'var(--font-figtree), Figtree, -apple-system, BlinkMacSystemFont, sans-serif'
+                  }}
+                >
                   Discover the latest tips, strategies, and product updates to help you master social media marketing and grow your online presence.
                 </p>
               </div>
@@ -187,10 +213,23 @@ export default async function BlogPage() {
         
         <div className="container mx-auto px-4 py-12">
           <div className="mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 text-left">
+            <h1 
+              className="text-4xl md:text-5xl text-gray-900 mb-4 text-left"
+              style={{ 
+                fontFamily: 'Stolzl Medium, Stolzl, -apple-system, BlinkMacSystemFont, sans-serif',
+                fontWeight: '500',
+                lineHeight: '1.1',
+                letterSpacing: '-0.02em'
+              }}
+            >
               Latest from SocialCal
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl text-left">
+            <p 
+              className="text-xl text-gray-600 max-w-3xl text-left"
+              style={{ 
+                fontFamily: 'var(--font-figtree), Figtree, -apple-system, BlinkMacSystemFont, sans-serif'
+              }}
+            >
               Discover social media tips, marketing strategies, and product updates to help you grow your online presence.
             </p>
           </div>

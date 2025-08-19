@@ -1,0 +1,179 @@
+.blogContent {
+  color: #374151;
+  line-height: 1.75;
+  font-size: 1.125rem;
+  font-family: var(--font-figtree), 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.blogContent h1 {
+  font-family: 'Stolzl Medium', 'Stolzl', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 2.5rem;
+  font-weight: 500;
+  margin-top: 3rem;
+  margin-bottom: 1.5rem;
+  color: #111827;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.blogContent h2 {
+  font-family: 'Stolzl Medium', 'Stolzl', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 2rem;
+  font-weight: 500;
+  margin-top: 3rem;
+  margin-bottom: 1.5rem;
+  color: #111827;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.blogContent h3 {
+  font-family: 'Stolzl Medium', 'Stolzl', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: #111827;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.blogContent h4 {
+  font-family: 'Stolzl Medium', 'Stolzl', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+
+.blogContent p {
+  font-family: var(--font-figtree), 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif;
+  margin-bottom: 1.5rem;
+}
+
+.blogContent ul {
+  font-family: var(--font-figtree), 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif;
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.blogContent ol {
+  font-family: var(--font-figtree), 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif;
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.blogContent li {
+  font-family: var(--font-figtree), 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif;
+  margin-bottom: 0.5rem;
+  line-height: 1.75;
+}
+
+.blogContent ul ul,
+.blogContent ol ul {
+  list-style-type: circle;
+  margin-top: 0.5rem;
+}
+
+.blogContent ol ol {
+  list-style-type: lower-alpha;
+  margin-top: 0.5rem;
+}
+
+.blogContent blockquote {
+  border-left: 4px solid #3B82F6;
+  padding-left: 1.5rem;
+  font-style: italic;
+  margin: 2rem 0;
+  color: #4B5563;
+}
+
+.blogContent a {
+  color: #2563EB;
+  text-decoration: underline;
+}
+
+.blogContent a:hover {
+  color: #1D4ED8;
+}
+
+.blogContent strong,
+.blogContent b {
+  font-weight: 700;
+  color: #111827;
+}
+
+.blogContent em,
+.blogContent i {
+  font-style: italic;
+}
+
+.blogContent code {
+  background-color: #F3F4F6;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.blogContent pre {
+  background-color: #1F2937;
+  color: #F3F4F6;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 2rem 0;
+}
+
+.blogContent pre code {
+  background-color: transparent;
+  padding: 0;
+  font-size: 0.875rem;
+}
+
+.blogContent img {
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  margin: 2rem auto;
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.blogContent table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 2rem 0;
+}
+
+.blogContent th {
+  border-bottom: 2px solid #E5E7EB;
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  background-color: #F9FAFB;
+}
+
+.blogContent td {
+  border-bottom: 1px solid #E5E7EB;
+  padding: 0.75rem;
+}
+
+.blogContent hr {
+  border: 0;
+  border-top: 1px solid #E5E7EB;
+  margin: 3rem 0;
+}
+
+/* Ensure nested lists work properly */
+.blogContent ul li ul,
+.blogContent ol li ol,
+.blogContent ul li ol,
+.blogContent ol li ul {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}

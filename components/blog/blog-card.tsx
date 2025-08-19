@@ -48,12 +48,25 @@ export function BlogCard({ post }: BlogCardProps) {
           {/* Content */}
           <div className="p-6 flex-1 flex flex-col">
             {/* Title */}
-            <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
+            <h3 
+              className="text-xl text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors"
+              style={{ 
+                fontFamily: 'Stolzl Medium, Stolzl, -apple-system, BlinkMacSystemFont, sans-serif',
+                fontWeight: '500',
+                lineHeight: '1.3',
+                letterSpacing: '-0.01em'
+              }}
+            >
               {post.title}
             </h3>
 
             {/* Excerpt */}
-            <p className="text-gray-600 mb-4 line-clamp-3 flex-1">
+            <p 
+              className="text-gray-600 mb-4 line-clamp-3 flex-1"
+              style={{ 
+                fontFamily: 'var(--font-figtree), Figtree, -apple-system, BlinkMacSystemFont, sans-serif'
+              }}
+            >
               {post.excerpt}
             </p>
 
