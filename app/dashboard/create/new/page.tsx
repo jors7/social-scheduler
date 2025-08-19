@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { toast } from 'sonner'
 import { PostingService, PostData } from '@/lib/posting/service'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,10 +10,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { AISuggestionsModal } from '@/components/dashboard/ai-suggestions-modal'
-import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
-import { PinterestBoardSelector } from '@/components/pinterest/board-selector'
-import VideoMetadata from '@/components/youtube/video-metadata'
-import VideoUpload from '@/components/youtube/video-upload'
+import { SubscriptionGateNoSuspense as SubscriptionGate } from '@/components/subscription/subscription-gate-no-suspense'
+
+// Dynamically import platform-specific components to avoid hydration issues
+const PinterestBoardSelector = dynamic(() => import('@/components/pinterest/board-selector').then(mod => ({ default: mod.PinterestBoardSelector })), { ssr: false })
+const VideoMetadata = dynamic(() => import('@/components/youtube/video-metadata'), { ssr: false })
+const VideoUpload = dynamic(() => import('@/components/youtube/video-upload'), { ssr: false })
 import { 
   Calendar,
   Clock,
@@ -146,9 +149,27 @@ function CreateNewPostPageContent() {
       platformContent[platform]?.trim().length > 0
     )
     
-    if (!hasMainContent && !hasPlatformContent) {
+    // Special handling for YouTube - video is the content
+    const hasYouTubeContent = selectedPlatforms.includes('youtube') && 
+      youtubeVideoFile !== null && 
+      youtubeTitle.trim().length > 0
+    
+    // Check content requirements
+    if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent) {
       toast.error('Please enter some content')
       return
+    }
+    
+    // YouTube-specific validation
+    if (selectedPlatforms.includes('youtube')) {
+      if (!youtubeVideoFile) {
+        toast.error('YouTube requires a video file')
+        return
+      }
+      if (!youtubeTitle.trim()) {
+        toast.error('YouTube requires a video title')
+        return
+      }
     }
 
     // Filter to only supported platforms for now
@@ -296,9 +317,27 @@ function CreateNewPostPageContent() {
       platformContent[platform]?.trim().length > 0
     )
     
-    if (!hasMainContent && !hasPlatformContent) {
+    // Special handling for YouTube - video is the content
+    const hasYouTubeContent = selectedPlatforms.includes('youtube') && 
+      youtubeVideoFile !== null && 
+      youtubeTitle.trim().length > 0
+    
+    // Check content requirements
+    if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent) {
       toast.error('Please enter some content')
       return
+    }
+    
+    // YouTube-specific validation
+    if (selectedPlatforms.includes('youtube')) {
+      if (!youtubeVideoFile) {
+        toast.error('YouTube requires a video file')
+        return
+      }
+      if (!youtubeTitle.trim()) {
+        toast.error('YouTube requires a video title')
+        return
+      }
     }
 
     setIsPosting(true)
@@ -1121,7 +1160,8 @@ function CreateNewPostPageContent() {
                       selectedPlatforms.length === 0 || 
                       isPosting || 
                       loadingDraft ||
-                      (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()))
+                      (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) && 
+                        !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()))
                     }
                     onClick={handleSchedulePost}
                   >
@@ -1147,7 +1187,8 @@ function CreateNewPostPageContent() {
                     selectedPlatforms.length === 0 || 
                     isPosting || 
                     loadingDraft ||
-                    (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()))
+                    (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) && 
+                      !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()))
                   }
                   onClick={handlePostNow}
                 >
