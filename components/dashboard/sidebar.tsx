@@ -40,10 +40,24 @@ import {
   BarChart3,
   FileCode,
   Bell,
-  Mail
+  Mail,
+  LucideIcon
 } from 'lucide-react'
 
-const navigation = [
+type NavigationItem = {
+  name: string
+  href?: string
+  icon?: LucideIcon
+  badge?: string | null
+  children?: Array<{
+    name: string
+    href: string
+    icon: LucideIcon
+  }>
+  isDivider?: boolean
+}
+
+const navigation: NavigationItem[] = [
   {
     name: 'Dashboard',
     href: '/dashboard',
@@ -100,7 +114,7 @@ export function Sidebar() {
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [navigationItems, setNavigationItems] = useState(navigation)
+  const [navigationItems, setNavigationItems] = useState<NavigationItem[]>(navigation)
   
   useEffect(() => {
     loadUser()
