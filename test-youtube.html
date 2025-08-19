@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test YouTube Connection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #FF0000;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #CC0000;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            display: block;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>YouTube Integration Test</h1>
+        <p>Test your YouTube OAuth connection and API access.</p>
+        
+        <div>
+            <button onclick="connectYouTube()">Connect YouTube Account</button>
+            <button onclick="testConnection()">Test Connection</button>
+            <button onclick="disconnectYouTube()">Disconnect</button>
+        </div>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001';
+
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.className = `status ${type}`;
+            statusEl.innerHTML = message;
+        }
+
+        async function connectYouTube() {
+            try {
+                showStatus('Initiating YouTube OAuth...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/auth/youtube`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(`Failed to get auth URL: ${error}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.authUrl) {
+                    showStatus('Redirecting to YouTube for authorization...', 'info');
+                    window.location.href = data.authUrl;
+                } else {
+                    throw new Error('No auth URL received');
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testConnection() {
+            try {
+                showStatus('Testing YouTube connection...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/test/youtube`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showStatus(`
+                        <strong>✅ Connection Successful!</strong><br><br>
+                        <strong>Account:</strong> ${data.account.account_name}<br>
+                        <strong>Username:</strong> ${data.account.username}<br>
+                        ${data.channel ? `
+                            <strong>Channel:</strong> ${data.channel.snippet?.title}<br>
+                            <strong>Subscribers:</strong> ${data.channel.statistics?.subscriberCount || 'N/A'}<br>
+                            <strong>Videos:</strong> ${data.channel.statistics?.videoCount || 'N/A'}
+                        ` : '<strong>Note:</strong> Channel information not available'}
+                    `, 'success');
+                } else {
+                    showStatus(`
+                        <strong>Connection Test Result:</strong><br><br>
+                        ${data.error || 'YouTube account not connected'}<br>
+                        ${data.errorDetails ? `<pre>${JSON.stringify(data.errorDetails, null, 2)}</pre>` : ''}
+                    `, data.success === false ? 'error' : 'error');
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function disconnectYouTube() {
+            if (!confirm('Are you sure you want to disconnect your YouTube account?')) {
+                return;
+            }
+
+            try {
+                showStatus('Disconnecting YouTube account...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/auth/youtube`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: 'disconnect' }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    showStatus('YouTube account disconnected successfully!', 'success');
+                } else {
+                    const error = await response.text();
+                    throw new Error(`Failed to disconnect: ${error}`);
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Check URL parameters for OAuth callback status
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('success')) {
+            if (urlParams.get('success') === 'youtube_connected') {
+                showStatus('✅ YouTube account connected successfully!', 'success');
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        } else if (urlParams.has('error')) {
+            const error = urlParams.get('error');
+            const errorMessages = {
+                'youtube_auth_denied': 'Authorization was denied',
+                'youtube_auth_failed': 'Authentication failed - no authorization code received',
+                'youtube_auth_invalid': 'Invalid authentication state - possible security issue',
+                'youtube_token_failed': 'Failed to exchange authorization code for access token',
+                'youtube_no_channel': 'No YouTube channel found for this account',
+                'youtube_db_failed': 'Failed to save account information',
+                'youtube_error': 'An unexpected error occurred'
+            };
+            showStatus(`❌ Error: ${errorMessages[error] || error}`, 'error');
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    </script>
+</body>
+</html>

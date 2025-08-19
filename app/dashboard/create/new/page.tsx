@@ -1,7 +1,5 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { toast } from 'sonner'
 import { PostingService, PostData } from '@/lib/posting/service'
@@ -12,6 +10,9 @@ import { Label } from '@/components/ui/label'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { AISuggestionsModal } from '@/components/dashboard/ai-suggestions-modal'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
+import { PinterestBoardSelector } from '@/components/pinterest/board-selector'
+import VideoMetadata from '@/components/youtube/video-metadata'
+import VideoUpload from '@/components/youtube/video-upload'
 import { 
   Calendar,
   Clock,
@@ -26,7 +27,6 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Suspense } from 'react'
 
 const platforms = [
   { id: 'twitter', name: 'X (Twitter)', icon: '𝕏', charLimit: 280 },
@@ -62,6 +62,17 @@ function CreateNewPostPageContent() {
   const [smartSuggestions, setSmartSuggestions] = useState<any[]>([])
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
   const [showSmartSuggestions, setShowSmartSuggestions] = useState(false)
+  const [pinterestBoards, setPinterestBoards] = useState<any[]>([])
+  const [selectedPinterestBoard, setSelectedPinterestBoard] = useState<string>('')
+  const [pinterestTitle, setPinterestTitle] = useState<string>('')
+  // YouTube states
+  const [youtubeTitle, setYoutubeTitle] = useState<string>('')
+  const [youtubeDescription, setYoutubeDescription] = useState<string>('')
+  const [youtubeTags, setYoutubeTags] = useState<string[]>([])
+  const [youtubeCategoryId, setYoutubeCategoryId] = useState<string>('22') // Default to People & Blogs
+  const [youtubePrivacyStatus, setYoutubePrivacyStatus] = useState<'private' | 'unlisted' | 'public'>('private')
+  const [youtubeVideoFile, setYoutubeVideoFile] = useState<File | null>(null)
+  const [youtubeThumbnailFile, setYoutubeThumbnailFile] = useState<File | null>(null)
 
   const togglePlatform = (platformId: string) => {
     setSelectedPlatforms(prev =>
@@ -141,12 +152,24 @@ function CreateNewPostPageContent() {
     }
 
     // Filter to only supported platforms for now
-    const supportedPlatforms = selectedPlatforms.filter(p => ['facebook', 'bluesky'].includes(p))
-    const unsupportedPlatforms = selectedPlatforms.filter(p => !['facebook', 'bluesky'].includes(p))
+    const supportedPlatforms = selectedPlatforms.filter(p => ['facebook', 'bluesky', 'pinterest'].includes(p))
+    const unsupportedPlatforms = selectedPlatforms.filter(p => !['facebook', 'bluesky', 'pinterest'].includes(p))
 
     if (supportedPlatforms.length === 0) {
-      toast.error('Please select Facebook or Bluesky (other platforms coming soon!)')
+      toast.error('Please select Facebook, Bluesky, or Pinterest (other platforms coming soon!)')
       return
+    }
+
+    // Check Pinterest requirements
+    if (supportedPlatforms.includes('pinterest')) {
+      if (!selectedPinterestBoard) {
+        toast.error('Please select a Pinterest board')
+        return
+      }
+      if (!selectedFiles.length && !uploadedMediaUrls.length) {
+        toast.error('Pinterest requires at least one image')
+        return
+      }
     }
 
     if (unsupportedPlatforms.length > 0) {
@@ -191,6 +214,8 @@ function CreateNewPostPageContent() {
         platforms: supportedPlatforms,
         platformContent: Object.keys(filteredPlatformContent).length > 0 ? filteredPlatformContent : undefined,
         mediaUrls: mediaUrls,
+        pinterestBoardId: selectedPinterestBoard,
+        pinterestTitle: pinterestTitle || undefined,
       }
 
       const results = await postingService.postToMultiplePlatforms(postData)
@@ -1196,6 +1221,52 @@ function CreateNewPostPageContent() {
                   </div>
                 </div>
               )}
+
+              {/* Pinterest Board Selection */}
+              <PinterestBoardSelector
+                selectedPlatforms={selectedPlatforms}
+                selectedPinterestBoard={selectedPinterestBoard}
+                setSelectedPinterestBoard={setSelectedPinterestBoard}
+                pinterestTitle={pinterestTitle}
+                setPinterestTitle={setPinterestTitle}
+                pinterestBoards={pinterestBoards}
+                setPinterestBoards={setPinterestBoards}
+              />
+
+              {/* YouTube Video Metadata */}
+              {selectedPlatforms.includes('youtube') && (
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <span className="text-red-600">▶</span>
+                      YouTube Video Settings
+                    </CardTitle>
+                    <CardDescription>
+                      Configure your YouTube video details
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <VideoUpload
+                      videoFile={youtubeVideoFile}
+                      thumbnailFile={youtubeThumbnailFile}
+                      onVideoChange={setYoutubeVideoFile}
+                      onThumbnailChange={setYoutubeThumbnailFile}
+                    />
+                    <VideoMetadata
+                      title={youtubeTitle}
+                      description={youtubeDescription || postContent.replace(/<[^>]*>/g, '')}
+                      tags={youtubeTags}
+                      categoryId={youtubeCategoryId}
+                      privacyStatus={youtubePrivacyStatus}
+                      onTitleChange={setYoutubeTitle}
+                      onDescriptionChange={setYoutubeDescription}
+                      onTagsChange={setYoutubeTags}
+                      onCategoryChange={setYoutubeCategoryId}
+                      onPrivacyChange={setYoutubePrivacyStatus}
+                    />
+                  </CardContent>
+                </Card>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -1215,9 +1286,5 @@ function CreateNewPostPageContent() {
 }
 
 export default function CreateNewPostPage() {
-  return (
-    <Suspense fallback={<div className="max-w-4xl mx-auto p-8">Loading...</div>}>
-      <CreateNewPostPageContent />
-    </Suspense>
-  )
+  return <CreateNewPostPageContent />
 }

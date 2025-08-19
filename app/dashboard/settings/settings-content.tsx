@@ -285,25 +285,44 @@ export default function SettingsContent() {
     } else if (platformId === 'pinterest') {
       setLoading(true)
       try {
-        console.log('Connecting Pinterest account...')
+        console.log('Initiating Pinterest OAuth...')
         const response = await fetch('/api/auth/pinterest', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          method: 'GET',
         })
         
         const data = await response.json()
         
-        if (response.ok) {
-          toast.success('Pinterest account connected successfully!')
-          fetchConnectedAccounts()
+        if (response.ok && data.authUrl) {
+          // Redirect to Pinterest OAuth
+          window.location.href = data.authUrl
         } else {
           toast.error(data.error || 'Failed to connect Pinterest account')
         }
       } catch (error) {
         console.error('Error connecting to Pinterest:', error)
         toast.error('Failed to connect to Pinterest')
+      } finally {
+        setLoading(false)
+      }
+    } else if (platformId === 'youtube') {
+      setLoading(true)
+      try {
+        console.log('Initiating YouTube OAuth...')
+        const response = await fetch('/api/auth/youtube', {
+          method: 'GET',
+        })
+        
+        const data = await response.json()
+        
+        if (response.ok && data.authUrl) {
+          // Redirect to YouTube OAuth
+          window.location.href = data.authUrl
+        } else {
+          toast.error(data.error || 'Failed to connect YouTube account')
+        }
+      } catch (error) {
+        console.error('Error connecting to YouTube:', error)
+        toast.error('Failed to connect to YouTube')
       } finally {
         setLoading(false)
       }

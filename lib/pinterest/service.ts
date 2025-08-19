@@ -1,4 +1,6 @@
 import { PinterestClient } from './client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export class PinterestService {
   private client: PinterestClient;
@@ -43,17 +45,24 @@ export class PinterestService {
     }
   }
 
-  async createPin(boardId: string, title: string, description: string, imageUrl: string) {
+  async createPin(boardId: string, title: string, description: string, imageUrl?: string, link?: string) {
     try {
       // Note: This requires pins:write permission
-      const pinData = {
+      const pinData: any = {
         title: title,
         description: description,
-        media_source: {
+      };
+
+      if (imageUrl) {
+        pinData.media_source = {
           source_type: 'image_url',
           url: imageUrl,
-        },
-      };
+        };
+      }
+
+      if (link) {
+        pinData.link = link;
+      }
 
       const result = await this.client.createPin(boardId, pinData);
       return result;
@@ -62,4 +71,71 @@ export class PinterestService {
       throw error;
     }
   }
+}
+
+/**
+ * Helper function to get Pinterest service for a user
+ */
+export async function getUserPinterestService(userId: string) {
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+      },
+    }
+  );
+
+  // Get Pinterest account
+  const { data: account, error } = await supabase
+    .from('social_accounts')
+    .select('access_token')
+    .eq('user_id', userId)
+    .eq('platform', 'pinterest')
+    .eq('is_active', true)
+    .single();
+
+  if (error || !account) {
+    throw new Error('Pinterest account not connected');
+  }
+
+  return new PinterestService(account.access_token);
+}
+
+/**
+ * Format content for Pinterest
+ */
+export function formatPinterestContent(content: string, title?: string): { title: string; description: string } {
+  // Pinterest has a 500 character limit for descriptions
+  const maxDescriptionLength = 500;
+  
+  // Clean HTML and format content
+  const cleanContent = content
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Generate title if not provided
+  const pinTitle = title || cleanContent.split('\n')[0].substring(0, 100) || 'New Pin';
+  
+  // Truncate description if needed
+  let description = cleanContent;
+  if (description.length > maxDescriptionLength) {
+    description = description.substring(0, maxDescriptionLength - 3) + '...';
+  }
+
+  return {
+    title: pinTitle,
+    description,
+  };
 }

@@ -1,5 +1,6 @@
 import { FacebookService } from '@/lib/facebook/service';
 import { BlueskyService } from '@/lib/bluesky/service';
+import { PinterestService } from '@/lib/pinterest/service';
 import { createBrowserClient } from '@supabase/ssr';
 
 export interface PostData {
@@ -9,6 +10,8 @@ export interface PostData {
   scheduledFor?: Date;
   mediaUrls?: string[];
   selectedAccounts?: Record<string, string[]>; // platform -> array of account IDs
+  pinterestBoardId?: string; // Pinterest specific - board to post to
+  pinterestTitle?: string; // Pinterest specific - pin title
 }
 
 export interface PostResult {
@@ -79,6 +82,13 @@ export class PostingService {
       for (const account of accountsToPost) {
         try {
           const content = postData.platformContent?.[platform] || postData.content;
+          
+          // Add Pinterest-specific data to account if needed
+          if (platform === 'pinterest') {
+            account.pinterest_board_id = postData.pinterestBoardId;
+            account.pinterest_title = postData.pinterestTitle;
+          }
+          
           const result = await this.postToPlatform(
             platform, 
             content, 
@@ -123,6 +133,9 @@ export class PostingService {
       
       case 'bluesky':
         return await this.postToBluesky(textContent, account, mediaUrls);
+      
+      case 'pinterest':
+        return await this.postToPinterest(textContent, account, mediaUrls);
       
       default:
         return {
@@ -197,6 +210,47 @@ export class PostingService {
     } catch (error) {
       return {
         platform: 'bluesky',
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  private async postToPinterest(content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
+    try {
+      // Pinterest requires at least an image
+      if (!mediaUrls || mediaUrls.length === 0) {
+        throw new Error('Pinterest requires at least one image');
+      }
+
+      const response = await fetch('/api/post/pinterest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accessToken: account.access_token,
+          boardId: account.pinterest_board_id, // This needs to be set
+          title: account.pinterest_title || 'New Pin',
+          description: content,
+          imageUrl: mediaUrls[0], // Use first image
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Pinterest posting failed');
+      }
+
+      return {
+        platform: 'pinterest',
+        success: true,
+        postId: data.id,
+      };
+    } catch (error) {
+      return {
+        platform: 'pinterest',
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
       };

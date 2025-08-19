@@ -5,6 +5,17 @@ import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
+const YOUTUBE_OAUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+const YOUTUBE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+
+// YouTube OAuth scopes required for uploading videos
+const SCOPES = [
+  'https://www.googleapis.com/auth/youtube.upload',
+  'https://www.googleapis.com/auth/youtube',
+  'https://www.googleapis.com/auth/youtube.readonly',
+  'https://www.googleapis.com/auth/userinfo.profile',
+].join(' ');
+
 export async function GET(request: NextRequest) {
   try {
     // Check if user is authenticated
@@ -26,50 +37,54 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if Pinterest app is configured
-    if (!process.env.PINTEREST_APP_ID) {
-      console.error('Pinterest App ID not configured');
-      return NextResponse.json({ error: 'Pinterest not configured' }, { status: 500 });
+    // Check if YouTube app is configured
+    if (!process.env.YOUTUBE_CLIENT_ID || !process.env.YOUTUBE_CLIENT_SECRET) {
+      console.error('YouTube client ID or secret not configured');
+      return NextResponse.json({ error: 'YouTube not configured' }, { status: 500 });
     }
 
     // Generate state for CSRF protection
     const state = crypto.randomBytes(16).toString('hex');
     
-    // Store state in a cookie for verification
-    const response = NextResponse.json({ success: true });
-    response.cookies.set('pinterest_oauth_state', state, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 600, // 10 minutes
-    });
-
-    // Build Pinterest OAuth URL
+    // Build YouTube OAuth URL
     const params = new URLSearchParams({
-      client_id: process.env.PINTEREST_APP_ID,
-      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/pinterest/callback`,
+      client_id: process.env.YOUTUBE_CLIENT_ID,
+      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/youtube/callback`,
       response_type: 'code',
-      scope: 'boards:read,boards:write,pins:read,pins:write,user_accounts:read',
+      scope: SCOPES,
       state: state,
+      access_type: 'offline', // To get refresh token
+      prompt: 'consent', // Force consent to get refresh token
     });
 
-    const authUrl = `https://www.pinterest.com/oauth/?${params.toString()}`;
+    const authUrl = `${YOUTUBE_OAUTH_URL}?${params.toString()}`;
     
-    return NextResponse.json({ 
+    // Store state in a cookie for verification
+    const response = NextResponse.json({ 
       success: true, 
       authUrl 
     });
+    
+    response.cookies.set('youtube_oauth_state', state, {
+      httpOnly: true,
+      secure: false, // Allow in development
+      sameSite: 'lax',
+      maxAge: 600, // 10 minutes
+      path: '/', // Make sure it's available for all paths
+    });
+    
+    return response;
 
   } catch (error) {
-    console.error('Pinterest OAuth initiation error:', error);
+    console.error('YouTube OAuth initiation error:', error);
     return NextResponse.json(
-      { error: 'Failed to initiate Pinterest authentication' },
+      { error: 'Failed to initiate YouTube authentication' },
       { status: 500 }
     );
   }
 }
 
-// Keep POST method for disconnecting
+// Disconnect YouTube account
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -98,10 +113,10 @@ export async function POST(request: NextRequest) {
         .from('social_accounts')
         .delete()
         .eq('user_id', user.id)
-        .eq('platform', 'pinterest');
+        .eq('platform', 'youtube');
 
       if (error) {
-        console.error('Error disconnecting Pinterest:', error);
+        console.error('Error disconnecting YouTube:', error);
         return NextResponse.json({ error: 'Failed to disconnect' }, { status: 500 });
       }
 
@@ -111,9 +126,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
 
   } catch (error) {
-    console.error('Pinterest action error:', error);
+    console.error('YouTube action error:', error);
     return NextResponse.json(
-      { error: 'Failed to process Pinterest action' },
+      { error: 'Failed to process YouTube action' },
       { status: 500 }
     );
   }
