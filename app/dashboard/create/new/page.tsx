@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import dynamic from 'next/dynamic'
 import { toast } from 'sonner'
 import { PostingService, PostData } from '@/lib/posting/service'
@@ -26,7 +26,8 @@ import {
   X,
   ChevronDown,
   Zap,
-  Brain
+  Brain,
+  Loader2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -1326,6 +1327,18 @@ function CreateNewPostPageContent() {
   )
 }
 
+function LoadingFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+    </div>
+  )
+}
+
 export default function CreateNewPostPage() {
-  return <CreateNewPostPageContent />
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <CreateNewPostPageContent />
+    </Suspense>
+  )
 }
