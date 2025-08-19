@@ -31,7 +31,16 @@ import {
   Sparkles,
   Crown,
   Zap,
-  Activity
+  Activity,
+  Search,
+  BookOpen,
+  Users,
+  Shield,
+  Database,
+  BarChart3,
+  FileCode,
+  Bell,
+  Mail
 } from 'lucide-react'
 
 const navigation = [
@@ -86,11 +95,12 @@ export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Create', 'Posts'])
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Create', 'Posts', 'Blog', 'Admin'])
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [navigationItems, setNavigationItems] = useState(navigation)
   
   useEffect(() => {
     loadUser()
@@ -110,6 +120,45 @@ export function Sidebar() {
     const { data: { user } } = await supabase.auth.getUser()
     setUser(user)
     setLoading(false)
+    
+    // Add admin sections for admin user
+    if (user?.email === 'jan.orsula1@gmail.com') {
+      const adminNav = [...navigation]
+      
+      // Add admin sections at the end
+      adminNav.push(
+        // Admin divider (we'll handle this in rendering)
+        {
+          name: 'divider-admin',
+          isDivider: true,
+        },
+        // Blog Management
+        {
+          name: 'Blog Management',
+          href: '/dashboard/blog',
+          icon: BookOpen,
+          badge: 'Admin',
+        },
+        // Admin Dashboard
+        {
+          name: 'Admin Dashboard',
+          href: '/admin',
+          icon: Shield,
+          badge: 'Admin',
+        },
+        // SEO Settings
+        {
+          name: 'SEO Settings',
+          href: '/dashboard/seo',
+          icon: Search,
+          badge: 'Admin',
+        }
+      )
+      
+      setNavigationItems(adminNav)
+    } else {
+      setNavigationItems(navigation)
+    }
   }
   
   const handleLogout = async () => {
@@ -176,7 +225,20 @@ export function Sidebar() {
         {/* Navigation */}
         <nav className="px-4 space-y-1">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">Main Menu</p>
-          {navigation.map((item) => (
+          {navigationItems.map((item) => {
+            // Handle divider
+            if (item.isDivider) {
+              return (
+                <div key={item.name} className="py-2">
+                  <div className="border-t border-gray-200"></div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-4 mb-3 px-3">
+                    Admin Tools
+                  </p>
+                </div>
+              )
+            }
+            
+            return (
             <div key={item.name}>
               {item.children ? (
                 <>
@@ -254,7 +316,7 @@ export function Sidebar() {
                 </Link>
               )}
             </div>
-          ))}
+          )})}
         </nav>
       </div>
 

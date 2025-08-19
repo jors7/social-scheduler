@@ -1,0 +1,126 @@
+import { MetadataRoute } from 'next'
+import { createClient } from '@/lib/supabase/server'
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const baseUrl = 'https://www.socialcal.app'
+  const currentDate = new Date()
+  
+  // Initialize Supabase client
+  const supabase = await createClient()
+  
+  // Static pages with their priorities and update frequencies
+  const staticPages: MetadataRoute.Sitemap = [
+    {
+      url: baseUrl,
+      lastModified: currentDate,
+      changeFrequency: 'daily',
+      priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/pricing`,
+      lastModified: currentDate,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/login`,
+      lastModified: currentDate,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/signup`,
+      lastModified: currentDate,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/about`,
+      lastModified: currentDate,
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/support`,
+      lastModified: currentDate,
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/terms`,
+      lastModified: currentDate,
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/privacy`,
+      lastModified: currentDate,
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    },
+  ]
+  
+  // Fetch dynamic pages from SEO settings table
+  const { data: seoPages } = await supabase
+    .from('seo_settings')
+    .select('page_path, updated_at')
+    .order('page_path')
+  
+  // Add dynamic pages from database
+  const dynamicPages: MetadataRoute.Sitemap = seoPages?.map(page => ({
+    url: `${baseUrl}${page.page_path}`,
+    lastModified: new Date(page.updated_at),
+    changeFrequency: 'weekly' as const,
+    priority: 0.6,
+  })) || []
+  
+  // Example: Fetch blog posts if you have them
+  const { data: blogPosts } = await supabase
+    .from('blog_posts')
+    .select('slug, updated_at, published_at')
+    .eq('status', 'published')
+    .order('published_at', { ascending: false })
+  
+  const blogPages: MetadataRoute.Sitemap = blogPosts?.map(post => ({
+    url: `${baseUrl}/blog/${post.slug}`,
+    lastModified: new Date(post.updated_at || post.published_at),
+    changeFrequency: 'monthly' as const,
+    priority: 0.5,
+  })) || []
+  
+  // Example: Add user profiles or public pages
+  const { data: publicProfiles } = await supabase
+    .from('profiles')
+    .select('username, updated_at')
+    .eq('is_public', true)
+  
+  const profilePages: MetadataRoute.Sitemap = publicProfiles?.map(profile => ({
+    url: `${baseUrl}/u/${profile.username}`,
+    lastModified: new Date(profile.updated_at),
+    changeFrequency: 'weekly' as const,
+    priority: 0.4,
+  })) || []
+  
+  // Combine all pages, removing duplicates
+  const allPages = [...staticPages, ...dynamicPages, ...blogPages, ...profilePages]
+  
+  // Remove duplicates based on URL
+  const uniquePages = allPages.filter((page, index, self) =>
+    index === self.findIndex(p => p.url === page.url)
+  )
+  
+  return uniquePages
+}
+
+// Optional: Create a function to ping search engines when content changes
+export async function pingSitemap() {
+  const sitemapUrl = 'https://www.socialcal.app/sitemap.xml'
+  
+  // Ping Google
+  await fetch(`https://www.google.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`)
+  
+  // Ping Bing
+  await fetch(`https://www.bing.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`)
+  
+  // You can call this function after publishing new content
+}

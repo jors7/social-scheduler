@@ -13,6 +13,149 @@ import { AuthModals } from '@/components/auth/auth-modals'
 import { CapabilitiesCarousel } from '@/components/landing/capabilities-carousel'
 import HowItWorksSection from '@/components/landing/how-it-works-section'
 import GradientCTA from '@/components/landing/gradient-cta'
+import Script from 'next/script'
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "SocialCal",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "description": "All-in-one social media management platform for scheduling posts across 9+ platforms with AI-powered captions and analytics",
+  "url": "https://www.socialcal.app",
+  "image": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard.webp",
+  "screenshot": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard.webp",
+  "creator": {
+    "@type": "Organization",
+    "name": "SocialCal",
+    "url": "https://www.socialcal.app"
+  },
+  "offers": {
+    "@type": "AggregateOffer",
+    "priceCurrency": "USD",
+    "lowPrice": "9",
+    "highPrice": "29",
+    "offerCount": "3",
+    "offers": [
+      {
+        "@type": "Offer",
+        "name": "Starter Plan",
+        "price": "9",
+        "priceCurrency": "USD",
+        "priceSpecification": {
+          "@type": "UnitPriceSpecification",
+          "price": "9",
+          "priceCurrency": "USD",
+          "billingIncrement": 1,
+          "unitCode": "MON"
+        }
+      },
+      {
+        "@type": "Offer",
+        "name": "Professional Plan",
+        "price": "19",
+        "priceCurrency": "USD",
+        "priceSpecification": {
+          "@type": "UnitPriceSpecification",
+          "price": "19",
+          "priceCurrency": "USD",
+          "billingIncrement": 1,
+          "unitCode": "MON"
+        }
+      },
+      {
+        "@type": "Offer",
+        "name": "Enterprise Plan",
+        "price": "29",
+        "priceCurrency": "USD",
+        "priceSpecification": {
+          "@type": "UnitPriceSpecification",
+          "price": "29",
+          "priceCurrency": "USD",
+          "billingIncrement": 1,
+          "unitCode": "MON"
+        }
+      }
+    ]
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.8",
+    "reviewCount": "1250",
+    "bestRating": "5",
+    "worstRating": "1"
+  },
+  "featureList": [
+    "Multi-platform posting to 9+ social networks",
+    "AI-powered caption generation",
+    "Content scheduling and calendar",
+    "Analytics and performance tracking",
+    "Team collaboration tools",
+    "Media library management",
+    "Draft management system",
+    "Automated posting",
+    "Rich text editor"
+  ]
+}
+
+const organizationData = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "SocialCal",
+  "url": "https://www.socialcal.app",
+  "logo": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/SocialCal.webp",
+  "sameAs": [
+    "https://twitter.com/socialcal",
+    "https://www.facebook.com/socialcal",
+    "https://www.linkedin.com/company/socialcal"
+  ],
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": "",
+    "contactType": "customer support",
+    "email": "support@socialcal.app",
+    "availableLanguage": "English"
+  }
+}
+
+const faqData = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What social media platforms does SocialCal support?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "SocialCal supports posting to Twitter/X, Instagram, Facebook, LinkedIn, YouTube, TikTok, Threads, Bluesky, and Pinterest - all from one dashboard."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How much time can SocialCal save me?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Our users report saving 15+ hours weekly on social media management. You can create and schedule content 15x faster with our platform."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does SocialCal offer AI features?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes! SocialCal includes AI-powered caption suggestions with multiple tones (Professional, Casual, Funny, Inspirational), smart hashtag generation, and platform-optimized content recommendations."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is there a free trial available?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, SocialCal offers a 7-day free trial on all plans. No credit card required to start."
+      }
+    }
+  ]
+}
 
 const platforms = [
   { name: 'X (Twitter)', icon: '𝕏' },
@@ -188,7 +331,25 @@ function LandingPageContent() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+    <>
+      {/* Structured Data for SEO */}
+      <Script
+        id="structured-data-application"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <Script
+        id="structured-data-organization"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationData) }}
+      />
+      <Script
+        id="structured-data-faq"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqData) }}
+      />
+      
+      <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-lg border-b border-gray-200 shadow-lg">
         <div className="container mx-auto px-6">
@@ -1040,6 +1201,7 @@ function LandingPageContent() {
         signUpPlanId={signUpPlanId}
       />
     </div>
+    </>
   )
 }
 
