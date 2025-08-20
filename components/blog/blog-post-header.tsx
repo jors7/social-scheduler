@@ -30,9 +30,15 @@ export function BlogPostHeader({ post }: BlogPostHeaderProps) {
         <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
-        <a href="/blog" className="text-gray-900 font-medium hover:text-gray-700 transition-colors">
+        <a href="/blog" className="text-gray-500 hover:text-gray-700 transition-colors">
           Blog
         </a>
+        <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+        <span className="text-gray-900 font-medium capitalize">
+          {post.category.replace(/-/g, ' ')}
+        </span>
       </nav>
       
       <div className="grid lg:grid-cols-2 gap-12 items-center">

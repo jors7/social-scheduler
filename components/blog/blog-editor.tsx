@@ -37,7 +37,7 @@ import {
   AlignRight,
   X
 } from 'lucide-react'
-import { useCallback, useState, useRef } from 'react'
+import { useCallback, useState, useRef, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -63,6 +63,7 @@ export function BlogEditor({
   const [youtubeUrl, setYoutubeUrl] = useState('')
   const [showYoutubeInput, setShowYoutubeInput] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [, forceUpdate] = useState({})
   const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
@@ -208,8 +209,30 @@ export function BlogEditor({
       attributes: {
         class: styles.editor
       }
+    },
+    // Force re-render when content changes
+    onCreate: ({ editor }) => {
+      // Force toolbar update after creation
+      editor.on('selectionUpdate', () => {
+        // Force re-render to update toolbar state
+        forceUpdate({})
+      })
+      editor.on('transaction', () => {
+        // Force re-render on any transaction to keep toolbar in sync
+        forceUpdate({})
+      })
+    },
+    // Ensure editor updates on focus
+    autofocus: false,
+    editable: true
+  }, [])
+
+  // Update editor content when prop changes
+  useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      editor.commands.setContent(content)
     }
-  })
+  }, [content, editor])
 
   const setLink = useCallback(() => {
     if (!linkUrl) {
@@ -267,7 +290,8 @@ export function BlogEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleBold().run()}
-            className={editor.isActive('bold') ? 'bg-gray-100' : ''}
+            className={editor?.isActive('bold') ? 'bg-gray-100' : ''}
+            data-active={editor?.isActive('bold')}
           >
             <Bold className="h-4 w-4" />
           </Button>
@@ -275,7 +299,8 @@ export function BlogEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleItalic().run()}
-            className={editor.isActive('italic') ? 'bg-gray-100' : ''}
+            className={editor?.isActive('italic') ? 'bg-gray-100' : ''}
+            data-active={editor?.isActive('italic')}
           >
             <Italic className="h-4 w-4" />
           </Button>

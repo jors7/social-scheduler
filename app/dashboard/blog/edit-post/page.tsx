@@ -305,7 +305,7 @@ function EditPostContent() {
   }
 
   return (
-    <div className="container mx-auto py-6 max-w-6xl">
+    <div className="w-full">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <Button 
@@ -348,8 +348,8 @@ function EditPostContent() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex-1 min-w-0">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4">
               <TabsTrigger value="editor">Editor</TabsTrigger>
@@ -555,7 +555,7 @@ function EditPostContent() {
           </Tabs>
         </div>
 
-        <div className="space-y-4">
+        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Featured Image</CardTitle>
