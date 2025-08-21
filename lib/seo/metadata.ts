@@ -123,11 +123,10 @@ export async function generatePageMetadata(pagePath: string): Promise<Metadata> 
       } as any,
       twitter: {
         ...defaultMetadata.twitter,
-        card: (seoSettings.twitter_card as any) || defaultMetadata.twitter?.card,
         title: seoSettings.twitter_title || seoSettings.title || defaultMetadata.twitter?.title,
         description: seoSettings.twitter_description || seoSettings.description || defaultMetadata.twitter?.description,
         images: seoSettings.twitter_image ? [seoSettings.twitter_image] : defaultMetadata.twitter?.images,
-      },
+      } as any,
       alternates: {
         canonical: seoSettings.canonical_url || `https://www.socialcal.app${pagePath}`,
       },
