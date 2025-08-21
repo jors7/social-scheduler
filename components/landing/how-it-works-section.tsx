@@ -6,7 +6,7 @@ const HowItWorksSection = () => {
     <section className="py-20 pb-24 bg-gray-50">
       <div className="max-w-6xl mx-auto px-8 sm:px-12 lg:px-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
             Why Smart Creators Are Ditching Overpriced Schedulers
           </h2>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
