@@ -120,8 +120,7 @@ export async function generatePageMetadata(pagePath: string): Promise<Metadata> 
         title: seoSettings.og_title || seoSettings.title || defaultMetadata.openGraph?.title,
         description: seoSettings.og_description || seoSettings.description || defaultMetadata.openGraph?.description,
         images: seoSettings.og_image ? [{ url: seoSettings.og_image }] : defaultMetadata.openGraph?.images,
-        type: (seoSettings.og_type as any) || defaultMetadata.openGraph?.type,
-      },
+      } as any,
       twitter: {
         ...defaultMetadata.twitter,
         card: (seoSettings.twitter_card as any) || defaultMetadata.twitter?.card,
