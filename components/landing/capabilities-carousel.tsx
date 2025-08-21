@@ -16,6 +16,8 @@ import {
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
+const R2_PUBLIC_URL = 'https://pub-28b072a941304b078ab14462b82dc973.r2.dev'
+
 const capabilities = [
   {
     id: 'ux',
@@ -27,7 +29,7 @@ const capabilities = [
     color: 'from-pink-500 to-rose-500',
     iconColor: 'text-rose-500',
     image: '/Clean UX.webp',
-    video: 'https://5c52f94bd9868cc3857887309f35091f.r2.cloudflarestorage.com/demos/Clean-UX.mp4'
+    video: `${R2_PUBLIC_URL}/demos/Clean-UX.mp4`
   },
   {
     id: 'cross-platform',
@@ -39,7 +41,7 @@ const capabilities = [
     color: 'from-blue-500 to-cyan-500',
     iconColor: 'text-blue-500',
     image: '/Cross-Platform.webp',
-    video: 'https://5c52f94bd9868cc3857887309f35091f.r2.cloudflarestorage.com/demos/Cross-Platform.mp4'
+    video: `${R2_PUBLIC_URL}/demos/Cross-Platform.mp4`
   },
   {
     id: 'calendar',
@@ -51,7 +53,7 @@ const capabilities = [
     color: 'from-green-500 to-emerald-500',
     iconColor: 'text-emerald-500',
     image: '/Drag-and-Drop.webp',
-    video: 'https://5c52f94bd9868cc3857887309f35091f.r2.cloudflarestorage.com/demos/Drag-and-Drop.mp4'
+    video: `${R2_PUBLIC_URL}/demos/Drag-and-Drop.mp4`
   },
   {
     id: 'pricing',
@@ -63,7 +65,7 @@ const capabilities = [
     color: 'from-indigo-500 to-purple-500',
     iconColor: 'text-indigo-500',
     image: '/Low-Cost.webp',
-    video: 'https://5c52f94bd9868cc3857887309f35091f.r2.cloudflarestorage.com/demos/Low-Cost.mp4'
+    video: `${R2_PUBLIC_URL}/demos/Low-Cost.mp4`
   },
   {
     id: 'customization',
@@ -75,7 +77,7 @@ const capabilities = [
     color: 'from-purple-500 to-pink-500',
     iconColor: 'text-purple-500',
     image: '/Customization.webp',
-    video: 'https://5c52f94bd9868cc3857887309f35091f.r2.cloudflarestorage.com/demos/Customization.mp4'
+    video: `${R2_PUBLIC_URL}/demos/Customization.mp4`
   }
 ]
 
