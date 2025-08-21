@@ -29,7 +29,7 @@ const capabilities = [
     color: 'from-pink-500 to-rose-500',
     iconColor: 'text-rose-500',
     image: '/Clean UX.webp',
-    video: `${R2_PUBLIC_URL}/demos/Clean-UX.mp4`
+    video: `${R2_PUBLIC_URL}/Clean UX.mp4`
   },
   {
     id: 'cross-platform',
@@ -41,7 +41,7 @@ const capabilities = [
     color: 'from-blue-500 to-cyan-500',
     iconColor: 'text-blue-500',
     image: '/Cross-Platform.webp',
-    video: `${R2_PUBLIC_URL}/demos/Cross-Platform.mp4`
+    video: `${R2_PUBLIC_URL}/Cross-platform.mp4`
   },
   {
     id: 'calendar',
@@ -53,7 +53,7 @@ const capabilities = [
     color: 'from-green-500 to-emerald-500',
     iconColor: 'text-emerald-500',
     image: '/Drag-and-Drop.webp',
-    video: `${R2_PUBLIC_URL}/demos/Drag-and-Drop.mp4`
+    video: `${R2_PUBLIC_URL}/Drag-and-drop.mp4`
   },
   {
     id: 'pricing',
@@ -65,7 +65,7 @@ const capabilities = [
     color: 'from-indigo-500 to-purple-500',
     iconColor: 'text-indigo-500',
     image: '/Low-Cost.webp',
-    video: `${R2_PUBLIC_URL}/demos/Low-Cost.mp4`
+    video: `${R2_PUBLIC_URL}/Low-cost.mp4`
   },
   {
     id: 'customization',
@@ -77,7 +77,7 @@ const capabilities = [
     color: 'from-purple-500 to-pink-500',
     iconColor: 'text-purple-500',
     image: '/Customization.webp',
-    video: `${R2_PUBLIC_URL}/demos/Customization.mp4`
+    video: `${R2_PUBLIC_URL}/Customization.mp4`
   }
 ]
 
