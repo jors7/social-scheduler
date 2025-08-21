@@ -99,13 +99,13 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center space-x-8">
               <div className="hidden md:flex items-center space-x-8">
                 <Link 
-                  href="/#features"
+                  href="/?scroll=features"
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Features
                 </Link>
                 <Link 
-                  href="/#platforms"
+                  href="/?scroll=platforms"
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Platforms
@@ -117,7 +117,7 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
                   Pricing
                 </Link>
                 <Link 
-                  href="/pricing#faq" 
+                  href="/pricing?scroll=faq" 
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   FAQ
@@ -307,7 +307,7 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
               <>
                 <div className="space-y-1">
                   <Link
-                    href="/#features"
+                    href="/?scroll=features"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                   >
@@ -315,7 +315,7 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
                     <span className="font-medium">Features</span>
                   </Link>
                   <Link
-                    href="/#platforms"
+                    href="/?scroll=platforms"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                   >
@@ -331,7 +331,7 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
                     <span className="font-medium">Pricing</span>
                   </Link>
                   <Link
-                    href="/pricing#faq"
+                    href="/pricing?scroll=faq"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                   >

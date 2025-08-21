@@ -149,10 +149,11 @@ function PricingPageContent() {
   useEffect(() => {
     checkAuth()
     
-    // Check URL parameters for modal triggers
+    // Check URL parameters for modal triggers and scrolling
     const shouldOpenSignIn = searchParams.get('signin') === 'true'
     const shouldOpenSignUp = searchParams.get('signup') === 'true'
     const planFromUrl = searchParams.get('plan')
+    const scrollTo = searchParams.get('scroll')
     
     if (shouldOpenSignIn) {
       setSignInOpen(true)
@@ -167,14 +168,45 @@ function PricingPageContent() {
       router.replace('/pricing', { scroll: false })
     }
     
-    // Handle hash navigation after page loads
+    // Handle smooth scrolling from other pages
+    if (scrollTo) {
+      // First scroll to top
+      window.scrollTo(0, 0)
+      
+      // Then smoothly scroll to the target section
+      setTimeout(() => {
+        const element = document.getElementById(scrollTo)
+        if (element) {
+          const headerOffset = 80
+          const elementPosition = element.getBoundingClientRect().top
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+          
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          })
+        }
+        
+        // Clean up URL after scrolling
+        router.replace('/pricing', { scroll: false })
+      }, 100)
+    }
+    
+    // Handle hash navigation after page loads (for backward compatibility)
     const hash = window.location.hash
     if (hash) {
       setTimeout(() => {
         const id = hash.substring(1)
         const element = document.getElementById(id)
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          const headerOffset = 80
+          const elementPosition = element.getBoundingClientRect().top
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+          
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          })
         }
       }, 100)
     }
@@ -259,13 +291,13 @@ function PricingPageContent() {
             <div className="flex items-center space-x-8">
               <div className="hidden md:flex items-center space-x-8">
                 <Link 
-                  href="/#features"
+                  href="/?scroll=features"
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Features
                 </Link>
                 <Link 
-                  href="/#platforms"
+                  href="/?scroll=platforms"
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Platforms
@@ -552,7 +584,7 @@ function PricingPageContent() {
             <div>
               <h4 className="font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><Link href="/#features" className="hover:text-white">Features</Link></li>
+                <li><Link href="/?scroll=features" className="hover:text-white">Features</Link></li>
                 <li><Link href="/pricing" className="hover:text-white">Pricing</Link></li>
                 <li><Link href="#" className="hover:text-white">API</Link></li>
               </ul>

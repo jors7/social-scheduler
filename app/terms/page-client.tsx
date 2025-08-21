@@ -49,13 +49,13 @@ export default function TermsOfServiceClient() {
             <div className="flex items-center space-x-8">
               <div className="hidden md:flex items-center space-x-8">
                 <Link 
-                  href="/#features"
+                  href="/?scroll=features"
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Features
                 </Link>
                 <Link 
-                  href="/#platforms"
+                  href="/?scroll=platforms"
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Platforms
@@ -67,7 +67,7 @@ export default function TermsOfServiceClient() {
                   Pricing
                 </Link>
                 <Link 
-                  href="/pricing#faq" 
+                  href="/pricing?scroll=faq" 
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   FAQ

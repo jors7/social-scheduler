@@ -254,6 +254,7 @@ function LandingPageContent() {
     const shouldOpenSignIn = searchParams.get('signin') === 'true'
     const shouldOpenSignUp = searchParams.get('signup') === 'true'
     const planFromUrl = searchParams.get('plan')
+    const scrollTo = searchParams.get('scroll')
     
     if (shouldOpenSignIn) {
       setSignInOpen(true)
@@ -268,14 +269,45 @@ function LandingPageContent() {
       router.replace('/', { scroll: false })
     }
     
-    // Handle hash navigation after page loads
+    // Handle scroll parameter for smooth scrolling from other pages
+    if (scrollTo) {
+      // First scroll to top
+      window.scrollTo(0, 0)
+      
+      // Then smoothly scroll to the target section
+      setTimeout(() => {
+        const element = document.getElementById(scrollTo)
+        if (element) {
+          const headerOffset = 80
+          const elementPosition = element.getBoundingClientRect().top
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+          
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          })
+        }
+        
+        // Clean up URL after scrolling
+        router.replace('/', { scroll: false })
+      }, 100)
+    }
+    
+    // Handle hash navigation for smooth scrolling (for FAQ links, etc)
     const hash = window.location.hash
     if (hash) {
       setTimeout(() => {
         const id = hash.substring(1)
         const element = document.getElementById(id)
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          const headerOffset = 80
+          const elementPosition = element.getBoundingClientRect().top
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+          
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          })
         }
       }, 100)
     }
@@ -375,13 +407,35 @@ function LandingPageContent() {
             <div className="flex items-center space-x-8">
               <div className="hidden md:flex items-center space-x-8">
                 <button 
-                  onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  onClick={() => {
+                    const element = document.getElementById('features')
+                    if (element) {
+                      const headerOffset = 80
+                      const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
+                      const offsetPosition = elementPosition - headerOffset
+                      window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                      })
+                    }
+                  }}
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Features
                 </button>
                 <button 
-                  onClick={() => document.getElementById('platforms')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  onClick={() => {
+                    const element = document.getElementById('platforms')
+                    if (element) {
+                      const headerOffset = 80
+                      const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
+                      const offsetPosition = elementPosition - headerOffset
+                      window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                      })
+                    }
+                  }}
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Platforms
@@ -393,7 +447,7 @@ function LandingPageContent() {
                   Pricing
                 </Link>
                 <Link 
-                  href="/pricing#faq" 
+                  href="/pricing?scroll=faq"
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   FAQ
@@ -584,7 +638,16 @@ function LandingPageContent() {
                 <div className="space-y-1">
                   <button
                     onClick={() => {
-                      document.getElementById('features')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      const element = document.getElementById('features')
+                      if (element) {
+                        const headerOffset = 80
+                        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
+                        const offsetPosition = elementPosition - headerOffset
+                        window.scrollTo({
+                          top: offsetPosition,
+                          behavior: 'smooth'
+                        })
+                      }
                       setIsMobileMenuOpen(false)
                     }}
                     className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors w-full text-left"
@@ -594,7 +657,16 @@ function LandingPageContent() {
                   </button>
                   <button
                     onClick={() => {
-                      document.getElementById('platforms')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      const element = document.getElementById('platforms')
+                      if (element) {
+                        const headerOffset = 80
+                        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
+                        const offsetPosition = elementPosition - headerOffset
+                        window.scrollTo({
+                          top: offsetPosition,
+                          behavior: 'smooth'
+                        })
+                      }
                       setIsMobileMenuOpen(false)
                     }}
                     className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors w-full text-left"
@@ -611,7 +683,7 @@ function LandingPageContent() {
                     <span className="font-medium">Pricing</span>
                   </Link>
                   <Link
-                    href="/pricing#faq"
+                    href="/pricing?scroll=faq"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                   >

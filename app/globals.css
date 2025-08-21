@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Smooth scrolling for the entire page */
+html {
+  scroll-behavior: smooth;
+}
+
 /* Vanquish Font - Add this if you have the font file */
 @font-face {
   font-family: 'Vanquish W00 Bold';
