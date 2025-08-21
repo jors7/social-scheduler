@@ -414,8 +414,8 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
       {/* Footer - Same as homepage */}
       <footer className="bg-gray-900 text-white py-12 px-4 mt-20">
         <div className="container mx-auto">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="col-span-2 md:col-span-1">
               <h3 className="text-2xl font-bold mb-4 text-white">SocialCal</h3>
               <p className="text-gray-400">
                 The all-in-one social media management platform for modern businesses.
@@ -437,7 +437,7 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
                 <li><Link href="#" className="hover:text-white">Careers</Link></li>
               </ul>
             </div>
-            <div>
+            <div className="col-span-2 md:col-span-1">
               <h4 className="font-semibold mb-4">Legal</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="/terms" className="hover:text-white">Terms of Service</Link></li>

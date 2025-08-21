@@ -239,6 +239,11 @@ function DemoPlayer({ capability }: { capability: typeof capabilities[0] }) {
 
 export function CapabilitiesCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
+
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50
 
   const handlePrevious = () => {
     setCurrentIndex(prev => prev === 0 ? capabilities.length - 1 : prev - 1)
@@ -250,6 +255,31 @@ export function CapabilitiesCarousel() {
 
   const handleDotClick = (index: number) => {
     setCurrentIndex(index)
+  }
+
+  // Touch handlers for swipe gestures
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null) // reset touchEnd
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+
+    if (isLeftSwipe) {
+      handleNext()
+    }
+    if (isRightSwipe) {
+      handlePrevious()
+    }
   }
 
   const currentCapability = capabilities[currentIndex]
@@ -366,26 +396,31 @@ export function CapabilitiesCarousel() {
 
         {/* Carousel Container */}
         <div className="relative">
-          {/* Navigation Buttons */}
+          {/* Navigation Buttons - Higher z-index and mobile positioning */}
           <button
             type="button"
             onClick={handlePrevious}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full p-3 shadow-lg hover:shadow-xl transition-shadow hover:scale-110 active:scale-95"
+            className="absolute left-2 md:left-0 top-1/2 -translate-y-1/2 z-30 bg-white rounded-full p-2 md:p-3 shadow-lg hover:shadow-xl transition-shadow hover:scale-110 active:scale-95"
             aria-label="Previous capability"
           >
-            <ChevronLeft className="h-6 w-6 text-gray-700" />
+            <ChevronLeft className="h-5 w-5 md:h-6 md:w-6 text-gray-700" />
           </button>
           <button
             type="button"
             onClick={handleNext}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full p-3 shadow-lg hover:shadow-xl transition-shadow hover:scale-110 active:scale-95"
+            className="absolute right-2 md:right-0 top-1/2 -translate-y-1/2 z-30 bg-white rounded-full p-2 md:p-3 shadow-lg hover:shadow-xl transition-shadow hover:scale-110 active:scale-95"
             aria-label="Next capability"
           >
-            <ChevronRight className="h-6 w-6 text-gray-700" />
+            <ChevronRight className="h-5 w-5 md:h-6 md:w-6 text-gray-700" />
           </button>
 
-          {/* Main Content - Reduced width and centered */}
-          <div className="grid lg:grid-cols-2 gap-8 items-center max-w-6xl mx-auto">
+          {/* Main Content - Reduced width and centered - with touch handlers for swipe */}
+          <div 
+            className="grid lg:grid-cols-2 gap-8 items-center max-w-6xl mx-auto"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+          >
             {/* Left Side - Text Content */}
             <div className="space-y-6 transition-all duration-500 ease-in-out" key={`content-${currentIndex}`}>
               <h3 className="text-3xl md:text-4xl font-bold">
