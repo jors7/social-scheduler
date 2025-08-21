@@ -127,10 +127,19 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
     setError('')
     
     try {
+      // Use the current domain for redirects
+      const redirectTo = typeof window !== 'undefined' 
+        ? `${window.location.origin}/auth/callback`
+        : `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
+        
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       })
       

@@ -98,18 +98,18 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
             </Link>
             <div className="flex items-center space-x-8">
               <div className="hidden md:flex items-center space-x-8">
-                <button 
-                  onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                <Link 
+                  href="/#features"
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Features
-                </button>
-                <button 
-                  onClick={() => document.getElementById('platforms')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                </Link>
+                <Link 
+                  href="/#platforms"
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
                 >
                   Platforms
-                </button>
+                </Link>
                 <Link 
                   href="/pricing" 
                   className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
@@ -306,26 +306,22 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
               // Logged Out Menu
               <>
                 <div className="space-y-1">
-                  <button
-                    onClick={() => {
-                      document.getElementById('features')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                      setIsMobileMenuOpen(false)
-                    }}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors w-full text-left"
+                  <Link
+                    href="/#features"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                   >
                     <Zap className="h-5 w-5" />
                     <span className="font-medium">Features</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      document.getElementById('platforms')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                      setIsMobileMenuOpen(false)
-                    }}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors w-full text-left"
+                  </Link>
+                  <Link
+                    href="/#platforms"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                   >
                     <Layers className="h-5 w-5" />
                     <span className="font-medium">Platforms</span>
-                  </button>
+                  </Link>
                   <Link
                     href="/pricing"
                     onClick={() => setIsMobileMenuOpen(false)}
