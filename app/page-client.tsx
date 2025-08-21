@@ -1208,11 +1208,11 @@ function LandingPageContent() {
             {[...testimonials[0], ...testimonials[0]].map((testimonial, index) => (
               <div
                 key={index}
-                className="flex-shrink-0 w-[380px] mx-3"
+                className="flex-shrink-0 w-[280px] sm:w-[380px] mx-2 sm:mx-3"
               >
-                <Card className="bg-white shadow-md hover:shadow-lg transition-shadow duration-300 h-[120px] border-gray-100">
-                  <CardContent className="h-full flex items-center justify-center p-5">
-                    <p className="text-gray-600 text-sm leading-relaxed font-normal text-center">
+                <Card className="bg-white shadow-md hover:shadow-lg transition-shadow duration-300 h-[100px] sm:h-[120px] border-gray-100">
+                  <CardContent className="h-full flex items-center justify-center p-4 sm:p-5">
+                    <p className="text-gray-600 text-xs sm:text-sm leading-relaxed font-normal text-center">
                       {testimonial}
                     </p>
                   </CardContent>
@@ -1221,8 +1221,8 @@ function LandingPageContent() {
             ))}
           </div>
           {/* Fade gradients on both sides */}
-          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white/90 via-white/50 to-transparent pointer-events-none z-10" />
-          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white/90 via-white/50 to-transparent pointer-events-none z-10" />
+          <div className="absolute inset-y-0 left-0 w-16 sm:w-32 bg-gradient-to-r from-white/90 via-white/50 to-transparent pointer-events-none z-10" />
+          <div className="absolute inset-y-0 right-0 w-16 sm:w-32 bg-gradient-to-l from-white/90 via-white/50 to-transparent pointer-events-none z-10" />
         </div>
         
         {/* Second row - scrolling right to left */}
@@ -1232,11 +1232,11 @@ function LandingPageContent() {
             {[...testimonials[1], ...testimonials[1]].map((testimonial, index) => (
               <div
                 key={index}
-                className="flex-shrink-0 w-[380px] mx-3"
+                className="flex-shrink-0 w-[280px] sm:w-[380px] mx-2 sm:mx-3"
               >
-                <Card className="bg-white shadow-md hover:shadow-lg transition-shadow duration-300 h-[120px] border-gray-100">
-                  <CardContent className="h-full flex items-center justify-center p-5">
-                    <p className="text-gray-600 text-sm leading-relaxed font-normal text-center">
+                <Card className="bg-white shadow-md hover:shadow-lg transition-shadow duration-300 h-[100px] sm:h-[120px] border-gray-100">
+                  <CardContent className="h-full flex items-center justify-center p-4 sm:p-5">
+                    <p className="text-gray-600 text-xs sm:text-sm leading-relaxed font-normal text-center">
                       {testimonial}
                     </p>
                   </CardContent>
@@ -1245,8 +1245,8 @@ function LandingPageContent() {
             ))}
           </div>
           {/* Fade gradients on both sides */}
-          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white/90 via-white/50 to-transparent pointer-events-none z-10" />
-          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white/90 via-white/50 to-transparent pointer-events-none z-10" />
+          <div className="absolute inset-y-0 left-0 w-16 sm:w-32 bg-gradient-to-r from-white/90 via-white/50 to-transparent pointer-events-none z-10" />
+          <div className="absolute inset-y-0 right-0 w-16 sm:w-32 bg-gradient-to-l from-white/90 via-white/50 to-transparent pointer-events-none z-10" />
         </div>
       </section>
 
