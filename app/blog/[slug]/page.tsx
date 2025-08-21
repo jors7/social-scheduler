@@ -156,7 +156,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 py-8">
                 {/* Table of Contents - Desktop Only */}
                 <aside className="hidden lg:block lg:col-span-3">
-                  <div className="sticky top-24">
+                  <div className="sticky top-24" style={{ marginTop: '0' }}>
                     <BlogTableOfContents headings={headings} />
                   </div>
                 </aside>

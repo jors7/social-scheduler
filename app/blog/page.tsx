@@ -5,13 +5,13 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { Calendar, Clock, ChevronRight } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { generatePageMetadata } from '@/lib/seo/metadata'
 
 // Static generation with ISR - revalidate every 60 seconds
 export const revalidate = 60
 
-export const metadata: Metadata = {
-  title: 'Blog | SocialCal',
-  description: 'Discover social media tips, marketing strategies, and product updates to help you grow your online presence.',
+export async function generateMetadata(): Promise<Metadata> {
+  return generatePageMetadata('/blog')
 }
 
 // Create Supabase client at build time

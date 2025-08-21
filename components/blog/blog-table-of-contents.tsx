@@ -52,8 +52,8 @@ export function BlogTableOfContents({ headings }: BlogTableOfContentsProps) {
   }
 
   return (
-    <nav className="space-y-1">
-      <h3 className="text-sm font-semibold text-gray-900 mb-4">Table of Contents</h3>
+    <nav className="space-y-1" style={{ paddingTop: '0.5rem' }}>
+      <h3 className="text-sm font-semibold text-gray-900 mb-3">Table of Contents</h3>
       <ul className="space-y-2">
         {headings.map((heading) => (
           <li
