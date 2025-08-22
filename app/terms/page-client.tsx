@@ -305,7 +305,7 @@ export default function TermsOfServiceClient() {
             <div className="col-span-2 md:col-span-1">
               <h3 className="text-2xl font-bold mb-4 text-white">SocialCal</h3>
               <p className="text-gray-400">
-                The all-in-one social media management platform for modern businesses.
+                The all-in-one social media scheduler for modern businesses.
               </p>
             </div>
             <div>
@@ -313,7 +313,6 @@ export default function TermsOfServiceClient() {
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="/#features" className="hover:text-white">Features</Link></li>
                 <li><Link href="/pricing" className="hover:text-white">Pricing</Link></li>
-                <li><Link href="#" className="hover:text-white">API</Link></li>
               </ul>
             </div>
             <div>
@@ -321,7 +320,6 @@ export default function TermsOfServiceClient() {
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="/about" className="hover:text-white">About</Link></li>
                 <li><Link href="/blog" className="hover:text-white">Blog</Link></li>
-                <li><Link href="#" className="hover:text-white">Careers</Link></li>
               </ul>
             </div>
             <div className="col-span-2 md:col-span-1">
@@ -329,13 +327,12 @@ export default function TermsOfServiceClient() {
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="/terms" className="hover:text-white">Terms of Service</Link></li>
                 <li><Link href="/privacy" className="hover:text-white">Privacy Policy</Link></li>
-                <li><Link href="/support" className="hover:text-white">Support</Link></li>
                 <li><Link href="/contact" className="hover:text-white">Contact</Link></li>
               </ul>
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
-            <p>&copy; 2024 SocialCal. All rights reserved.</p>
+            <p>&copy; 2025 SocialCal. All rights reserved.</p>
           </div>
         </div>
       </footer>
