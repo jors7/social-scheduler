@@ -29,24 +29,24 @@ const HowItWorksSection = () => {
             >
               {/* Mobile: Text above Image */}
               <div className="lg:hidden">
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="flex-shrink-0 relative">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg z-10 relative">
-                      1
+                <div className="mb-4">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="flex-shrink-0 relative">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg z-10 relative">
+                        1
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    <h3 className="text-xl font-bold text-gray-900 flex-1">
                       No Confusion. No Learning Curve.
                     </h3>
-                    <p className="text-base text-gray-600 leading-relaxed">
-                      Get set up in minutes — not hours. Our clean, creator-first dashboard lets you start scheduling right away. No overwhelming menus, no clunky setup.
-                    </p>
                   </div>
+                  <p className="text-base text-gray-600 leading-relaxed mb-6">
+                    Get set up in minutes — not hours. Our clean, creator-first dashboard lets you start scheduling right away. No overwhelming menus, no clunky setup.
+                  </p>
                 </div>
                 
                 {/* Mobile Image - Same as Desktop */}
-                <div className="w-full px-4 mb-8">
+                <div className="w-full px-4 mb-10">
                   <div className="bg-gradient-to-br from-blue-50 to-white rounded-3xl p-8 shadow-2xl border border-blue-100">
                     <div className="space-y-5">
                       {/* Header */}
@@ -175,24 +175,24 @@ const HowItWorksSection = () => {
             >
               {/* Mobile: Text above Image */}
               <div className="lg:hidden">
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="flex-shrink-0 relative">
-                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg z-10 relative">
-                      2
+                <div className="mb-4">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="flex-shrink-0 relative">
+                      <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg z-10 relative">
+                        2
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    <h3 className="text-xl font-bold text-gray-900 flex-1">
                       The Most Affordable Scheduler on the Market
                     </h3>
-                    <p className="text-base text-gray-600 leading-relaxed">
-                      Why pay $50+/mo for features you&apos;ll never use? SocialCal packs the essentials — cross-platform scheduling, smart calendar, and repurposing tools — for a fraction of the price.
-                    </p>
                   </div>
+                  <p className="text-base text-gray-600 leading-relaxed mb-6">
+                    Why pay $50+/mo for features you&apos;ll never use? SocialCal packs the essentials — cross-platform scheduling, smart calendar, and repurposing tools — for a fraction of the price.
+                  </p>
                 </div>
                 
                 {/* Mobile Image - Same as Desktop */}
-                <div className="w-full px-4 mb-8">
+                <div className="w-full px-4 mb-10">
                   <div className="bg-gradient-to-br from-green-50 to-white rounded-3xl p-8 shadow-2xl border border-green-100">
                     <div className="space-y-5">
                       {/* Header with icon */}
@@ -317,24 +317,24 @@ const HowItWorksSection = () => {
             >
               {/* Mobile: Text above Image */}
               <div className="lg:hidden">
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="flex-shrink-0 relative">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg z-10 relative">
-                      3
+                <div className="mb-4">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="flex-shrink-0 relative">
+                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg z-10 relative">
+                        3
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    <h3 className="text-xl font-bold text-gray-900 flex-1">
                       Built for All Major Platforms (Yes, Even Threads & Bluesky)
                     </h3>
-                    <p className="text-base text-gray-600 leading-relaxed">
-                      Schedule once and publish across Instagram, X (Twitter), LinkedIn, Facebook, TikTok, Pinterest, YouTube, Threads, and Bluesky. We&apos;ve got you covered everywhere.
-                    </p>
                   </div>
+                  <p className="text-base text-gray-600 leading-relaxed mb-6">
+                    Schedule once and publish across Instagram, X (Twitter), LinkedIn, Facebook, TikTok, Pinterest, YouTube, Threads, and Bluesky. We&apos;ve got you covered everywhere.
+                  </p>
                 </div>
                 
                 {/* Mobile Image - Same as Desktop */}
-                <div className="w-full px-4 mb-8">
+                <div className="w-full px-4 mb-10">
                   <div className="bg-gradient-to-br from-purple-50 to-white rounded-3xl p-8 shadow-2xl border border-purple-100">
                     <div className="space-y-5">
                       {/* Header */}
@@ -439,24 +439,24 @@ const HowItWorksSection = () => {
             >
               {/* Mobile: Text above Image */}
               <div className="lg:hidden">
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="flex-shrink-0 relative">
-                    <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg z-10 relative">
-                      4
+                <div className="mb-4">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="flex-shrink-0 relative">
+                      <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg z-10 relative">
+                        4
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    <h3 className="text-xl font-bold text-gray-900 flex-1">
                       Designed for Solopreneurs, Creators, and Small Teams
                     </h3>
-                    <p className="text-base text-gray-600 leading-relaxed">
-                      Unlike enterprise platforms built for marketing departments, SocialCal was designed with solo creators and lean brands in mind — so every feature is relevant, simple, and effective.
-                    </p>
                   </div>
+                  <p className="text-base text-gray-600 leading-relaxed mb-6">
+                    Unlike enterprise platforms built for marketing departments, SocialCal was designed with solo creators and lean brands in mind — so every feature is relevant, simple, and effective.
+                  </p>
                 </div>
                 
                 {/* Mobile Image - Same as Desktop */}
-                <div className="w-full px-4 mb-8">
+                <div className="w-full px-4 mb-10">
                   <div className="bg-gradient-to-br from-pink-50 to-white rounded-3xl p-8 shadow-2xl border border-pink-100">
                     <div className="space-y-5">
                       {/* Header */}
