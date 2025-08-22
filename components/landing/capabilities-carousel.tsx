@@ -86,6 +86,7 @@ function DemoPlayer({ capability }: { capability: typeof capabilities[0] }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isInView, setIsInView] = useState(false)
   const [videoLoaded, setVideoLoaded] = useState(false)
+  const [posterReady, setPosterReady] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const posterVideoRef = useRef<HTMLVideoElement>(null)
@@ -140,10 +141,73 @@ function DemoPlayer({ capability }: { capability: typeof capabilities[0] }) {
     setVideoLoaded(false)
   }
 
+  // Load first frame when video is in view
+  useEffect(() => {
+    if (isInView && posterVideoRef.current && !isPlaying) {
+      const video = posterVideoRef.current
+      
+      // Set initial time to ensure we get a frame
+      video.currentTime = 0.1
+      
+      const handleLoadedMetadata = () => {
+        // Try different approaches to ensure first frame loads on mobile
+        if (video) {
+          // Method 1: Set currentTime to trigger frame load
+          video.currentTime = 0.1
+          
+          // Method 2: Try to play and immediately pause (works on some mobile browsers)
+          const playPromise = video.play()
+          
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                // Pause immediately after play starts
+                video.pause()
+                video.currentTime = 0.1
+                setPosterReady(true)
+              })
+              .catch(() => {
+                // Autoplay was prevented, just set the frame
+                video.currentTime = 0.1
+                setPosterReady(true)
+              })
+          } else {
+            // Fallback for older browsers
+            video.pause()
+            setPosterReady(true)
+          }
+        }
+      }
+      
+      const handleCanPlay = () => {
+        // Additional event to ensure video is ready
+        if (video && !posterReady) {
+          video.currentTime = 0.1
+          setPosterReady(true)
+        }
+      }
+      
+      // Try multiple events to ensure compatibility across devices
+      video.addEventListener('loadedmetadata', handleLoadedMetadata)
+      video.addEventListener('canplay', handleCanPlay)
+      
+      // Also try to load immediately
+      video.load()
+      
+      return () => {
+        if (video) {
+          video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+          video.removeEventListener('canplay', handleCanPlay)
+        }
+      }
+    }
+  }, [isInView, capability.id, isPlaying, posterReady])
+
   // Reset when capability changes
   useEffect(() => {
     setIsPlaying(false)
     setVideoLoaded(false)
+    setPosterReady(false)
     // Force poster video to reload with new source
     if (posterVideoRef.current) {
       posterVideoRef.current.load()
@@ -155,14 +219,29 @@ function DemoPlayer({ capability }: { capability: typeof capabilities[0] }) {
       {!isPlaying ? (
         // Show video poster with play button overlay
         <div className="relative w-full h-full group cursor-pointer" onClick={handlePlayClick}>
+          {/* Loading state with gradient background */}
+          {!posterReady && (
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="animate-pulse">
+                  <div className="w-16 h-16 rounded-full bg-gray-700/50"></div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {isInView && (
             <video
               ref={posterVideoRef}
               key={capability.id} // Force re-render when capability changes
-              className="w-full h-full object-cover"
+              className={cn(
+                "w-full h-full object-cover transition-opacity duration-500",
+                posterReady ? "opacity-100" : "opacity-0"
+              )}
               muted
               playsInline
-              preload="metadata"
+              preload="auto" // Changed from metadata to auto for better mobile support
+              {...{ 'webkit-playsinline': 'true' }} // iOS specific attribute
             >
               <source src={capability.video} type="video/mp4" />
             </video>
