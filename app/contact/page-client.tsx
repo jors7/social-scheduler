@@ -151,11 +151,11 @@ export default function ContactPage() {
         onClose={() => setIsMobileMenuOpen(false)}
         isAuthenticated={isAuthenticated}
         userEmail={userEmail}
-        onSignIn={() => {
+        onSignInClick={() => {
           setIsMobileMenuOpen(false)
           setSignInOpen(true)
         }}
-        onSignUp={() => {
+        onSignUpClick={() => {
           setIsMobileMenuOpen(false)
           router.push('/pricing')
         }}
