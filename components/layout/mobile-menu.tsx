@@ -51,15 +51,45 @@ export function MobileMenu({
   const handleNavigation = (href: string) => {
     onClose()
     if (href.startsWith('#')) {
-      const element = document.getElementById(href.substring(1))
-      if (element) {
-        const headerOffset = 80
-        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
-        const offsetPosition = elementPosition - headerOffset
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth'
-        })
+      const currentPath = window.location.pathname
+      const targetId = href.substring(1)
+      
+      // Special handling for FAQ which is on the pricing page
+      if (targetId === 'faq-pricing') {
+        if (currentPath === '/pricing') {
+          // We're already on pricing page, just scroll to FAQ
+          const element = document.getElementById('faq')
+          if (element) {
+            const headerOffset = 80
+            const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
+            const offsetPosition = elementPosition - headerOffset
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            })
+          }
+        } else {
+          // Navigate to pricing page with scroll parameter
+          router.push('/pricing?scroll=faq')
+        }
+      } else {
+        // For other anchor links (features, platforms)
+        if (currentPath === '/') {
+          // We're on homepage, just scroll
+          const element = document.getElementById(targetId)
+          if (element) {
+            const headerOffset = 80
+            const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
+            const offsetPosition = elementPosition - headerOffset
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            })
+          }
+        } else {
+          // We're on another page, navigate to homepage with scroll parameter
+          router.push(`/?scroll=${targetId}`)
+        }
       }
     } else {
       router.push(href)
@@ -250,10 +280,9 @@ export function MobileMenu({
                     </div>
                   </Link>
 
-                  <Link
-                    href="/pricing#faq"
-                    onClick={() => handleNavigation('/pricing#faq')}
-                    className="flex items-center gap-3 px-4 py-3.5 text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-xl transition-all duration-200 group"
+                  <button
+                    onClick={() => handleNavigation('#faq-pricing')}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-xl transition-all duration-200 group text-left"
                   >
                     <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-orange-100 group-hover:from-orange-100 group-hover:to-orange-200 rounded-xl flex items-center justify-center transition-colors">
                       <LifeBuoy className="h-5 w-5 text-orange-600" />
@@ -262,7 +291,7 @@ export function MobileMenu({
                       <span className="font-semibold text-base">FAQ</span>
                       <p className="text-xs text-gray-500">Get answers</p>
                     </div>
-                  </Link>
+                  </button>
                 </div>
 
                 <div className="border-t border-gray-200 pt-6 space-y-3 px-2">
