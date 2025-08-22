@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Calendar, Users, BarChart, Zap, Shield, Menu, Clock, TrendingUp, ArrowRight, Layers, Sparkles, ChevronRight, X, LogOut, User as UserIcon, CreditCard, LifeBuoy, Home } from 'lucide-react'
+import { Calendar, Users, BarChart, Zap, Shield, Menu, Clock, TrendingUp, ArrowRight, Layers, Sparkles, ChevronRight } from 'lucide-react'
 import { useEffect, useState, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -13,6 +13,7 @@ import { AuthModals } from '@/components/auth/auth-modals'
 import { CapabilitiesCarousel } from '@/components/landing/capabilities-carousel'
 import HowItWorksSection from '@/components/landing/how-it-works-section'
 import GradientCTA from '@/components/landing/gradient-cta'
+import { MobileMenu } from '@/components/layout/mobile-menu'
 import Script from 'next/script'
 
 const structuredData = {
@@ -319,47 +320,7 @@ function LandingPageContent() {
     setUserEmail(user?.email || null)
   }
 
-  const handleLogout = async () => {
-    try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-      })
-      
-      if (response.ok) {
-        toast.success('Logged out successfully')
-        setIsAuthenticated(false)
-        setUserEmail(null)
-        setIsMobileMenuOpen(false)
-        router.push('/')
-      } else {
-        toast.error('Failed to logout')
-      }
-    } catch (error) {
-      console.error('Logout error:', error)
-      toast.error('An error occurred while logging out')
-    }
-  }
 
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement
-      if (isMobileMenuOpen && !target.closest('.mobile-menu') && !target.closest('.mobile-menu-button')) {
-        setIsMobileMenuOpen(false)
-      }
-    }
-
-    if (isMobileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-      // Prevent body scroll when menu is open
-      document.body.style.overflow = 'hidden'
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-      document.body.style.overflow = 'unset'
-    }
-  }, [isMobileMenuOpen])
 
 
   return (
@@ -499,254 +460,15 @@ function LandingPageContent() {
         </div>
       </header>
 
-      {/* Mobile Menu Overlay */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
-
-      {/* Mobile Menu Panel */}
-      <div 
-        className={`fixed top-0 right-0 h-full w-80 bg-gradient-to-b from-white to-gray-50 shadow-2xl z-50 transform transition-all duration-300 ease-in-out md:hidden mobile-menu ${
-          isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        {/* Menu Header with gradient background */}
-        <div className="relative bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 p-6">
-          {/* Close button - positioned absolutely */}
-          <button
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-colors"
-          >
-            <X className="h-5 w-5 text-white" />
-          </button>
-
-          {/* User Info or Welcome Message */}
-          {isAuthenticated && userEmail ? (
-            <div className="pt-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-lg border-2 border-white/30">
-                  {userEmail[0].toUpperCase()}
-                </div>
-                <div className="flex-1">
-                  <p className="text-white/80 text-sm">Welcome back</p>
-                  <p className="text-white font-semibold truncate">{userEmail}</p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="pt-4">
-              <h3 className="text-white text-2xl font-bold">Menu</h3>
-              <p className="text-white/80 text-sm mt-1">Navigate SocialCal</p>
-            </div>
-          )}
-        </div>
-
-        {/* Menu Content */}
-        <div className="flex flex-col h-full">
-          <nav className="flex-1 px-6 py-4 overflow-y-auto">
-            {isAuthenticated ? (
-              // Logged In Menu
-              <>
-                <div className="space-y-1">
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                  >
-                    <div className="w-8 h-8 bg-gray-100 group-hover:bg-blue-100 rounded-lg flex items-center justify-center transition-colors">
-                      <Home className="h-4 w-4" />
-                    </div>
-                    <span className="font-medium">Dashboard</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/create/new"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                  >
-                    <div className="w-8 h-8 bg-gray-100 group-hover:bg-blue-100 rounded-lg flex items-center justify-center transition-colors">
-                      <Sparkles className="h-4 w-4" />
-                    </div>
-                    <span className="font-medium">Create Post</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/posts"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <Clock className="h-5 w-5" />
-                    <span className="font-medium">My Posts</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/analytics"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <BarChart className="h-5 w-5" />
-                    <span className="font-medium">Analytics</span>
-                  </Link>
-                </div>
-
-                <div className="border-t border-gray-100 my-4"></div>
-
-                <div className="space-y-1">
-                  <Link
-                    href="/dashboard/profile"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <UserIcon className="h-5 w-5" />
-                    <span className="font-medium">Profile</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/billing"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <CreditCard className="h-5 w-5" />
-                    <span className="font-medium">Billing</span>
-                  </Link>
-                  <Link
-                    href="/support"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <LifeBuoy className="h-5 w-5" />
-                    <span className="font-medium">Support</span>
-                  </Link>
-                </div>
-
-                <div className="border-t border-gray-100 my-4"></div>
-
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 w-full group"
-                >
-                  <div className="w-8 h-8 bg-red-50 group-hover:bg-red-100 rounded-lg flex items-center justify-center transition-colors">
-                    <LogOut className="h-4 w-4" />
-                  </div>
-                  <span className="font-medium">Sign Out</span>
-                </button>
-              </>
-            ) : (
-              // Logged Out Menu
-              <>
-                <div className="space-y-1">
-                  <button
-                    onClick={() => {
-                      const element = document.getElementById('features')
-                      if (element) {
-                        const headerOffset = 80
-                        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
-                        const offsetPosition = elementPosition - headerOffset
-                        window.scrollTo({
-                          top: offsetPosition,
-                          behavior: 'smooth'
-                        })
-                      }
-                      setIsMobileMenuOpen(false)
-                    }}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors w-full text-left"
-                  >
-                    <Zap className="h-5 w-5" />
-                    <span className="font-medium">Features</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      const element = document.getElementById('platforms')
-                      if (element) {
-                        const headerOffset = 80
-                        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
-                        const offsetPosition = elementPosition - headerOffset
-                        window.scrollTo({
-                          top: offsetPosition,
-                          behavior: 'smooth'
-                        })
-                      }
-                      setIsMobileMenuOpen(false)
-                    }}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors w-full text-left"
-                  >
-                    <Layers className="h-5 w-5" />
-                    <span className="font-medium">Platforms</span>
-                  </button>
-                  <Link
-                    href="/pricing"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <CreditCard className="h-5 w-5" />
-                    <span className="font-medium">Pricing</span>
-                  </Link>
-                  <Link
-                    href="/pricing?scroll=faq"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <LifeBuoy className="h-5 w-5" />
-                    <span className="font-medium">FAQ</span>
-                  </Link>
-                </div>
-
-                <div className="border-t border-gray-100 my-4"></div>
-
-                <div className="space-y-1">
-                  <Link
-                    href="/about"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <Users className="h-5 w-5" />
-                    <span className="font-medium">About</span>
-                  </Link>
-                  <Link
-                    href="/blog"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <TrendingUp className="h-5 w-5" />
-                    <span className="font-medium">Blog</span>
-                  </Link>
-                  <Link
-                    href="/support"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <LifeBuoy className="h-5 w-5" />
-                    <span className="font-medium">Support</span>
-                  </Link>
-                </div>
-
-                <div className="border-t border-gray-100 my-4"></div>
-
-                {/* Sign In and Start Free Trial Buttons */}
-                <div className="space-y-3 px-0 pt-4">
-                  <button
-                    className="w-full py-3 px-4 text-sm font-semibold border-2 border-gray-200 text-gray-700 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200"
-                    onClick={() => {
-                      setSignInOpen(true)
-                      setIsMobileMenuOpen(false)
-                    }}
-                  >
-                    Sign In
-                  </button>
-                  <button
-                    className="w-full py-3 px-4 text-sm font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl rounded-xl transition-all duration-200 transform hover:scale-[1.02]"
-                    onClick={() => {
-                      router.push('/pricing')
-                      setIsMobileMenuOpen(false)
-                    }}
-                  >
-                    ✨ Start Free Trial
-                  </button>
-                </div>
-              </>
-            )}
-          </nav>
-        </div>
-      </div>
+      {/* Mobile Menu */}
+      <MobileMenu 
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        isAuthenticated={isAuthenticated}
+        userEmail={userEmail}
+        onSignInClick={() => setSignInOpen(true)}
+        onSignUpClick={() => setSignUpOpen(true)}
+      />
 
       {/* Hero Section - Two Column Layout */}
       <section className="relative pt-4 pb-10 px-4 overflow-hidden">

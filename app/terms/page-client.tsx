@@ -3,13 +3,14 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { BarChart, Menu, ChevronRight, X, LogOut, User as UserIcon, CreditCard, LifeBuoy, Home, Clock, TrendingUp, Users, Layers, Zap, Sparkles } from 'lucide-react'
+import { BarChart, Menu, ChevronRight, Clock, TrendingUp, Users, Layers, Zap, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { AuthModals } from '@/components/auth/auth-modals'
 
+import { MobileMenu } from '@/components/layout/mobile-menu'
 export default function TermsOfServiceClient() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
@@ -51,17 +52,7 @@ export default function TermsOfServiceClient() {
     setUserEmail(user?.email || null)
   }
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut()
-      setIsAuthenticated(false)
-      setUserEmail(null)
-      setIsMobileMenuOpen(false)
-      router.push('/')
-    } catch (error) {
-      console.error('Logout error:', error)
-    }
-  }
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
@@ -156,246 +147,15 @@ export default function TermsOfServiceClient() {
         </div>
       </header>
 
-      {/* Mobile Menu Overlay */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
-
-      {/* Mobile Menu Panel */}
-      <div 
-        className={`fixed top-0 right-0 h-full w-80 bg-gradient-to-b from-white to-gray-50 shadow-2xl z-50 transform transition-all duration-300 ease-in-out md:hidden mobile-menu ${
-          isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        {/* Menu Header with gradient background */}
-        <div className="relative bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 p-6">
-          {/* Close button - positioned absolutely */}
-          <button
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-colors"
-          >
-            <X className="h-5 w-5 text-white" />
-          </button>
-
-          {/* User Info or Welcome Message */}
-          {isAuthenticated && userEmail ? (
-            <div className="pt-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-lg border-2 border-white/30">
-                  {userEmail[0].toUpperCase()}
-                </div>
-                <div className="flex-1">
-                  <p className="text-white/80 text-sm">Welcome back</p>
-                  <p className="text-white font-semibold truncate">{userEmail}</p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="pt-4">
-              <h3 className="text-white text-2xl font-bold">Menu</h3>
-              <p className="text-white/80 text-sm mt-1">Navigate SocialCal</p>
-            </div>
-          )}
-        </div>
-
-        {/* Menu Content */}
-        <div className="flex flex-col h-full">
-          <nav className="flex-1 px-6 py-4 overflow-y-auto">
-            {isAuthenticated ? (
-              // Logged In Menu
-              <>
-                <div className="space-y-1">
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                  >
-                    <div className="w-8 h-8 bg-gray-100 group-hover:bg-blue-100 rounded-lg flex items-center justify-center transition-colors">
-                      <Home className="h-4 w-4" />
-                    </div>
-                    <span className="font-medium">Dashboard</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/create/new"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                  >
-                    <div className="w-8 h-8 bg-gray-100 group-hover:bg-blue-100 rounded-lg flex items-center justify-center transition-colors">
-                      <Sparkles className="h-4 w-4" />
-                    </div>
-                    <span className="font-medium">Create Post</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/posts"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                  >
-                    <div className="w-8 h-8 bg-gray-100 group-hover:bg-blue-100 rounded-lg flex items-center justify-center transition-colors">
-                      <Clock className="h-4 w-4" />
-                    </div>
-                    <span className="font-medium">My Posts</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/analytics"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                  >
-                    <div className="w-8 h-8 bg-gray-100 group-hover:bg-blue-100 rounded-lg flex items-center justify-center transition-colors">
-                      <BarChart className="h-4 w-4" />
-                    </div>
-                    <span className="font-medium">Analytics</span>
-                  </Link>
-                </div>
-
-                <div className="border-t border-gray-100 my-4"></div>
-
-                <div className="space-y-1">
-                  <Link
-                    href="/dashboard/profile"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                  >
-                    <div className="w-8 h-8 bg-gray-100 group-hover:bg-blue-100 rounded-lg flex items-center justify-center transition-colors">
-                      <UserIcon className="h-4 w-4" />
-                    </div>
-                    <span className="font-medium">Profile</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/billing"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                  >
-                    <div className="w-8 h-8 bg-gray-100 group-hover:bg-blue-100 rounded-lg flex items-center justify-center transition-colors">
-                      <CreditCard className="h-4 w-4" />
-                    </div>
-                    <span className="font-medium">Billing</span>
-                  </Link>
-                  <Link
-                    href="/support"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                  >
-                    <LifeBuoy className="h-4 w-4" />
-                    <span className="font-medium">Support</span>
-                  </Link>
-                </div>
-
-                <div className="border-t border-gray-100 my-4"></div>
-
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors w-full"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="font-medium">Sign Out</span>
-                </button>
-              </>
-            ) : (
-              // Logged Out Menu
-              <>
-                <div className="space-y-1">
-                  <Link
-                    href="/?scroll=features"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                  >
-                    <Zap className="h-4 w-4" />
-                    <span className="font-medium">Features</span>
-                  </Link>
-                  <Link
-                    href="/?scroll=platforms"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                  >
-                    <Layers className="h-4 w-4" />
-                    <span className="font-medium">Platforms</span>
-                  </Link>
-                  <Link
-                    href="/pricing"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                  >
-                    <CreditCard className="h-4 w-4" />
-                    <span className="font-medium">Pricing</span>
-                  </Link>
-                  <Link
-                    href="/pricing?scroll=faq"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                  >
-                    <div className="w-8 h-8 bg-gray-100 group-hover:bg-blue-100 rounded-lg flex items-center justify-center transition-colors">
-                      <LifeBuoy className="h-4 w-4" />
-                    </div>
-                    <span className="font-medium">FAQ</span>
-                  </Link>
-                </div>
-
-                <div className="border-t border-gray-100 my-4"></div>
-
-                <div className="space-y-1">
-                  <Link
-                    href="/about"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                  >
-                    <div className="w-8 h-8 bg-gray-100 group-hover:bg-blue-100 rounded-lg flex items-center justify-center transition-colors">
-                      <Users className="h-4 w-4" />
-                    </div>
-                    <span className="font-medium">About</span>
-                  </Link>
-                  <Link
-                    href="/blog"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                  >
-                    <div className="w-8 h-8 bg-gray-100 group-hover:bg-blue-100 rounded-lg flex items-center justify-center transition-colors">
-                      <TrendingUp className="h-4 w-4" />
-                    </div>
-                    <span className="font-medium">Blog</span>
-                  </Link>
-                  <Link
-                    href="/support"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
-                  >
-                    <div className="w-8 h-8 bg-gray-100 group-hover:bg-blue-100 rounded-lg flex items-center justify-center transition-colors">
-                      <LifeBuoy className="h-4 w-4" />
-                    </div>
-                    <span className="font-medium">Support</span>
-                  </Link>
-                </div>
-
-                <div className="border-t border-gray-100 my-4"></div>
-
-                {/* Sign In and Start Free Trial Buttons */}
-                <div className="space-y-3 px-0 pt-4">
-                  <button
-                    className="w-full py-3 px-4 text-sm font-semibold border-2 border-gray-200 text-gray-700 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200"
-                    onClick={() => {
-                      setSignInOpen(true)
-                      setIsMobileMenuOpen(false)
-                    }}
-                  >
-                    Sign In
-                  </button>
-                  <button
-                    className="w-full py-3 px-4 text-sm font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl rounded-xl transition-all duration-200 transform hover:scale-[1.02]"
-                    onClick={() => {
-                      router.push('/pricing')
-                      setIsMobileMenuOpen(false)
-                    }}
-                  >
-                    ✨ Start Free Trial
-                  </button>
-                </div>
-              </>
-            )}
-          </nav>
-        </div>
-      </div>
+      {/* Mobile Menu */}
+      <MobileMenu 
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        isAuthenticated={isAuthenticated}
+        userEmail={userEmail}
+        onSignInClick={() => setSignInOpen(true)}
+        onSignUpClick={() => setSignUpOpen(true)}
+      />
 
       {/* Main Content */}
       <div className="container mx-auto max-w-4xl py-16 px-6">

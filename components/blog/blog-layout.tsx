@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { AuthModals } from '@/components/auth/auth-modals'
 import { toast } from 'sonner'
 
+import { MobileMenu } from '@/components/layout/mobile-menu'
 export function BlogLayout({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [signInOpen, setSignInOpen] = useState(false)
@@ -30,47 +31,9 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
     setUserEmail(user?.email || null)
   }
 
-  const handleLogout = async () => {
-    try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-      })
-      
-      if (response.ok) {
-        toast.success('Logged out successfully')
-        setIsAuthenticated(false)
-        setUserEmail(null)
-        setIsMobileMenuOpen(false)
-        router.push('/')
-      } else {
-        toast.error('Failed to logout')
-      }
-    } catch (error) {
-      console.error('Logout error:', error)
-      toast.error('An error occurred while logging out')
-    }
-  }
+  
 
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement
-      if (isMobileMenuOpen && !target.closest('.mobile-menu') && !target.closest('.mobile-menu-button')) {
-        setIsMobileMenuOpen(false)
-      }
-    }
-
-    if (isMobileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-      // Prevent body scroll when menu is open
-      document.body.style.overflow = 'hidden'
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-      document.body.style.overflow = 'unset'
-    }
-  }, [isMobileMenuOpen])
+  
 
   return (
     <div className="min-h-screen bg-white">
@@ -171,233 +134,15 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      {/* Mobile Menu Overlay */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
-
-      {/* Mobile Menu Panel - Same as homepage */}
-      <div 
-        className={`fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out md:hidden mobile-menu ${
-          isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        {/* Menu Header */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <Link href="/" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
-              <Image 
-                src="https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/SocialCal.webp" 
-                alt="SocialCal Logo" 
-                width={32} 
-                height={32}
-                className="w-8 h-8"
-              />
-              <span className="text-xl font-bold text-gray-900">SocialCal</span>
-            </Link>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="hover:bg-gray-100"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-
-          {/* User Info for Logged In Users */}
-          {isAuthenticated && userEmail && (
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
-                {userEmail[0].toUpperCase()}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Signed in as</p>
-                <p className="text-xs text-gray-600 truncate">{userEmail}</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Menu Content */}
-        <div className="flex flex-col h-full">
-          <nav className="flex-1 px-6 py-4 overflow-y-auto">
-            {isAuthenticated ? (
-              // Logged In Menu
-              <>
-                <div className="space-y-1">
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <Home className="h-5 w-5" />
-                    <span className="font-medium">Dashboard</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/create/new"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <Sparkles className="h-5 w-5" />
-                    <span className="font-medium">Create Post</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/posts"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <Clock className="h-5 w-5" />
-                    <span className="font-medium">My Posts</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/analytics"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <BarChart className="h-5 w-5" />
-                    <span className="font-medium">Analytics</span>
-                  </Link>
-                </div>
-
-                <div className="border-t border-gray-200 my-4"></div>
-
-                <div className="space-y-1">
-                  <Link
-                    href="/dashboard/profile"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <UserIcon className="h-5 w-5" />
-                    <span className="font-medium">Profile</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/billing"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <CreditCard className="h-5 w-5" />
-                    <span className="font-medium">Billing</span>
-                  </Link>
-                  <Link
-                    href="/support"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <LifeBuoy className="h-5 w-5" />
-                    <span className="font-medium">Support</span>
-                  </Link>
-                </div>
-
-                <div className="border-t border-gray-200 my-4"></div>
-
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors w-full"
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span className="font-medium">Sign Out</span>
-                </button>
-              </>
-            ) : (
-              // Logged Out Menu
-              <>
-                <div className="space-y-1">
-                  <Link
-                    href="/?scroll=features"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <Zap className="h-5 w-5" />
-                    <span className="font-medium">Features</span>
-                  </Link>
-                  <Link
-                    href="/?scroll=platforms"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <Layers className="h-5 w-5" />
-                    <span className="font-medium">Platforms</span>
-                  </Link>
-                  <Link
-                    href="/pricing"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <CreditCard className="h-5 w-5" />
-                    <span className="font-medium">Pricing</span>
-                  </Link>
-                  <Link
-                    href="/pricing?scroll=faq"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <LifeBuoy className="h-5 w-5" />
-                    <span className="font-medium">FAQ</span>
-                  </Link>
-                </div>
-
-                <div className="border-t border-gray-200 my-4"></div>
-
-                <div className="space-y-1">
-                  <Link
-                    href="/about"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <Users className="h-5 w-5" />
-                    <span className="font-medium">About</span>
-                  </Link>
-                  <Link
-                    href="/blog"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <TrendingUp className="h-5 w-5" />
-                    <span className="font-medium">Blog</span>
-                  </Link>
-                  <Link
-                    href="/support"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <LifeBuoy className="h-5 w-5" />
-                    <span className="font-medium">Support</span>
-                  </Link>
-                </div>
-
-                <div className="border-t border-gray-200 my-4"></div>
-
-                {/* Sign In and Start Free Trial Buttons */}
-                <div className="space-y-3 px-0">
-                  <Button
-                    variant="outline"
-                    className="w-full py-3 text-sm font-semibold border-2 border-blue-500 text-blue-500 hover:bg-blue-50 transition-colors"
-                    onClick={() => {
-                      setSignInOpen(true)
-                      setIsMobileMenuOpen(false)
-                    }}
-                  >
-                    Sign In
-                  </Button>
-                  <Button
-                    className="w-full py-3 text-sm font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all"
-                    onClick={() => {
-                      router.push('/pricing')
-                      setIsMobileMenuOpen(false)
-                    }}
-                  >
-                    Start Free Trial
-                  </Button>
-                </div>
-              </>
-            )}
-          </nav>
-        </div>
-      </div>
+      {/* Mobile Menu */}
+      <MobileMenu 
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        isAuthenticated={isAuthenticated}
+        userEmail={userEmail}
+        onSignInClick={() => setSignInOpen(true)}
+        onSignUpClick={() => setSignUpOpen(true)}
+      />
 
       {/* Main Content */}
       <main>{children}</main>
