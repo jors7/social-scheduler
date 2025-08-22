@@ -21,15 +21,15 @@ interface OverviewCardsProps {
 export function OverviewCards({ analyticsData }: OverviewCardsProps) {
   if (!analyticsData) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <Card key={i} className="animate-pulse">
-            <CardHeader className="pb-2">
-              <div className="h-4 bg-gray-200 rounded w-24"></div>
+            <CardHeader className="pb-2 px-3 sm:px-4">
+              <div className="h-3 sm:h-4 bg-gray-200 rounded w-16 sm:w-24"></div>
             </CardHeader>
-            <CardContent>
-              <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-32"></div>
+            <CardContent className="px-3 sm:px-4">
+              <div className="h-6 sm:h-8 bg-gray-200 rounded w-12 sm:w-16 mb-1 sm:mb-2"></div>
+              <div className="h-2 sm:h-3 bg-gray-200 rounded w-20 sm:w-32"></div>
             </CardContent>
           </Card>
         ))}
@@ -89,22 +89,22 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
   ]
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
       {cards.map((card, index) => {
         const Icon = card.icon
         return (
           <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-4">
+              <CardTitle className="text-xs sm:text-sm font-medium">
                 {card.title}
               </CardTitle>
-              <Icon className="h-4 w-4 text-muted-foreground" />
+              <Icon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{card.value}</div>
-              <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+            <CardContent className="px-3 sm:px-4">
+              <div className="text-lg sm:text-2xl font-bold">{card.value}</div>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:space-x-1 text-[10px] sm:text-xs text-muted-foreground">
                 <span 
-                  className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                  className={`inline-flex items-center rounded-full px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium ${
                     card.changeType === 'positive' 
                       ? 'bg-green-100 text-green-800' 
                       : card.changeType === 'neutral'
@@ -114,7 +114,7 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
                 >
                   {card.change}
                 </span>
-                <span>{card.description}</span>
+                <span className="hidden sm:inline">{card.description}</span>
               </div>
             </CardContent>
           </Card>

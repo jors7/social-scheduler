@@ -135,29 +135,29 @@ export default function AnalyticsPage() {
   if (loading) {
     return (
       <>
-        <div className="space-y-8">
-          <div className="flex items-center justify-between">
+        <div className="space-y-4 sm:space-y-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white">
-                  <BarChart3 className="h-8 w-8" />
+              <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white">
+                  <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8" />
                 </div>
                 Analytics
               </h1>
-              <p className="text-gray-600 mt-2 text-lg">
+              <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-lg">
                 Track your social media performance across all platforms
               </p>
             </div>
           </div>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="grid gap-3 sm:gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <Card key={i} variant="elevated" className="animate-pulse">
-                <CardHeader className="pb-3">
-                  <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-24"></div>
+                <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
+                  <div className="h-3 sm:h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-16 sm:w-24"></div>
                 </CardHeader>
-                <CardContent>
-                  <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-16 mb-2"></div>
-                  <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-32"></div>
+                <CardContent className="px-3 sm:px-4">
+                  <div className="h-6 sm:h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-12 sm:w-16 mb-1 sm:mb-2"></div>
+                  <div className="h-2 sm:h-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-20 sm:w-32"></div>
                 </CardContent>
               </Card>
             ))}
@@ -169,15 +169,15 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white">
-              <BarChart3 className="h-8 w-8" />
+          <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white">
+              <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8" />
             </div>
             Analytics
           </h1>
-          <p className="text-gray-600 mt-2 text-lg">
+          <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-lg">
             Track your social media performance across all platforms
           </p>
         </div>
@@ -185,15 +185,15 @@ export default function AnalyticsPage() {
       
       <SubscriptionGate feature="analytics">
         <div className="space-y-8">
-          <Card variant="glass" className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+          <Card variant="glass" className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <CalendarDays className="h-4 w-4 text-purple-600" />
+                  <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg">
+                    <CalendarDays className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />
                   </div>
                   <select 
-                    className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-xl px-4 py-2 text-sm font-medium shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     value={dateRange}
                     onChange={(e) => setDateRange(e.target.value)}
                   >
@@ -205,13 +205,14 @@ export default function AnalyticsPage() {
                   </select>
                 </div>
               </div>
-              <div className="flex gap-3">
-                <Button variant="outline" size="sm" className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filters
+              <div className="flex gap-2 sm:gap-3">
+                <Button variant="outline" size="sm" className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 text-xs sm:text-sm px-3 sm:px-4">
+                  <Filter className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Filters</span>
+                  <span className="sm:hidden">Filter</span>
                 </Button>
-                <Button variant="gradient" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
+                <Button variant="gradient" size="sm" className="text-xs sm:text-sm px-3 sm:px-4">
+                  <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Export
                 </Button>
               </div>
@@ -221,57 +222,57 @@ export default function AnalyticsPage() {
           {/* Overview Cards */}
           <OverviewCards analyticsData={analyticsData} />
 
-          <div className="grid gap-8 md:grid-cols-2">
+          <div className="grid gap-4 sm:gap-8 grid-cols-1 md:grid-cols-2">
             {/* Engagement Chart */}
             <Card variant="elevated" className="col-span-1 overflow-hidden">
-              <CardHeader variant="gradient">
-                <CardTitle className="text-white text-xl">Engagement Over Time</CardTitle>
-                <CardDescription className="text-purple-100">
+              <CardHeader variant="gradient" className="px-4 py-3 sm:px-6 sm:py-4">
+                <CardTitle className="text-white text-base sm:text-xl">Engagement Over Time</CardTitle>
+                <CardDescription className="text-purple-100 text-xs sm:text-sm">
                   Track likes, comments, and shares across all platforms
                 </CardDescription>
               </CardHeader>
-              <CardContent className="bg-gradient-to-b from-white to-gray-50">
+              <CardContent className="bg-gradient-to-b from-white to-gray-50 p-3 sm:p-6">
                 <EngagementChart analyticsData={analyticsData} />
               </CardContent>
             </Card>
 
             {/* Platform Breakdown */}
             <Card variant="elevated" className="col-span-1 overflow-hidden">
-              <CardHeader variant="gradient">
-                <CardTitle className="text-white text-xl">Platform Performance</CardTitle>
-                <CardDescription className="text-purple-100">
+              <CardHeader variant="gradient" className="px-4 py-3 sm:px-6 sm:py-4">
+                <CardTitle className="text-white text-base sm:text-xl">Platform Performance</CardTitle>
+                <CardDescription className="text-purple-100 text-xs sm:text-sm">
                   Compare engagement rates by platform
                 </CardDescription>
               </CardHeader>
-              <CardContent className="bg-gradient-to-b from-white to-gray-50">
+              <CardContent className="bg-gradient-to-b from-white to-gray-50 p-3 sm:p-6">
                 <PlatformBreakdown analyticsData={analyticsData} />
               </CardContent>
             </Card>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-3">
+          <div className="grid gap-4 sm:gap-8 grid-cols-1 md:grid-cols-3">
             {/* Reach Chart */}
-            <Card variant="glass" className="col-span-2 overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100">
-                <CardTitle variant="gradient" className="text-xl">Reach & Impressions</CardTitle>
-                <CardDescription className="text-gray-600">
+            <Card variant="glass" className="col-span-1 md:col-span-2 overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4">
+                <CardTitle variant="gradient" className="text-base sm:text-xl">Reach & Impressions</CardTitle>
+                <CardDescription className="text-gray-600 text-xs sm:text-sm">
                   Monitor your content reach and impressions
                 </CardDescription>
               </CardHeader>
-              <CardContent className="bg-white/50 backdrop-blur-sm">
+              <CardContent className="bg-white/50 backdrop-blur-sm p-3 sm:p-6">
                 <ReachChart analyticsData={analyticsData} />
               </CardContent>
             </Card>
 
             {/* Top Posts */}
             <Card variant="glass" className="col-span-1 overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-orange-50 to-yellow-50 border-b border-gray-100">
-                <CardTitle variant="gradient" className="text-xl">Top Performing Posts</CardTitle>
-                <CardDescription className="text-gray-600">
+              <CardHeader className="bg-gradient-to-r from-orange-50 to-yellow-50 border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4">
+                <CardTitle variant="gradient" className="text-base sm:text-xl">Top Performing Posts</CardTitle>
+                <CardDescription className="text-gray-600 text-xs sm:text-sm">
                   Your best content from the last 30 days
                 </CardDescription>
               </CardHeader>
-              <CardContent className="bg-white/50 backdrop-blur-sm">
+              <CardContent className="bg-white/50 backdrop-blur-sm p-3 sm:p-6">
                 <TopPosts analyticsData={analyticsData} />
               </CardContent>
             </Card>

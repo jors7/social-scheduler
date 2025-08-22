@@ -19,7 +19,7 @@ interface ReachChartProps {
 
 export function ReachChart({ analyticsData }: ReachChartProps) {
   if (!analyticsData) {
-    return <div className="h-[300px] animate-pulse bg-gray-200 rounded"></div>
+    return <div className="h-[250px] sm:h-[300px] animate-pulse bg-gray-200 rounded"></div>
   }
   
   // Generate chart data from posted posts
@@ -49,11 +49,11 @@ export function ReachChart({ analyticsData }: ReachChartProps) {
   
   if (chartData.length === 0) {
     return (
-      <div className="h-[300px] flex items-center justify-center text-gray-500">
+      <div className="h-[250px] sm:h-[300px] flex items-center justify-center text-gray-500">
         <div className="text-center">
-          <div className="text-4xl mb-4">📈</div>
-          <p className="text-sm">No reach data available</p>
-          <p className="text-xs text-gray-400">Publish posts to see reach trends</p>
+          <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">📈</div>
+          <p className="text-xs sm:text-sm">No reach data available</p>
+          <p className="text-[10px] sm:text-xs text-gray-400">Publish posts to see reach trends</p>
         </div>
       </div>
     )
@@ -61,9 +61,9 @@ export function ReachChart({ analyticsData }: ReachChartProps) {
 
   return (
     <div>
-      <div className="h-[300px]">
+      <div className="h-[250px] sm:h-[300px] w-full flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData}>
+          <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
             <defs>
               <linearGradient id="reachGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
@@ -77,16 +77,20 @@ export function ReachChart({ analyticsData }: ReachChartProps) {
             <XAxis 
               dataKey="date" 
               stroke="#888888"
-              fontSize={12}
+              fontSize={10}
               tickLine={false}
               axisLine={false}
+              tick={{ fontSize: 10 }}
+              interval="preserveStartEnd"
             />
             <YAxis
               stroke="#888888"
-              fontSize={12}
+              fontSize={10}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+              tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : `${value}`}
+              width={40}
+              tick={{ fontSize: 10 }}
             />
             <Tooltip
               content={({ active, payload, label }) => {

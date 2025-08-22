@@ -57,11 +57,11 @@ export function PlatformBreakdown({ analyticsData }: PlatformBreakdownProps) {
   if (data.length === 0) {
     return (
       <div className="space-y-4">
-        <div className="h-[200px] flex items-center justify-center text-gray-500">
+        <div className="h-[180px] sm:h-[200px] flex items-center justify-center text-gray-500">
           <div className="text-center">
-            <div className="text-4xl mb-4">📊</div>
-            <p className="text-sm">No platform data available</p>
-            <p className="text-xs text-gray-400">Publish some posts to see platform performance</p>
+            <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">📊</div>
+            <p className="text-xs sm:text-sm">No platform data available</p>
+            <p className="text-[10px] sm:text-xs text-gray-400">Publish some posts to see platform performance</p>
           </div>
         </div>
       </div>
@@ -69,24 +69,31 @@ export function PlatformBreakdown({ analyticsData }: PlatformBreakdownProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Chart Container */}
-      <div className="h-[200px]">
+      <div className="h-[180px] sm:h-[200px] w-full flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <BarChart data={data} margin={{ top: 10, right: 5, left: 0, bottom: 5 }}>
             <XAxis 
               dataKey="platform" 
               stroke="#888888"
-              fontSize={12}
+              fontSize={10}
               tickLine={false}
               axisLine={false}
+              tick={{ fontSize: 10 }}
+              interval={0}
+              angle={-45}
+              textAnchor="end"
+              height={60}
             />
             <YAxis
               stroke="#888888"
-              fontSize={12}
+              fontSize={10}
               tickLine={false}
               axisLine={false}
               tickFormatter={(value) => `${value}`}
+              width={35}
+              tick={{ fontSize: 10 }}
             />
             <Tooltip
               content={({ active, payload, label }) => {
@@ -119,14 +126,14 @@ export function PlatformBreakdown({ analyticsData }: PlatformBreakdownProps) {
       </div>
       
       {/* Platform Legend */}
-      <div className="grid grid-cols-2 gap-2 text-sm">
+      <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
         {data.map((platform) => (
-          <div key={platform.platform} className="flex items-center space-x-2">
-            <span className="text-lg">{platform.icon}</span>
-            <div className="flex-1">
-              <div className="font-medium">{platform.platform}</div>
-              <div className="text-muted-foreground text-xs">
-                {platform.posts} post{platform.posts !== 1 ? 's' : ''} • {platform.engagement.toLocaleString()} engagement
+          <div key={platform.platform} className="flex items-center space-x-1 sm:space-x-2">
+            <span className="text-base sm:text-lg">{platform.icon}</span>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-xs sm:text-sm truncate">{platform.platform}</div>
+              <div className="text-muted-foreground text-[10px] sm:text-xs">
+                {platform.posts} post{platform.posts !== 1 ? 's' : ''} • {platform.engagement.toLocaleString()} eng
               </div>
             </div>
           </div>

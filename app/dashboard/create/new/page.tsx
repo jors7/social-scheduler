@@ -794,17 +794,17 @@ function CreateNewPostPageContent() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
       {/* Header with gradient title */}
-      <div className="space-y-4">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl text-white">
-            <Send className="h-8 w-8" />
+      <div className="space-y-3">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-2 sm:gap-3">
+          <div className="p-1.5 sm:p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl text-white">
+            <Send className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8" />
           </div>
-          Create New Post
+          <span className="break-words">Create New Post</span>
         </h1>
-        <p className="text-gray-600 text-lg">
-          Share your content across multiple social media platforms with one click
+        <p className="text-gray-600 text-sm sm:text-base lg:text-lg">
+          Share your content across multiple platforms
         </p>
         {loadingDraft && (
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full">
@@ -815,23 +815,23 @@ function CreateNewPostPageContent() {
       </div>
 
       <SubscriptionGate feature="post scheduling">
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         {/* Left Column - Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="col-span-1 lg:col-span-2 space-y-4 sm:space-y-6 order-2 lg:order-1">
           {/* Post Content */}
           <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
             <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <CardTitle className="text-xl font-semibold text-gray-900">Post Content</CardTitle>
-                  <CardDescription className="text-gray-600">Write your message</CardDescription>
+                  <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Post Content</CardTitle>
+                  <CardDescription className="text-sm sm:text-base text-gray-600">Write your message</CardDescription>
                 </div>
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => setShowAISuggestions(true)}
                   disabled={selectedPlatforms.length === 0}
-                  className="bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 border-purple-200 hover:border-purple-300"
+                  className="bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 border-purple-200 hover:border-purple-300 w-full sm:w-auto"
                 >
                   <Sparkles className="mr-2 h-4 w-4 text-purple-600" />
                   AI Suggestions
@@ -907,8 +907,8 @@ function CreateNewPostPageContent() {
           {/* Media Upload */}
           <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-semibold text-gray-900">Media</CardTitle>
-              <CardDescription className="text-gray-600">Add images and videos to your post</CardDescription>
+              <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Media</CardTitle>
+              <CardDescription className="text-sm sm:text-base text-gray-600">Add images and videos to your post</CardDescription>
             </CardHeader>
             <CardContent>
               <div 
@@ -1013,11 +1013,11 @@ function CreateNewPostPageContent() {
           {/* Scheduling */}
           <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-semibold text-gray-900">Schedule</CardTitle>
-              <CardDescription className="text-gray-600">When to publish</CardDescription>
+              <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Schedule</CardTitle>
+              <CardDescription className="text-sm sm:text-base text-gray-600">When to publish</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Label className="text-sm font-medium">Schedule Options</Label>
                 </div>
@@ -1034,7 +1034,7 @@ function CreateNewPostPageContent() {
                 </Button>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="date">Date</Label>
                   <div className="relative">
@@ -1149,10 +1149,10 @@ function CreateNewPostPageContent() {
           {/* Action Buttons */}
           <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-semibold text-gray-900">Actions</CardTitle>
-              <CardDescription className="text-gray-600">Publish or save your post</CardDescription>
+              <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Actions</CardTitle>
+              <CardDescription className="text-sm sm:text-base text-gray-600">Publish or save your post</CardDescription>
             </CardHeader>
-            <CardContent className="flex gap-4">
+            <CardContent className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               {scheduledDate && scheduledTime ? (
                 <>
                   <Button 
@@ -1211,12 +1211,12 @@ function CreateNewPostPageContent() {
         </div>
 
         {/* Right Column - Sidebar */}
-        <div className="lg:col-span-1">
+        <div className="col-span-1 lg:col-span-1 order-1 lg:order-2">
           {/* Platform Selection */}
-          <Card variant="elevated" className="sticky top-6 hover:shadow-xl transition-all duration-300">
+          <Card variant="elevated" className="lg:sticky lg:top-6 hover:shadow-xl transition-all duration-300">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-semibold text-gray-900">Platforms</CardTitle>
-              <CardDescription className="text-gray-600">Choose where to publish</CardDescription>
+              <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Platforms</CardTitle>
+              <CardDescription className="text-sm sm:text-base text-gray-600">Choose where to publish</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">

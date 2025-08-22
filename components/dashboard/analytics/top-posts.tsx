@@ -94,12 +94,12 @@ export function TopPosts({ analyticsData }: TopPostsProps) {
   if (topPosts.length === 0) {
     return (
       <div className="space-y-4">
-        <div className="text-center py-8 text-gray-500">
-          <Eye className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-          <p className="text-sm mb-2">No top posts yet</p>
-          <p className="text-xs text-gray-400">Publish posts to see your best performers</p>
-          <Link href="/dashboard/create/new" className="inline-block mt-3">
-            <button className="text-xs text-blue-600 hover:text-blue-700">Create your first post →</button>
+        <div className="text-center py-6 sm:py-8 text-gray-500">
+          <Eye className="mx-auto h-10 sm:h-12 w-10 sm:w-12 text-gray-300 mb-3 sm:mb-4" />
+          <p className="text-xs sm:text-sm mb-2">No top posts yet</p>
+          <p className="text-[10px] sm:text-xs text-gray-400">Publish posts to see your best performers</p>
+          <Link href="/dashboard/create/new" className="inline-block mt-2 sm:mt-3">
+            <button className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-700">Create your first post →</button>
           </Link>
         </div>
       </div>

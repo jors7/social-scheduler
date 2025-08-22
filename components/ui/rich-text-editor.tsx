@@ -121,14 +121,14 @@ export function RichTextEditor({
   return (
     <div className={`border border-input rounded-md ${className}`}>
       {/* Toolbar */}
-      <div className="flex items-center gap-1 p-2 border-b border-border bg-muted/10">
-        <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1 p-2 border-b border-border bg-muted/10 overflow-x-auto scrollbar-thin">
+        <div className="flex items-center gap-0.5 flex-shrink-0">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleBold().run()}
-            className={editor.isActive('bold') ? 'bg-muted' : ''}
+            className={`${editor.isActive('bold') ? 'bg-muted' : ''} h-8 w-8 p-0 sm:w-auto sm:px-2`}
           >
             <Bold className="h-4 w-4" />
           </Button>
@@ -137,7 +137,7 @@ export function RichTextEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleItalic().run()}
-            className={editor.isActive('italic') ? 'bg-muted' : ''}
+            className={`${editor.isActive('italic') ? 'bg-muted' : ''} h-8 w-8 p-0 sm:w-auto sm:px-2`}
           >
             <Italic className="h-4 w-4" />
           </Button>
@@ -146,7 +146,7 @@ export function RichTextEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleStrike().run()}
-            className={editor.isActive('strike') ? 'bg-muted' : ''}
+            className={`${editor.isActive('strike') ? 'bg-muted' : ''} h-8 w-8 p-0 sm:w-auto sm:px-2`}
           >
             <Underline className="h-4 w-4" />
           </Button>
@@ -154,13 +154,13 @@ export function RichTextEditor({
         
         <Separator orientation="vertical" className="h-6" />
         
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 flex-shrink-0">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={editor.isActive('bulletList') ? 'bg-muted' : ''}
+            className={`${editor.isActive('bulletList') ? 'bg-muted' : ''} h-8 w-8 p-0 sm:w-auto sm:px-2`}
           >
             <List className="h-4 w-4" />
           </Button>
@@ -169,7 +169,7 @@ export function RichTextEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={editor.isActive('orderedList') ? 'bg-muted' : ''}
+            className={`${editor.isActive('orderedList') ? 'bg-muted' : ''} h-8 w-8 p-0 sm:w-auto sm:px-2`}
           >
             <ListOrdered className="h-4 w-4" />
           </Button>
@@ -178,7 +178,7 @@ export function RichTextEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            className={editor.isActive('blockquote') ? 'bg-muted' : ''}
+            className={`${editor.isActive('blockquote') ? 'bg-muted' : ''} h-8 w-8 p-0 sm:w-auto sm:px-2`}
           >
             <Quote className="h-4 w-4" />
           </Button>
@@ -186,13 +186,13 @@ export function RichTextEditor({
 
         <Separator orientation="vertical" className="h-6" />
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 flex-shrink-0">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => setShowLinkInput(!showLinkInput)}
-            className={editor.isActive('link') ? 'bg-muted' : ''}
+            className={`${editor.isActive('link') ? 'bg-muted' : ''} h-8 w-8 p-0 sm:w-auto sm:px-2`}
           >
             <LinkIcon className="h-4 w-4" />
           </Button>
@@ -201,6 +201,7 @@ export function RichTextEditor({
             variant="ghost"
             size="sm"
             onClick={addHashtag}
+            className="h-8 w-8 p-0 sm:w-auto sm:px-2"
           >
             <Hash className="h-4 w-4" />
           </Button>
@@ -209,6 +210,7 @@ export function RichTextEditor({
             variant="ghost"
             size="sm"
             onClick={addMention}
+            className="h-8 w-8 p-0 sm:w-auto sm:px-2"
           >
             <AtSign className="h-4 w-4" />
           </Button>

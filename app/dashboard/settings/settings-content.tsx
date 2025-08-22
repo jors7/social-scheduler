@@ -453,7 +453,7 @@ export default function SettingsContent() {
     <div>
       {/* Navigation Tabs */}
       <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-        <div className="flex p-2 gap-2" role="tablist">
+        <div className="flex p-2 gap-1 sm:gap-2 overflow-x-auto scrollbar-thin" role="tablist">
           {settingsSections.map(section => {
             const Icon = section.icon
             return (
@@ -464,21 +464,22 @@ export default function SettingsContent() {
                 aria-controls={`${section.id}-panel`}
                 onClick={() => setActiveSection(section.id)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200",
+                  "flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0",
                   activeSection === section.id
-                    ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md transform scale-105"
+                    ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md transform sm:scale-105"
                     : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                 )}
               >
                 <div className={cn(
-                  "p-1 rounded-lg",
+                  "p-0.5 sm:p-1 rounded-lg",
                   activeSection === section.id
                     ? "bg-white/20"
                     : "bg-gray-100"
                 )}>
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
                 </div>
-                {section.label}
+                <span className="hidden sm:inline">{section.label}</span>
+                <span className="sm:hidden">{section.label}</span>
               </button>
             )
           })}
@@ -490,16 +491,16 @@ export default function SettingsContent() {
           {activeSection === 'accounts' && (
             <div id="accounts-panel" role="tabpanel" aria-labelledby="accounts-tab">
               <Card className="bg-white shadow-xl hover:shadow-2xl transition-all duration-300 border-0 overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50 border-b">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-xl flex items-center gap-2">
-                        <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg">
-                          <Link2 className="h-5 w-5 text-white" />
+                <CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50 border-b p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex-1">
+                      <CardTitle className="text-base sm:text-xl flex items-center gap-2">
+                        <div className="p-1.5 sm:p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg">
+                          <Link2 className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                         </div>
-                        Connected Social Media Accounts
+                        <span className="line-clamp-1">Connected Social Media Accounts</span>
                       </CardTitle>
-                      <CardDescription className="mt-2">
+                      <CardDescription className="mt-1 sm:mt-2 text-xs sm:text-sm">
                         Connect your social media accounts to start scheduling posts
                       </CardDescription>
                     </div>
@@ -508,33 +509,33 @@ export default function SettingsContent() {
                       size="sm"
                       onClick={() => fetchConnectedAccounts(true)}
                       disabled={refreshing}
-                      className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                      className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 text-xs sm:text-sm self-end sm:self-auto"
                     >
                       {refreshing ? 'Refreshing...' : 'Refresh'}
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   {/* Account Limits Display */}
                   {accountLimits && (
-                    <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl">
-                      <div className="flex items-center justify-between">
+                    <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <div className="p-2 bg-white rounded-lg shadow-sm">
-                            <Link2 className="h-4 w-4 text-purple-600" />
+                          <div className="p-1.5 sm:p-2 bg-white rounded-lg shadow-sm">
+                            <Link2 className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-gray-900">
+                            <p className="text-xs sm:text-sm font-semibold text-gray-900">
                               Connected Accounts
                             </p>
-                            <p className="text-xs text-gray-600">
+                            <p className="text-[10px] sm:text-xs text-gray-600">
                               {accountLimits.currentCount} of {accountLimits.maxAccounts === Infinity ? 'Unlimited' : accountLimits.maxAccounts} accounts used
                             </p>
                           </div>
                         </div>
                         {accountLimits.maxAccounts !== Infinity && (
                           <div className="text-right">
-                            <p className="text-xs text-gray-600">
+                            <p className="text-[10px] sm:text-xs text-gray-600">
                               {accountLimits.canAddMore 
                                 ? `${accountLimits.maxAccounts - accountLimits.currentCount} slots remaining`
                                 : 'Limit reached'}
@@ -561,30 +562,30 @@ export default function SettingsContent() {
                               : "bg-gray-50 hover:bg-gray-100"
                           )}
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div className="flex items-center gap-2 sm:gap-3">
                               <div className={cn(
-                                "w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-md",
+                                "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white shadow-md flex-shrink-0",
                                 platform.color
                               )}>
-                                <span className="text-xl">{platform.icon}</span>
+                                <span className="text-lg sm:text-xl">{platform.icon}</span>
                               </div>
-                              <div>
-                                <p className="font-semibold text-gray-900">{platform.name}</p>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-gray-900 text-sm sm:text-base">{platform.name}</p>
                                 {hasAccounts && (
-                                  <p className="text-sm text-gray-600">
+                                  <p className="text-xs sm:text-sm text-gray-600">
                                     {platformAccounts.length} account{platformAccounts.length !== 1 ? 's' : ''} connected
                                   </p>
                                 )}
                                 {platform.note && (
-                                  <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
-                                    <AlertCircle className="h-3 w-3" />
-                                    {platform.note}
+                                  <p className="text-[10px] sm:text-xs text-amber-600 flex items-center gap-1 mt-1">
+                                    <AlertCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                                    <span className="line-clamp-2">{platform.note}</span>
                                   </p>
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 self-end sm:self-auto">
                               {hasAccounts && (
                                 <Button
                                   variant="ghost"
@@ -596,7 +597,7 @@ export default function SettingsContent() {
                                         : [...prev, platform.id]
                                     )
                                   }}
-                                  className="text-gray-600 hover:text-gray-900"
+                                  className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm px-2 sm:px-3"
                                 >
                                   {isExpanded ? 'Hide' : 'Show'} Accounts
                                 </Button>
@@ -605,10 +606,11 @@ export default function SettingsContent() {
                                 size="sm"
                                 onClick={() => handleConnect(platform.id)}
                                 disabled={loading || (!!accountLimits && !accountLimits.canAddMore)}
-                                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md hover:shadow-lg"
+                                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md hover:shadow-lg text-xs sm:text-sm px-3 sm:px-4"
                               >
-                                <Plus className="mr-1 h-4 w-4" />
-                                Add Account
+                                <Plus className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                                <span className="hidden sm:inline">Add Account</span>
+                                <span className="sm:hidden">Add</span>
                               </Button>
                             </div>
                           </div>
@@ -616,25 +618,25 @@ export default function SettingsContent() {
                         
                         {/* Expanded Account List */}
                         {hasAccounts && isExpanded && (
-                          <div className="border-t bg-white p-4 space-y-2">
+                          <div className="border-t bg-white p-3 sm:p-4 space-y-2">
                             {platformAccounts.map((account, index) => (
-                              <div key={account.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                  <div className="text-sm">
-                                    <span className="font-medium text-gray-900">
+                              <div key={account.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 sm:p-3 bg-gray-50 rounded-lg">
+                                <div className="flex items-center gap-2 sm:gap-3">
+                                  <div className="text-xs sm:text-sm">
+                                    <span className="font-medium text-gray-900 block sm:inline">
                                       {account.account_label || account.username || account.account_name || `Account ${index + 1}`}
                                     </span>
                                     {account.username && (
-                                      <span className="text-gray-600 ml-2">@{account.username}</span>
+                                      <span className="text-gray-600 block sm:inline sm:ml-2 text-[11px] sm:text-xs">@{account.username}</span>
                                     )}
                                     {account.is_primary && (
-                                      <span className="ml-2 px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded-full">
+                                      <span className="inline-block mt-1 sm:mt-0 sm:ml-2 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs bg-purple-100 text-purple-700 rounded-full">
                                         Primary
                                       </span>
                                     )}
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 sm:gap-2 self-end sm:self-auto">
                                   {account.is_primary !== true && platformAccounts.length > 1 && (
                                     <Button
                                       variant="ghost"

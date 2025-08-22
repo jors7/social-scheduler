@@ -116,6 +116,19 @@ export function Sidebar() {
   const [loading, setLoading] = useState(true)
   const [navigationItems, setNavigationItems] = useState<NavigationItem[]>(navigation)
   
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isMobileMenuOpen])
+
   useEffect(() => {
     loadUser()
     
@@ -202,7 +215,7 @@ export function Sidebar() {
   }
 
   const SidebarContent = () => (
-    <>
+    <div className="flex flex-col h-full">
       {/* Logo Section */}
       <div className="h-16 flex items-center px-6 bg-white border-b">
         <Link href="/" className="flex items-center gap-2">
@@ -225,7 +238,7 @@ export function Sidebar() {
         </Link>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-gray-50 pb-20">
+      <div className="flex-1 overflow-y-auto bg-gray-50">
         {/* Create Post Button */}
         <div className="px-4 py-4">
           <Link href="/dashboard/create/new">
@@ -339,10 +352,14 @@ export function Sidebar() {
       </div>
 
       {/* Account Section */}
-      <div className="p-4 bg-white border-t mt-auto">
+      <div className="p-4 bg-white border-t mt-auto relative">
         <button
-          onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
-          className="w-full flex items-center justify-between rounded-xl px-3 py-3 hover:bg-gray-50 transition-all duration-200"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setIsAccountMenuOpen(!isAccountMenuOpen)
+          }}
+          className="w-full flex items-center justify-between rounded-xl px-3 py-3 hover:bg-gray-50 transition-all duration-200 relative z-10"
         >
           <div className="flex items-center">
             <div className="relative">
@@ -362,7 +379,7 @@ export function Sidebar() {
         </button>
         
         {isAccountMenuOpen && (
-          <div className="mt-2 space-y-0.5">
+          <div className="mt-2 space-y-0.5 relative z-20">
             <Link
               href="/dashboard/profile"
               className="flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
@@ -404,15 +421,15 @@ export function Sidebar() {
           </div>
         )}
       </div>
-    </>
+    </div>
   )
 
   return (
     <>
-      {/* Mobile menu button */}
+      {/* Mobile menu button - positioned absolute (not sticky) and aligned right */}
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white shadow-md"
+        className="lg:hidden absolute top-4 right-4 z-50 p-2 rounded-lg bg-white shadow-md"
       >
         {isMobileMenuOpen ? (
           <X className="h-6 w-6" />
@@ -431,7 +448,7 @@ export function Sidebar() {
       />
       <aside
         className={cn(
-          'fixed top-0 left-0 z-40 h-full w-64 bg-white border-r transform transition-transform lg:hidden',
+          'fixed top-0 left-0 z-40 h-full w-64 bg-white border-r transform transition-transform lg:hidden overflow-y-auto',
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >

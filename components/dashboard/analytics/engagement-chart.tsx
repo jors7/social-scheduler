@@ -19,7 +19,7 @@ interface EngagementChartProps {
 
 export function EngagementChart({ analyticsData }: EngagementChartProps) {
   if (!analyticsData) {
-    return <div className="h-[300px] animate-pulse bg-gray-200 rounded"></div>
+    return <div className="h-[250px] sm:h-[300px] animate-pulse bg-gray-200 rounded"></div>
   }
   
   // Generate chart data from posted posts
@@ -53,33 +53,37 @@ export function EngagementChart({ analyticsData }: EngagementChartProps) {
   
   if (data.length === 0) {
     return (
-      <div className="h-[300px] flex items-center justify-center text-gray-500">
+      <div className="h-[250px] sm:h-[300px] flex items-center justify-center text-gray-500">
         <div className="text-center">
-          <div className="text-4xl mb-4">💬</div>
-          <p className="text-sm">No engagement data available</p>
-          <p className="text-xs text-gray-400">Publish posts to see engagement trends</p>
+          <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">💬</div>
+          <p className="text-xs sm:text-sm">No engagement data available</p>
+          <p className="text-[10px] sm:text-xs text-gray-400">Publish posts to see engagement trends</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="h-[300px]">
+    <div className="h-[250px] sm:h-[300px] w-full flex items-center justify-center">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
+        <LineChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
           <XAxis 
             dataKey="date" 
             stroke="#888888"
-            fontSize={12}
+            fontSize={10}
             tickLine={false}
             axisLine={false}
+            tick={{ fontSize: 10 }}
+            interval="preserveStartEnd"
           />
           <YAxis
             stroke="#888888"
-            fontSize={12}
+            fontSize={10}
             tickLine={false}
             axisLine={false}
             tickFormatter={(value) => `${value}`}
+            width={35}
+            tick={{ fontSize: 10 }}
           />
           <Tooltip
             content={({ active, payload, label }) => {

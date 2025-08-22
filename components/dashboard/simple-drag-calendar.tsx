@@ -35,6 +35,18 @@ const platformColors = {
   pinterest: 'bg-red-600'
 }
 
+const platformAbbreviations: Record<string, string> = {
+  twitter: 'X',
+  instagram: 'IG',
+  facebook: 'FB',
+  linkedin: 'LI',
+  youtube: 'YT',
+  tiktok: 'TT',
+  threads: 'TH',
+  bluesky: 'BS',
+  pinterest: 'PI'
+}
+
 export function SimpleDragCalendar({ 
   scheduledPosts, 
   onPostUpdate, 
@@ -296,23 +308,24 @@ export function SimpleDragCalendar({
                         onDragStart={(e) => handleDragStart(e, post.id)}
                         onDragEnd={handleDragEnd}
                         className={cn(
-                          "group text-xs p-2 rounded text-white cursor-move transition-all hover:shadow-lg",
+                          "group text-xs p-1 sm:p-2 rounded text-white cursor-move transition-all hover:shadow-lg",
                           getPostColor(post),
                           draggedPostId === post.id ? "opacity-50" : ""
                         )}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate mb-1">
+                            <div className="font-medium truncate mb-0.5 text-[11px] sm:text-xs">
                               {formatTime(post.scheduled_for)}
                             </div>
-                            <div className="truncate opacity-90 text-xs leading-relaxed">
+                            <div className="truncate opacity-90 text-[10px] sm:text-xs leading-relaxed hidden sm:block">
                               {stripHtml(post.content).slice(0, 40)}...
                             </div>
-                            <div className="flex items-center gap-1 mt-1">
+                            <div className="flex items-center gap-0.5 mt-1 flex-wrap">
                               {post.platforms.slice(0, 3).map(platform => (
                                 <span key={platform} className="text-[10px] bg-white/20 px-1 py-0.5 rounded">
-                                  {platform}
+                                  <span className="sm:hidden">{platformAbbreviations[platform] || platform.slice(0, 2).toUpperCase()}</span>
+                                  <span className="hidden sm:inline">{platform}</span>
                                 </span>
                               ))}
                               {post.platforms.length > 3 && (
