@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import Stripe from 'stripe'
 import { SUBSCRIPTION_PLANS, PlanId, BillingCycle } from '@/lib/subscription/plans'
+import { syncStripeSubscriptionToDatabase } from '@/lib/subscription/sync'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-11-20.acacia' as any,
@@ -139,75 +140,19 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Update local database - use service role client for guaranteed update
-    console.log('Creating service role client for database update...')
-    const serviceSupabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
+    // Sync the updated subscription to database using our centralized sync function
+    console.log('Syncing updated subscription to database...')
+    const syncResult = await syncStripeSubscriptionToDatabase(
+      subscription.stripe_subscription_id,
+      user.id
     )
     
-    console.log('Updating subscription in database for user:', user.id)
-    console.log('New plan:', newPlanId, 'Billing cycle:', billingCycle)
-    
-    // First, check if the subscription exists
-    const { data: existingSubscription, error: fetchError } = await serviceSupabase
-      .from('user_subscriptions')
-      .select('*')
-      .eq('user_id', user.id)
-      .single()
-    
-    if (fetchError) {
-      console.error('Error fetching existing subscription:', fetchError)
-    }
-    
-    console.log('Existing subscription:', existingSubscription?.plan_id, existingSubscription?.billing_cycle)
-    
-    // Update the subscription
-    const { data: updateData, error: updateError } = await serviceSupabase
-      .from('user_subscriptions')
-      .update({
-        plan_id: newPlanId,
-        billing_cycle: billingCycle,
-        status: updatedSubscription.status,
-        stripe_price_id: newPriceId,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', user.id)
-      .select()
-      .single()
-
-    if (updateError) {
-      console.error('Error updating local subscription:', updateError)
-      console.error('Update error details:', JSON.stringify(updateError, null, 2))
-      // Try to insert if update failed (in case the record doesn't exist)
-      const { error: insertError } = await serviceSupabase
-        .from('user_subscriptions')
-        .upsert({
-          user_id: user.id,
-          plan_id: newPlanId,
-          billing_cycle: billingCycle,
-          status: updatedSubscription.status,
-          stripe_subscription_id: subscription.stripe_subscription_id,
-          stripe_customer_id: subscription.stripe_customer_id,
-          stripe_price_id: newPriceId,
-          current_period_end: new Date(updatedSubscription.current_period_end * 1000).toISOString(),
-          updated_at: new Date().toISOString()
-        })
-      
-      if (insertError) {
-        console.error('Error upserting subscription:', insertError)
-      } else {
-        console.log('Successfully upserted subscription')
-      }
+    if (!syncResult.success) {
+      console.error('Error syncing subscription to database:', syncResult.error)
+      // Don't fail the request since Stripe update succeeded
+      // The webhook will also try to sync
     } else {
-      console.log('Successfully updated local subscription to:', newPlanId, billingCycle)
-      console.log('Updated data:', updateData)
+      console.log('Successfully synced subscription to database')
     }
 
     // Record the plan change in payment history

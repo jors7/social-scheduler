@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 import { PlanId, BillingCycle } from '@/lib/subscription/plans'
+import { syncStripeSubscriptionToDatabase } from '@/lib/subscription/sync'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-11-20.acacia' as any,
@@ -136,27 +137,21 @@ export async function POST(request: NextRequest) {
       }
 
       case 'customer.subscription.updated': {
-        const subscription = event!.data.object as any // Type assertion to avoid strict typing issues
-        const { user_id, plan_id, billing_cycle } = subscription.metadata
+        const subscription = event!.data.object as any
+        console.log('Processing customer.subscription.updated:', { 
+          subscription_id: subscription.id,
+          status: subscription.status 
+        })
         
-        console.log('Processing customer.subscription.updated:', { user_id, status: subscription.status })
+        // Use the sync function to properly update everything including plan changes
+        const result = await syncStripeSubscriptionToDatabase(subscription.id)
         
-        const { error } = await supabaseAdmin
-          .from('user_subscriptions')
-          .update({
-            subscription_status: subscription.status, // Use subscription_status field
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-            cancel_at: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null,
-            canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
-            updated_at: new Date().toISOString()
-          })
-          .eq('stripe_subscription_id', subscription.id)
-          
-        if (error) {
-          console.error('Error updating subscription:', error)
-          throw error
+        if (!result.success) {
+          console.error('Error syncing subscription update:', result.error)
+          throw new Error(result.error || 'Failed to sync subscription')
         }
+        
+        console.log('Successfully synced subscription update')
         break
       }
 
