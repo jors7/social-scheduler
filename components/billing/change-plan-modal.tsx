@@ -104,7 +104,13 @@ export function ChangePlanModal({
       }
 
       toast.success('Plan changed successfully!')
-      onPlanChange()
+      
+      // Force a small delay to ensure database is updated
+      setTimeout(() => {
+        onPlanChange()
+        window.location.reload() // Force a full refresh to get latest data
+      }, 500)
+      
       onOpenChange(false)
     } catch (error) {
       console.error('Error changing plan:', error)

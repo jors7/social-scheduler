@@ -138,8 +138,20 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Update local database
-    const { error: updateError } = await supabase
+    // Update local database - use service role for guaranteed update
+    const serviceSupabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+        },
+      }
+    )
+    
+    const { error: updateError } = await serviceSupabase
       .from('user_subscriptions')
       .update({
         plan_id: newPlanId,
@@ -152,6 +164,8 @@ export async function POST(request: NextRequest) {
     if (updateError) {
       console.error('Error updating local subscription:', updateError)
       // Don't fail the request, Stripe update succeeded
+    } else {
+      console.log('Successfully updated local subscription to:', newPlanId, billingCycle)
     }
 
     // Record the plan change in payment history
