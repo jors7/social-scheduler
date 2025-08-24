@@ -158,19 +158,34 @@ export default function BillingPage() {
   const syncSubscription = async () => {
     setSyncing(true)
     try {
-      const response = await fetch('/api/subscription/force-update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+      // Try the manual fix endpoint first
+      const response = await fetch('/api/subscription/fix-now', {
+        method: 'GET'
       })
       
       const data = await response.json()
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to sync subscription')
+        // Fallback to sync-user endpoint
+        const syncResponse = await fetch('/api/subscription/sync-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        })
+        
+        const syncData = await syncResponse.json()
+        
+        if (!syncResponse.ok) {
+          throw new Error(syncData.error || 'Failed to sync subscription')
+        }
       }
       
-      toast.success('Subscription synced successfully')
-      await loadBillingData()
+      toast.success('Subscription updated successfully')
+      
+      // Force reload the page to get fresh data
+      setTimeout(() => {
+        window.location.reload()
+      }, 500)
+      
     } catch (error) {
       console.error('Sync error:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to sync subscription')
