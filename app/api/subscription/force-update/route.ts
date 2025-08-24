@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch latest from Stripe
     console.log('Fetching subscription from Stripe:', dbSubscription.stripe_subscription_id)
-    const stripeSubscription = await stripe.subscriptions.retrieve(dbSubscription.stripe_subscription_id)
+    const stripeSubscription: any = await stripe.subscriptions.retrieve(dbSubscription.stripe_subscription_id)
     
     // Get the active price from the subscription
     const activeItem = stripeSubscription.items.data[0]
