@@ -112,11 +112,11 @@ export async function GET(request: NextRequest) {
       active_subscription: {
         id: activeSubscription.id,
         status: activeSubscription.status,
-        current_period_start: new Date(activeSubscription.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(activeSubscription.current_period_end * 1000).toISOString(),
-        trial_end: activeSubscription.trial_end ? new Date(activeSubscription.trial_end * 1000).toISOString() : null,
-        cancel_at: activeSubscription.cancel_at ? new Date(activeSubscription.cancel_at * 1000).toISOString() : null,
-        canceled_at: activeSubscription.canceled_at ? new Date(activeSubscription.canceled_at * 1000).toISOString() : null
+        current_period_start: new Date((activeSubscription as any).current_period_start * 1000).toISOString(),
+        current_period_end: new Date((activeSubscription as any).current_period_end * 1000).toISOString(),
+        trial_end: (activeSubscription as any).trial_end ? new Date((activeSubscription as any).trial_end * 1000).toISOString() : null,
+        cancel_at: (activeSubscription as any).cancel_at ? new Date((activeSubscription as any).cancel_at * 1000).toISOString() : null,
+        canceled_at: (activeSubscription as any).canceled_at ? new Date((activeSubscription as any).canceled_at * 1000).toISOString() : null
       },
       detected_plan: {
         plan: detectedPlan,
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
         currency: price.currency,
         price_id: price.id
       },
-      metadata: activeSubscription.metadata,
+      metadata: (activeSubscription as any).metadata,
       message: `You have an active ${detectedPlan} subscription (${detectedCycle}) in Stripe`,
       action_needed: detectedPlan === 'starter' ? 'Use the Change Plan feature to upgrade to Professional' : null
     })
