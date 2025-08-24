@@ -25,8 +25,7 @@ import {
   Calendar,
   ChevronRight,
   Check,
-  Settings,
-  RefreshCw
+  Settings
 } from 'lucide-react'
 import { format, isValid, parseISO } from 'date-fns'
 import Link from 'next/link'
@@ -87,7 +86,6 @@ export default function BillingPage() {
   const [usage, setUsage] = useState<UsageData | null>(null)
   const [loading, setLoading] = useState(true)
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
-  const [syncing, setSyncing] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -108,6 +106,16 @@ export default function BillingPage() {
 
       const subData = await getClientSubscription()
       setSubscription(subData)
+
+      // Try to sync payment history from Stripe first
+      try {
+        await fetch('/api/subscription/sync-payments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        })
+      } catch (syncError) {
+        console.log('Could not sync payments from Stripe:', syncError)
+      }
 
       const { data: payments, error: paymentsError } = await supabase
         .from('payment_history')
@@ -155,45 +163,6 @@ export default function BillingPage() {
     }
   }
 
-  const syncSubscription = async () => {
-    setSyncing(true)
-    try {
-      // Try the manual fix endpoint first
-      const response = await fetch('/api/subscription/fix-now', {
-        method: 'GET'
-      })
-      
-      const data = await response.json()
-      
-      if (!response.ok) {
-        // Fallback to sync-user endpoint
-        const syncResponse = await fetch('/api/subscription/sync-user', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        })
-        
-        const syncData = await syncResponse.json()
-        
-        if (!syncResponse.ok) {
-          throw new Error(syncData.error || 'Failed to sync subscription')
-        }
-      }
-      
-      toast.success('Subscription updated successfully')
-      
-      // Force reload the page to get fresh data
-      setTimeout(() => {
-        window.location.reload()
-      }, 500)
-      
-    } catch (error) {
-      console.error('Sync error:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to sync subscription')
-    } finally {
-      setSyncing(false)
-    }
-  }
-
   if (loading) {
     return (
       <Card variant="elevated">
@@ -233,25 +202,6 @@ export default function BillingPage() {
           </h1>
           <p className="text-gray-600 mt-2 text-lg">Manage your subscription, billing, and usage</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={syncSubscription}
-          disabled={syncing}
-          className="gap-2"
-        >
-          {syncing ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Syncing...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="h-4 w-4" />
-              Sync with Stripe
-            </>
-          )}
-        </Button>
       </div>
 
       {/* Main Layout Grid */}
