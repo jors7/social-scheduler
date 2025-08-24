@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         currency: invoice.currency,
         status: 'succeeded',
         stripe_invoice_id: invoice.id,
-        stripe_payment_intent_id: invoice.payment_intent as string || null,
+        stripe_payment_intent_id: (invoice as any).payment_intent || null,
         description: invoice.description || `Payment for subscription`,
         metadata: {
           invoice_number: invoice.number,
@@ -141,12 +141,15 @@ export async function POST(request: NextRequest) {
         created_at: new Date(charge.created * 1000).toISOString()
       }
 
-      // Check if this charge already exists
-      const { data: existing } = await supabaseAdmin
+      // Check if this charge already exists (using filter since metadata is JSONB)
+      const { data: existingCharges } = await supabaseAdmin
         .from('payment_history')
         .select('id')
-        .where('metadata->charge_id', 'eq', charge.id)
-        .single()
+        .eq('user_id', user.id)
+      
+      const existing = existingCharges?.find((record: any) => 
+        record.metadata?.charge_id === charge.id
+      )
 
       if (!existing) {
         const { error: insertError } = await supabaseAdmin
