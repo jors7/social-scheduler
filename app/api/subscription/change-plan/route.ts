@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     const isUpgrade = newPlan.price_monthly > currentPlan.price_monthly
     
     // Update the subscription
-    const updatedSubscription = await stripe.subscriptions.update(
+    const updatedSubscription: any = await stripe.subscriptions.update(
       subscription.stripe_subscription_id,
       {
         items: [{
