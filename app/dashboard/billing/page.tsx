@@ -25,7 +25,8 @@ import {
   Calendar,
   ChevronRight,
   Check,
-  Settings
+  Settings,
+  RefreshCw
 } from 'lucide-react'
 import { format, isValid, parseISO } from 'date-fns'
 import Link from 'next/link'
@@ -86,6 +87,7 @@ export default function BillingPage() {
   const [usage, setUsage] = useState<UsageData | null>(null)
   const [loading, setLoading] = useState(true)
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -153,6 +155,30 @@ export default function BillingPage() {
     }
   }
 
+  const syncSubscription = async () => {
+    setSyncing(true)
+    try {
+      const response = await fetch('/api/subscription/force-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to sync subscription')
+      }
+      
+      toast.success('Subscription synced successfully')
+      await loadBillingData()
+    } catch (error) {
+      console.error('Sync error:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to sync subscription')
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   if (loading) {
     return (
       <Card variant="elevated">
@@ -192,6 +218,25 @@ export default function BillingPage() {
           </h1>
           <p className="text-gray-600 mt-2 text-lg">Manage your subscription, billing, and usage</p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={syncSubscription}
+          disabled={syncing}
+          className="gap-2"
+        >
+          {syncing ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Syncing...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="h-4 w-4" />
+              Sync with Stripe
+            </>
+          )}
+        </Button>
       </div>
 
       {/* Main Layout Grid */}
