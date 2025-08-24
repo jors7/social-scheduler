@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       .single()
 
     // If there's a Stripe subscription ID, fetch from Stripe
-    let stripeSubscription = null
+    let stripeSubscription: any = null
     if (dbSubscription?.stripe_subscription_id && !dbSubscription.stripe_subscription_id.startsWith('manual_')) {
       try {
         stripeSubscription = await stripe.subscriptions.retrieve(dbSubscription.stripe_subscription_id)
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get customer from Stripe if exists
-    let stripeCustomer = null
+    let stripeCustomer: any = null
     if (dbSubscription?.stripe_customer_id) {
       try {
         stripeCustomer = await stripe.customers.retrieve(dbSubscription.stripe_customer_id)
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
           id: stripeSubscription.id,
           status: stripeSubscription.status,
           current_period_end: stripeSubscription.current_period_end,
-          items: stripeSubscription.items.data.map(item => ({
+          items: stripeSubscription.items.data.map((item: any) => ({
             id: item.id,
             price: {
               id: item.price.id,
@@ -95,9 +95,9 @@ export async function GET(request: NextRequest) {
           metadata: stripeSubscription.metadata
         } : null,
         customer: stripeCustomer ? {
-          id: (stripeCustomer as any).id,
-          email: (stripeCustomer as any).email,
-          subscriptions: (stripeCustomer as any).subscriptions?.data?.length || 0
+          id: stripeCustomer.id,
+          email: stripeCustomer.email,
+          subscriptions: stripeCustomer.subscriptions?.data?.length || 0
         } : null
       },
       timestamp: new Date().toISOString()
