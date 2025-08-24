@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
 
     for (const charge of charges.data) {
       // Skip if already have invoice for this charge
-      if (charge.invoice) continue
+      if ((charge as any).invoice) continue
       if (charge.status !== 'succeeded') continue
 
       const paymentData = {
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
         amount: charge.amount,
         currency: charge.currency,
         status: 'succeeded',
-        stripe_payment_intent_id: charge.payment_intent as string || null,
+        stripe_payment_intent_id: (charge as any).payment_intent || null,
         description: charge.description || 'One-time payment',
         metadata: {
           charge_id: charge.id,
