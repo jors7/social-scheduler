@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
       // Dynamically created prices
       'price_1RzxEiA6BBN8qFjBnq7oVQYu': { plan: 'enterprise', cycle: 'monthly' },
       'price_1RzxMlA6BBN8qFjBC1uVrD7K': { plan: 'enterprise', cycle: 'yearly' },
+      'price_1S02IuA6BBN8qFjBVzAzPdtR': { plan: 'enterprise', cycle: 'yearly' }, // Another dynamically created one
     }
     
     if (PRICE_MAPPINGS[priceId]) {
