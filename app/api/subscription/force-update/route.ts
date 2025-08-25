@@ -11,6 +11,25 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 // Map Stripe price IDs to plan IDs
 function getPlanFromPrice(priceId: string): { planId: PlanId; billingCycle: 'monthly' | 'yearly' } | null {
+  // Hardcoded mappings for all known price IDs
+  const KNOWN_PRICES: Record<string, { planId: PlanId; billingCycle: 'monthly' | 'yearly' }> = {
+    // Original price IDs
+    'price_1RtUNnA6BBN8qFjBGLuo3qFM': { planId: 'starter', billingCycle: 'monthly' },
+    'price_1RtUNSA6BBN8qFjBoeFyL3NS': { planId: 'starter', billingCycle: 'yearly' },
+    'price_1RtUOEA6BBN8qFjB0HtMVjLr': { planId: 'professional', billingCycle: 'monthly' },
+    'price_1RtUOTA6BBN8qFjBrXkY1ExC': { planId: 'professional', billingCycle: 'yearly' },
+    'price_1RtUP4A6BBN8qFjBI2hBmwcT': { planId: 'enterprise', billingCycle: 'monthly' },
+    'price_1RtUPFA6BBN8qFjByzefry7H': { planId: 'enterprise', billingCycle: 'yearly' },
+    // Dynamically created price IDs (from buggy upgrades)
+    'price_1RzxEiA6BBN8qFjBnq7oVQYu': { planId: 'enterprise', billingCycle: 'monthly' },
+    'price_1RzxMlA6BBN8qFjBC1uVrD7K': { planId: 'enterprise', billingCycle: 'yearly' },
+    'price_1S02IuA6BBN8qFjBVzAzPdtR': { planId: 'enterprise', billingCycle: 'yearly' },
+  }
+  
+  if (KNOWN_PRICES[priceId]) {
+    return KNOWN_PRICES[priceId]
+  }
+  
   // Check all plans for matching price IDs
   for (const [planId, plan] of Object.entries(SUBSCRIPTION_PLANS)) {
     if (plan.stripe_price_id_monthly === priceId) {
@@ -28,21 +47,31 @@ function getPlanFromPrice(priceId: string): { planId: PlanId; billingCycle: 'mon
 function getPlanFromAmount(amount: number, interval: string): { planId: PlanId; billingCycle: 'monthly' | 'yearly' } {
   const billingCycle = interval === 'year' ? 'yearly' : 'monthly'
   
-  // Convert cents to dollars
-  const price = amount / 100
-  
+  // Amount is already in cents, compare directly with plan prices (also in cents)
   // Match by price
   for (const [planId, plan] of Object.entries(SUBSCRIPTION_PLANS)) {
-    if (billingCycle === 'monthly' && plan.price_monthly === price) {
+    if (billingCycle === 'monthly' && plan.price_monthly === amount) {
       return { planId: planId as PlanId, billingCycle }
     }
-    if (billingCycle === 'yearly' && plan.price_yearly === price) {
+    if (billingCycle === 'yearly' && plan.price_yearly === amount) {
       return { planId: planId as PlanId, billingCycle }
     }
   }
   
-  // Default to starter if no match
-  return { planId: 'starter', billingCycle }
+  // Try dollar comparison as fallback (for legacy reasons)
+  const priceInDollars = amount / 100
+  if (billingCycle === 'monthly') {
+    if (priceInDollars === 9) return { planId: 'starter', billingCycle }
+    if (priceInDollars === 19) return { planId: 'professional', billingCycle }
+    if (priceInDollars === 29) return { planId: 'enterprise', billingCycle }
+  } else {
+    if (priceInDollars === 90) return { planId: 'starter', billingCycle }
+    if (priceInDollars === 190) return { planId: 'professional', billingCycle }
+    if (priceInDollars === 290) return { planId: 'enterprise', billingCycle }
+  }
+  
+  // Default to professional if no match
+  return { planId: 'professional', billingCycle }
 }
 
 export async function POST(request: NextRequest) {
@@ -110,21 +139,33 @@ export async function POST(request: NextRequest) {
     console.log('Active price:', price.id, 'Amount:', price.unit_amount, 'Interval:', price.recurring?.interval)
     
     // Determine the plan from the price
+    console.log('Attempting to determine plan from price ID:', price.id)
     let planInfo = getPlanFromPrice(price.id)
     
-    if (!planInfo && price.unit_amount && price.recurring?.interval) {
-      planInfo = getPlanFromAmount(price.unit_amount, price.recurring.interval)
+    if (planInfo) {
+      console.log('Found plan from price ID mapping:', planInfo)
+    } else {
+      console.log('No direct price ID match, trying amount-based detection')
+      console.log('Price details - Amount:', price.unit_amount, 'Interval:', price.recurring?.interval)
+      
+      if (price.unit_amount && price.recurring?.interval) {
+        planInfo = getPlanFromAmount(price.unit_amount, price.recurring.interval)
+        console.log('Determined plan from amount:', planInfo)
+      }
     }
     
     if (!planInfo) {
-      console.error('Could not determine plan from price:', price.id)
+      console.error('Could not determine plan from price:', price.id, 'Amount:', price.unit_amount)
       return NextResponse.json({ 
         error: 'Could not determine plan',
-        details: 'Unable to map Stripe price to a plan'
+        details: `Unable to map Stripe price ${price.id} (amount: ${price.unit_amount}) to a plan`,
+        price_id: price.id,
+        amount: price.unit_amount,
+        interval: price.recurring?.interval
       }, { status: 500 })
     }
     
-    console.log('Determined plan:', planInfo.planId, 'Billing cycle:', planInfo.billingCycle)
+    console.log('Final determined plan:', planInfo.planId, 'Billing cycle:', planInfo.billingCycle)
     
     // Force update the database
     const updateData = {
