@@ -289,7 +289,7 @@ export default function BillingPage() {
                     <div className="flex-1">
                       <h4 className="font-semibold text-amber-900">Scheduled Plan Change</h4>
                       <p className="text-sm text-amber-700 mt-1">
-                        Your plan will change to <strong>{SUBSCRIPTION_PLANS[subscription.scheduledPlanId].name}</strong> ({subscription.scheduledBillingCycle}) 
+                        Your plan will change to <strong>{SUBSCRIPTION_PLANS[subscription.scheduledPlanId as keyof typeof SUBSCRIPTION_PLANS]?.name || subscription.scheduledPlanId}</strong> ({subscription.scheduledBillingCycle}) 
                         on <strong>{formatDate(subscription.scheduledChangeDate)}</strong>
                       </p>
                       <Button
