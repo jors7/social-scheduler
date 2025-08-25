@@ -42,28 +42,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No subscription found' }, { status: 404 })
     }
 
-    if (!subscription.stripe_schedule_id) {
+    // Check if there's a scheduled change (either with schedule ID or just tracked in DB)
+    if (!subscription.scheduled_plan_id) {
       return NextResponse.json({ 
         error: 'No scheduled changes found',
         message: 'There are no scheduled plan changes to cancel'
       }, { status: 400 })
     }
 
-    console.log('Canceling schedule:', subscription.stripe_schedule_id)
-
-    // Cancel the schedule in Stripe
-    try {
-      const canceledSchedule = await stripe.subscriptionSchedules.cancel(
-        subscription.stripe_schedule_id
-      )
+    // If there's a Stripe schedule ID, cancel it
+    if (subscription.stripe_schedule_id) {
+      console.log('Canceling Stripe schedule:', subscription.stripe_schedule_id)
       
-      console.log('Schedule canceled successfully:', canceledSchedule.id)
-    } catch (stripeError: any) {
-      // If schedule does not exist or already canceled, that is OK
-      if (stripeError.code !== 'resource_missing') {
-        throw stripeError
+      try {
+        const canceledSchedule = await stripe.subscriptionSchedules.cancel(
+          subscription.stripe_schedule_id
+        )
+        
+        console.log('Schedule canceled successfully:', canceledSchedule.id)
+      } catch (stripeError: any) {
+        // If schedule does not exist or already canceled, that is OK
+        if (stripeError.code !== 'resource_missing') {
+          throw stripeError
+        }
+        console.log('Schedule already canceled or does not exist')
       }
-      console.log('Schedule already canceled or does not exist')
+    } else {
+      console.log('No Stripe schedule to cancel, just clearing DB tracking')
     }
 
     // Clear the scheduled change info from database
