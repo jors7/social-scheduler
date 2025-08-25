@@ -131,12 +131,32 @@ export async function POST(request: NextRequest) {
 
         console.log('Creating credit note for overcharge:', creditAmount / 100)
 
-        creditNote = await stripe.creditNotes.create({
-          invoice: overchargedInvoice.id,
-          amount: creditAmount,
-          reason: 'product_unsatisfactory',
-          memo: 'Correcting overcharge due to incorrect price configuration'
-        })
+        try {
+          // Try to create a credit note for the overcharge
+          creditNote = await stripe.creditNotes.create({
+            invoice: overchargedInvoice.id,
+            amount: creditAmount,
+            reason: 'product_unsatisfactory',
+            memo: 'Correcting overcharge due to incorrect price configuration'
+          })
+        } catch (creditError: any) {
+          console.log('Could not create full credit note:', creditError.message)
+          
+          // If that fails, try a smaller amount (Stripe may have limits)
+          try {
+            // Try crediting just the difference between plans for a full month
+            const monthlyDifference = (290 - 29) * 100 // $261
+            creditNote = await stripe.creditNotes.create({
+              invoice: overchargedInvoice.id,
+              amount: Math.min(monthlyDifference, actuallyPaid),
+              reason: 'product_unsatisfactory',
+              memo: 'Correcting overcharge due to incorrect price configuration'
+            })
+          } catch (secondError: any) {
+            console.log('Could not create any credit note:', secondError.message)
+            // Continue without credit note - at least fix the subscription
+          }
+        }
       }
 
       return NextResponse.json({
