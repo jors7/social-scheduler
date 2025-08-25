@@ -148,8 +148,9 @@ export async function POST(request: NextRequest) {
           trial_end: 'now',
           // For upgrades, also set payment behavior to charge immediately
           ...(isUpgrade && {
-            payment_behavior: 'error_if_incomplete',
+            payment_behavior: 'default_incomplete',
             billing_cycle_anchor: 'now',
+            expand: ['latest_invoice.payment_intent'],
           }),
           metadata: {
             user_id: user.id,
@@ -204,8 +205,8 @@ export async function POST(request: NextRequest) {
       throw stripeUpdateError
     }
     
-    // If the subscription has a latest invoice that's incomplete, handle it
-    if ((updatedSubscription as any).latest_invoice) {
+    // ALWAYS check for incomplete payment on upgrades
+    if (isUpgrade && (updatedSubscription as any).latest_invoice) {
       // latest_invoice can be either a string ID or an expanded invoice object
       const invoiceId = typeof (updatedSubscription as any).latest_invoice === 'string' 
         ? (updatedSubscription as any).latest_invoice 
@@ -213,23 +214,53 @@ export async function POST(request: NextRequest) {
       
       const latestInvoice = await stripe.invoices.retrieve(invoiceId)
       
-      if (latestInvoice.status === 'open' || latestInvoice.status === 'draft') {
-        // Try to pay the invoice
-        try {
-          if (latestInvoice.id) {
-            const paidInvoice = await stripe.invoices.pay(latestInvoice.id)
-            console.log('Invoice paid successfully:', paidInvoice.id)
+      console.log('Latest invoice status:', latestInvoice.status, 'Amount due:', latestInvoice.amount_due)
+      
+      // Check if payment is needed
+      if (latestInvoice.status === 'open' || latestInvoice.status === 'draft' || 
+          (latestInvoice.status === 'paid' && latestInvoice.amount_due === 0 && latestInvoice.amount_paid === 0)) {
+        
+        // For $0 invoices (shouldn't happen with upgrades but just in case)
+        if (latestInvoice.amount_due === 0) {
+          console.log('Invoice has $0 due, likely a configuration issue')
+        } else {
+          // Try to pay the invoice
+          try {
+            if (latestInvoice.id && latestInvoice.status !== 'paid') {
+              const paidInvoice = await stripe.invoices.pay(latestInvoice.id)
+              console.log('Invoice paid successfully:', paidInvoice.id)
+            }
+          } catch (payError: any) {
+            console.log('Could not automatically pay invoice:', payError.message)
+            
+            // Always return payment URL for manual payment on upgrades
+            return NextResponse.json({
+              error: 'Payment required to complete plan upgrade',
+              code: 'payment_required',
+              payment_url: latestInvoice.hosted_invoice_url,
+              invoice_id: latestInvoice.id,
+              message: 'Please complete payment to activate your new plan'
+            }, { status: 402 })
           }
-        } catch (payError: any) {
-          console.log('Could not automatically pay invoice:', payError.message)
-          
-          // Return payment URL for manual payment
+        }
+      }
+      
+      // Double-check if the subscription is actually active after payment attempt
+      const refreshedSubscription = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id)
+      if (refreshedSubscription.status === 'incomplete' || refreshedSubscription.status === 'incomplete_expired') {
+        // Get the latest invoice for payment
+        const invoices = await stripe.invoices.list({
+          subscription: subscription.stripe_subscription_id,
+          limit: 1
+        })
+        
+        if (invoices.data.length > 0 && invoices.data[0].hosted_invoice_url) {
           return NextResponse.json({
-            error: 'Payment required to complete plan upgrade',
+            error: 'Payment required to activate your new plan',
             code: 'payment_required',
-            payment_url: latestInvoice.hosted_invoice_url,
-            invoice_id: latestInvoice.id,
-            message: 'Please complete payment to activate your new plan'
+            payment_url: invoices.data[0].hosted_invoice_url,
+            invoice_id: invoices.data[0].id,
+            message: 'Your plan upgrade requires payment'
           }, { status: 402 })
         }
       }
