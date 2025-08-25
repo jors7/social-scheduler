@@ -168,35 +168,62 @@ export async function POST(request: NextRequest) {
     console.log('Final determined plan:', planInfo.planId, 'Billing cycle:', planInfo.billingCycle)
     
     // Force update the database
-    const updateData = {
+    const updateData: any = {
       plan_id: planInfo.planId,
       billing_cycle: planInfo.billingCycle,
       status: stripeSubscription.status,
-      stripe_price_id: price.id,
       current_period_end: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+      current_period_start: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
       updated_at: new Date().toISOString()
     }
     
-    console.log('Updating database with:', updateData)
+    // Only include stripe_price_id if the column exists
+    // We'll try with it first, then without if it fails
+    const updateDataWithPriceId = {
+      ...updateData,
+      stripe_price_id: price.id
+    }
     
-    const { data: updated, error: updateError } = await serviceSupabase
+    console.log('Updating database with:', updateDataWithPriceId)
+    
+    // Try update with stripe_price_id first
+    let { data: updated, error: updateError } = await serviceSupabase
       .from('user_subscriptions')
-      .update(updateData)
+      .update(updateDataWithPriceId)
       .eq('user_id', user.id)
       .select()
       .single()
 
+    // If it fails due to missing column, try without stripe_price_id
+    if (updateError && updateError.message?.includes('stripe_price_id')) {
+      console.log('Retrying without stripe_price_id column')
+      const result = await serviceSupabase
+        .from('user_subscriptions')
+        .update(updateData)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+      
+      updated = result.data
+      updateError = result.error
+    }
+
     if (updateError) {
       console.error('Database update error:', updateError)
       
-      // Try upsert as fallback
+      // Try upsert as fallback (without stripe_price_id to be safe)
       const { data: upserted, error: upsertError } = await serviceSupabase
         .from('user_subscriptions')
         .upsert({
           user_id: user.id,
           stripe_subscription_id: dbSubscription.stripe_subscription_id,
           stripe_customer_id: dbSubscription.stripe_customer_id || stripeSubscription.customer as string,
-          ...updateData
+          plan_id: planInfo.planId,
+          billing_cycle: planInfo.billingCycle,
+          status: stripeSubscription.status,
+          current_period_end: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+          current_period_start: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
+          updated_at: new Date().toISOString()
         })
         .select()
         .single()

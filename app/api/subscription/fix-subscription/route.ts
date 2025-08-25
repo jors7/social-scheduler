@@ -132,32 +132,53 @@ export async function POST(request: NextRequest) {
 
     console.log('Updating with data:', updateData)
 
+    // Prepare update data without stripe_price_id first
+    const baseUpdateData = {
+      user_id: user.id,
+      plan_id: detectedPlanId,
+      billing_cycle: detectedBillingCycle,
+      status: subscription.status,
+      stripe_subscription_id: dbSub.stripe_subscription_id,
+      stripe_customer_id: dbSub.stripe_customer_id,
+      current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
+      current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+      trial_end: dbSub.trial_end,
+      cancel_at: subscription.cancel_at ? new Date((subscription as any).cancel_at * 1000).toISOString() : null,
+      canceled_at: subscription.canceled_at ? new Date((subscription as any).canceled_at * 1000).toISOString() : null,
+      updated_at: new Date().toISOString()
+    }
+
+    // Try upsert with stripe_price_id if we have it
+    let upsertData: any = baseUpdateData
+    if (priceId) {
+      upsertData = { ...baseUpdateData, stripe_price_id: priceId }
+    }
+
     // Use upsert to ensure the update happens
-    const { data: upsertResult, error: upsertError } = await supabaseAdmin
+    let { data: upsertResult, error: upsertError } = await supabaseAdmin
       .from('user_subscriptions')
-      .upsert(
-        {
-          user_id: user.id,
-          plan_id: detectedPlanId,
-          billing_cycle: detectedBillingCycle,
-          status: subscription.status,
-          stripe_subscription_id: dbSub.stripe_subscription_id,
-          stripe_customer_id: dbSub.stripe_customer_id,
-          stripe_price_id: priceId || dbSub.stripe_price_id,
-          current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
-          current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
-          trial_end: dbSub.trial_end,
-          cancel_at: subscription.cancel_at ? new Date((subscription as any).cancel_at * 1000).toISOString() : null,
-          canceled_at: subscription.canceled_at ? new Date((subscription as any).canceled_at * 1000).toISOString() : null,
-          updated_at: new Date().toISOString()
-        },
-        {
-          onConflict: 'user_id',
-          ignoreDuplicates: false
-        }
-      )
+      .upsert(upsertData, {
+        onConflict: 'user_id',
+        ignoreDuplicates: false
+      })
       .select()
       .single()
+
+    // If it fails due to stripe_price_id, retry without it
+    if (upsertError && upsertError.message?.includes('stripe_price_id')) {
+      console.log('Retrying upsert without stripe_price_id')
+      const result = await supabaseAdmin
+        .from('user_subscriptions')
+        .upsert(baseUpdateData, {
+          onConflict: 'user_id',
+          ignoreDuplicates: false
+        })
+        .select()
+        .single()
+      
+      upsertResult = result.data
+      upsertError = result.error
+    }
 
     if (upsertError) {
       console.error('Upsert failed:', upsertError)
@@ -190,16 +211,22 @@ export async function POST(request: NextRequest) {
     if (!matches && verifyData) {
       console.log('Dates still not matching, trying direct update without upsert')
       
+      const directUpdateData: any = {
+        plan_id: detectedPlanId,
+        billing_cycle: detectedBillingCycle,
+        current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
+        current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      
+      // Only include stripe_price_id if we have it
+      if (priceId) {
+        directUpdateData.stripe_price_id = priceId
+      }
+      
       const { data: directUpdate, error: directError } = await supabaseAdmin
         .from('user_subscriptions')
-        .update({
-          plan_id: detectedPlanId,
-          billing_cycle: detectedBillingCycle,
-          stripe_price_id: priceId,
-          current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
-          current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
-          updated_at: new Date().toISOString()
-        })
+        .update(directUpdateData)
         .eq('user_id', user.id)
         .eq('stripe_subscription_id', dbSub.stripe_subscription_id)
         .select()
