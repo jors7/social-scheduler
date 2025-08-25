@@ -177,67 +177,124 @@ export async function POST(request: NextRequest) {
     
     try {
       if (isDowngrade) {
-        console.log('Processing downgrade - scheduling for end of period')
+        console.log('Processing downgrade - using Subscription Schedules API')
         
-        // First, check if there's an existing schedule and cancel it
+        // For downgrades, we must use Subscription Schedules API
+        // Regular subscription updates don't support delayed changes
         try {
-          const schedules = await stripe.subscriptionSchedules.list({
-            customer: subscription.stripe_customer_id,
-            limit: 1
+          // First, check if subscription already has a schedule
+          const subDetails = await stripe.subscriptions.retrieve(
+            subscription.stripe_subscription_id,
+            { expand: ['schedule'] }
+          )
+          
+          if ((subDetails as any).schedule) {
+            // Release the subscription from existing schedule first
+            const scheduleId = typeof (subDetails as any).schedule === 'string' 
+              ? (subDetails as any).schedule 
+              : (subDetails as any).schedule.id
+              
+            console.log('Releasing subscription from existing schedule:', scheduleId)
+            await stripe.subscriptionSchedules.release(scheduleId)
+          }
+          
+          // Create a new schedule from the subscription
+          console.log('Creating schedule with current price:', currentPriceId, 'new price:', newPriceId)
+          
+          const currentPeriodEnd = Math.floor(new Date(subscription.current_period_end).getTime() / 1000)
+          
+          const schedule = await stripe.subscriptionSchedules.create({
+            from_subscription: subscription.stripe_subscription_id
           })
           
-          if (schedules.data.length > 0 && schedules.data[0].status === 'active') {
-            console.log('Canceling existing schedule:', schedules.data[0].id)
-            await stripe.subscriptionSchedules.cancel(schedules.data[0].id)
-          }
-        } catch (err) {
-          console.log('No existing schedule to cancel or error canceling:', err)
-        }
-        
-        // Create a subscription schedule for the downgrade
-        try {
-          const schedule = await stripe.subscriptionSchedules.create({
-            from_subscription: subscription.stripe_subscription_id,
+          // Update the schedule with our phases
+          const updatedSchedule = await stripe.subscriptionSchedules.update(schedule.id, {
             phases: [
               {
-                // Current phase - keep current plan until period end
                 items: [{
                   price: currentPriceId,
                   quantity: 1
                 }],
-                end_date: subscription.current_period_end 
-                  ? Math.floor(new Date(subscription.current_period_end).getTime() / 1000)
-                  : Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000) // Default to 30 days from now
+                end_date: currentPeriodEnd
               },
               {
-                // New phase - switch to new plan after current period
                 items: [{
                   price: newPriceId,
                   quantity: 1
                 }],
                 metadata: {
-                  user_id: user.id,
                   plan_id: newPlanId,
-                  billing_cycle: billingCycle,
+                  billing_cycle: billingCycle
                 }
               }
             ]
           })
           
-          scheduledChange = schedule
-          updatedSubscription = stripeSubscription // Keep current subscription as-is
+          scheduledChange = updatedSchedule
+          updatedSubscription = stripeSubscription
+          console.log('Downgrade scheduled successfully:', updatedSchedule.id)
           
-          console.log('Downgrade scheduled:', {
-            schedule_id: schedule.id,
-            switches_at: new Date(subscription.current_period_end).toISOString()
-          })
-        } catch (scheduleError: any) {
-          console.error('Failed to create subscription schedule:', scheduleError)
-          return NextResponse.json({ 
-            error: 'Failed to schedule downgrade',
-            details: scheduleError.message,
-            code: scheduleError.code
-          }, { status: 500 })
+        } catch (updateError: any) {
+          console.error('Failed to schedule downgrade:', updateError)
+          
+          // Fallback: Try using subscription schedules API
+          console.log('Trying subscription schedules API as fallback...')
+          try {
+            // First check if there's an existing schedule
+            const schedules = await stripe.subscriptionSchedules.list({
+              customer: subscription.stripe_customer_id,
+              limit: 1
+            })
+            
+            if (schedules.data.length > 0) {
+              // Update existing schedule
+              const schedule = await stripe.subscriptionSchedules.update(schedules.data[0].id, {
+                phases: [
+                  {
+                    items: [{
+                      price: currentPriceId,
+                      quantity: 1
+                    }],
+                    end_date: Math.floor(new Date(subscription.current_period_end).getTime() / 1000)
+                  },
+                  {
+                    items: [{
+                      price: newPriceId,
+                      quantity: 1
+                    }]
+                  }
+                ]
+              })
+              scheduledChange = schedule
+              updatedSubscription = stripeSubscription
+              console.log('Updated existing schedule for downgrade')
+            } else {
+              // Create new schedule
+              const schedule = await stripe.subscriptionSchedules.create({
+                customer: subscription.stripe_customer_id,
+                start_date: Math.floor(new Date(subscription.current_period_end).getTime() / 1000),
+                phases: [
+                  {
+                    items: [{
+                      price: newPriceId,
+                      quantity: 1
+                    }],
+                    iterations: 1
+                  }
+                ]
+              })
+              scheduledChange = schedule
+              updatedSubscription = stripeSubscription
+              console.log('Created new schedule for downgrade')
+            }
+          } catch (scheduleError: any) {
+            console.error('Schedule API also failed:', scheduleError)
+            return NextResponse.json({ 
+              error: 'Failed to schedule downgrade',
+              details: updateError.message || scheduleError.message,
+              code: updateError.code || scheduleError.code
+            }, { status: 500 })
+          }
         }
         
       } else {
