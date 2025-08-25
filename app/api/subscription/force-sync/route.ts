@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
 import Stripe from 'stripe'
+import { syncStripeSubscriptionToDatabase } from '@/lib/subscription/sync'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-11-20.acacia' as any,
 })
 
-const supabaseAdmin = createAdminClient(
+const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
   {
@@ -19,115 +21,136 @@ const supabaseAdmin = createAdminClient(
 )
 
 export async function POST(request: NextRequest) {
-  console.log('=== Force Sync Subscription ===')
-  
   try {
-    // Get the current user
-    const supabase = await createClient()
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+        },
+      }
+    )
+
+    // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log('Syncing for user:', user.email)
+    console.log('Force syncing subscription for:', user.email)
 
-    // Get subscription from database
-    const { data: dbSub } = await supabaseAdmin
+    // Get user's subscription from database
+    const { data: dbSub } = await supabase
       .from('user_subscriptions')
       .select('*')
       .eq('user_id', user.id)
       .single()
 
-    if (!dbSub || !dbSub.stripe_subscription_id) {
-      return NextResponse.json({ error: 'No subscription to sync' }, { status: 404 })
+    if (!dbSub?.stripe_subscription_id) {
+      return NextResponse.json({ error: 'No subscription found' })
     }
 
     // Get the Stripe subscription
-    const stripeSub = await stripe.subscriptions.retrieve(dbSub.stripe_subscription_id)
-    console.log('Stripe subscription:', {
-      id: stripeSub.id,
-      status: stripeSub.status,
-      price_id: stripeSub.items.data[0]?.price.id
+    const subscription = await stripe.subscriptions.retrieve(dbSub.stripe_subscription_id, {
+      expand: ['items.data.price']
     })
 
-    // Determine the plan and billing cycle from the price ID
-    let planId = 'starter'
+    // Determine the plan from the price
+    const currentItem = subscription.items.data[0]
+    const currentPrice = currentItem.price
+    const priceId = currentPrice.id
+    
+    let planId = 'professional' // default
     let billingCycle = 'monthly'
     
-    const priceId = stripeSub.items.data[0]?.price.id
+    // Check against known price IDs
+    const PRICE_MAPPINGS: Record<string, { plan: string, cycle: string }> = {
+      'price_1RtUNnA6BBN8qFjBGLuo3qFM': { plan: 'starter', cycle: 'monthly' },
+      'price_1RtUNSA6BBN8qFjBoeFyL3NS': { plan: 'starter', cycle: 'yearly' },
+      'price_1RtUOEA6BBN8qFjB0HtMVjLr': { plan: 'professional', cycle: 'monthly' },
+      'price_1RtUOTA6BBN8qFjBrXkY1ExC': { plan: 'professional', cycle: 'yearly' },
+      'price_1RtUP4A6BBN8qFjBI2hBmwcT': { plan: 'enterprise', cycle: 'monthly' },
+      'price_1RtUPFA6BBN8qFjByzefry7H': { plan: 'enterprise', cycle: 'yearly' },
+    }
     
-    // Map price ID to plan and cycle
-    if (priceId === process.env.STRIPE_STARTER_MONTHLY_PRICE_ID) {
-      planId = 'starter'
-      billingCycle = 'monthly'
-    } else if (priceId === process.env.STRIPE_STARTER_YEARLY_PRICE_ID) {
-      planId = 'starter'
-      billingCycle = 'yearly'
-    } else if (priceId === process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID) {
-      planId = 'professional'
-      billingCycle = 'monthly'
-    } else if (priceId === process.env.STRIPE_PROFESSIONAL_YEARLY_PRICE_ID) {
-      planId = 'professional'
-      billingCycle = 'yearly'
-    } else if (priceId === process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID) {
-      planId = 'enterprise'
-      billingCycle = 'monthly'
-    } else if (priceId === process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID) {
-      planId = 'enterprise'
-      billingCycle = 'yearly'
+    if (PRICE_MAPPINGS[priceId]) {
+      planId = PRICE_MAPPINGS[priceId].plan
+      billingCycle = PRICE_MAPPINGS[priceId].cycle
+    } else {
+      // Fallback to amount-based detection
+      const amount = (currentPrice.unit_amount || 0) / 100
+      const interval = currentPrice.recurring?.interval
+      
+      if (interval === 'month') {
+        if (amount === 9) planId = 'starter'
+        else if (amount === 19) planId = 'professional'
+        else if (amount === 29) planId = 'enterprise'
+        billingCycle = 'monthly'
+      } else if (interval === 'year') {
+        if (amount === 90) planId = 'starter'
+        else if (amount === 190) planId = 'professional'
+        else if (amount === 290) planId = 'enterprise'
+        billingCycle = 'yearly'
+      }
     }
 
-    console.log('Detected plan:', planId, 'cycle:', billingCycle)
+    console.log('Detected plan from Stripe:', {
+      price_id: priceId,
+      plan: planId,
+      billing_cycle: billingCycle,
+      amount: (currentPrice.unit_amount || 0) / 100
+    })
 
-    // Update the database with correct information
-    const { data: updated, error: updateError } = await supabaseAdmin
+    // Force update the database
+    const { error: updateError } = await supabaseAdmin
       .from('user_subscriptions')
       .update({
         plan_id: planId,
         billing_cycle: billingCycle,
-        status: stripeSub.status,
-        current_period_start: new Date((stripeSub as any).current_period_start * 1000).toISOString(),
-        current_period_end: new Date((stripeSub as any).current_period_end * 1000).toISOString(),
-        trial_end: (stripeSub as any).trial_end 
-          ? new Date((stripeSub as any).trial_end * 1000).toISOString() 
-          : null,
-        cancel_at: (stripeSub as any).cancel_at 
-          ? new Date((stripeSub as any).cancel_at * 1000).toISOString() 
-          : null,
-        canceled_at: (stripeSub as any).canceled_at 
-          ? new Date((stripeSub as any).canceled_at * 1000).toISOString() 
-          : null,
+        status: subscription.status,
+        stripe_price_id: priceId,
+        current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
+        current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq('user_id', user.id)
-      .select()
-      .single()
 
     if (updateError) {
-      console.error('Update error:', updateError)
-      return NextResponse.json({ error: 'Failed to update subscription' }, { status: 500 })
+      console.error('Database update error:', updateError)
+      return NextResponse.json({ 
+        error: 'Failed to update database', 
+        details: updateError 
+      }, { status: 500 })
     }
 
-    console.log('Subscription synced successfully')
+    // Also try the sync function
+    const syncResult = await syncStripeSubscriptionToDatabase(
+      dbSub.stripe_subscription_id,
+      user.id
+    )
 
     return NextResponse.json({
       success: true,
-      message: 'Subscription synced successfully',
-      subscription: updated,
-      stripe: {
-        status: stripeSub.status,
-        price_id: priceId,
-        plan: planId,
-        cycle: billingCycle
+      message: 'Subscription force synced successfully',
+      details: {
+        stripe_plan: planId,
+        stripe_billing_cycle: billingCycle,
+        stripe_price_id: priceId,
+        stripe_amount: (currentPrice.unit_amount || 0) / 100,
+        database_updated: !updateError,
+        sync_result: syncResult
       }
     })
-    
+
   } catch (error: any) {
     console.error('Force sync error:', error)
     return NextResponse.json({ 
-      error: 'Sync failed',
-      details: error?.message 
+      error: 'Failed to force sync', 
+      details: error.message 
     }, { status: 500 })
   }
 }
