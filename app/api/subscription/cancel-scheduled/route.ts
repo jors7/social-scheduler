@@ -59,11 +59,11 @@ export async function POST(request: NextRequest) {
       
       console.log('Schedule canceled successfully:', canceledSchedule.id)
     } catch (stripeError: any) {
-      // If schedule doesn't exist or already canceled, that's OK
+      // If schedule does not exist or already canceled, that is OK
       if (stripeError.code !== 'resource_missing') {
         throw stripeError
       }
-      console.log('Schedule already canceled or doesn't exist')
+      console.log('Schedule already canceled or does not exist')
     }
 
     // Clear the scheduled change info from database
