@@ -65,17 +65,19 @@ export async function POST(request: NextRequest) {
       try {
         // Create and finalize an invoice for immediate payment
         const invoice = await stripe.invoices.create({
-          customer: subscription.customer,
+          customer: subscription.customer as string,
           subscription: subscription.id,
           auto_advance: true
         })
         
-        const finalizedInvoice = await stripe.invoices.finalizeInvoice(invoice.id)
-        
-        // Try to pay the invoice
-        if (finalizedInvoice.amount_due > 0) {
-          await stripe.invoices.pay(invoice.id)
-          console.log('Invoice paid successfully:', invoice.id)
+        if (invoice.id) {
+          const finalizedInvoice = await stripe.invoices.finalizeInvoice(invoice.id)
+          
+          // Try to pay the invoice
+          if (finalizedInvoice.amount_due > 0) {
+            await stripe.invoices.pay(invoice.id)
+            console.log('Invoice paid successfully:', invoice.id)
+          }
         }
       } catch (invoiceError: any) {
         console.log('Could not create immediate invoice:', invoiceError.message)
