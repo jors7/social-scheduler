@@ -75,8 +75,9 @@ export async function POST(request: NextRequest) {
       'price_1RtUOTA6BBN8qFjBrXkY1ExC': { plan: 'professional', cycle: 'yearly' },
       'price_1RtUP4A6BBN8qFjBI2hBmwcT': { plan: 'enterprise', cycle: 'monthly' },
       'price_1RtUPFA6BBN8qFjByzefry7H': { plan: 'enterprise', cycle: 'yearly' },
-      // Dynamically created price that should be Enterprise
+      // Dynamically created prices
       'price_1RzxEiA6BBN8qFjBnq7oVQYu': { plan: 'enterprise', cycle: 'monthly' },
+      'price_1RzxMlA6BBN8qFjBC1uVrD7K': { plan: 'enterprise', cycle: 'yearly' },
     }
     
     if (PRICE_MAPPINGS[priceId]) {

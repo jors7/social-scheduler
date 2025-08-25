@@ -23,6 +23,7 @@ function getPlanFromStripePrice(priceId: string, amount?: number | null, interva
   // Handle known dynamically created price IDs
   const DYNAMIC_PRICE_MAPPINGS: Record<string, { planId: PlanId; billingCycle: 'monthly' | 'yearly' }> = {
     'price_1RzxEiA6BBN8qFjBnq7oVQYu': { planId: 'enterprise', billingCycle: 'monthly' },
+    'price_1RzxMlA6BBN8qFjBC1uVrD7K': { planId: 'enterprise', billingCycle: 'yearly' },
   }
   
   if (DYNAMIC_PRICE_MAPPINGS[priceId]) {
