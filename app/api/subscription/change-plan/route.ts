@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
           trial_end: 'now',
           // For upgrades, also set payment behavior to charge immediately
           ...(isUpgrade && {
-            payment_behavior: 'default_incomplete',
+            payment_behavior: 'error_if_incomplete',
             billing_cycle_anchor: 'now',
           }),
           metadata: {
@@ -150,7 +150,36 @@ export async function POST(request: NextRequest) {
       // Check if it's a payment method issue
       if (stripeUpdateError.code === 'card_declined' || 
           stripeUpdateError.code === 'payment_intent_authentication_failure' ||
+          stripeUpdateError.code === 'payment_intent_payment_attempt_failed' ||
           stripeUpdateError.raw?.param === 'payment_behavior') {
+        
+        // Get the latest invoice to provide payment link
+        try {
+          const invoices = await stripe.invoices.list({
+            subscription: subscription.stripe_subscription_id,
+            limit: 1
+          })
+          
+          if (invoices.data.length > 0 && invoices.data[0].status === 'open') {
+            const invoice = invoices.data[0]
+            
+            // Try to finalize and pay the invoice
+            if (invoice.id) {
+              const finalizedInvoice = await stripe.invoices.finalizeInvoice(invoice.id)
+              
+              // Return the payment URL for the customer to complete payment
+              return NextResponse.json({
+                error: 'Payment required to complete plan upgrade',
+                code: 'payment_required',
+                payment_url: finalizedInvoice.hosted_invoice_url,
+                invoice_id: finalizedInvoice.id
+              }, { status: 402 })
+            }
+          }
+        } catch (invoiceError) {
+          console.error('Could not retrieve invoice:', invoiceError)
+        }
+        
         return NextResponse.json({
           error: 'Payment method issue. Please update your payment method and try again.',
           code: 'payment_required'
@@ -159,6 +188,30 @@ export async function POST(request: NextRequest) {
       
       // Re-throw for general error handling
       throw stripeUpdateError
+    }
+    
+    // If the subscription has a latest invoice that's incomplete, handle it
+    if ((updatedSubscription as any).latest_invoice) {
+      const latestInvoice = await stripe.invoices.retrieve((updatedSubscription as any).latest_invoice as string)
+      
+      if (latestInvoice.status === 'open' || latestInvoice.status === 'draft') {
+        // Try to pay the invoice
+        try {
+          const paidInvoice = await stripe.invoices.pay(latestInvoice.id)
+          console.log('Invoice paid successfully:', paidInvoice.id)
+        } catch (payError: any) {
+          console.log('Could not automatically pay invoice:', payError.message)
+          
+          // Return payment URL for manual payment
+          return NextResponse.json({
+            error: 'Payment required to complete plan upgrade',
+            code: 'payment_required',
+            payment_url: latestInvoice.hosted_invoice_url,
+            invoice_id: latestInvoice.id,
+            message: 'Please complete payment to activate your new plan'
+          }, { status: 402 })
+        }
+      }
     }
 
     // Sync the updated subscription to database using our centralized sync function

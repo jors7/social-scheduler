@@ -99,6 +99,14 @@ export function ChangePlanModal({
 
       const data = await response.json()
 
+      // Handle payment required response
+      if (response.status === 402 && data.payment_url) {
+        toast.info('Redirecting to complete payment...')
+        // Open Stripe payment page in same window
+        window.location.href = data.payment_url
+        return
+      }
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to change plan')
       }
