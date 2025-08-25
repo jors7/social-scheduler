@@ -9,6 +9,11 @@ export interface ClientSubscription {
   isTrialing: boolean
   trialEndsAt?: string
   currentPeriodEnd?: string
+  // Scheduled change fields
+  scheduledPlanId?: PlanId
+  scheduledBillingCycle?: string
+  scheduledChangeDate?: string
+  stripeScheduleId?: string
 }
 
 export async function getClientSubscription(autoSync: boolean = true): Promise<ClientSubscription | null> {
@@ -79,7 +84,12 @@ export async function getClientSubscription(autoSync: boolean = true): Promise<C
       billingCycle: subscription.billing_cycle,
       isTrialing: subscription.status === 'trialing',
       trialEndsAt: subscription.trial_end,
-      currentPeriodEnd: subscription.current_period_end
+      currentPeriodEnd: subscription.current_period_end,
+      // Include scheduled change info if present
+      scheduledPlanId: subscription.scheduled_plan_id as PlanId | undefined,
+      scheduledBillingCycle: subscription.scheduled_billing_cycle,
+      scheduledChangeDate: subscription.scheduled_change_date,
+      stripeScheduleId: subscription.stripe_schedule_id
     }
   } catch (error) {
     console.error('Error fetching subscription:', error)

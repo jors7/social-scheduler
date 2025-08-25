@@ -281,6 +281,46 @@ export default function BillingPage() {
                 </div>
               </div>
 
+              {/* Scheduled Change Alert */}
+              {subscription?.scheduledPlanId && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-amber-900">Scheduled Plan Change</h4>
+                      <p className="text-sm text-amber-700 mt-1">
+                        Your plan will change to <strong>{SUBSCRIPTION_PLANS[subscription.scheduledPlanId].name}</strong> ({subscription.scheduledBillingCycle}) 
+                        on <strong>{formatDate(subscription.scheduledChangeDate)}</strong>
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 text-amber-700 border-amber-300 hover:bg-amber-100"
+                        onClick={async () => {
+                          try {
+                            const response = await fetch('/api/subscription/cancel-scheduled', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' }
+                            })
+                            const data = await response.json()
+                            if (data.success) {
+                              toast.success('Scheduled change canceled')
+                              loadBillingData() // Refresh the page
+                            } else {
+                              toast.error(data.error || 'Failed to cancel scheduled change')
+                            }
+                          } catch (error) {
+                            toast.error('Failed to cancel scheduled change')
+                          }
+                        }}
+                      >
+                        Cancel Scheduled Change
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Billing Details */}
               {subscription?.hasSubscription && (
                 <div className="grid grid-cols-2 gap-4">

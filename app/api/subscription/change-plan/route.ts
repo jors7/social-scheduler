@@ -126,39 +126,134 @@ export async function POST(request: NextRequest) {
       ? newPlan.price_yearly 
       : newPlan.price_monthly
     
-    // It's an upgrade if:
-    // 1. Moving to a higher tier plan
-    // 2. Same plan but switching from monthly to yearly (paying more upfront)
-    const isUpgrade = newPlan.price_monthly > currentPlan.price_monthly || 
-                     (newPlan.id === currentPlan.id && billingCycle === 'yearly' && subscription.billing_cycle === 'monthly')
+    // Determine if this is an upgrade or downgrade based on plan hierarchy
+    // Plan hierarchy: free < starter < professional < enterprise
+    const planHierarchy: Record<string, number> = {
+      'free': 0,
+      'starter': 1,
+      'professional': 2,
+      'enterprise': 3
+    }
+    
+    const currentTier = planHierarchy[subscription.plan_id] || 0
+    const newTier = planHierarchy[newPlanId] || 0
+    
+    // It's a downgrade if moving to a lower tier
+    const isDowngrade = newTier < currentTier
+    
+    // It's an upgrade if moving to a higher tier OR switching to yearly billing
+    const isUpgrade = newTier > currentTier || 
+                     (newTier === currentTier && billingCycle === 'yearly' && subscription.billing_cycle === 'monthly')
+    
+    console.log('Plan change analysis:', {
+      current: `${subscription.plan_id} (${subscription.billing_cycle})`,
+      new: `${newPlanId} (${billingCycle})`,
+      isUpgrade,
+      isDowngrade,
+      currentTier,
+      newTier
+    })
     
     // Update the subscription
     let updatedSubscription: any
+    let scheduledChange: any = null
+    
     try {
-      updatedSubscription = await stripe.subscriptions.update(
-        subscription.stripe_subscription_id,
-        {
-          items: [{
-            id: currentItem.id,
-            price: newPriceId,
-          }],
-          // For upgrades, charge immediately. For downgrades, wait until period end
-          proration_behavior: isUpgrade ? 'always_invoice' : 'create_prorations',
-          // IMPORTANT: End any trial immediately when changing plans
-          trial_end: 'now',
-          // For upgrades, also set payment behavior to charge immediately
-          ...(isUpgrade && {
+      if (isDowngrade) {
+        console.log('Processing downgrade - scheduling for end of period')
+        
+        // First, check if there's an existing schedule and cancel it
+        try {
+          const schedules = await stripe.subscriptionSchedules.list({
+            customer: subscription.stripe_customer_id,
+            limit: 1
+          })
+          
+          if (schedules.data.length > 0 && schedules.data[0].status === 'active') {
+            console.log('Canceling existing schedule:', schedules.data[0].id)
+            await stripe.subscriptionSchedules.cancel(schedules.data[0].id)
+          }
+        } catch (err) {
+          console.log('No existing schedule to cancel or error canceling:', err)
+        }
+        
+        // Create a subscription schedule for the downgrade
+        const schedule = await stripe.subscriptionSchedules.create({
+          from_subscription: subscription.stripe_subscription_id,
+          phases: [
+            {
+              // Current phase - keep current plan until period end
+              items: [{
+                price: currentItem.price.id,
+                quantity: 1
+              }],
+              end_date: Math.floor(new Date(subscription.current_period_end).getTime() / 1000)
+            },
+            {
+              // New phase - switch to new plan after current period
+              items: [{
+                price: newPriceId,
+                quantity: 1
+              }],
+              metadata: {
+                user_id: user.id,
+                plan_id: newPlanId,
+                billing_cycle: billingCycle,
+              }
+            }
+          ]
+        })
+        
+        scheduledChange = schedule
+        updatedSubscription = stripeSubscription // Keep current subscription as-is
+        
+        console.log('Downgrade scheduled:', {
+          schedule_id: schedule.id,
+          switches_at: new Date(subscription.current_period_end).toISOString()
+        })
+        
+      } else {
+        console.log('Processing upgrade or lateral change - applying immediately')
+        
+        // First, cancel any existing scheduled changes
+        try {
+          const schedules = await stripe.subscriptionSchedules.list({
+            customer: subscription.stripe_customer_id,
+            limit: 1
+          })
+          
+          if (schedules.data.length > 0 && schedules.data[0].status === 'active') {
+            console.log('Canceling scheduled downgrade before upgrade:', schedules.data[0].id)
+            await stripe.subscriptionSchedules.cancel(schedules.data[0].id)
+          }
+        } catch (err) {
+          console.log('No scheduled changes to cancel')
+        }
+        
+        // Apply upgrade immediately
+        updatedSubscription = await stripe.subscriptions.update(
+          subscription.stripe_subscription_id,
+          {
+            items: [{
+              id: currentItem.id,
+              price: newPriceId,
+            }],
+            // For upgrades, charge immediately with proration
+            proration_behavior: 'always_invoice',
+            // End any trial immediately when changing plans
+            trial_end: 'now',
+            // Set payment behavior to charge immediately
             payment_behavior: 'default_incomplete',
             billing_cycle_anchor: 'now',
             expand: ['latest_invoice.payment_intent'],
-          }),
-          metadata: {
-            user_id: user.id,
-            plan_id: newPlanId,
-            billing_cycle: billingCycle,
-          },
-        }
-      )
+            metadata: {
+              user_id: user.id,
+              plan_id: newPlanId,
+              billing_cycle: billingCycle,
+            },
+          }
+        )
+      }
     } catch (stripeUpdateError: any) {
       console.error('Stripe subscription update failed:', stripeUpdateError)
       
@@ -272,25 +367,56 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Sync the updated subscription to database using our centralized sync function
-    console.log('Syncing updated subscription to database...')
-    const syncResult = await syncStripeSubscriptionToDatabase(
-      subscription.stripe_subscription_id,
-      user.id
-    )
-    
-    if (!syncResult.success) {
-      console.error('Error syncing subscription to database:', syncResult.error)
-      // Don't fail the request since Stripe update succeeded
-      // The webhook will also try to sync
+    // Sync the updated subscription to database
+    if (!isDowngrade) {
+      // For upgrades, sync immediately
+      console.log('Syncing upgraded subscription to database...')
+      const syncResult = await syncStripeSubscriptionToDatabase(
+        subscription.stripe_subscription_id,
+        user.id
+      )
+      
+      if (!syncResult.success) {
+        console.error('Error syncing subscription to database:', syncResult.error)
+        // Don't fail the request since Stripe update succeeded
+        // The webhook will also try to sync
+      } else {
+        console.log('Successfully synced subscription to database')
+      }
     } else {
-      console.log('Successfully synced subscription to database')
+      // For downgrades, update the database to track the scheduled change
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        }
+      )
+      
+      // Update the subscription record to track the scheduled downgrade
+      await supabaseAdmin
+        .from('user_subscriptions')
+        .update({
+          scheduled_plan_id: newPlanId,
+          scheduled_billing_cycle: billingCycle,
+          scheduled_change_date: subscription.current_period_end,
+          stripe_schedule_id: scheduledChange?.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+      
+      console.log('Scheduled downgrade tracked in database')
     }
 
     // Record the plan change in payment history
-    const changeDescription = isUpgrade 
-      ? `Upgraded to ${newPlan.name} plan (${billingCycle})` 
-      : `Changed to ${newPlan.name} plan (${billingCycle})`
+    const changeDescription = isDowngrade
+      ? `Scheduled downgrade to ${newPlan.name} plan (${billingCycle}) - effective ${new Date(subscription.current_period_end).toLocaleDateString()}`
+      : isUpgrade 
+        ? `Upgraded to ${newPlan.name} plan (${billingCycle})` 
+        : `Changed to ${newPlan.name} plan (${billingCycle})`
     
     await supabase
       .from('payment_history')
@@ -299,23 +425,31 @@ export async function POST(request: NextRequest) {
         subscription_id: subscription.id,
         amount: 0, // Actual charge will be recorded by webhook
         currency: 'usd',
-        status: 'pending',
+        status: isDowngrade ? 'scheduled' : 'pending',
         description: changeDescription,
         metadata: { 
-          type: 'plan_change', 
+          type: isDowngrade ? 'scheduled_downgrade' : 'plan_change', 
           old_plan: subscription.plan_id,
           new_plan: newPlanId,
-          billing_cycle: billingCycle
+          billing_cycle: billingCycle,
+          scheduled_for: isDowngrade ? subscription.current_period_end : null
         },
         created_at: new Date().toISOString()
       })
 
     return NextResponse.json({
       success: true,
-      message: isUpgrade 
-        ? 'Plan upgraded successfully. You will be charged the prorated amount immediately.'
-        : 'Plan changed successfully. Changes will take effect at the end of your current billing period.',
-      subscription: updatedSubscription
+      message: isDowngrade 
+        ? `Plan downgrade scheduled. You'll keep your ${currentPlan.name} benefits until ${new Date(subscription.current_period_end).toLocaleDateString()}, then switch to ${newPlan.name}.`
+        : isUpgrade
+          ? 'Plan upgraded successfully. You now have immediate access to additional features. You will be charged the prorated amount.'
+          : 'Plan changed successfully.',
+      subscription: updatedSubscription,
+      scheduled: isDowngrade ? {
+        switches_to: newPlanId,
+        switches_on: subscription.current_period_end,
+        schedule_id: scheduledChange?.id
+      } : null
     })
 
   } catch (error: any) {
