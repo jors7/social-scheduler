@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
       inv.status === 'open' && inv.amount_due > 0
     )
 
-    if (unpaidInvoice) {
+    if (unpaidInvoice && unpaidInvoice.id) {
       console.log('Found unpaid invoice:', unpaidInvoice.id)
       
       // Try to pay it
