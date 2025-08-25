@@ -119,29 +119,47 @@ export async function POST(request: NextRequest) {
     const isUpgrade = newPlan.price_monthly > currentPlan.price_monthly
     
     // Update the subscription
-    const updatedSubscription: any = await stripe.subscriptions.update(
-      subscription.stripe_subscription_id,
-      {
-        items: [{
-          id: currentItem.id,
-          price: newPriceId,
-        }],
-        // For upgrades, charge immediately. For downgrades, wait until period end
-        proration_behavior: isUpgrade ? 'always_invoice' : 'create_prorations',
-        // IMPORTANT: End any trial immediately when changing plans
-        trial_end: 'now',
-        // For upgrades, also set payment behavior to charge immediately
-        ...(isUpgrade && {
-          payment_behavior: 'pending_if_incomplete',
-          billing_cycle_anchor: 'now',
-        }),
-        metadata: {
-          user_id: user.id,
-          plan_id: newPlanId,
-          billing_cycle: billingCycle,
-        },
+    let updatedSubscription: any
+    try {
+      updatedSubscription = await stripe.subscriptions.update(
+        subscription.stripe_subscription_id,
+        {
+          items: [{
+            id: currentItem.id,
+            price: newPriceId,
+          }],
+          // For upgrades, charge immediately. For downgrades, wait until period end
+          proration_behavior: isUpgrade ? 'always_invoice' : 'create_prorations',
+          // IMPORTANT: End any trial immediately when changing plans
+          trial_end: 'now',
+          // For upgrades, also set payment behavior to charge immediately
+          ...(isUpgrade && {
+            payment_behavior: 'default_incomplete',
+            billing_cycle_anchor: 'now',
+          }),
+          metadata: {
+            user_id: user.id,
+            plan_id: newPlanId,
+            billing_cycle: billingCycle,
+          },
+        }
+      )
+    } catch (stripeUpdateError: any) {
+      console.error('Stripe subscription update failed:', stripeUpdateError)
+      
+      // Check if it's a payment method issue
+      if (stripeUpdateError.code === 'card_declined' || 
+          stripeUpdateError.code === 'payment_intent_authentication_failure' ||
+          stripeUpdateError.raw?.param === 'payment_behavior') {
+        return NextResponse.json({
+          error: 'Payment method issue. Please update your payment method and try again.',
+          code: 'payment_required'
+        }, { status: 400 })
       }
-    )
+      
+      // Re-throw for general error handling
+      throw stripeUpdateError
+    }
 
     // Sync the updated subscription to database using our centralized sync function
     console.log('Syncing updated subscription to database...')
