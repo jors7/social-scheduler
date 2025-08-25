@@ -128,9 +128,12 @@ export async function POST(request: NextRequest) {
         }],
         // For upgrades, charge immediately. For downgrades, wait until period end
         proration_behavior: isUpgrade ? 'always_invoice' : 'create_prorations',
-        // If downgrading, optionally set to change at period end
-        ...((!isUpgrade) && {
-          trial_end: 'now', // End any trial immediately
+        // IMPORTANT: End any trial immediately when changing plans
+        trial_end: 'now',
+        // For upgrades, also set payment behavior to charge immediately
+        ...(isUpgrade && {
+          payment_behavior: 'pending_if_incomplete',
+          billing_cycle_anchor: 'now',
         }),
         metadata: {
           user_id: user.id,

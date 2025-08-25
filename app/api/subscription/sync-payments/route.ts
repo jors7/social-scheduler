@@ -101,17 +101,28 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (!existing) {
-        // Insert new payment record
-        const { error: insertError } = await supabaseAdmin
-          .from('payment_history')
-          .insert(paymentData)
+        // Only insert if amount is greater than 0 or it's a significant invoice
+        // Skip $0 invoices unless they're subscription creation or important events
+        if (invoice.amount_paid > 0 || 
+            invoice.billing_reason === 'subscription_create' || 
+            invoice.billing_reason === 'subscription_cycle') {
+          
+          // Insert new payment record
+          const { error: insertError } = await supabaseAdmin
+            .from('payment_history')
+            .insert(paymentData)
 
-        if (insertError) {
-          console.error('Error inserting payment:', insertError)
+          if (insertError) {
+            console.error('Error inserting payment:', insertError)
+          } else {
+            payments.push(paymentData)
+            console.log('Added payment:', invoice.id, 'Amount:', invoice.amount_paid)
+          }
         } else {
-          payments.push(paymentData)
-          console.log('Added payment:', invoice.id)
+          console.log('Skipping $0 invoice:', invoice.id, 'Reason:', invoice.billing_reason)
         }
+      } else {
+        console.log('Invoice already exists:', invoice.id)
       }
     }
 
