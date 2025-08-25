@@ -229,6 +229,12 @@ export async function POST(request: NextRequest) {
             if (latestInvoice.id && latestInvoice.status !== 'paid') {
               const paidInvoice = await stripe.invoices.pay(latestInvoice.id)
               console.log('Invoice paid successfully:', paidInvoice.id)
+              
+              // Sync after successful payment
+              await syncStripeSubscriptionToDatabase(
+                subscription.stripe_subscription_id,
+                user.id
+              )
             }
           } catch (payError: any) {
             console.log('Could not automatically pay invoice:', payError.message)

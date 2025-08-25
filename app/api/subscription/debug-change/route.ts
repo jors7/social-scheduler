@@ -208,13 +208,25 @@ export async function POST(request: NextRequest) {
         const paidInvoice = await stripe.invoices.pay(unpaidInvoice.id)
         console.log('Invoice paid successfully')
         
+        // Import sync function
+        const { syncStripeSubscriptionToDatabase } = await import('@/lib/subscription/sync')
+        
+        // Sync the subscription to database after payment
+        const syncResult = await syncStripeSubscriptionToDatabase(
+          subscription.stripe_subscription_id,
+          user.id
+        )
+        
+        console.log('Sync result:', syncResult)
+        
         return NextResponse.json({
           success: true,
           message: 'Plan changed and invoice paid',
           debug: {
             invoice_paid: true,
             invoice_id: paidInvoice.id,
-            amount: paidInvoice.amount_paid / 100
+            amount: paidInvoice.amount_paid / 100,
+            sync_result: syncResult
           }
         })
       } catch (payError: any) {
