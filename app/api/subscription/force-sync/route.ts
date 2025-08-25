@@ -105,26 +105,89 @@ export async function POST(request: NextRequest) {
       amount: (currentPrice.unit_amount || 0) / 100
     })
 
-    // Force update the database
-    const { error: updateError } = await supabaseAdmin
+    // Force update the database - first check if record exists
+    const { data: existingRecord } = await supabaseAdmin
       .from('user_subscriptions')
-      .update({
-        plan_id: planId,
-        billing_cycle: billingCycle,
-        status: subscription.status,
-        stripe_price_id: priceId,
-        current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
-        current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .select('id')
       .eq('user_id', user.id)
+      .single()
 
-    if (updateError) {
-      console.error('Database update error:', updateError)
-      return NextResponse.json({ 
-        error: 'Failed to update database', 
-        details: updateError 
-      }, { status: 500 })
+    if (!existingRecord) {
+      // Create new record if it doesn't exist
+      const { error: insertError } = await supabaseAdmin
+        .from('user_subscriptions')
+        .insert({
+          user_id: user.id,
+          plan_id: planId,
+          billing_cycle: billingCycle,
+          status: subscription.status,
+          stripe_subscription_id: subscription.id,
+          stripe_customer_id: typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id,
+          stripe_price_id: priceId,
+          current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
+          current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+
+      if (insertError) {
+        console.error('Database insert error:', insertError)
+        return NextResponse.json({ 
+          error: 'Failed to insert into database', 
+          details: insertError 
+        }, { status: 500 })
+      }
+    } else {
+      // Update existing record
+      const { data: updatedData, error: updateError } = await supabaseAdmin
+        .from('user_subscriptions')
+        .update({
+          plan_id: planId,
+          billing_cycle: billingCycle,
+          status: subscription.status,
+          stripe_price_id: priceId,
+          current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
+          current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+        .select()
+
+      if (updateError) {
+        console.error('Database update error:', updateError)
+        console.error('Update details:', {
+          user_id: user.id,
+          plan_id: planId,
+          existing_record: existingRecord
+        })
+        
+        // Try alternate update using ID
+        if (existingRecord.id) {
+          const { error: altUpdateError } = await supabaseAdmin
+            .from('user_subscriptions')
+            .update({
+              plan_id: planId,
+              billing_cycle: billingCycle,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingRecord.id)
+
+          if (altUpdateError) {
+            return NextResponse.json({ 
+              error: 'Failed to update database', 
+              details: altUpdateError,
+              tried_methods: ['user_id update', 'id update']
+            }, { status: 500 })
+          }
+        } else {
+          return NextResponse.json({ 
+            error: 'Failed to update database', 
+            details: updateError 
+          }, { status: 500 })
+        }
+      }
+
+      console.log('Database updated successfully:', updatedData)
     }
 
     // Also try the sync function
@@ -141,7 +204,7 @@ export async function POST(request: NextRequest) {
         stripe_billing_cycle: billingCycle,
         stripe_price_id: priceId,
         stripe_amount: (currentPrice.unit_amount || 0) / 100,
-        database_updated: !updateError,
+        database_updated: true,
         sync_result: syncResult
       }
     })
