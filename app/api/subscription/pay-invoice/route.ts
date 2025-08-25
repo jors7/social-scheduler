@@ -55,6 +55,8 @@ export async function POST(request: NextRequest) {
     const results = []
     for (const invoice of invoices.data) {
       try {
+        if (!invoice.id) continue
+        
         // First, finalize the invoice if it's in draft
         let finalizedInvoice = invoice
         if (invoice.status === 'draft') {
@@ -62,7 +64,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Try to pay the invoice
-        const paidInvoice = await stripe.invoices.pay(finalizedInvoice.id)
+        const paidInvoice = await stripe.invoices.pay(finalizedInvoice.id!)
         
         results.push({
           invoice_id: paidInvoice.id,
@@ -93,7 +95,7 @@ export async function POST(request: NextRequest) {
       if ((sub as any).latest_invoice && typeof (sub as any).latest_invoice === 'string') {
         const latestInvoice = await stripe.invoices.retrieve((sub as any).latest_invoice)
         
-        if (latestInvoice.status === 'open') {
+        if (latestInvoice.status === 'open' && latestInvoice.id) {
           try {
             const paidInvoice = await stripe.invoices.pay(latestInvoice.id)
             results.push({
