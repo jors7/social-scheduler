@@ -60,12 +60,17 @@ export async function POST(request: NextRequest) {
     
     console.log('Current subscription:', subscription.plan_id, subscription.billing_cycle)
 
-    // Get the Stripe subscription
+    // Get the Stripe subscription with expanded price data
     console.log('Retrieving Stripe subscription:', subscription.stripe_subscription_id)
     
     let stripeSubscription
     try {
-      stripeSubscription = await stripe.subscriptions.retrieve(subscription.stripe_subscription_id)
+      stripeSubscription = await stripe.subscriptions.retrieve(
+        subscription.stripe_subscription_id,
+        {
+          expand: ['items.data.price']
+        }
+      )
       console.log('Stripe subscription status:', stripeSubscription.status)
     } catch (stripeError: any) {
       console.error('Failed to retrieve Stripe subscription:', stripeError)
@@ -113,6 +118,18 @@ export async function POST(request: NextRequest) {
     if (!currentItem) {
       return NextResponse.json({ error: 'No subscription items found' }, { status: 400 })
     }
+    
+    // Ensure we have the price data
+    if (!currentItem.price) {
+      console.error('Price data not available on subscription item')
+      return NextResponse.json({ 
+        error: 'Unable to retrieve current price information',
+        details: 'Price data not expanded on subscription item'
+      }, { status: 500 })
+    }
+    
+    const currentPriceId = typeof currentItem.price === 'string' ? currentItem.price : currentItem.price.id
+    console.log('Current price ID:', currentPriceId)
 
     // Determine proration behavior
     const currentPlan = SUBSCRIPTION_PLANS[subscription.plan_id as PlanId]
@@ -178,39 +195,50 @@ export async function POST(request: NextRequest) {
         }
         
         // Create a subscription schedule for the downgrade
-        const schedule = await stripe.subscriptionSchedules.create({
-          from_subscription: subscription.stripe_subscription_id,
-          phases: [
-            {
-              // Current phase - keep current plan until period end
-              items: [{
-                price: currentItem.price.id,
-                quantity: 1
-              }],
-              end_date: Math.floor(new Date(subscription.current_period_end).getTime() / 1000)
-            },
-            {
-              // New phase - switch to new plan after current period
-              items: [{
-                price: newPriceId,
-                quantity: 1
-              }],
-              metadata: {
-                user_id: user.id,
-                plan_id: newPlanId,
-                billing_cycle: billingCycle,
+        try {
+          const schedule = await stripe.subscriptionSchedules.create({
+            from_subscription: subscription.stripe_subscription_id,
+            phases: [
+              {
+                // Current phase - keep current plan until period end
+                items: [{
+                  price: currentPriceId,
+                  quantity: 1
+                }],
+                end_date: subscription.current_period_end 
+                  ? Math.floor(new Date(subscription.current_period_end).getTime() / 1000)
+                  : Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000) // Default to 30 days from now
+              },
+              {
+                // New phase - switch to new plan after current period
+                items: [{
+                  price: newPriceId,
+                  quantity: 1
+                }],
+                metadata: {
+                  user_id: user.id,
+                  plan_id: newPlanId,
+                  billing_cycle: billingCycle,
+                }
               }
-            }
-          ]
-        })
-        
-        scheduledChange = schedule
-        updatedSubscription = stripeSubscription // Keep current subscription as-is
-        
-        console.log('Downgrade scheduled:', {
-          schedule_id: schedule.id,
-          switches_at: new Date(subscription.current_period_end).toISOString()
-        })
+            ]
+          })
+          
+          scheduledChange = schedule
+          updatedSubscription = stripeSubscription // Keep current subscription as-is
+          
+          console.log('Downgrade scheduled:', {
+            schedule_id: schedule.id,
+            switches_at: new Date(subscription.current_period_end).toISOString()
+          })
+        } catch (scheduleError: any) {
+          console.error('Failed to create subscription schedule:', scheduleError)
+          return NextResponse.json({ 
+            error: 'Failed to schedule downgrade',
+            details: scheduleError.message,
+            code: scheduleError.code
+          }, { status: 500 })
+        }
         
       } else {
         console.log('Processing upgrade or lateral change - applying immediately')
