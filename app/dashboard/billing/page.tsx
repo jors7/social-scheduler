@@ -113,6 +113,12 @@ export default function BillingPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' }
         })
+        
+        // Clean up duplicate payments after syncing
+        await fetch('/api/subscription/clean-payments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        })
       } catch (syncError) {
         console.log('Could not sync payments from Stripe:', syncError)
       }
