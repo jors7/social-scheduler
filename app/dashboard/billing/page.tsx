@@ -296,32 +296,6 @@ export default function BillingPage() {
                     >
                       Change Plan
                     </Button>
-                    
-                    {/* Debug button - REMOVE IN PRODUCTION */}
-                    <Button 
-                      onClick={async () => {
-                        console.log('Testing upgrade to Enterprise...')
-                        const response = await fetch('/api/subscription/debug-change', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            newPlanId: 'enterprise',
-                            billingCycle: 'monthly'
-                          })
-                        })
-                        const data = await response.json()
-                        console.log('Debug response:', data)
-                        alert(JSON.stringify(data, null, 2))
-                        if (data.payment_url) {
-                          window.location.href = data.payment_url
-                        }
-                      }}
-                      variant="outline"
-                      className="ml-2"
-                    >
-                      Debug
-                    </Button>
-                    
                     <Button 
                       variant="outline"
                       className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
