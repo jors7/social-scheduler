@@ -59,25 +59,45 @@ export async function POST(request: NextRequest) {
           .eq('user_id', userId)
           .single()
         
-        if (dbSub?.scheduled_plan_id) {
+        if (dbSub?.scheduled_plan_id && dbSub?.scheduled_stripe_price_id) {
           console.log('Processing scheduled downgrade for user:', userId)
           
-          // Apply the scheduled changes
-          await supabaseAdmin
-            .from('user_subscriptions')
-            .update({
-              plan_id: dbSub.scheduled_plan_id,
-              billing_cycle: dbSub.scheduled_billing_cycle,
-              scheduled_plan_id: null,
-              scheduled_billing_cycle: null,
-              scheduled_change_date: null,
-              current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
-              current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .eq('user_id', userId)
-          
-          console.log('Scheduled downgrade applied successfully')
+          // Now apply the downgrade in Stripe
+          try {
+            const updatedSub = await stripe.subscriptions.update(
+              subscription.id,
+              {
+                items: [{
+                  id: subscription.items.data[0].id,
+                  price: dbSub.scheduled_stripe_price_id,
+                }],
+                proration_behavior: 'none',
+              }
+            )
+            
+            console.log('Stripe subscription updated with downgrade')
+            
+            // Apply the scheduled changes in database
+            await supabaseAdmin
+              .from('user_subscriptions')
+              .update({
+                plan_id: dbSub.scheduled_plan_id,
+                billing_cycle: dbSub.scheduled_billing_cycle,
+                stripe_price_id: dbSub.scheduled_stripe_price_id,
+                scheduled_plan_id: null,
+                scheduled_billing_cycle: null,
+                scheduled_change_date: null,
+                scheduled_stripe_price_id: null,
+                current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
+                current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', userId)
+            
+            console.log('Scheduled downgrade applied successfully')
+          } catch (stripeError) {
+            console.error('Failed to apply downgrade in Stripe:', stripeError)
+          }
         }
       }
     }

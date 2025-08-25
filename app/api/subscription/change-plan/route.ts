@@ -177,57 +177,26 @@ export async function POST(request: NextRequest) {
     
     try {
       if (isDowngrade) {
-        console.log('Processing downgrade - immediate update with period-end effective date')
+        console.log('Processing downgrade - scheduling for period end')
         
-        // Simpler approach: Update immediately but with proration at period end
-        // This makes the change now but doesn't charge until the next billing cycle
-        try {
-          updatedSubscription = await stripe.subscriptions.update(
-            subscription.stripe_subscription_id,
-            {
-              items: [{
-                id: currentItem.id,
-                price: newPriceId,
-              }],
-              // The key setting for downgrades: no proration, effective at period end
-              proration_behavior: 'none',
-              // Keep the same billing anchor
-              billing_cycle_anchor: 'unchanged',
-              metadata: {
-                user_id: user.id,
-                plan_id: newPlanId,
-                billing_cycle: billingCycle,
-                downgrade_applied: new Date().toISOString(),
-                effective_date: subscription.current_period_end
-              }
-            }
-          )
-          
-          console.log('Downgrade applied - will take effect at next billing cycle')
-          
-          // Since Stripe doesn't natively support "scheduled" downgrades,
-          // we'll track this in our database as a scheduled change
-          scheduledChange = {
-            type: 'downgrade',
-            from_plan: subscription.plan_id,
-            to_plan: newPlanId,
-            from_cycle: subscription.billing_cycle,
-            to_cycle: billingCycle,
-            effective_date: subscription.current_period_end
-          }
-          
-        } catch (updateError: any) {
-          console.error('Failed to apply downgrade:', {
-            error: updateError.message,
-            code: updateError.code,
-            type: updateError.type
-          })
-          
-          return NextResponse.json({ 
-            error: 'Failed to apply downgrade',
-            details: updateError.message,
-            code: updateError.code
-          }, { status: 500 })
+        // For downgrades, we DON'T change Stripe immediately
+        // Instead, we just track it in our database and apply it when the period ends
+        // This way the user keeps their current plan features until the billing period ends
+        
+        // Get the current subscription to keep it unchanged
+        updatedSubscription = stripeSubscription
+        
+        console.log('Downgrade scheduled - will take effect at next billing cycle')
+        
+        // Track this as a scheduled change in our system
+        scheduledChange = {
+          type: 'downgrade',
+          from_plan: subscription.plan_id,
+          to_plan: newPlanId,
+          from_cycle: subscription.billing_cycle,
+          to_cycle: billingCycle,
+          effective_date: subscription.current_period_end,
+          new_price_id: newPriceId
         }
         
       } else {
@@ -398,26 +367,26 @@ export async function POST(request: NextRequest) {
     )
     
     if (isDowngrade) {
-      // For downgrades, the plan changes immediately in Stripe but we want to show
-      // the current plan until period end in our UI
-      console.log('Tracking downgrade in database...')
+      // For downgrades, we DON'T change Stripe, just track it in our database
+      console.log('Tracking scheduled downgrade in database...')
       
       // Keep current plan active, but track the scheduled change
       await supabaseAdmin
         .from('user_subscriptions')
         .update({
-          // Keep current plan as active
+          // Keep current plan as active (don't change these!)
           plan_id: subscription.plan_id,
           billing_cycle: subscription.billing_cycle,
           // Track the scheduled downgrade
           scheduled_plan_id: newPlanId,
           scheduled_billing_cycle: billingCycle,
           scheduled_change_date: subscription.current_period_end,
+          scheduled_stripe_price_id: scheduledChange.new_price_id, // Store the price ID for later use
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)
       
-      console.log('Downgrade tracked - user keeps current plan until:', subscription.current_period_end)
+      console.log('Downgrade scheduled - user keeps current plan until:', subscription.current_period_end)
       
     } else {
       // For upgrades, sync immediately

@@ -13,6 +13,7 @@ export interface ClientSubscription {
   scheduledPlanId?: PlanId
   scheduledBillingCycle?: string
   scheduledChangeDate?: string
+  scheduledStripePriceId?: string
   stripeScheduleId?: string
 }
 
@@ -89,6 +90,7 @@ export async function getClientSubscription(autoSync: boolean = true): Promise<C
       scheduledPlanId: subscription.scheduled_plan_id as PlanId | undefined,
       scheduledBillingCycle: subscription.scheduled_billing_cycle,
       scheduledChangeDate: subscription.scheduled_change_date,
+      scheduledStripePriceId: subscription.scheduled_stripe_price_id,
       stripeScheduleId: subscription.stripe_schedule_id
     }
   } catch (error) {

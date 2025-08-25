@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
         scheduled_plan_id: null,
         scheduled_billing_cycle: null,
         scheduled_change_date: null,
+        scheduled_stripe_price_id: null,
         stripe_schedule_id: null,
         updated_at: new Date().toISOString()
       })
