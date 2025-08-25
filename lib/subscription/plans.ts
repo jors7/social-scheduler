@@ -69,8 +69,8 @@ export const SUBSCRIPTION_PLANS: Record<PlanId, SubscriptionPlan> = {
       connected_accounts: 5,
       ai_suggestions_per_month: 50,
     },
-    stripe_price_id_monthly: process.env.STRIPE_STARTER_MONTHLY_PRICE_ID,
-    stripe_price_id_yearly: process.env.STRIPE_STARTER_YEARLY_PRICE_ID,
+    stripe_price_id_monthly: process.env.STRIPE_STARTER_MONTHLY_PRICE_ID || 'price_1RtUNnA6BBN8qFjBGLuo3qFM',
+    stripe_price_id_yearly: process.env.STRIPE_STARTER_YEARLY_PRICE_ID || 'price_1RtUNSA6BBN8qFjBoeFyL3NS',
   },
   professional: {
     id: 'professional',
@@ -90,8 +90,8 @@ export const SUBSCRIPTION_PLANS: Record<PlanId, SubscriptionPlan> = {
       connected_accounts: 15,
       ai_suggestions_per_month: 150,
     },
-    stripe_price_id_monthly: process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID,
-    stripe_price_id_yearly: process.env.STRIPE_PROFESSIONAL_YEARLY_PRICE_ID,
+    stripe_price_id_monthly: process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID || 'price_1RtUOEA6BBN8qFjB0HtMVjLr',
+    stripe_price_id_yearly: process.env.STRIPE_PROFESSIONAL_YEARLY_PRICE_ID || 'price_1RtUOTA6BBN8qFjBrXkY1ExC',
   },
   enterprise: {
     id: 'enterprise',
@@ -114,8 +114,8 @@ export const SUBSCRIPTION_PLANS: Record<PlanId, SubscriptionPlan> = {
       connected_accounts: -1,
       ai_suggestions_per_month: 300,
     },
-    stripe_price_id_monthly: process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID,
-    stripe_price_id_yearly: process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID,
+    stripe_price_id_monthly: process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID || 'price_1RtUP4A6BBN8qFjBI2hBmwcT',
+    stripe_price_id_yearly: process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID || 'price_1RtUPFA6BBN8qFjByzefry7H',
   },
 };
 

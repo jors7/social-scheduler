@@ -105,7 +105,9 @@ export async function POST(request: NextRequest) {
       price_id: priceId,
       plan: planId,
       billing_cycle: billingCycle,
-      amount: (currentPrice.unit_amount || 0) / 100
+      amount: (currentPrice.unit_amount || 0) / 100,
+      period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
+      period_end: new Date((subscription as any).current_period_end * 1000).toISOString()
     })
 
     // Force update the database - first check if record exists
