@@ -53,19 +53,70 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No subscription found' })
     }
 
-    // Get the Stripe subscription
-    const subscription = await stripe.subscriptions.retrieve(dbSub.stripe_subscription_id)
+    // Get the Stripe subscription with expanded price info
+    const subscription = await stripe.subscriptions.retrieve(dbSub.stripe_subscription_id, {
+      expand: ['items.data.price']
+    })
 
-    console.log('Stripe subscription period:', {
-      start: new Date((subscription as any).current_period_start * 1000).toISOString(),
-      end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+    // Detect the actual plan and billing cycle from Stripe
+    const currentItem = (subscription as any).items.data[0]
+    const currentPrice = currentItem?.price
+    const priceId = currentPrice?.id
+    
+    let detectedPlanId = dbSub.plan_id // fallback to current
+    let detectedBillingCycle = dbSub.billing_cycle // fallback to current
+    
+    if (priceId) {
+      // Known price ID mappings
+      const PRICE_MAPPINGS: Record<string, { plan: string, cycle: string }> = {
+        'price_1RtUNnA6BBN8qFjBGLuo3qFM': { plan: 'starter', cycle: 'monthly' },
+        'price_1RtUNSA6BBN8qFjBoeFyL3NS': { plan: 'starter', cycle: 'yearly' },
+        'price_1RtUOEA6BBN8qFjB0HtMVjLr': { plan: 'professional', cycle: 'monthly' },
+        'price_1RtUOTA6BBN8qFjBrXkY1ExC': { plan: 'professional', cycle: 'yearly' },
+        'price_1RtUP4A6BBN8qFjBI2hBmwcT': { plan: 'enterprise', cycle: 'monthly' },
+        'price_1RtUPFA6BBN8qFjByzefry7H': { plan: 'enterprise', cycle: 'yearly' },
+        // Dynamically created prices
+        'price_1RzxEiA6BBN8qFjBnq7oVQYu': { plan: 'enterprise', cycle: 'monthly' },
+        'price_1RzxMlA6BBN8qFjBC1uVrD7K': { plan: 'enterprise', cycle: 'yearly' },
+        'price_1S02IuA6BBN8qFjBVzAzPdtR': { plan: 'enterprise', cycle: 'yearly' },
+      }
+      
+      if (PRICE_MAPPINGS[priceId]) {
+        detectedPlanId = PRICE_MAPPINGS[priceId].plan
+        detectedBillingCycle = PRICE_MAPPINGS[priceId].cycle
+      } else {
+        // Fallback to amount-based detection
+        const amount = (currentPrice.unit_amount || 0) / 100
+        const interval = currentPrice.recurring?.interval
+        
+        if (interval === 'month') {
+          if (amount === 9) detectedPlanId = 'starter'
+          else if (amount === 19) detectedPlanId = 'professional'
+          else if (amount === 29) detectedPlanId = 'enterprise'
+          detectedBillingCycle = 'monthly'
+        } else if (interval === 'year') {
+          if (amount === 90) detectedPlanId = 'starter'
+          else if (amount === 190) detectedPlanId = 'professional'
+          else if (amount === 290) detectedPlanId = 'enterprise'
+          detectedBillingCycle = 'yearly'
+        }
+      }
+    }
+
+    console.log('Stripe subscription details:', {
+      price_id: priceId,
+      detected_plan: detectedPlanId,
+      detected_cycle: detectedBillingCycle,
+      period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
+      period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
       status: subscription.status
     })
 
-    console.log('Database period:', {
-      start: dbSub.current_period_start,
-      end: dbSub.current_period_end,
-      billing_cycle: dbSub.billing_cycle
+    console.log('Database details:', {
+      current_plan: dbSub.plan_id,
+      current_cycle: dbSub.billing_cycle,
+      period_start: dbSub.current_period_start,
+      period_end: dbSub.current_period_end
     })
 
     // Force update ALL subscription fields from Stripe
@@ -73,7 +124,9 @@ export async function POST(request: NextRequest) {
       current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
       current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
       status: subscription.status,
-      billing_cycle: dbSub.billing_cycle, // Keep the existing billing cycle
+      plan_id: detectedPlanId,
+      billing_cycle: detectedBillingCycle,
+      stripe_price_id: priceId,
       updated_at: new Date().toISOString()
     }
 
@@ -85,12 +138,12 @@ export async function POST(request: NextRequest) {
       .upsert(
         {
           user_id: user.id,
-          plan_id: dbSub.plan_id,
-          billing_cycle: dbSub.billing_cycle,
+          plan_id: detectedPlanId,
+          billing_cycle: detectedBillingCycle,
           status: subscription.status,
           stripe_subscription_id: dbSub.stripe_subscription_id,
           stripe_customer_id: dbSub.stripe_customer_id,
-          stripe_price_id: dbSub.stripe_price_id,
+          stripe_price_id: priceId || dbSub.stripe_price_id,
           current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
           current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
           trial_end: dbSub.trial_end,
@@ -140,6 +193,9 @@ export async function POST(request: NextRequest) {
       const { data: directUpdate, error: directError } = await supabaseAdmin
         .from('user_subscriptions')
         .update({
+          plan_id: detectedPlanId,
+          billing_cycle: detectedBillingCycle,
+          stripe_price_id: priceId,
           current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
           current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
           updated_at: new Date().toISOString()
@@ -176,9 +232,12 @@ export async function POST(request: NextRequest) {
       },
       matches: finalData?.current_period_end === stripePeriodEnd,
       subscription_details: {
-        plan: dbSub.plan_id,
-        billing_cycle: dbSub.billing_cycle,
-        status: subscription.status
+        old_plan: dbSub.plan_id,
+        new_plan: finalData?.plan_id || detectedPlanId,
+        old_cycle: dbSub.billing_cycle,
+        new_cycle: finalData?.billing_cycle || detectedBillingCycle,
+        status: subscription.status,
+        price_id: priceId
       }
     })
 

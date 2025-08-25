@@ -104,16 +104,16 @@ export default function BillingPage() {
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       if (userError || !user) throw userError
 
-      // First, fix billing dates if needed
+      // First, fix subscription data (plan, cycle, dates) if needed
       try {
-        const fixResponse = await fetch('/api/subscription/fix-billing-date', {
+        const fixResponse = await fetch('/api/subscription/fix-subscription', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' }
         })
         const fixResult = await fixResponse.json()
-        console.log('Billing date fix result:', fixResult)
+        console.log('Subscription fix result:', fixResult)
       } catch (fixError) {
-        console.log('Could not fix billing dates:', fixError)
+        console.log('Could not fix subscription:', fixError)
       }
 
       const subData = await getClientSubscription()
