@@ -116,7 +116,21 @@ export async function POST(request: NextRequest) {
 
     // Determine proration behavior
     const currentPlan = SUBSCRIPTION_PLANS[subscription.plan_id as PlanId]
-    const isUpgrade = newPlan.price_monthly > currentPlan.price_monthly
+    
+    // Calculate the actual prices being compared (accounting for billing cycle)
+    const currentPrice = subscription.billing_cycle === 'yearly' 
+      ? currentPlan.price_yearly 
+      : currentPlan.price_monthly
+    
+    const newPrice = billingCycle === 'yearly' 
+      ? newPlan.price_yearly 
+      : newPlan.price_monthly
+    
+    // It's an upgrade if:
+    // 1. Moving to a higher tier plan
+    // 2. Same plan but switching from monthly to yearly (paying more upfront)
+    const isUpgrade = newPlan.price_monthly > currentPlan.price_monthly || 
+                     (newPlan.id === currentPlan.id && billingCycle === 'yearly' && subscription.billing_cycle === 'monthly')
     
     // Update the subscription
     let updatedSubscription: any
@@ -192,7 +206,12 @@ export async function POST(request: NextRequest) {
     
     // If the subscription has a latest invoice that's incomplete, handle it
     if ((updatedSubscription as any).latest_invoice) {
-      const latestInvoice = await stripe.invoices.retrieve((updatedSubscription as any).latest_invoice as string)
+      // latest_invoice can be either a string ID or an expanded invoice object
+      const invoiceId = typeof (updatedSubscription as any).latest_invoice === 'string' 
+        ? (updatedSubscription as any).latest_invoice 
+        : (updatedSubscription as any).latest_invoice.id
+      
+      const latestInvoice = await stripe.invoices.retrieve(invoiceId)
       
       if (latestInvoice.status === 'open' || latestInvoice.status === 'draft') {
         // Try to pay the invoice
