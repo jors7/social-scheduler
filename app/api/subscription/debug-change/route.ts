@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       console.log('Creating new price...')
       const price = await stripe.prices.create({
         currency: 'usd',
-        unit_amount: billingCycle === 'yearly' ? newPlan.price_yearly : newPlan.price_yearly,
+        unit_amount: billingCycle === 'yearly' ? newPlan.price_yearly : newPlan.price_monthly,
         recurring: {
           interval: billingCycle === 'yearly' ? 'year' : 'month',
         },
