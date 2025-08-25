@@ -20,6 +20,15 @@ const supabaseAdmin = createClient(
 
 // Map Stripe price to plan details
 function getPlanFromStripePrice(priceId: string, amount?: number | null, interval?: string): { planId: PlanId; billingCycle: 'monthly' | 'yearly' } {
+  // Handle known dynamically created price IDs
+  const DYNAMIC_PRICE_MAPPINGS: Record<string, { planId: PlanId; billingCycle: 'monthly' | 'yearly' }> = {
+    'price_1RzxEiA6BBN8qFjBnq7oVQYu': { planId: 'enterprise', billingCycle: 'monthly' },
+  }
+  
+  if (DYNAMIC_PRICE_MAPPINGS[priceId]) {
+    return DYNAMIC_PRICE_MAPPINGS[priceId]
+  }
+  
   // First try exact price ID match
   for (const [planId, plan] of Object.entries(SUBSCRIPTION_PLANS)) {
     if (plan.stripe_price_id_monthly === priceId) {
