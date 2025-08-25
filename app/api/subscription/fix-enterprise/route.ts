@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       )
 
       let creditNote = null
-      if (overchargedInvoice) {
+      if (overchargedInvoice && overchargedInvoice.id) {
         // Calculate the credit amount (what was paid minus what should have been paid)
         const shouldHavePaid = Math.round(10 * 100) // ~$10 prorated
         const actuallyPaid = overchargedInvoice.amount_paid
