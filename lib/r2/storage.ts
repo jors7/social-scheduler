@@ -140,7 +140,7 @@ export class R2Storage {
       return `${R2_PUBLIC_URL}/${key}`
     }
     // Fallback to R2 subdomain URL (requires public bucket)
-    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID
+    const accountId = process.env.R2_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID
     return `https://${accountId}.r2.cloudflarestorage.com/${R2_BUCKET_NAME}/${key}`
   }
 
