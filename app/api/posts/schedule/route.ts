@@ -28,20 +28,27 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Schedule request body:', JSON.stringify(body, null, 2));
     
-    const { content, platforms, platformContent, mediaUrls, scheduledFor } = body;
+    const { content, platforms, platformContent, mediaUrls, scheduledFor, pinterestBoardId, pinterestTitle, pinterestDescription, pinterestLink } = body;
 
-    // Validate inputs
-    if (!content || !platforms || platforms.length === 0 || !scheduledFor) {
+    // Check if this is a Pinterest-only post with media
+    const isPinterestOnlyWithMedia = platforms?.length === 1 && 
+                                     platforms[0] === 'pinterest' && 
+                                     pinterestBoardId && 
+                                     mediaUrls?.length > 0;
+
+    // Validate inputs - allow empty content for Pinterest-only posts with media
+    if ((!content && !isPinterestOnlyWithMedia) || !platforms || platforms.length === 0 || !scheduledFor) {
       console.log('Validation failed:', {
         hasContent: !!content,
         hasPlatforms: !!platforms,
         platformsLength: platforms?.length,
-        hasScheduledFor: !!scheduledFor
+        hasScheduledFor: !!scheduledFor,
+        isPinterestOnlyWithMedia
       });
       return NextResponse.json({ 
         error: 'Missing required fields',
         details: {
-          content: !content ? 'Content is required' : 'OK',
+          content: (!content && !isPinterestOnlyWithMedia) ? 'Content is required' : 'OK',
           platforms: !platforms || platforms.length === 0 ? 'At least one platform is required' : 'OK',
           scheduledFor: !scheduledFor ? 'Scheduled time is required' : 'OK'
         }
@@ -75,7 +82,7 @@ export async function POST(request: NextRequest) {
     // Build insert object conditionally to avoid trigger issues
     const insertData: any = {
       user_id: user.id,
-      content,
+      content: content || '', // Use empty string if no content (for Pinterest-only posts)
       platforms: platforms, // Keep as array - Supabase should handle JSONB conversion
       platform_content: platformContent || {},
       scheduled_for: scheduledFor,
@@ -85,6 +92,20 @@ export async function POST(request: NextRequest) {
     // Set media_urls to empty array if not provided to avoid null issues
     // This ensures the JSONB field always has a valid array value
     insertData.media_urls = mediaUrls && mediaUrls.length > 0 ? mediaUrls : [];
+    
+    // Add Pinterest-specific fields if provided
+    if (pinterestBoardId) {
+      insertData.pinterest_board_id = pinterestBoardId;
+    }
+    if (pinterestTitle) {
+      insertData.pinterest_title = pinterestTitle;
+    }
+    if (pinterestDescription) {
+      insertData.pinterest_description = pinterestDescription;
+    }
+    if (pinterestLink) {
+      insertData.pinterest_link = pinterestLink;
+    }
     
     const { data, error } = await supabase
       .from('scheduled_posts')
@@ -208,7 +229,8 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json();
     console.log('PATCH request body:', JSON.stringify(body, null, 2));
-    const { postId, scheduledFor, status, content, platforms, platformContent, mediaUrls } = body;
+    const { postId, scheduledFor, status, content, platforms, platformContent, mediaUrls, 
+            pinterestBoardId, pinterestTitle, pinterestDescription, pinterestLink } = body;
 
     if (!postId) {
       return NextResponse.json({ error: 'Post ID is required' }, { status: 400 });
@@ -228,6 +250,10 @@ export async function PATCH(request: NextRequest) {
     if (platforms !== undefined) updateData.platforms = platforms;
     if (platformContent !== undefined) updateData.platform_content = platformContent;
     if (mediaUrls !== undefined) updateData.media_urls = mediaUrls;
+    if (pinterestBoardId !== undefined) updateData.pinterest_board_id = pinterestBoardId;
+    if (pinterestTitle !== undefined) updateData.pinterest_title = pinterestTitle;
+    if (pinterestDescription !== undefined) updateData.pinterest_description = pinterestDescription;
+    if (pinterestLink !== undefined) updateData.pinterest_link = pinterestLink;
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: 'No update data provided' }, { status: 400 });

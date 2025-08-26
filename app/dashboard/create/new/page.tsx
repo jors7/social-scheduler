@@ -1184,7 +1184,8 @@ function CreateNewPostPageContent() {
                       isPosting || 
                       loadingDraft ||
                       (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) && 
-                        !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()))
+                        !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()) &&
+                        !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)))
                     }
                     onClick={handleSchedulePost}
                   >
