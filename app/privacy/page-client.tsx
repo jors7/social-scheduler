@@ -172,197 +172,145 @@ export default function PrivacyPolicyClient() {
         {/* Content */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 lg:p-12">
           <div className="prose prose-lg max-w-none">
+            {/* Privacy Policy Section */}
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">Privacy Policy</h2>
+            
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Information We Collect</h2>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                SocialCal collects information you provide directly to us, such as when you:
-              </p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">1. Information We Collect</h3>
               <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>Create an account</li>
-                <li>Connect your social media accounts</li>
-                <li>Create and schedule posts</li>
-                <li>Contact us for support</li>
-                <li>Subscribe to our service</li>
-              </ul>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                This information may include:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>Name and email address</li>
-                <li>Social media account credentials (encrypted)</li>
-                <li>Content you create and post</li>
-                <li>Payment information (processed securely via Stripe)</li>
-                <li>Usage data and analytics</li>
+                <li><strong>Account Data</strong>: Name, email, password.</li>
+                <li><strong>Third-Party Login Data</strong>: If you sign in with Google, we collect your Google account email and profile information for authentication purposes only.</li>
+                <li><strong>Social Media Data</strong>: Authentication tokens, scheduled content, analytics (collected only with your consent).</li>
+                <li><strong>Payment Data</strong>: Processed securely via Stripe (we never store full card details).</li>
+                <li><strong>Usage Data</strong>: Browser, IP address, time zone, app interactions.</li>
+                <li><strong>AI Features</strong>: Optional AI content suggestions (processed by OpenAI).</li>
               </ul>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">2. How We Use Your Information</h2>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                We use the information we collect to:
-              </p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">2. How We Use Data</h3>
               <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>Provide and maintain our services</li>
-                <li>Post content to your connected social media accounts</li>
-                <li>Process payments and manage subscriptions</li>
-                <li>Send you important service updates</li>
-                <li>Improve and optimize our platform</li>
-                <li>Provide customer support</li>
-                <li>Comply with legal obligations</li>
+                <li>To provide and improve the Service.</li>
+                <li>To publish scheduled posts on your behalf.</li>
+                <li>To process payments and manage subscriptions.</li>
+                <li>To send you updates and important account information.</li>
+                <li>To comply with legal obligations.</li>
               </ul>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">3. Information Sharing</h2>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">3. Sharing Data</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                We do not sell, trade, or rent your personal information. We may share your information in the following circumstances:
+                We share limited data only with:
               </p>
               <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li><strong>With your consent:</strong> When you explicitly agree to share</li>
-                <li><strong>Service providers:</strong> With trusted third-party services that help us operate (e.g., Stripe for payments, Supabase for hosting)</li>
-                <li><strong>Legal requirements:</strong> When required by law or to protect rights and safety</li>
-                <li><strong>Business transfers:</strong> In connection with a merger or acquisition</li>
+                <li><strong>Stripe</strong> – payment processing.</li>
+                <li><strong>Supabase</strong> – secure hosting and authentication.</li>
+                <li><strong>OpenAI</strong> – content suggestions (if used).</li>
+                <li><strong>Social Media APIs</strong> – to post and manage content on your behalf.</li>
+              </ul>
+              <p className="text-gray-600 leading-relaxed mb-4">
+                We never sell personal or social media data.
+              </p>
+            </section>
+
+            <section className="mb-10">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">4. API & Platform Compliance</h3>
+              <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
+                <li>We use APIs of Meta (Facebook, Instagram, Threads), X/Twitter, LinkedIn, YouTube, TikTok, and Pinterest <strong>only as necessary</strong> to provide the Service.</li>
+                <li>We do not use social media data for advertising or analytics outside the Service.</li>
+                <li>Users may disconnect accounts at any time via SocialCal or directly at the platform.</li>
+                <li>We comply with each platform&apos;s developer policies.</li>
               </ul>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">4. Data Security</h2>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">5. Data Security</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                We implement industry-standard security measures to protect your information:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>Encryption of sensitive data in transit and at rest</li>
-                <li>Regular security audits and updates</li>
-                <li>Secure authentication with Supabase Auth</li>
-                <li>Limited access to personal information by employees</li>
-                <li>PCI-compliant payment processing through Stripe</li>
-              </ul>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                However, no method of transmission over the internet is 100% secure. We cannot guarantee absolute security.
+                We use encryption in transit and at rest, secure hosting, and access controls. Payment data is handled by Stripe (PCI-compliant).
               </p>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">5. Your Rights and Choices</h2>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">6. Your Rights</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                You have the following rights regarding your personal information:
+                You may:
               </p>
               <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li><strong>Access:</strong> Request a copy of your personal data</li>
-                <li><strong>Correction:</strong> Update or correct inaccurate information</li>
-                <li><strong>Deletion:</strong> Request deletion of your account and data</li>
-                <li><strong>Portability:</strong> Export your data in a machine-readable format</li>
-                <li><strong>Opt-out:</strong> Unsubscribe from marketing communications</li>
-                <li><strong>Revoke access:</strong> Disconnect social media accounts at any time</li>
+                <li>Access your personal data.</li>
+                <li>Request correction or deletion.</li>
+                <li>Export your data.</li>
+                <li>Revoke platform integrations at any time.</li>
+                <li>Request account deletion via <strong><a href="mailto:support@socialcal.app" className="text-blue-600 hover:text-blue-700">support@socialcal.app</a></strong>.</li>
               </ul>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">6. Cookies and Tracking</h2>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">7. Cookies</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                We use cookies and similar technologies to:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>Maintain your session and authentication</li>
-                <li>Remember your preferences</li>
-                <li>Analyze usage patterns to improve our service</li>
-                <li>Provide personalized features</li>
-              </ul>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                You can control cookies through your browser settings, but disabling them may limit functionality.
+                We use cookies for login, authentication, analytics, and user preferences. Essential cookies cannot be disabled.
               </p>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">7. Third-Party Services</h2>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">8. International Data Transfers</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                We integrate with the following third-party services:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li><strong>Stripe:</strong> Payment processing (PCI-compliant)</li>
-                <li><strong>Supabase:</strong> Database and authentication</li>
-                <li><strong>OpenAI:</strong> AI-powered content suggestions</li>
-                <li><strong>Social Media APIs:</strong> Facebook, Instagram, Twitter/X, etc.</li>
-              </ul>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                Each service has its own privacy policy. We encourage you to review them.
+                Your data may be processed outside your country. We apply GDPR-compliant safeguards where applicable.
               </p>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">8. Data Retention</h2>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                We retain your information for as long as necessary to provide our services and comply with legal obligations:
-              </p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">9. Retention</h3>
               <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>Account information: Until you delete your account</li>
-                <li>Posted content: 90 days after posting</li>
-                <li>Payment records: As required by tax laws (typically 7 years)</li>
-                <li>Support communications: 2 years</li>
+                <li>Account data: until you delete your account.</li>
+                <li>Posted content: removed after 90 days.</li>
+                <li>Payment data: retained as required by law (typically 7 years).</li>
+                <li>Support records: 2 years.</li>
               </ul>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">9. International Data Transfers</h2>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">10. Children&apos;s Privacy</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                Your information may be transferred to and processed in countries other than your own. We ensure appropriate safeguards are in place to protect your information in accordance with this privacy policy.
+                SocialCal is not intended for children under 13.
               </p>
             </section>
 
-            <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">10. Children&apos;s Privacy</h2>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                Our service is not intended for users under 13 years of age. We do not knowingly collect information from children under 13. If we discover we have collected information from a child under 13, we will delete it immediately.
-              </p>
-            </section>
+            <hr className="my-12 border-gray-300" />
 
-            <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">11. GDPR Compliance</h2>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                For users in the European Economic Area (EEA), we comply with GDPR requirements:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>Legal basis for processing (consent, contract, legitimate interest)</li>
-                <li>Data protection rights as outlined above</li>
-                <li>Data Protection Officer contact available upon request</li>
-                <li>Right to lodge complaints with supervisory authorities</li>
-              </ul>
-            </section>
+            {/* Disclaimer Section */}
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">Disclaimer</h2>
+            
+            <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-8">
+              <li><strong>No Guarantee of Results</strong>: SocialCal helps schedule posts but does not guarantee engagement, growth, or revenue.</li>
+              <li><strong>Third-Party Responsibility</strong>: SocialCal is not responsible for outages or changes in third-party platforms (e.g., Meta, TikTok).</li>
+              <li><strong>No Professional Advice</strong>: Nothing in the Service constitutes legal, financial, or business advice.</li>
+            </ul>
 
-            <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">12. California Privacy Rights (CCPA)</h2>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                California residents have additional rights under CCPA:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>Right to know what personal information is collected</li>
-                <li>Right to delete personal information</li>
-                <li>Right to opt-out of sale of personal information (we do not sell data)</li>
-                <li>Right to non-discrimination for exercising privacy rights</li>
-              </ul>
-            </section>
+            <hr className="my-12 border-gray-300" />
 
-            <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">13. Changes to This Policy</h2>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                We may update this privacy policy from time to time. We will notify you of material changes via email or through the service. Your continued use after changes constitutes acceptance of the updated policy.
-              </p>
-            </section>
+            {/* Privacy Settings Section */}
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">Privacy Settings</h2>
+            
+            <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-8">
+              <li>Manage email preferences in your account dashboard.</li>
+              <li>Disconnect integrated social media accounts anytime.</li>
+              <li>Request account/data deletion at <strong><a href="mailto:support@socialcal.app" className="text-blue-600 hover:text-blue-700">support@socialcal.app</a></strong>.</li>
+            </ul>
 
+            <hr className="my-12 border-gray-300" />
+
+            {/* Company Information Section */}
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">14. Contact Us</h2>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                If you have questions about this privacy policy or our data practices, please contact us:
-              </p>
-              <div className="bg-gray-50 rounded-lg p-4 mt-4">
-                <p className="text-gray-700 font-semibold">SocialCal Privacy Team</p>
-                <p className="text-gray-600">Email: privacy@socialcal.app</p>
-                <p className="text-gray-600">Support: support@socialcal.app</p>
-                <p className="text-gray-600">Website: <Link href="/" className="text-blue-600 hover:text-blue-700">socialcal.app</Link></p>
+              <h2 className="text-3xl font-bold text-gray-900 mb-8">Company Information</h2>
+              <div className="bg-gray-50 rounded-lg p-6">
+                <p className="text-gray-700 font-semibold mb-2">SocialOrbit – operated by <strong>Jan Oršula</strong></p>
+                <p className="text-gray-600">IČO: 75463822</p>
+                <p className="text-gray-600">Not a VAT payer</p>
+                <p className="text-gray-600 mt-4"><strong>Business Address:</strong></p>
+                <p className="text-gray-600">Marie Majerove 1633<br />Sokolov<br />35601<br />Czech Republic</p>
+                <p className="text-gray-600 mt-4">Email: <a href="mailto:support@socialorbit.app" className="text-blue-600 hover:text-blue-700">support@socialorbit.app</a></p>
               </div>
-              <p className="text-gray-600 leading-relaxed mt-4">
-                For GDPR inquiries, EU residents can contact our Data Protection Officer at dpo@socialcal.app
-              </p>
             </section>
           </div>
         </div>

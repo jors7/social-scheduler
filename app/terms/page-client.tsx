@@ -173,126 +173,112 @@ export default function TermsOfServiceClient() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 lg:p-12">
           <div className="prose prose-lg max-w-none">
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Acceptance of Terms</h2>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">1. Acceptance of Terms</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                By accessing and using SocialCal (&quot;the Service&quot;), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to these terms, please do not use our Service.
+                By accessing and using <strong>SocialCal</strong> (&quot;the Service&quot;), you agree to be bound by these Terms. If you do not agree, please discontinue use.
               </p>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">2. Description of Service</h2>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">2. Service Description</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                SocialCal is a web application that allows users to schedule and manage posts across multiple social media platforms. Our service enables you to:
+                SocialCal is a web application that allows users to connect their social media accounts, schedule and publish posts, manage content across multiple platforms, and view analytics.
+              </p>
+            </section>
+
+            <section className="mb-10">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">3. User Accounts</h3>
+              <p className="text-gray-600 leading-relaxed mb-4">
+                To access certain features, you must register an account. You agree to:
               </p>
               <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>Connect your social media accounts</li>
-                <li>Schedule posts for future publication</li>
-                <li>Manage content across multiple platforms</li>
-                <li>View analytics and insights</li>
-                <li>Use AI-powered content suggestions</li>
+                <li>Provide accurate and complete registration information.</li>
+                <li>Maintain the confidentiality of your login credentials.</li>
+                <li>Accept responsibility for all activities under your account.</li>
+                <li>Notify us of any unauthorized use immediately.</li>
               </ul>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">3. User Accounts</h2>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">4. Social Media Integration</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                To access certain features of the Service, you must register for an account. You agree to:
+                By connecting your accounts, you grant SocialCal permission to:
               </p>
               <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>Provide accurate and complete information</li>
-                <li>Maintain the security of your account credentials</li>
-                <li>Accept responsibility for all activities under your account</li>
-                <li>Notify us immediately of any unauthorized use</li>
+                <li>Access your connected accounts for scheduling, publishing, and analytics.</li>
+                <li>Act on your behalf only to the extent necessary to provide the Service.</li>
+              </ul>
+              <p className="text-gray-600 leading-relaxed mb-4">
+                You remain fully responsible for the content you create and post. You must comply with the terms of each connected platform (e.g., Meta, X/Twitter, LinkedIn, YouTube, TikTok, Pinterest). You may revoke access at any time through your account settings or directly via the platform.
+              </p>
+            </section>
+
+            <section className="mb-10">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">5. Content Guidelines</h3>
+              <p className="text-gray-600 leading-relaxed mb-4">
+                You agree not to post content through the Service that:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
+                <li>Violates any law or regulation.</li>
+                <li>Infringes intellectual property rights.</li>
+                <li>Contains hate speech, harassment, or discriminatory content.</li>
+                <li>Includes spam or misleading information.</li>
+                <li>Violates the policies of the connected platform.</li>
               </ul>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">4. Social Media Integration</h2>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                When you connect your social media accounts to our Service:
-              </p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">6. Subscriptions & Payments</h3>
               <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>You grant us permission to post content on your behalf</li>
-                <li>You remain responsible for all content posted through our Service</li>
-                <li>You must comply with each platform&apos;s terms of service</li>
-                <li>You can revoke access at any time through your account settings</li>
+                <li>SocialCal offers subscription plans with monthly or annual billing.</li>
+                <li>Payments are securely processed by <strong>Stripe</strong>.</li>
+                <li>Subscriptions renew automatically unless cancelled before the next billing date.</li>
+                <li>You may cancel at any time in your dashboard; cancellation takes effect at the end of the billing cycle.</li>
               </ul>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">5. Content Guidelines</h2>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                You agree not to post content that:
-              </p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">7. Refund Policy</h3>
               <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>Violates any laws or regulations</li>
-                <li>Infringes on intellectual property rights</li>
-                <li>Contains hate speech or discriminatory content</li>
-                <li>Includes spam or misleading information</li>
-                <li>Violates the terms of the connected social media platforms</li>
+                <li>We provide a <strong>7-day free trial</strong> for new users.</li>
+                <li>Paid subscriptions include a <strong>14-day money-back guarantee</strong>.</li>
+                <li>Refund requests must be sent to <strong><a href="mailto:support@socialcal.app" className="text-blue-600 hover:text-blue-700">support@socialcal.app</a></strong>.</li>
               </ul>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">6. Subscription and Payments</h2>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">8. Data Privacy</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                Our Service offers various subscription plans:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>Free trial period of 14 days</li>
-                <li>Monthly or annual billing cycles</li>
-                <li>Automatic renewal unless cancelled</li>
-                <li>Refunds are provided according to our refund policy</li>
-              </ul>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                You can cancel your subscription at any time through your account settings. Cancellation will take effect at the end of your current billing period.
+                We process personal and account data in accordance with our Privacy Policy. You retain ownership of your content and account data.
               </p>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">7. Data Privacy</h2>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">9. Termination</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                We take your privacy seriously. Please review our Privacy Policy for information about how we collect, use, and protect your data. Key points include:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>We encrypt sensitive data</li>
-                <li>We don&apos;t sell your personal information</li>
-                <li>We comply with GDPR and CCPA regulations</li>
-                <li>You can request data deletion at any time</li>
-              </ul>
-            </section>
-
-            <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">8. Limitation of Liability</h2>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                To the maximum extent permitted by law, SocialCal shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues.
+                We may suspend or terminate your account if you violate these Terms or misuse the Service.
               </p>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">9. Termination</h2>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">10. Intellectual Property</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                We reserve the right to terminate or suspend your account immediately, without prior notice or liability, for any reason, including breach of these Terms.
+                All app code, design, and branding belong to SocialCal. You retain ownership of any content you upload or schedule.
               </p>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">10. Changes to Terms</h2>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">11. Limitation of Liability</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                We reserve the right to modify these terms at any time. We will notify users of any material changes via email or through the Service. Your continued use of the Service after such modifications constitutes acceptance of the updated terms.
+                The Service is provided &quot;as is.&quot; To the fullest extent permitted by law, SocialCal is not liable for indirect or consequential damages, including lost profits or lost data.
               </p>
             </section>
 
             <section className="mb-10">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">11. Contact Information</h2>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">12. Governing Law</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                If you have any questions about these Terms of Service, please contact us at:
+                These Terms are governed by the laws of the <strong>Czech Republic</strong>.
               </p>
-              <div className="bg-gray-50 rounded-lg p-4 mt-4">
-                <p className="text-gray-700 font-semibold">SocialCal Support</p>
-                <p className="text-gray-600">Email: support@socialcal.app</p>
-                <p className="text-gray-600">Website: <Link href="/" className="text-blue-600 hover:text-blue-700">socialcal.app</Link></p>
-              </div>
             </section>
           </div>
         </div>
