@@ -6,7 +6,7 @@ export class PinterestService {
   private client: PinterestClient;
 
   constructor(accessToken: string) {
-    this.client = new PinterestClient(accessToken);
+    this.client = new PinterestClient(accessToken, false); // Use production API for real data
   }
 
   async getUserProfile() {
