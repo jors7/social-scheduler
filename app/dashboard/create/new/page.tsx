@@ -157,8 +157,13 @@ function CreateNewPostPageContent() {
       youtubeVideoFile !== null && 
       youtubeTitle.trim().length > 0
     
+    // Special handling for Pinterest - can work with just image + board
+    const hasPinterestContent = selectedPlatforms.includes('pinterest') && 
+      selectedPinterestBoard && 
+      (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
+    
     // Check content requirements
-    if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent) {
+    if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent) {
       toast.error('Please enter some content')
       return
     }
@@ -327,8 +332,13 @@ function CreateNewPostPageContent() {
       youtubeVideoFile !== null && 
       youtubeTitle.trim().length > 0
     
+    // Special handling for Pinterest - can work with just image + board
+    const hasPinterestContent = selectedPlatforms.includes('pinterest') && 
+      selectedPinterestBoard && 
+      (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
+    
     // Check content requirements
-    if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent) {
+    if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent) {
       toast.error('Please enter some content')
       return
     }
@@ -1201,7 +1211,8 @@ function CreateNewPostPageContent() {
                     isPosting || 
                     loadingDraft ||
                     (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) && 
-                      !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()))
+                      !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()) &&
+                      !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)))
                   }
                   onClick={handlePostNow}
                 >
