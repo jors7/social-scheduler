@@ -17,6 +17,7 @@ export interface PlanLimits {
   posts_per_month: number; // -1 for unlimited
   connected_accounts: number; // -1 for unlimited
   ai_suggestions_per_month: number; // -1 for unlimited
+  storage_mb: number; // Storage limit in MB, 0 for no storage
 }
 
 export interface SubscriptionPlan {
@@ -49,6 +50,7 @@ export const SUBSCRIPTION_PLANS: Record<PlanId, SubscriptionPlan> = {
       posts_per_month: 0,
       connected_accounts: 0,
       ai_suggestions_per_month: 0,
+      storage_mb: 0,
     },
   },
   starter: {
@@ -68,6 +70,7 @@ export const SUBSCRIPTION_PLANS: Record<PlanId, SubscriptionPlan> = {
       posts_per_month: -1,
       connected_accounts: 5,
       ai_suggestions_per_month: 50,
+      storage_mb: 0,
     },
     stripe_price_id_monthly: process.env.STRIPE_STARTER_MONTHLY_PRICE_ID || 'price_1RtUNnA6BBN8qFjBGLuo3qFM',
     stripe_price_id_yearly: process.env.STRIPE_STARTER_YEARLY_PRICE_ID || 'price_1RtUNSA6BBN8qFjBoeFyL3NS',
@@ -89,6 +92,7 @@ export const SUBSCRIPTION_PLANS: Record<PlanId, SubscriptionPlan> = {
       posts_per_month: -1,
       connected_accounts: 15,
       ai_suggestions_per_month: 150,
+      storage_mb: 250,
     },
     stripe_price_id_monthly: process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID || 'price_1RtUOEA6BBN8qFjB0HtMVjLr',
     stripe_price_id_yearly: process.env.STRIPE_PROFESSIONAL_YEARLY_PRICE_ID || 'price_1RtUOTA6BBN8qFjBrXkY1ExC',
@@ -113,6 +117,7 @@ export const SUBSCRIPTION_PLANS: Record<PlanId, SubscriptionPlan> = {
       posts_per_month: -1,
       connected_accounts: -1,
       ai_suggestions_per_month: 300,
+      storage_mb: 500,
     },
     stripe_price_id_monthly: process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID || 'price_1RtUP4A6BBN8qFjBI2hBmwcT',
     stripe_price_id_yearly: process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID || 'price_1RtUPFA6BBN8qFjByzefry7H',

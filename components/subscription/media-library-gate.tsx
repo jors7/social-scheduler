@@ -64,8 +64,8 @@ export function MediaLibraryGate({ children, className }: MediaLibraryGateProps)
                   <div className="flex items-start gap-3">
                     <Crown className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="font-medium">Unlimited Storage</p>
-                      <p className="text-sm text-muted-foreground">Store and organize all your images and videos</p>
+                      <p className="font-medium">Professional: 250MB Storage</p>
+                      <p className="text-sm text-muted-foreground">Store and organize your images and videos</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -78,8 +78,8 @@ export function MediaLibraryGate({ children, className }: MediaLibraryGateProps)
                   <div className="flex items-start gap-3">
                     <Sparkles className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="font-medium">Smart Organization</p>
-                      <p className="text-sm text-muted-foreground">Tag and categorize your media for easy finding</p>
+                      <p className="font-medium">Enterprise: 500MB Storage</p>
+                      <p className="text-sm text-muted-foreground">Double the storage for larger teams</p>
                     </div>
                   </div>
                 </div>

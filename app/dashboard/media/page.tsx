@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { MediaLibraryGate } from '@/components/subscription/media-library-gate'
+import { Progress } from '@/components/ui/progress'
+import { getPlanById } from '@/lib/subscription/plans'
 import {
   Upload,
   Search,
@@ -29,7 +31,8 @@ import {
   Check,
   Loader2,
   Eye,
-  Tag
+  Tag,
+  AlertTriangle
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -75,6 +78,11 @@ interface MediaStats {
   unused_count: number
 }
 
+interface UserSubscription {
+  plan_id: 'free' | 'starter' | 'professional' | 'enterprise'
+  status: string
+}
+
 export default function MediaLibraryPage() {
   const [media, setMedia] = useState<MediaItem[]>([])
   const [filteredMedia, setFilteredMedia] = useState<MediaItem[]>([])
@@ -88,12 +96,14 @@ export default function MediaLibraryPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showPreview, setShowPreview] = useState<MediaItem | null>(null)
   const [dragActive, setDragActive] = useState(false)
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null)
   
   const supabase = createClient()
 
   useEffect(() => {
     loadMedia()
     loadStats()
+    loadSubscription()
   }, [])
 
   useEffect(() => {
@@ -137,6 +147,25 @@ export default function MediaLibraryPage() {
       }
     } catch (error) {
       console.error('Error loading stats:', error)
+    }
+  }
+
+  const loadSubscription = async () => {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) throw userError
+
+      const { data, error } = await supabase
+        .rpc('get_user_subscription', { user_uuid: user.id })
+        .single()
+
+      if (error && error.code !== 'PGRST116') throw error
+
+      if (data) {
+        setSubscription(data as UserSubscription)
+      }
+    } catch (error) {
+      console.error('Error loading subscription:', error)
     }
   }
 
@@ -187,14 +216,10 @@ export default function MediaLibraryPage() {
 
   const handleFileUpload = async (files: File[]) => {
     setUploading(true)
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      toast.error('Please sign in to upload files')
-      setUploading(false)
-      return
-    }
-
+    
     try {
+      const successCount = { count: 0 }
+      
       for (const file of files) {
         // Validate file type
         if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
@@ -209,74 +234,32 @@ export default function MediaLibraryPage() {
           continue
         }
 
-        // Upload to Supabase Storage
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${user.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+        // Create FormData for upload
+        const formData = new FormData()
+        formData.append('file', file)
 
-        console.log('Uploading file:', fileName)
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('post-media')
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false
-          })
+        // Upload via API endpoint (handles R2 storage)
+        const response = await fetch('/api/media/upload', {
+          method: 'POST',
+          body: formData,
+        })
 
-        if (uploadError) {
-          console.error('Upload error:', uploadError)
-          // Check if it's a bucket error
-          if (uploadError.message?.includes('bucket')) {
-            toast.error('Storage bucket not configured. Please run the storage setup SQL in Supabase.')
-          } else if (uploadError.message?.includes('row level security')) {
-            toast.error('Storage permissions error. Please check storage policies.')
-          } else {
-            toast.error(`Failed to upload ${file.name}: ${uploadError.message}`)
-          }
+        const result = await response.json()
+
+        if (!response.ok) {
+          toast.error(result.error || `Failed to upload ${file.name}`)
           continue
         }
 
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('post-media')
-          .getPublicUrl(fileName)
-
-        console.log('File uploaded, URL:', publicUrl)
-
-        // Get image dimensions if it's an image
-        let dimensions: { width: number | null; height: number | null } = { width: null, height: null }
-        if (file.type.startsWith('image/')) {
-          dimensions = await getImageDimensions(file)
-        }
-
-        // Save to media library
-        const { error: dbError } = await supabase
-          .from('media_library')
-          .insert({
-            user_id: user.id,
-            filename: fileName,
-            original_name: file.name,
-            file_size: file.size,
-            mime_type: file.type,
-            url: publicUrl,
-            width: dimensions.width,
-            height: dimensions.height,
-            tags: []
-          })
-
-        if (dbError) {
-          console.error('Database error:', dbError)
-          // Try to delete the uploaded file since we couldn't save it to DB
-          await supabase.storage.from('post-media').remove([fileName])
-          toast.error(`Failed to save ${file.name} to library: ${dbError.message}`)
-          continue
-        }
-
+        successCount.count++
         toast.success(`${file.name} uploaded successfully`)
       }
 
-      // Reload media and stats
-      await loadMedia()
-      await loadStats()
+      if (successCount.count > 0) {
+        // Reload media and stats
+        await loadMedia()
+        await loadStats()
+      }
     } catch (error: any) {
       console.error('Error uploading files:', error)
       toast.error(error.message || 'Failed to upload files')
@@ -307,38 +290,29 @@ export default function MediaLibraryPage() {
     if (itemsToDelete.length === 0) return
 
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError || !user) throw userError
+      // Delete via API endpoint (handles R2 storage deletion)
+      const response = await fetch('/api/media/delete', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ids: itemsToDelete }),
+      })
 
-      // Delete from storage and database
-      for (const itemId of itemsToDelete) {
-        const item = media.find(m => m.id === itemId)
-        if (!item) continue
+      const result = await response.json()
 
-        // Delete from storage
-        const { error: storageError } = await supabase.storage
-          .from('post-media')
-          .remove([item.filename])
-
-        if (storageError) console.error('Storage deletion error:', storageError)
-
-        // Delete from database
-        const { error: dbError } = await supabase
-          .from('media_library')
-          .delete()
-          .eq('id', itemId)
-
-        if (dbError) throw dbError
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete media')
       }
 
-      toast.success(`${itemsToDelete.length} item(s) deleted`)
+      toast.success(`${result.deleted} item(s) deleted`)
       setSelectedItems(new Set())
       setShowDeleteDialog(false)
       await loadMedia()
       await loadStats()
     } catch (error) {
       console.error('Error deleting media:', error)
-      toast.error('Failed to delete media')
+      toast.error(error instanceof Error ? error.message : 'Failed to delete media')
     }
   }
 
@@ -400,6 +374,47 @@ export default function MediaLibraryPage() {
           </div>
         </div>
 
+        {/* Storage Warning Banner */}
+        {stats && subscription && getPlanById(subscription.plan_id).limits.storage_mb > 0 && (
+          (() => {
+            const storageLimit = getPlanById(subscription.plan_id).limits.storage_mb
+            const usagePercent = (stats.total_size_mb / storageLimit) * 100
+            
+            if (usagePercent >= 80) {
+              return (
+                <Card className="border-yellow-200 bg-yellow-50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                      <div className="flex-1">
+                        <p className="font-semibold text-yellow-900">
+                          Storage limit warning
+                        </p>
+                        <p className="text-sm text-yellow-700">
+                          You&apos;re using {usagePercent.toFixed(0)}% of your {storageLimit}MB storage limit. 
+                          {usagePercent >= 95 
+                            ? ' Consider upgrading your plan or deleting unused files.'
+                            : ` You have ${(storageLimit - stats.total_size_mb).toFixed(1)}MB remaining.`}
+                        </p>
+                      </div>
+                      {usagePercent >= 95 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.location.href = '/dashboard/billing'}
+                        >
+                          Upgrade Plan
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            }
+            return null
+          })()
+        )}
+
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -417,9 +432,27 @@ export default function MediaLibraryPage() {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Storage Used</p>
-                    <p className="text-2xl font-bold">{stats.total_size_mb} MB</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-2xl font-bold">{stats.total_size_mb.toFixed(1)} MB</p>
+                      {subscription && getPlanById(subscription.plan_id).limits.storage_mb > 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          / {getPlanById(subscription.plan_id).limits.storage_mb} MB
+                        </p>
+                      )}
+                    </div>
+                    {subscription && getPlanById(subscription.plan_id).limits.storage_mb > 0 && (
+                      <div className="mt-2">
+                        <Progress 
+                          value={(stats.total_size_mb / getPlanById(subscription.plan_id).limits.storage_mb) * 100} 
+                          className="h-2"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {((stats.total_size_mb / getPlanById(subscription.plan_id).limits.storage_mb) * 100).toFixed(0)}% used
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <HardDrive className="h-8 w-8 text-gray-400" />
                 </div>
