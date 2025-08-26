@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 
 interface PinterestBoardSelectorProps {
   selectedPlatforms: string[]
@@ -10,6 +11,10 @@ interface PinterestBoardSelectorProps {
   setSelectedPinterestBoard: (board: string) => void
   pinterestTitle: string
   setPinterestTitle: (title: string) => void
+  pinterestDescription?: string
+  setPinterestDescription?: (description: string) => void
+  pinterestLink?: string
+  setPinterestLink?: (link: string) => void
   pinterestBoards: any[]
   setPinterestBoards: (boards: any[]) => void
 }
@@ -20,6 +25,10 @@ export function PinterestBoardSelector({
   setSelectedPinterestBoard,
   pinterestTitle,
   setPinterestTitle,
+  pinterestDescription,
+  setPinterestDescription,
+  pinterestLink,
+  setPinterestLink,
   pinterestBoards,
   setPinterestBoards
 }: PinterestBoardSelectorProps) {
@@ -113,6 +122,42 @@ export function PinterestBoardSelector({
           />
           <p className="text-xs text-gray-500 mt-1">
             {pinterestTitle.length}/100 characters
+          </p>
+        </div>
+
+        {/* Pin Description */}
+        <div>
+          <Label htmlFor="pinterest-description" className="text-xs text-gray-600">
+            Pin Description (optional)
+          </Label>
+          <Textarea
+            id="pinterest-description"
+            value={pinterestDescription || ''}
+            onChange={(e) => setPinterestDescription?.(e.target.value)}
+            placeholder="Enter pin description... (will use main content if empty)"
+            className="mt-1 min-h-[80px]"
+            maxLength={500}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            {(pinterestDescription || '').length}/500 characters
+          </p>
+        </div>
+
+        {/* Pin Link */}
+        <div>
+          <Label htmlFor="pinterest-link" className="text-xs text-gray-600">
+            Destination Link (optional)
+          </Label>
+          <Input
+            id="pinterest-link"
+            type="url"
+            value={pinterestLink || ''}
+            onChange={(e) => setPinterestLink?.(e.target.value)}
+            placeholder="https://example.com"
+            className="mt-1"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            URL where users will be directed when clicking the pin
           </p>
         </div>
 

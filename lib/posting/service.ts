@@ -12,6 +12,8 @@ export interface PostData {
   selectedAccounts?: Record<string, string[]>; // platform -> array of account IDs
   pinterestBoardId?: string; // Pinterest specific - board to post to
   pinterestTitle?: string; // Pinterest specific - pin title
+  pinterestDescription?: string; // Pinterest specific - pin description
+  pinterestLink?: string; // Pinterest specific - destination URL
 }
 
 export interface PostResult {
@@ -87,6 +89,8 @@ export class PostingService {
           if (platform === 'pinterest') {
             account.pinterest_board_id = postData.pinterestBoardId;
             account.pinterest_title = postData.pinterestTitle;
+            account.pinterest_description = postData.pinterestDescription;
+            account.pinterest_link = postData.pinterestLink;
           }
           
           const result = await this.postToPlatform(
@@ -232,8 +236,9 @@ export class PostingService {
           accessToken: account.access_token,
           boardId: account.pinterest_board_id, // This needs to be set
           title: account.pinterest_title || 'New Pin',
-          description: content,
+          description: account.pinterest_description || content, // Use custom description or fallback to content
           imageUrl: mediaUrls[0], // Use first image
+          link: account.pinterest_link, // Optional destination URL
         }),
       });
 

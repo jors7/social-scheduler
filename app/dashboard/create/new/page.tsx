@@ -69,6 +69,8 @@ function CreateNewPostPageContent() {
   const [pinterestBoards, setPinterestBoards] = useState<any[]>([])
   const [selectedPinterestBoard, setSelectedPinterestBoard] = useState<string>('')
   const [pinterestTitle, setPinterestTitle] = useState<string>('')
+  const [pinterestDescription, setPinterestDescription] = useState<string>('')
+  const [pinterestLink, setPinterestLink] = useState<string>('')
   // YouTube states
   const [youtubeTitle, setYoutubeTitle] = useState<string>('')
   const [youtubeDescription, setYoutubeDescription] = useState<string>('')
@@ -238,6 +240,8 @@ function CreateNewPostPageContent() {
         mediaUrls: mediaUrls,
         pinterestBoardId: selectedPinterestBoard,
         pinterestTitle: pinterestTitle || undefined,
+        pinterestDescription: pinterestDescription || undefined,
+        pinterestLink: pinterestLink || undefined,
       }
 
       const results = await postingService.postToMultiplePlatforms(postData)
@@ -373,6 +377,10 @@ function CreateNewPostPageContent() {
         platformContent: Object.keys(filteredPlatformContent).length > 0 ? filteredPlatformContent : undefined,
         mediaUrls: mediaUrls,
         scheduledFor: scheduledFor.toISOString(),
+        pinterestBoardId: selectedPinterestBoard || undefined,
+        pinterestTitle: pinterestTitle || undefined,
+        pinterestDescription: pinterestDescription || undefined,
+        pinterestLink: pinterestLink || undefined,
       }
       
       console.log('Sending schedule request:', requestData)
@@ -390,7 +398,11 @@ function CreateNewPostPageContent() {
             platforms: requestData.platforms,
             platformContent: requestData.platformContent,
             mediaUrls: requestData.mediaUrls,
-            scheduledFor: requestData.scheduledFor
+            scheduledFor: requestData.scheduledFor,
+            pinterestBoardId: requestData.pinterestBoardId,
+            pinterestTitle: requestData.pinterestTitle,
+            pinterestDescription: requestData.pinterestDescription,
+            pinterestLink: requestData.pinterestLink
           }),
         })
       } else {
@@ -1271,6 +1283,10 @@ function CreateNewPostPageContent() {
                 setSelectedPinterestBoard={setSelectedPinterestBoard}
                 pinterestTitle={pinterestTitle}
                 setPinterestTitle={setPinterestTitle}
+                pinterestDescription={pinterestDescription}
+                setPinterestDescription={setPinterestDescription}
+                pinterestLink={pinterestLink}
+                setPinterestLink={setPinterestLink}
                 pinterestBoards={pinterestBoards}
                 setPinterestBoards={setPinterestBoards}
               />
