@@ -395,15 +395,31 @@ export default function SettingsContent() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
+      // Clear tokens and mark as inactive for security
       const { error } = await supabase
         .from('social_accounts')
-        .update({ is_active: false })
+        .update({ 
+          is_active: false,
+          access_token: null,
+          refresh_token: null,
+          access_secret: null, // For OAuth 1.0 platforms like Twitter
+          expires_at: null
+        })
         .eq('id', accountId)
         .eq('user_id', user.id)
 
       if (error) throw error
 
       toast.success(`Account disconnected`)
+      
+      // Show additional guidance for platforms that maintain authorization
+      if (platformName && ['TikTok', 'Facebook', 'Instagram', 'YouTube'].includes(platformName)) {
+        toast.info(
+          `To fully revoke ${platformName} access, visit your ${platformName} account settings`, 
+          { duration: 5000 }
+        )
+      }
+      
       fetchConnectedAccounts()
     } catch (error) {
       console.error('Error disconnecting account:', error)
