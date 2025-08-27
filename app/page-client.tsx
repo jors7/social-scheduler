@@ -413,6 +413,12 @@ function LandingPageContent() {
                 >
                   FAQ
                 </Link>
+                <Link 
+                  href="/privacy" 
+                  className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
+                >
+                  Privacy
+                </Link>
               </div>
               {/* Desktop buttons - hidden on mobile */}
               <div className="hidden md:flex items-center space-x-4">
@@ -514,6 +520,16 @@ function LandingPageContent() {
                 >
                   Start Free Trial
                 </Button>
+                <p className="mt-4 text-sm text-gray-500">
+                  By signing up, you agree to our{' '}
+                  <Link href="/terms" className="text-blue-600 hover:text-blue-700 underline">
+                    Terms of Service
+                  </Link>
+                  {' '}and{' '}
+                  <Link href="/privacy" className="text-blue-600 hover:text-blue-700 underline">
+                    Privacy Policy
+                  </Link>
+                </p>
               </div>
             </div>
             
@@ -999,14 +1015,25 @@ function LandingPageContent() {
             <div className="col-span-2 md:col-span-1">
               <h4 className="font-semibold mb-4">Legal</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><Link href="/terms" className="hover:text-white">Terms of Service</Link></li>
-                <li><Link href="/privacy" className="hover:text-white">Privacy Policy</Link></li>
-                <li><Link href="/contact" className="hover:text-white">Contact</Link></li>
+                <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
+                <li>
+                  <Link href="/privacy" className="hover:text-white transition-colors font-medium">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
               </ul>
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
-            <p>&copy; 2025 SocialCal. All rights reserved.</p>
+            <p className="mb-2">&copy; 2025 SocialCal. All rights reserved.</p>
+            <div className="flex justify-center space-x-4 text-sm">
+              <Link href="/privacy" className="hover:text-white transition-colors underline">Privacy Policy</Link>
+              <span>•</span>
+              <Link href="/terms" className="hover:text-white transition-colors underline">Terms of Service</Link>
+              <span>•</span>
+              <Link href="/contact" className="hover:text-white transition-colors underline">Contact Us</Link>
+            </div>
           </div>
         </div>
       </footer>

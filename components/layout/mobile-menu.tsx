@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Home, Sparkles, Clock, BarChart, UserIcon, CreditCard, LogOut, Zap, Layers, LifeBuoy } from 'lucide-react'
+import { Home, Sparkles, Clock, BarChart, UserIcon, CreditCard, LogOut, Zap, Layers, LifeBuoy, Shield } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
@@ -292,6 +292,20 @@ export function MobileMenu({
                       <p className="text-xs text-gray-500">Get answers</p>
                     </div>
                   </button>
+
+                  <Link
+                    href="/privacy"
+                    onClick={() => handleNavigation('/privacy')}
+                    className="flex items-center gap-3 px-4 py-3.5 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition-all duration-200 group"
+                  >
+                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-50 to-indigo-100 group-hover:from-indigo-100 group-hover:to-indigo-200 rounded-xl flex items-center justify-center transition-colors">
+                      <Shield className="h-5 w-5 text-indigo-600" />
+                    </div>
+                    <div>
+                      <span className="font-semibold text-base">Privacy Policy</span>
+                      <p className="text-xs text-gray-500">Your data protection</p>
+                    </div>
+                  </Link>
                 </div>
 
                 <div className="border-t border-gray-200 pt-6 space-y-3 px-2">

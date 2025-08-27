@@ -65,20 +65,31 @@ export default function SettingsContent() {
   
   const fetchAccountLimits = async (userId: string) => {
     try {
+      console.log('Fetching account limits for user:', userId)
+      
       // Get current count
-      const { data: accounts } = await supabase
+      const { data: accounts, error: accountsError } = await supabase
         .from('social_accounts')
         .select('id')
         .eq('user_id', userId)
         .eq('is_active', true)
       
-      const currentCount = accounts?.length || 0
+      if (accountsError) {
+        console.error('Error fetching accounts:', accountsError)
+      }
       
-      // Get subscription limits
-      const { data: subscription } = await supabase
+      const currentCount = accounts?.length || 0
+      console.log('Current account count:', currentCount)
+      
+      // Get subscription with proper join
+      const { data: subscription, error: subError } = await supabase
         .from('user_subscriptions')
         .select(`
-          subscription_plans!inner(
+          plan_id,
+          status,
+          subscription_plans (
+            id,
+            name,
             limits
           )
         `)
@@ -86,14 +97,30 @@ export default function SettingsContent() {
         .in('status', ['active', 'trialing'])
         .single()
       
+      if (subError) {
+        console.error('Error fetching subscription:', subError)
+      }
+      
+      console.log('Subscription data:', subscription)
+      
       let maxAccounts = 1 // Free plan default
+      let planName = 'Free'
       
       if (subscription && subscription.subscription_plans) {
-        const plans = subscription.subscription_plans as any
-        const limits = Array.isArray(plans) ? plans[0]?.limits : plans.limits
-        maxAccounts = limits?.connected_accounts || 1
+        const plan = subscription.subscription_plans as any
+        const limits = plan.limits as any
+        planName = plan.name || planName
+        
+        // Check for unlimited (-1) or get the actual limit
+        if (limits?.connected_accounts === -1) {
+          maxAccounts = -1 // Keep as -1 for unlimited
+        } else {
+          maxAccounts = limits?.connected_accounts || 1
+        }
+        
+        console.log(`Plan: ${planName}, Connected accounts limit:`, limits?.connected_accounts)
       } else {
-        // Get free plan limits
+        // Get free plan limits as fallback
         const { data: freePlan } = await supabase
           .from('subscription_plans')
           .select('limits')
@@ -107,6 +134,12 @@ export default function SettingsContent() {
       }
       
       const isUnlimited = maxAccounts === -1
+      
+      console.log('Setting account limits:', {
+        maxAccounts: isUnlimited ? 'Unlimited' : maxAccounts,
+        currentCount,
+        canAddMore: isUnlimited || currentCount < maxAccounts
+      })
       
       setAccountLimits({
         maxAccounts: isUnlimited ? Infinity : maxAccounts,
@@ -151,9 +184,41 @@ export default function SettingsContent() {
   }, [supabase])
 
   useEffect(() => {
-    // Fetch accounts on mount
-    fetchConnectedAccounts()
-  }, [])
+    // Fetch accounts on mount and set up real-time subscription
+    const initialize = async () => {
+      await fetchConnectedAccounts()
+      
+      // Get user for subscription setup
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
+      // Subscribe to subscription changes to update limits in real-time
+      const channel = supabase
+        .channel('settings-subscription-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'user_subscriptions',
+            filter: `user_id=eq.${user.id}`
+          },
+          async (payload) => {
+            console.log('Subscription changed:', payload)
+            // Refetch limits when subscription changes
+            await fetchAccountLimits(user.id)
+          }
+        )
+        .subscribe()
+      
+      // Cleanup subscription on unmount
+      return () => {
+        channel.unsubscribe()
+      }
+    }
+    
+    initialize()
+  }, [fetchConnectedAccounts])
 
   const handleConnect = async (platformId: string) => {
     console.log('Connect button clicked for:', platformId)
@@ -562,7 +627,7 @@ export default function SettingsContent() {
                               Connected Accounts
                             </p>
                             <p className="text-[10px] sm:text-xs text-gray-600">
-                              {accountLimits.currentCount} of {accountLimits.maxAccounts === Infinity ? 'Unlimited' : accountLimits.maxAccounts} accounts used
+                              {accountLimits.currentCount} of {accountLimits.maxAccounts === Infinity ? 'unlimited' : accountLimits.maxAccounts} accounts used
                             </p>
                           </div>
                         </div>
