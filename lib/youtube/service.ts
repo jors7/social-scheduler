@@ -1,6 +1,8 @@
 import { google, youtube_v3 } from 'googleapis';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { Readable } from 'stream';
+import { createVideoResource, parseYouTubeError, generateYouTubeUrl } from './upload';
 
 export class YouTubeService {
   private youtube: youtube_v3.Youtube;
@@ -52,50 +54,134 @@ export class YouTubeService {
     privacyStatus?: 'private' | 'public' | 'unlisted';
     videoPath?: string;
     videoBuffer?: Buffer;
+    videoStream?: Readable;
     thumbnailPath?: string;
+    thumbnailBuffer?: Buffer;
+    onProgress?: (progress: number) => void;
   }) {
     try {
-      const requestBody: youtube_v3.Schema$Video = {
-        snippet: {
-          title: params.title,
-          description: params.description,
-          tags: params.tags,
-          categoryId: params.categoryId || '22', // Default to People & Blogs
-        },
-        status: {
-          privacyStatus: params.privacyStatus || 'private',
-          selfDeclaredMadeForKids: false,
-        },
-      };
+      const requestBody = createVideoResource({
+        title: params.title,
+        description: params.description,
+        tags: params.tags,
+        categoryId: params.categoryId,
+        privacyStatus: params.privacyStatus,
+      });
 
-      // For actual video upload, we'd need to handle file streams
-      // This is a placeholder for the video upload logic
+      let videoStream: Readable;
+      
+      // Determine the video source
+      if (params.videoStream) {
+        videoStream = params.videoStream;
+      } else if (params.videoBuffer) {
+        videoStream = Readable.from(params.videoBuffer);
+      } else if (params.videoPath) {
+        // If it's a URL, fetch it first
+        if (params.videoPath.startsWith('http')) {
+          const response = await fetch(params.videoPath);
+          const buffer = Buffer.from(await response.arrayBuffer());
+          videoStream = Readable.from(buffer);
+        } else {
+          // For local file paths (not recommended in production)
+          throw new Error('Local file paths are not supported. Please provide a buffer or stream.');
+        }
+      } else {
+        throw new Error('No video source provided');
+      }
+
+      // Upload video with resumable upload
       const response = await this.youtube.videos.insert({
-        part: ['snippet', 'status'],
+        part: ['snippet', 'status', 'contentDetails'],
         requestBody,
         media: {
-          body: params.videoBuffer || params.videoPath, // This would need proper stream handling
+          body: videoStream,
         },
+        // Enable resumable upload for large files
+        uploadType: 'resumable',
       });
 
       // If thumbnail is provided, upload it
-      if (params.thumbnailPath && response.data.id) {
-        await this.youtube.thumbnails.set({
-          videoId: response.data.id,
-          media: {
-            body: params.thumbnailPath, // This would need proper stream handling
-          },
-        });
+      if ((params.thumbnailPath || params.thumbnailBuffer) && response.data.id) {
+        try {
+          let thumbnailStream: Readable;
+          
+          if (params.thumbnailBuffer) {
+            thumbnailStream = Readable.from(params.thumbnailBuffer);
+          } else if (params.thumbnailPath) {
+            if (params.thumbnailPath.startsWith('http')) {
+              const response = await fetch(params.thumbnailPath);
+              const buffer = Buffer.from(await response.arrayBuffer());
+              thumbnailStream = Readable.from(buffer);
+            } else {
+              throw new Error('Local file paths are not supported for thumbnails.');
+            }
+          } else {
+            throw new Error('No thumbnail source provided');
+          }
+
+          await this.youtube.thumbnails.set({
+            videoId: response.data.id,
+            media: {
+              body: thumbnailStream,
+            },
+          });
+        } catch (thumbnailError) {
+          console.warn('Failed to upload thumbnail:', thumbnailError);
+          // Don't fail the entire upload if thumbnail fails
+        }
       }
 
       return {
         id: response.data.id,
-        url: `https://www.youtube.com/watch?v=${response.data.id}`,
+        url: generateYouTubeUrl(response.data.id!),
         title: response.data.snippet?.title,
         description: response.data.snippet?.description,
+        publishedAt: response.data.snippet?.publishedAt,
+        status: response.data.status,
       };
     } catch (error) {
       console.error('Error uploading video to YouTube:', error);
+      const errorMessage = parseYouTubeError(error);
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * Upload a video from a URL
+   */
+  async uploadVideoFromUrl(videoUrl: string, params: {
+    title: string;
+    description: string;
+    tags?: string[];
+    categoryId?: string;
+    privacyStatus?: 'private' | 'public' | 'unlisted';
+    thumbnailUrl?: string;
+  }) {
+    try {
+      // Fetch video from URL
+      const videoResponse = await fetch(videoUrl);
+      if (!videoResponse.ok) {
+        throw new Error(`Failed to fetch video: ${videoResponse.statusText}`);
+      }
+      
+      const videoBuffer = Buffer.from(await videoResponse.arrayBuffer());
+      
+      // Fetch thumbnail if provided
+      let thumbnailBuffer: Buffer | undefined;
+      if (params.thumbnailUrl) {
+        const thumbnailResponse = await fetch(params.thumbnailUrl);
+        if (thumbnailResponse.ok) {
+          thumbnailBuffer = Buffer.from(await thumbnailResponse.arrayBuffer());
+        }
+      }
+      
+      return this.uploadVideo({
+        ...params,
+        videoBuffer,
+        thumbnailBuffer,
+      });
+    } catch (error) {
+      console.error('Error uploading video from URL:', error);
       throw error;
     }
   }

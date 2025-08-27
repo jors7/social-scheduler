@@ -70,16 +70,14 @@ export async function POST(request: NextRequest) {
     // Create YouTube service
     const youtubeService = new YouTubeService(account.access_token, account.refresh_token);
 
-    // Note: Actual video upload would require handling file streams
-    // This is a simplified version for demonstration
-    const result = await youtubeService.uploadVideo({
+    // Upload video from URL (e.g., from Supabase storage or external URL)
+    const result = await youtubeService.uploadVideoFromUrl(videoUrl, {
       title: formattedContent.title,
       description: formattedContent.description,
       tags: tags || formattedContent.tags,
       categoryId: categoryId,
       privacyStatus: privacyStatus as 'private' | 'public' | 'unlisted',
-      videoPath: videoUrl, // This would need proper implementation
-      thumbnailPath: thumbnailUrl,
+      thumbnailUrl: thumbnailUrl,
     });
 
     return NextResponse.json({
