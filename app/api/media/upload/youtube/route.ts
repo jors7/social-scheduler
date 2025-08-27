@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     // Get YouTube account
     const { data: account, error: accountError } = await supabase
       .from('social_accounts')
-      .select('access_token, refresh_token')
+      .select('access_token, refresh_token, expires_at')
       .eq('user_id', user.id)
       .eq('platform', 'youtube')
       .eq('is_active', true)
@@ -40,8 +40,17 @@ export async function POST(request: NextRequest) {
 
     if (accountError || !account) {
       return NextResponse.json(
-        { error: 'YouTube account not connected' },
+        { error: 'YouTube account not connected. Please reconnect your YouTube account in Settings.' },
         { status: 400 }
+      );
+    }
+
+    // Check if we have a refresh token
+    if (!account.refresh_token) {
+      console.error('No refresh token for YouTube account');
+      return NextResponse.json(
+        { error: 'YouTube authentication expired. Please reconnect your YouTube account in Settings.' },
+        { status: 401 }
       );
     }
 
@@ -107,8 +116,8 @@ export async function POST(request: NextRequest) {
     // Parse tags
     const tagArray = tags ? tags.split(',').map(tag => tag.trim()).filter(Boolean) : undefined;
 
-    // Create YouTube service
-    const youtubeService = new YouTubeService(account.access_token, account.refresh_token);
+    // Create YouTube service with user ID for token refresh
+    const youtubeService = new YouTubeService(account.access_token, account.refresh_token, user.id);
 
     // Validate and ensure categoryId is a string
     const validCategoryId = categoryId && categoryId.trim() ? categoryId.trim() : '22';
@@ -151,8 +160,25 @@ export async function POST(request: NextRequest) {
       message: 'Video uploaded to YouTube successfully',
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('YouTube upload error:', error);
+    
+    // Check for authentication errors
+    if (error?.response?.status === 401 || error?.message?.includes('authentication')) {
+      return NextResponse.json(
+        { error: 'YouTube authentication expired. Please reconnect your YouTube account in Settings.' },
+        { status: 401 }
+      );
+    }
+    
+    // Check for invalid credentials error
+    if (error?.message?.includes('invalid_grant') || error?.message?.includes('Token has been expired or revoked')) {
+      return NextResponse.json(
+        { error: 'YouTube access has been revoked. Please reconnect your YouTube account in Settings.' },
+        { status: 401 }
+      );
+    }
+    
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to upload video to YouTube' },
       { status: 500 }

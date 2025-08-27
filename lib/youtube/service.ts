@@ -7,8 +7,9 @@ import { createVideoResource, parseYouTubeError, generateYouTubeUrl } from './up
 export class YouTubeService {
   private youtube: youtube_v3.Youtube;
   private oauth2Client: any;
+  private userId?: string;
 
-  constructor(accessToken: string, refreshToken?: string) {
+  constructor(accessToken: string, refreshToken?: string, userId?: string) {
     this.oauth2Client = new google.auth.OAuth2(
       process.env.YOUTUBE_CLIENT_ID,
       process.env.YOUTUBE_CLIENT_SECRET,
@@ -20,10 +21,72 @@ export class YouTubeService {
       refresh_token: refreshToken,
     });
 
+    // Set up token refresh handler
+    this.oauth2Client.on('tokens', async (tokens: any) => {
+      console.log('YouTube tokens refreshed');
+      if (tokens.refresh_token) {
+        // Store the new refresh token
+        if (this.userId) {
+          await this.updateStoredTokens(tokens.access_token, tokens.refresh_token);
+        }
+      } else if (tokens.access_token) {
+        // Store the new access token
+        if (this.userId) {
+          await this.updateStoredTokens(tokens.access_token);
+        }
+      }
+    });
+
     this.youtube = google.youtube({
       version: 'v3',
       auth: this.oauth2Client,
     });
+    
+    this.userId = userId;
+  }
+
+  /**
+   * Update stored tokens in database
+   */
+  private async updateStoredTokens(accessToken: string, refreshToken?: string) {
+    if (!this.userId) return;
+    
+    try {
+      const { createServerClient } = await import('@supabase/ssr');
+      const { cookies } = await import('next/headers');
+      
+      const cookieStore = cookies();
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            get(name: string) {
+              return cookieStore.get(name)?.value;
+            },
+          },
+        }
+      );
+
+      const updateData: any = { 
+        access_token: accessToken,
+        updated_at: new Date().toISOString()
+      };
+      
+      if (refreshToken) {
+        updateData.refresh_token = refreshToken;
+      }
+
+      await supabase
+        .from('social_accounts')
+        .update(updateData)
+        .eq('user_id', this.userId)
+        .eq('platform', 'youtube');
+        
+      console.log('Updated YouTube tokens in database');
+    } catch (error) {
+      console.error('Failed to update YouTube tokens:', error);
+    }
   }
 
   /**
@@ -264,7 +327,7 @@ export async function getUserYouTubeService(userId: string) {
     throw new Error('YouTube account not connected');
   }
 
-  return new YouTubeService(account.access_token, account.refresh_token);
+  return new YouTubeService(account.access_token, account.refresh_token, userId);
 }
 
 /**
