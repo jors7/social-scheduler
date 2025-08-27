@@ -280,7 +280,15 @@ export class PostingService {
 
       // For now, we'll use the first media URL as the video
       // In a production app, you'd need to verify this is actually a video
-      const videoUrl = mediaUrls[0];
+      let videoUrl = mediaUrls[0];
+      
+      // Convert Supabase URL to proxy URL for TikTok domain verification
+      if (videoUrl.includes('supabase.co')) {
+        const baseUrl = typeof window !== 'undefined' 
+          ? window.location.origin 
+          : process.env.NEXT_PUBLIC_APP_URL || 'https://socialcal.app';
+        videoUrl = `${baseUrl}/api/media/proxy?url=${encodeURIComponent(videoUrl)}`;
+      }
 
       // Use privacy level from account (passed from postData) or default to public
       const privacyLevel = account.tiktok_privacy_level || 'PUBLIC_TO_EVERYONE';
