@@ -181,7 +181,7 @@ export class LinkedInService {
           'Authorization': `Bearer ${this.accessToken}`,
           'Content-Type': mimeType
         },
-        body: imageBuffer
+        body: imageBuffer as any // Buffer is a valid BodyInit in Node.js
       });
 
       if (!uploadResponse.ok) {
