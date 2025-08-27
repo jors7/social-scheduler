@@ -12,6 +12,8 @@ export default function TikTokDebugPage() {
   const [checking, setChecking] = useState(false)
   const [status, setStatus] = useState<any>(null)
   const [account, setAccount] = useState<any>(null)
+  const [polling, setPolling] = useState(false)
+  const [pollCount, setPollCount] = useState(0)
   
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -65,15 +67,67 @@ export default function TikTokDebugPage() {
       
       if (data.success) {
         toast.success(`Status: ${data.message}`)
+        
+        // Show additional info if available
+        if (data.publiclyAvailablePostId) {
+          toast.info(`Post ID: ${data.publiclyAvailablePostId}`)
+        }
+        if (data.errorMessage) {
+          toast.error(`Error: ${data.errorMessage}`)
+        }
       } else {
         toast.error(data.error || 'Failed to check status')
       }
+      
+      return data
     } catch (error) {
       toast.error('Failed to check status')
       console.error(error)
+      return null
     } finally {
       setChecking(false)
     }
+  }
+
+  const startPolling = async () => {
+    if (!publishId || !account) {
+      toast.error('Please enter publish ID and load account first')
+      return
+    }
+
+    setPolling(true)
+    setPollCount(0)
+    toast.info('Starting to poll status every 5 seconds...')
+
+    const pollInterval = setInterval(async () => {
+      setPollCount(prev => {
+        const newCount = prev + 1
+        if (newCount >= 24) { // Stop after 2 minutes (24 * 5 seconds)
+          clearInterval(pollInterval)
+          setPolling(false)
+          toast.warning('Polling stopped after 2 minutes')
+          return prev
+        }
+        return newCount
+      })
+
+      const result = await checkStatus()
+      
+      // Stop polling if we get a final status
+      if (result && ['PUBLISH_COMPLETE', 'FAILED'].includes(result.status)) {
+        clearInterval(pollInterval)
+        setPolling(false)
+        
+        if (result.status === 'PUBLISH_COMPLETE') {
+          toast.success('🎉 Video published! Check TikTok app now.')
+        } else {
+          toast.error('❌ Upload failed. Check details below.')
+        }
+      }
+    }, 5000)
+
+    // Store interval ID for cleanup
+    return () => clearInterval(pollInterval)
   }
 
   const testVideoAccess = async () => {
@@ -159,8 +213,11 @@ export default function TikTokDebugPage() {
                 value={publishId}
                 onChange={(e) => setPublishId(e.target.value)}
               />
-              <Button onClick={checkStatus} disabled={checking}>
+              <Button onClick={checkStatus} disabled={checking || polling}>
                 {checking ? 'Checking...' : 'Check Status'}
+              </Button>
+              <Button onClick={startPolling} disabled={polling} variant="outline">
+                {polling ? `Polling... (${pollCount}/24)` : 'Auto Poll'}
               </Button>
             </div>
             <p className="text-xs text-gray-600">

@@ -229,11 +229,22 @@ export class TikTokService {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to check upload status');
+        const errorData = await response.json();
+        console.error('TikTok status check error:', errorData);
+        throw new Error(`Failed to check upload status: ${errorData.error?.message || response.status}`);
       }
 
       const data = await response.json();
-      return data.data?.status || data.status;
+      console.log('TikTok status response:', data);
+      
+      // Return full data for debugging
+      return {
+        status: data.data?.status || data.status,
+        publiclyAvailablePostId: data.data?.publicly_available_post_id || data.publicly_available_post_id,
+        errorCode: data.data?.error?.code || data.error?.code,
+        errorMessage: data.data?.error?.message || data.error?.message,
+        fullResponse: data
+      };
     } catch (error) {
       console.error('Error checking upload status:', error);
       throw error;

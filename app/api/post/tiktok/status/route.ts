@@ -14,12 +14,20 @@ export async function POST(request: NextRequest) {
     }
 
     const tiktokService = new TikTokService(accessToken);
-    const status = await tiktokService.checkUploadStatus(publishId);
+    const statusData = await tiktokService.checkUploadStatus(publishId);
+    
+    // Handle both old (string) and new (object) return formats
+    const status = typeof statusData === 'string' ? statusData : statusData.status;
+    const fullData = typeof statusData === 'object' ? statusData : { status };
 
     return NextResponse.json({
       success: true,
       status: status,
-      message: getStatusMessage(status)
+      message: getStatusMessage(status),
+      publiclyAvailablePostId: fullData.publiclyAvailablePostId,
+      errorCode: fullData.errorCode,
+      errorMessage: fullData.errorMessage,
+      details: fullData.fullResponse
     });
 
   } catch (error) {
