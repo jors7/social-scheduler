@@ -229,8 +229,20 @@ function CreateNewPostPageContent() {
     // Special handling for TikTok - requires video
     const hasTikTokContent = selectedPlatforms.includes('tiktok') && hasVideoFiles
     
-    // Check content requirements
-    if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
+    // Check content requirements - special handling for platform-specific content
+    const isYouTubeOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'youtube'
+    const isPinterestOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'pinterest'
+    const isTikTokOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'tiktok'
+    
+    // For YouTube-only posts, only require video and title
+    if (isYouTubeOnly && !hasYouTubeContent) {
+      toast.error('YouTube requires a video file and title')
+      return
+    }
+    
+    // For other platforms or mixed platforms, check content
+    if (!isYouTubeOnly && !isPinterestOnly && !isTikTokOnly && 
+        !hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
       toast.error('Please enter some content')
       return
     }
@@ -513,8 +525,20 @@ function CreateNewPostPageContent() {
     // Special handling for TikTok - requires video
     const hasTikTokContent = selectedPlatforms.includes('tiktok') && hasVideoFiles
     
-    // Check content requirements
-    if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
+    // Check content requirements - special handling for platform-specific content
+    const isYouTubeOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'youtube'
+    const isPinterestOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'pinterest'
+    const isTikTokOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'tiktok'
+    
+    // For YouTube-only posts, only require video and title
+    if (isYouTubeOnly && !hasYouTubeContent) {
+      toast.error('YouTube requires a video file and title')
+      return
+    }
+    
+    // For other platforms or mixed platforms, check content
+    if (!isYouTubeOnly && !isPinterestOnly && !isTikTokOnly && 
+        !hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
       toast.error('Please enter some content')
       return
     }
@@ -654,8 +678,14 @@ function CreateNewPostPageContent() {
       return
     }
 
-    if (!postContent.trim()) {
+    // For drafts, allow YouTube-only posts without main content if they have video
+    const isYouTubeOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'youtube'
+    if (!postContent.trim() && !isYouTubeOnly) {
       toast.error('Please enter some content')
+      return
+    }
+    if (isYouTubeOnly && !youtubeVideoFile) {
+      toast.error('YouTube requires a video file')
       return
     }
 

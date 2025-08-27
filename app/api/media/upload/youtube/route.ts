@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
     const tags = formData.get('tags') as string;
-    const categoryId = formData.get('categoryId') as string;
+    const categoryId = formData.get('categoryId') as string | null;
     const privacyStatus = formData.get('privacyStatus') as 'private' | 'public' | 'unlisted';
 
     // Validate required fields
@@ -110,12 +110,16 @@ export async function POST(request: NextRequest) {
     // Create YouTube service
     const youtubeService = new YouTubeService(account.access_token, account.refresh_token);
 
+    // Validate and ensure categoryId is a string
+    const validCategoryId = categoryId && categoryId.trim() ? categoryId.trim() : '22';
+    console.log('Using YouTube categoryId:', validCategoryId);
+    
     // Upload video
     const result = await youtubeService.uploadVideo({
       title,
       description: description || '',
       tags: tagArray,
-      categoryId: categoryId || '22', // Default to People & Blogs
+      categoryId: validCategoryId, // Default to People & Blogs
       privacyStatus: privacyStatus || 'private',
       videoBuffer,
       thumbnailBuffer,
