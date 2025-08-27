@@ -256,11 +256,11 @@ function CreateNewPostPageContent() {
     }
 
     // Filter to only supported platforms for now
-    const supportedPlatforms = selectedPlatforms.filter(p => ['facebook', 'bluesky', 'pinterest', 'tiktok'].includes(p))
-    const unsupportedPlatforms = selectedPlatforms.filter(p => !['facebook', 'bluesky', 'pinterest', 'tiktok'].includes(p))
+    const supportedPlatforms = selectedPlatforms.filter(p => ['facebook', 'bluesky', 'pinterest', 'tiktok', 'youtube'].includes(p))
+    const unsupportedPlatforms = selectedPlatforms.filter(p => !['facebook', 'bluesky', 'pinterest', 'tiktok', 'youtube'].includes(p))
 
     if (supportedPlatforms.length === 0) {
-      toast.error('Please select Facebook, Bluesky, Pinterest, or TikTok (other platforms coming soon!)')
+      toast.error('Please select Facebook, Bluesky, Pinterest, TikTok, or YouTube (other platforms coming soon!)')
       return
     }
 
@@ -313,6 +313,71 @@ function CreateNewPostPageContent() {
         }
       })
       
+      // Handle YouTube separately if selected
+      let youtubeVideoUrl: string | undefined;
+      if (selectedPlatforms.includes('youtube') && youtubeVideoFile) {
+        // Upload YouTube video first
+        toast.info('Uploading video to YouTube...')
+        
+        const formData = new FormData()
+        formData.append('video', youtubeVideoFile)
+        if (youtubeThumbnailFile) {
+          formData.append('thumbnail', youtubeThumbnailFile)
+        }
+        formData.append('title', youtubeTitle || 'New Video')
+        formData.append('description', youtubeDescription || postContent)
+        formData.append('tags', youtubeTags.join(','))
+        formData.append('categoryId', youtubeCategoryId)
+        formData.append('privacyStatus', youtubePrivacyStatus)
+
+        try {
+          const response = await fetch('/api/media/upload/youtube', {
+            method: 'POST',
+            body: formData,
+          })
+          
+          if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'YouTube upload failed')
+          }
+          
+          const result = await response.json()
+          youtubeVideoUrl = result.video.url
+          toast.success('Video uploaded to YouTube successfully!')
+          
+          // Remove YouTube from platforms to post (since it's already posted)
+          const platformsWithoutYouTube = supportedPlatforms.filter(p => p !== 'youtube')
+          
+          // If YouTube was the only platform, we're done
+          if (platformsWithoutYouTube.length === 0) {
+            toast.success(`Video posted to YouTube: ${youtubeVideoUrl}`)
+            // Clear form
+            setPostContent('')
+            setPlatformContent({})
+            setSelectedPlatforms([])
+            setSelectedFiles([])
+            setUploadedMediaUrls([])
+            setYoutubeVideoFile(null)
+            setYoutubeThumbnailFile(null)
+            setYoutubeTitle('')
+            setYoutubeDescription('')
+            setYoutubeTags([])
+            clearTimeout(timeoutId)
+            setIsPosting(false)
+            return
+          }
+          
+          // Continue with other platforms
+          supportedPlatforms.splice(supportedPlatforms.indexOf('youtube'), 1)
+        } catch (error) {
+          console.error('YouTube upload error:', error)
+          toast.error(`YouTube upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+          clearTimeout(timeoutId)
+          setIsPosting(false)
+          return
+        }
+      }
+
       const postData: PostData = {
         content: postContent,
         platforms: supportedPlatforms,
