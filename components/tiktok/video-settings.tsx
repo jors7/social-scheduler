@@ -26,9 +26,15 @@ export function TikTokVideoSettings({
           <span className="text-black">♪</span>
           TikTok Video Settings
         </CardTitle>
-        <CardDescription className="flex items-start gap-1">
-          <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <span>TikTok requires video content (MP4, MOV, or AVI format)</span>
+        <CardDescription className="space-y-2">
+          <div className="flex items-start gap-1">
+            <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <span>TikTok requires video content (MP4, MOV, or AVI format)</span>
+          </div>
+          <div className="p-2 bg-amber-50 border border-amber-200 rounded-md text-xs text-amber-800">
+            <strong>Sandbox Mode:</strong> Videos will be posted as private (SELF_ONLY) until app review is complete. 
+            You can change privacy settings in the TikTok app after posting.
+          </div>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

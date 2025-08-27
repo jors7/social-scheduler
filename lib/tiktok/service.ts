@@ -80,6 +80,14 @@ export class TikTokService {
     }
   ) {
     try {
+      // IMPORTANT: Sandbox apps can only use SELF_ONLY privacy level
+      // Override privacy level for sandbox mode
+      const isSandbox = true; // Set to false when app is approved
+      if (isSandbox && privacyLevel !== 'SELF_ONLY') {
+        console.warn('Sandbox mode: Overriding privacy level to SELF_ONLY');
+        privacyLevel = 'SELF_ONLY';
+      }
+      
       // Use inbox endpoint for drafts (SELF_ONLY), direct post for public
       const isDraft = privacyLevel === 'SELF_ONLY';
       const endpoint = isDraft ? TIKTOK_INBOX_URL : TIKTOK_DIRECT_POST_URL;
@@ -92,8 +100,16 @@ export class TikTokService {
         }
       };
       
-      // Direct post includes post_info, inbox doesn't
-      if (!isDraft) {
+      // For inbox endpoint (sandbox/drafts), we can optionally include post_info
+      // but with limited fields
+      if (isDraft) {
+        // Inbox endpoint has simpler structure
+        requestBody.post_info = {
+          title: title.substring(0, 2200), // Caption text
+          // Note: privacy_level and other settings are not used in inbox
+        };
+      } else {
+        // Direct post includes full post_info
         requestBody.post_info = {
           title: title.substring(0, 2200), // TikTok actually allows 2200 characters
           privacy_level: privacyLevel,
@@ -123,8 +139,30 @@ export class TikTokService {
 
       if (!initResponse.ok) {
         const errorData = await initResponse.json();
-        console.error('TikTok upload init error:', errorData);
-        throw new Error(`Failed to initialize TikTok upload: ${errorData.error?.message || initResponse.status}`);
+        console.error('TikTok upload init error:', {
+          status: initResponse.status,
+          error: errorData,
+          endpoint: endpoint,
+          requestBody: requestBody
+        });
+        
+        // Check for specific error codes
+        const errorMessage = errorData.error?.message || errorData.message || 'Unknown error';
+        const errorCode = errorData.error?.code || errorData.error_code;
+        
+        if (errorCode === 'invalid_param' || errorMessage.includes('invalid')) {
+          throw new Error(`Invalid parameters: ${errorMessage}. Please check video requirements.`);
+        }
+        
+        if (errorCode === 'scope_not_authorized' || errorMessage.includes('scope')) {
+          throw new Error(`Missing permissions. Please reconnect your TikTok account with video.publish scope.`);
+        }
+        
+        if (errorMessage.includes('guidelines') || errorMessage.includes('integration')) {
+          throw new Error(`${errorMessage}. Please review our integration guidelines at https://developers.tiktok.com/doc/content-sharing-guidelines/`);
+        }
+        
+        throw new Error(`Failed to initialize TikTok upload: ${errorMessage}`);
       }
 
       const initData = await initResponse.json();
