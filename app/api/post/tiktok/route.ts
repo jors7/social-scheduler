@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         publishId: result.publishId,
-        message: 'TikTok video upload initiated successfully',
+        message: result.message || 'TikTok video upload initiated successfully',
       });
     } catch (postError: any) {
       console.error('TikTok posting error:', postError);
