@@ -141,6 +141,9 @@ export class PostingService {
       case 'pinterest':
         return await this.postToPinterest(textContent, account, mediaUrls);
       
+      case 'tiktok':
+        return await this.postToTikTok(textContent, account, mediaUrls);
+      
       default:
         return {
           platform,
@@ -256,6 +259,56 @@ export class PostingService {
     } catch (error) {
       return {
         platform: 'pinterest',
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  private async postToTikTok(content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
+    try {
+      // TikTok requires a video
+      if (!mediaUrls || mediaUrls.length === 0) {
+        throw new Error('TikTok requires a video to post');
+      }
+
+      // For now, we'll use the first media URL as the video
+      // In a production app, you'd need to verify this is actually a video
+      const videoUrl = mediaUrls[0];
+
+      const response = await fetch('/api/post/tiktok', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accessToken: account.access_token,
+          content: content,
+          videoUrl: videoUrl,
+          privacyLevel: 'PUBLIC_TO_EVERYONE', // Default to public
+          options: {
+            allowComment: true,
+            allowDuet: true,
+            allowStitch: true,
+            allowDownload: true,
+          }
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'TikTok posting failed');
+      }
+
+      return {
+        platform: 'tiktok',
+        success: true,
+        postId: data.publishId,
+      };
+    } catch (error) {
+      return {
+        platform: 'tiktok',
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
       };

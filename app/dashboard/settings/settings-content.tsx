@@ -326,6 +326,28 @@ export default function SettingsContent() {
       } finally {
         setLoading(false)
       }
+    } else if (platformId === 'tiktok') {
+      setLoading(true)
+      try {
+        console.log('Initiating TikTok OAuth...')
+        const response = await fetch('/api/auth/tiktok', {
+          method: 'GET',
+        })
+        
+        const data = await response.json()
+        
+        if (response.ok && data.authUrl) {
+          // Redirect to TikTok OAuth
+          window.location.href = data.authUrl
+        } else {
+          toast.error(data.error || 'Failed to connect TikTok account')
+        }
+      } catch (error) {
+        console.error('Error connecting to TikTok:', error)
+        toast.error('Failed to connect to TikTok')
+      } finally {
+        setLoading(false)
+      }
     } else {
       toast.info(`${platformId} integration coming soon!`)
     }
