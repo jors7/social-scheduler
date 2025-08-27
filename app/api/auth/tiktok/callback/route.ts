@@ -4,9 +4,9 @@ import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
-// TikTok Login Kit v1 uses different endpoints
-const TIKTOK_TOKEN_URL = 'https://open-api.tiktok.com/oauth/access_token/';
-const TIKTOK_USER_INFO_URL = 'https://open-api.tiktok.com/oauth/userinfo/';
+// TikTok v2 API endpoints
+const TIKTOK_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
+const TIKTOK_USER_INFO_URL = 'https://open.tiktokapis.com/v2/user/info/';
 const CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY || '';
 const CLIENT_SECRET = process.env.TIKTOK_CLIENT_SECRET || '';
 
@@ -36,32 +36,39 @@ export async function GET(request: NextRequest) {
     // Verify state for CSRF protection
     const cookieStore = cookies();
     const storedState = cookieStore.get('tiktok_oauth_state')?.value;
+    const codeVerifier = cookieStore.get('tiktok_code_verifier')?.value;
     
-    if (!storedState || storedState !== state) {
-      console.error('State mismatch');
+    if (!storedState || storedState !== state || !codeVerifier) {
+      console.error('State mismatch or missing code verifier');
       return NextResponse.redirect(
         new URL('/dashboard/settings?error=tiktok_auth_invalid', request.url)
       );
     }
 
-    // Exchange code for access token (v1 API doesn't use PKCE)
+    // Exchange code for access token with PKCE (v2 API)
     const tokenParams = new URLSearchParams({
       client_key: CLIENT_KEY,
       client_secret: CLIENT_SECRET,
       code: code,
       grant_type: 'authorization_code',
       redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/tiktok/callback`,
+      code_verifier: codeVerifier,
     });
 
     console.log('Exchanging code for token at:', TIKTOK_TOKEN_URL);
     console.log('Token params:', {
       client_key: CLIENT_KEY ? `${CLIENT_KEY.substring(0, 5)}...` : 'NOT SET',
       has_code: !!code,
+      has_code_verifier: !!codeVerifier,
       redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/tiktok/callback`,
     });
     
-    const tokenResponse = await fetch(`${TIKTOK_TOKEN_URL}?${tokenParams.toString()}`, {
-      method: 'GET', // v1 uses GET for token exchange
+    const tokenResponse = await fetch(TIKTOK_TOKEN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: tokenParams.toString(),
     });
 
     if (!tokenResponse.ok) {
@@ -74,33 +81,39 @@ export async function GET(request: NextRequest) {
 
     const tokenData = await tokenResponse.json();
     console.log('Token response:', {
-      has_data: !!tokenData.data,
-      error_code: tokenData.error_code,
-      message: tokenData.message,
+      has_access_token: !!tokenData.access_token,
+      has_refresh_token: !!tokenData.refresh_token,
+      scope: tokenData.scope,
+      expires_in: tokenData.expires_in,
+      error: tokenData.error,
+      error_description: tokenData.error_description,
     });
+    
+    if (tokenData.error) {
+      console.error('Token exchange error:', tokenData.error, tokenData.error_description);
+      return NextResponse.redirect(
+        new URL(`/dashboard/settings?error=tiktok_token_error&details=${encodeURIComponent(tokenData.error_description || tokenData.error)}`, request.url)
+      );
+    }
 
-    // v1 API wraps response in 'data' object
-    const data = tokenData.data || tokenData;
-    const accessToken = data.access_token;
-    const refreshToken = data.refresh_token;
-    const expiresIn = data.expires_in || 86400; // Default to 24 hours
-    const openId = data.open_id;
+    const accessToken = tokenData.access_token;
+    const refreshToken = tokenData.refresh_token;
+    const expiresIn = tokenData.expires_in || 86400; // Default to 24 hours
+    const openId = tokenData.open_id;
 
-    // Get user info using the access token (v1 API)
+    // Get user info using the access token (v2 API)
     let userInfo = null;
     try {
-      const userParams = new URLSearchParams({
-        open_id: openId,
-        access_token: accessToken,
-      });
-      
-      const userResponse = await fetch(`${TIKTOK_USER_INFO_URL}?${userParams.toString()}`, {
+      const userResponse = await fetch(`${TIKTOK_USER_INFO_URL}?fields=open_id,union_id,avatar_url,display_name`, {
         method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
       });
 
       if (userResponse.ok) {
         const userData = await userResponse.json();
-        userInfo = userData.data || userData; // v1 API structure
+        userInfo = userData.data?.user || userData.data; // v2 API structure
         console.log('TikTok user info:', userInfo);
       } else {
         console.error('Failed to fetch user info:', await userResponse.text());
@@ -135,9 +148,9 @@ export async function GET(request: NextRequest) {
       user_id: user.id,
       platform: 'tiktok',
       platform_user_id: openId || userInfo?.open_id || `tiktok_${user.id}`,
-      account_name: userInfo?.display_name || userInfo?.nickname || 'TikTok Account',
-      username: userInfo?.display_name || userInfo?.nickname || 'TikTok User',
-      profile_image_url: userInfo?.avatar_url || userInfo?.avatar || null,
+      account_name: userInfo?.display_name || 'TikTok Account',
+      username: userInfo?.display_name || 'TikTok User',
+      profile_image_url: userInfo?.avatar_url || null,
       access_token: accessToken,
       refresh_token: refreshToken,
       is_active: true,
@@ -163,6 +176,7 @@ export async function GET(request: NextRequest) {
     );
     
     redirectResponse.cookies.delete('tiktok_oauth_state');
+    redirectResponse.cookies.delete('tiktok_code_verifier');
     
     return redirectResponse;
 
