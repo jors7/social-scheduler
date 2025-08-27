@@ -46,10 +46,17 @@ export async function GET(request: NextRequest) {
     // Generate state for CSRF protection
     const state = crypto.randomBytes(16).toString('hex');
     
+    // Determine the base URL dynamically
+    const host = request.headers.get('host');
+    const protocol = host?.includes('localhost') ? 'http' : 'https';
+    const baseUrl = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_APP_URL;
+    
+    console.log('YouTube OAuth redirect URI:', `${baseUrl}/api/auth/youtube/callback`);
+    
     // Build YouTube OAuth URL
     const params = new URLSearchParams({
       client_id: process.env.YOUTUBE_CLIENT_ID,
-      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/youtube/callback`,
+      redirect_uri: `${baseUrl}/api/auth/youtube/callback`,
       response_type: 'code',
       scope: SCOPES,
       state: state,

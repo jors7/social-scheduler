@@ -47,12 +47,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Determine the base URL dynamically (must match the one used in initial auth)
+    const host = request.headers.get('host');
+    const protocol = host?.includes('localhost') ? 'http' : 'https';
+    const baseUrl = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_APP_URL;
+    
     // Exchange code for access token
     const tokenParams = new URLSearchParams({
       code: code,
       client_id: process.env.YOUTUBE_CLIENT_ID!,
       client_secret: process.env.YOUTUBE_CLIENT_SECRET!,
-      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/youtube/callback`,
+      redirect_uri: `${baseUrl}/api/auth/youtube/callback`,
       grant_type: 'authorization_code',
     });
 
@@ -85,7 +90,7 @@ export async function GET(request: NextRequest) {
       const oauth2Client = new google.auth.OAuth2(
         process.env.YOUTUBE_CLIENT_ID,
         process.env.YOUTUBE_CLIENT_SECRET,
-        `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/youtube/callback`
+        `${baseUrl}/api/auth/youtube/callback`
       );
 
       oauth2Client.setCredentials({
