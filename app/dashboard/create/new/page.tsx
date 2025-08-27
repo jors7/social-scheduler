@@ -215,7 +215,17 @@ function CreateNewPostPageContent() {
     // Special handling for YouTube - video is the content
     const hasYouTubeContent = selectedPlatforms.includes('youtube') && 
       youtubeVideoFile !== null && 
-      youtubeTitle.trim().length > 0
+      youtubeTitle && youtubeTitle.trim().length > 0
+    
+    // Debug logging for YouTube validation
+    if (selectedPlatforms.includes('youtube')) {
+      console.log('YouTube validation:', {
+        hasVideo: youtubeVideoFile !== null,
+        title: youtubeTitle,
+        titleLength: youtubeTitle ? youtubeTitle.trim().length : 0,
+        hasYouTubeContent
+      })
+    }
     
     // Special handling for Pinterest - can work with just image + board
     const hasPinterestContent = selectedPlatforms.includes('pinterest') && 
@@ -234,15 +244,15 @@ function CreateNewPostPageContent() {
     const isPinterestOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'pinterest'
     const isTikTokOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'tiktok'
     
-    // For YouTube-only posts, only require video and title
-    if (isYouTubeOnly && !hasYouTubeContent) {
-      toast.error('YouTube requires a video file and title')
-      return
-    }
-    
-    // For other platforms or mixed platforms, check content
-    if (!isYouTubeOnly && !isPinterestOnly && !isTikTokOnly && 
-        !hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
+    // For YouTube-only posts, skip general content validation
+    if (isYouTubeOnly) {
+      // YouTube validation will happen below in YouTube-specific section
+    } else if (isPinterestOnly && hasPinterestContent) {
+      // Pinterest has its content (board + image)
+    } else if (isTikTokOnly && hasTikTokContent) {
+      // TikTok has its content (video)
+    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
+      // For other platforms or mixed platforms, require some content
       toast.error('Please enter some content')
       return
     }
@@ -511,7 +521,17 @@ function CreateNewPostPageContent() {
     // Special handling for YouTube - video is the content
     const hasYouTubeContent = selectedPlatforms.includes('youtube') && 
       youtubeVideoFile !== null && 
-      youtubeTitle.trim().length > 0
+      youtubeTitle && youtubeTitle.trim().length > 0
+    
+    // Debug logging for YouTube validation
+    if (selectedPlatforms.includes('youtube')) {
+      console.log('YouTube validation:', {
+        hasVideo: youtubeVideoFile !== null,
+        title: youtubeTitle,
+        titleLength: youtubeTitle ? youtubeTitle.trim().length : 0,
+        hasYouTubeContent
+      })
+    }
     
     // Special handling for Pinterest - can work with just image + board
     const hasPinterestContent = selectedPlatforms.includes('pinterest') && 
@@ -530,15 +550,15 @@ function CreateNewPostPageContent() {
     const isPinterestOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'pinterest'
     const isTikTokOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'tiktok'
     
-    // For YouTube-only posts, only require video and title
-    if (isYouTubeOnly && !hasYouTubeContent) {
-      toast.error('YouTube requires a video file and title')
-      return
-    }
-    
-    // For other platforms or mixed platforms, check content
-    if (!isYouTubeOnly && !isPinterestOnly && !isTikTokOnly && 
-        !hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
+    // For YouTube-only posts, skip general content validation
+    if (isYouTubeOnly) {
+      // YouTube validation will happen below in YouTube-specific section
+    } else if (isPinterestOnly && hasPinterestContent) {
+      // Pinterest has its content (board + image)
+    } else if (isTikTokOnly && hasTikTokContent) {
+      // TikTok has its content (video)
+    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
+      // For other platforms or mixed platforms, require some content
       toast.error('Please enter some content')
       return
     }
