@@ -5,16 +5,15 @@ import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
-const TIKTOK_AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize';
+// TikTok Login Kit uses v1 OAuth endpoint
+const TIKTOK_AUTH_URL = 'https://www.tiktok.com/auth/authorize/';
 const CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY || '';
 
-// TikTok API v2 scopes
+// TikTok Login Kit scopes
 const SCOPES = [
   'user.info.basic',
-  'user.info.profile',
-  'user.info.stats',
+  'video.list',
   'video.publish',
-  'video.upload',
 ].join(',');
 
 export async function GET(request: NextRequest) {
@@ -44,28 +43,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'TikTok not configured' }, { status: 500 });
     }
 
-    // Generate code verifier and challenge for PKCE
-    const codeVerifier = crypto.randomBytes(32).toString('base64url');
-    const codeChallenge = crypto
-      .createHash('sha256')
-      .update(codeVerifier)
-      .digest('base64url');
-
     // Generate state for CSRF protection
     const state = crypto.randomBytes(16).toString('hex');
 
-    // Build TikTok OAuth URL with required parameters
+    // Log for debugging
+    console.log('TikTok OAuth Config:', {
+      clientKey: CLIENT_KEY ? `${CLIENT_KEY.substring(0, 5)}...` : 'NOT SET',
+      redirectUri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/tiktok/callback`,
+      scopes: SCOPES,
+    });
+
+    // Build TikTok OAuth URL with required parameters (v1 doesn't use PKCE)
     const params = new URLSearchParams({
       client_key: CLIENT_KEY,
-      scope: SCOPES,
-      response_type: 'code',
       redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/tiktok/callback`,
+      response_type: 'code',
+      scope: SCOPES,
       state: state,
-      code_challenge: codeChallenge,
-      code_challenge_method: 'S256',
     });
 
     const authUrl = `${TIKTOK_AUTH_URL}?${params.toString()}`;
+    console.log('Generated auth URL:', authUrl);
     
     // Store state and code verifier in cookies for verification
     const response = NextResponse.json({ 
@@ -74,14 +72,6 @@ export async function GET(request: NextRequest) {
     });
     
     response.cookies.set('tiktok_oauth_state', state, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 600, // 10 minutes
-      path: '/',
-    });
-    
-    response.cookies.set('tiktok_code_verifier', codeVerifier, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
