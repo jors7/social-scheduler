@@ -196,7 +196,7 @@ export default function TikTokDebugPage() {
             <h4 className="font-medium text-amber-900 mb-2">Debug Steps:</h4>
             <ol className="text-sm text-amber-800 space-y-1 list-decimal list-inside">
               <li>Post a video to TikTok from the dashboard</li>
-              <li>Look in browser console for "TikTok publish ID: v2.xxx"</li>
+              <li>Look in browser console for &quot;TikTok publish ID: v2.xxx&quot;</li>
               <li>Copy that ID and paste it above to check status</li>
               <li>Status should be: DOWNLOAD_IN_PROGRESS → PROCESSING → PUBLISH_COMPLETE</li>
               <li>If PUBLISH_COMPLETE, check TikTok app Drafts</li>
