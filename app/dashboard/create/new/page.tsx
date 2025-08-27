@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { AISuggestionsModal } from '@/components/dashboard/ai-suggestions-modal'
 import { SubscriptionGateNoSuspense as SubscriptionGate } from '@/components/subscription/subscription-gate-no-suspense'
+import { createBrowserClient } from '@supabase/ssr'
 
 // Dynamically import platform-specific components to avoid hydration issues
 const PinterestBoardSelector = dynamic(() => import('@/components/pinterest/board-selector').then(mod => ({ default: mod.PinterestBoardSelector })), { ssr: false })
@@ -48,6 +49,10 @@ const platforms = [
 function CreateNewPostPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
   const [postContent, setPostContent] = useState('')
   const [platformContent, setPlatformContent] = useState<Record<string, string>>({})
@@ -121,27 +126,77 @@ function CreateNewPostPageContent() {
   const uploadFiles = async (): Promise<string[]> => {
     if (selectedFiles.length === 0) return []
     
-    const formData = new FormData()
-    selectedFiles.forEach(file => {
-      formData.append('files', file)
-    })
+    // Check if we have video files
+    const hasVideos = selectedFiles.some(file => file.type.startsWith('video/'))
     
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      })
-      
-      if (!response.ok) {
-        throw new Error('Upload failed')
+    // For videos or mixed media, use direct upload to avoid Vercel size limits
+    if (hasVideos) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        toast.error('Please sign in to upload files')
+        return []
       }
       
-      const data = await response.json()
-      return data.files.map((file: any) => file.url)
-    } catch (error) {
-      console.error('Upload error:', error)
-      toast.error('Failed to upload images')
-      return []
+      const uploadedUrls: string[] = []
+      toast.info(`Uploading ${selectedFiles.length} file(s)...`)
+      
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i]
+        try {
+          // Generate unique filename
+          const timestamp = Date.now()
+          const randomString = Math.random().toString(36).substring(2, 8)
+          const fileExt = file.name.split('.').pop()
+          const fileName = `${user.id}/${timestamp}-${randomString}.${fileExt}`
+          
+          // Upload directly to Supabase Storage
+          const { data, error } = await supabase.storage
+            .from('post-media')
+            .upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: false
+            })
+          
+          if (error) throw error
+          
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('post-media')
+            .getPublicUrl(fileName)
+          
+          uploadedUrls.push(publicUrl)
+          toast.success(`Uploaded ${i + 1} of ${selectedFiles.length}`)
+        } catch (error) {
+          console.error('Upload error for file:', file.name, error)
+          toast.error(`Failed to upload ${file.name}`)
+        }
+      }
+      
+      return uploadedUrls
+    } else {
+      // For images only, use the API route (smaller files)
+      const formData = new FormData()
+      selectedFiles.forEach(file => {
+        formData.append('files', file)
+      })
+      
+      try {
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        })
+        
+        if (!response.ok) {
+          throw new Error('Upload failed')
+        }
+        
+        const data = await response.json()
+        return data.files.map((file: any) => file.url)
+      } catch (error) {
+        console.error('Upload error:', error)
+        toast.error('Failed to upload images')
+        return []
+      }
     }
   }
 

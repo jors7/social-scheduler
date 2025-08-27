@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const maxDuration = 60; // 60 seconds timeout for large uploads
 
 export async function POST(request: NextRequest) {
   try {
