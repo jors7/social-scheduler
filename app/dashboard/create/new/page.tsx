@@ -364,7 +364,10 @@ function CreateNewPostPageContent() {
       // Clear form if all successful
       if (failed.length === 0) {
         // Clean up uploaded images from storage
-        if (mediaUrls.length > 0) {
+        // IMPORTANT: Don't cleanup if TikTok was posted - TikTok needs time to download the video
+        const postedToTikTok = successful.some(r => r.platform === 'tiktok' || r.platform.startsWith('tiktok'))
+        
+        if (mediaUrls.length > 0 && !postedToTikTok) {
           try {
             await fetch('/api/upload/cleanup', {
               method: 'POST',
@@ -374,6 +377,11 @@ function CreateNewPostPageContent() {
           } catch (error) {
             console.error('Failed to cleanup uploaded files:', error)
           }
+        } else if (postedToTikTok) {
+          console.log('Skipping media cleanup - TikTok needs time to download the video')
+          toast.warning('Video will remain in storage for TikTok to process. You can delete it manually later from Supabase.', {
+            duration: 8000
+          })
         }
         
         // Delete draft if this was posted from a draft
