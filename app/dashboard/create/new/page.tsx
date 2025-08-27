@@ -254,9 +254,18 @@ function CreateNewPostPageContent() {
     const isPinterestOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'pinterest'
     const isTikTokOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'tiktok'
     
-    // For YouTube-only posts, skip general content validation
+    // For YouTube-only posts, validate YouTube requirements immediately
     if (isYouTubeOnly) {
-      // YouTube validation will happen below in YouTube-specific section
+      if (!youtubeVideoFile) {
+        console.log('YouTube-only: no video file detected')
+        toast.error('YouTube requires a video file')
+        return
+      }
+      if (!youtubeTitle || !youtubeTitle.trim()) {
+        toast.error('YouTube requires a video title')
+        return
+      }
+      // YouTube validation passed, skip other content checks
     } else if (isPinterestOnly && hasPinterestContent) {
       // Pinterest has its content (board + image)
     } else if (isTikTokOnly && hasTikTokContent) {
@@ -267,8 +276,8 @@ function CreateNewPostPageContent() {
       return
     }
     
-    // YouTube-specific validation
-    if (selectedPlatforms.includes('youtube')) {
+    // YouTube-specific validation (only for mixed platforms, not YouTube-only)
+    if (!isYouTubeOnly && selectedPlatforms.includes('youtube')) {
       console.log('YouTube validation check:', {
         videoFile: youtubeVideoFile,
         title: youtubeTitle,
@@ -567,9 +576,18 @@ function CreateNewPostPageContent() {
     const isPinterestOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'pinterest'
     const isTikTokOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'tiktok'
     
-    // For YouTube-only posts, skip general content validation
+    // For YouTube-only posts, validate YouTube requirements immediately
     if (isYouTubeOnly) {
-      // YouTube validation will happen below in YouTube-specific section
+      if (!youtubeVideoFile) {
+        console.log('YouTube-only: no video file detected')
+        toast.error('YouTube requires a video file')
+        return
+      }
+      if (!youtubeTitle || !youtubeTitle.trim()) {
+        toast.error('YouTube requires a video title')
+        return
+      }
+      // YouTube validation passed, skip other content checks
     } else if (isPinterestOnly && hasPinterestContent) {
       // Pinterest has its content (board + image)
     } else if (isTikTokOnly && hasTikTokContent) {
@@ -580,8 +598,8 @@ function CreateNewPostPageContent() {
       return
     }
     
-    // YouTube-specific validation
-    if (selectedPlatforms.includes('youtube')) {
+    // YouTube-specific validation (only for mixed platforms, not YouTube-only)
+    if (!isYouTubeOnly && selectedPlatforms.includes('youtube')) {
       console.log('YouTube validation check:', {
         videoFile: youtubeVideoFile,
         title: youtubeTitle,
