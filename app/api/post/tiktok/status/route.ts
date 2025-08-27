@@ -18,16 +18,18 @@ export async function POST(request: NextRequest) {
     
     // Handle both old (string) and new (object) return formats
     const status = typeof statusData === 'string' ? statusData : statusData.status;
-    const fullData = typeof statusData === 'object' ? statusData : { status };
+    const fullData = typeof statusData === 'object' 
+      ? statusData 
+      : { status, publiclyAvailablePostId: undefined, errorCode: undefined, errorMessage: undefined, fullResponse: undefined };
 
     return NextResponse.json({
       success: true,
       status: status,
       message: getStatusMessage(status),
-      publiclyAvailablePostId: fullData.publiclyAvailablePostId,
-      errorCode: fullData.errorCode,
-      errorMessage: fullData.errorMessage,
-      details: fullData.fullResponse
+      publiclyAvailablePostId: fullData.publiclyAvailablePostId || null,
+      errorCode: fullData.errorCode || null,
+      errorMessage: fullData.errorMessage || null,
+      details: fullData.fullResponse || null
     });
 
   } catch (error) {
