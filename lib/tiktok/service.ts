@@ -167,6 +167,14 @@ export class TikTokService {
 
       const initData = await initResponse.json();
       console.log('TikTok upload initialized:', initData);
+      
+      // Log the full response for debugging
+      console.log('TikTok API Response Details:', {
+        hasData: !!initData.data,
+        hasPublishId: !!(initData.data?.publish_id || initData.publish_id),
+        publishId: initData.data?.publish_id || initData.publish_id,
+        fullResponse: JSON.stringify(initData, null, 2)
+      });
 
       // The actual video upload would happen here
       // TikTok's API requires uploading the video chunks to their servers
@@ -176,11 +184,19 @@ export class TikTokService {
       // TikTok will download the video from the provided URL
       // Processing takes 30 seconds to 2 minutes
       
+      const publishId = initData.data?.publish_id || initData.publish_id;
+      
+      if (!publishId) {
+        console.warn('No publish_id returned from TikTok. Full response:', initData);
+      }
+      
       return {
         success: true,
-        publishId: initData.data?.publish_id || initData.publish_id,
+        publishId: publishId,
         uploadUrl: null, // No upload URL with PULL_FROM_URL
-        message: isDraft ? 'Video sent to TikTok inbox for review' : 'Video upload initiated, processing may take 30s-2min'
+        message: isDraft 
+          ? 'Video sent to TikTok inbox. Check your TikTok app Drafts folder in 2-5 minutes.' 
+          : 'Video upload initiated. Processing takes 2-5 minutes. Check your TikTok app.'
       };
 
     } catch (error) {

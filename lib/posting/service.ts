@@ -285,7 +285,8 @@ export class PostingService {
       // Convert Supabase URL to proxy URL for TikTok domain verification
       if (videoUrl.includes('supabase.co')) {
         // Always use the production URL for TikTok since that's what's verified
-        const baseUrl = 'https://socialcal.app';
+        // Use www subdomain as that's where the site is deployed
+        const baseUrl = 'https://www.socialcal.app';
         videoUrl = `${baseUrl}/api/media/proxy?url=${encodeURIComponent(videoUrl)}`;
         console.log('Converted video URL for TikTok:', videoUrl);
       }

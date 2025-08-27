@@ -333,6 +333,26 @@ function CreateNewPostPageContent() {
 
       if (successful.length > 0) {
         toast.success(`Successfully posted to ${successful.map(r => r.platform).join(', ')}!`)
+        
+        // Check if TikTok was posted and show status check info
+        const tiktokResult = results.find(r => r.platform === 'tiktok' || r.platform.startsWith('tiktok'))
+        if (tiktokResult?.success && tiktokResult.postId) {
+          toast.info(
+            '📱 TikTok Sandbox Mode: Your video is being processed (2-5 minutes). ' +
+            'Look for it in: TikTok App → Profile → Drafts folder. ' +
+            'If not there, check Profile → Private videos (lock icon).', 
+            {
+              duration: 15000 // Show for 15 seconds
+            }
+          )
+          
+          // Store the publishId for potential status checking
+          console.log('TikTok publish ID:', tiktokResult.postId)
+          console.log('IMPORTANT: Video will appear in DRAFTS folder in TikTok app after processing')
+          
+          // Optional: Start polling for status
+          // checkTikTokStatus(tiktokResult.postId)
+        }
       }
 
       if (failed.length > 0) {
