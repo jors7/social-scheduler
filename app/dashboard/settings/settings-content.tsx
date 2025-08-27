@@ -395,16 +395,11 @@ export default function SettingsContent() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
-      // Clear tokens and mark as inactive for security
+      // Delete the record entirely for better security
+      // The account can be re-added with upsert when reconnecting
       const { error } = await supabase
         .from('social_accounts')
-        .update({ 
-          is_active: false,
-          access_token: null,
-          refresh_token: null,
-          access_secret: null, // For OAuth 1.0 platforms like Twitter
-          expires_at: null
-        })
+        .delete()
         .eq('id', accountId)
         .eq('user_id', user.id)
 
