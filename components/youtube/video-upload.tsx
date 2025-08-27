@@ -50,6 +50,7 @@ export default function VideoUpload({
       }
 
       onVideoChange(file)
+      console.log('YouTube video file selected:', file.name, file.size, file.type)
       
       // Create preview URL
       const url = URL.createObjectURL(file)
@@ -84,6 +85,7 @@ export default function VideoUpload({
   }
 
   const removeVideo = () => {
+    console.log('Removing YouTube video file')
     onVideoChange(null)
     setVideoPreview(null)
     if (videoInputRef.current) {

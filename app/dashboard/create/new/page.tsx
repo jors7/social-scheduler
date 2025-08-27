@@ -86,6 +86,16 @@ function CreateNewPostPageContent() {
   const [youtubeVideoFile, setYoutubeVideoFile] = useState<File | null>(null)
   const [youtubeThumbnailFile, setYoutubeThumbnailFile] = useState<File | null>(null)
   
+  // Debug YouTube state changes
+  useEffect(() => {
+    console.log('YouTube state updated:', {
+      videoFile: youtubeVideoFile,
+      title: youtubeTitle,
+      hasVideo: !!youtubeVideoFile,
+      hasTitle: !!(youtubeTitle && youtubeTitle.trim())
+    })
+  }, [youtubeVideoFile, youtubeTitle])
+  
   // TikTok states
   const [tiktokPrivacyLevel, setTiktokPrivacyLevel] = useState<'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY'>('PUBLIC_TO_EVERYONE')
   const [tiktokSaveAsDraft, setTiktokSaveAsDraft] = useState(false)
@@ -259,11 +269,18 @@ function CreateNewPostPageContent() {
     
     // YouTube-specific validation
     if (selectedPlatforms.includes('youtube')) {
+      console.log('YouTube validation check:', {
+        videoFile: youtubeVideoFile,
+        title: youtubeTitle,
+        hasVideo: !!youtubeVideoFile,
+        hasTitle: !!(youtubeTitle && youtubeTitle.trim())
+      })
+      
       if (!youtubeVideoFile) {
         toast.error('YouTube requires a video file')
         return
       }
-      if (!youtubeTitle.trim()) {
+      if (!youtubeTitle || !youtubeTitle.trim()) {
         toast.error('YouTube requires a video title')
         return
       }
@@ -565,11 +582,18 @@ function CreateNewPostPageContent() {
     
     // YouTube-specific validation
     if (selectedPlatforms.includes('youtube')) {
+      console.log('YouTube validation check:', {
+        videoFile: youtubeVideoFile,
+        title: youtubeTitle,
+        hasVideo: !!youtubeVideoFile,
+        hasTitle: !!(youtubeTitle && youtubeTitle.trim())
+      })
+      
       if (!youtubeVideoFile) {
         toast.error('YouTube requires a video file')
         return
       }
-      if (!youtubeTitle.trim()) {
+      if (!youtubeTitle || !youtubeTitle.trim()) {
         toast.error('YouTube requires a video title')
         return
       }
