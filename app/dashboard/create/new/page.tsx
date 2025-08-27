@@ -304,11 +304,11 @@ function CreateNewPostPageContent() {
     }
 
     // Filter to only supported platforms for now
-    const supportedPlatforms = selectedPlatforms.filter(p => ['facebook', 'bluesky', 'pinterest', 'tiktok', 'youtube'].includes(p))
-    const unsupportedPlatforms = selectedPlatforms.filter(p => !['facebook', 'bluesky', 'pinterest', 'tiktok', 'youtube'].includes(p))
+    const supportedPlatforms = selectedPlatforms.filter(p => ['facebook', 'bluesky', 'pinterest', 'tiktok', 'youtube', 'linkedin'].includes(p))
+    const unsupportedPlatforms = selectedPlatforms.filter(p => !['facebook', 'bluesky', 'pinterest', 'tiktok', 'youtube', 'linkedin'].includes(p))
 
     if (supportedPlatforms.length === 0) {
-      toast.error('Please select Facebook, Bluesky, Pinterest, TikTok, or YouTube (other platforms coming soon!)')
+      toast.error('Please select Facebook, Bluesky, Pinterest, TikTok, YouTube, or LinkedIn (other platforms coming soon!)')
       return
     }
 

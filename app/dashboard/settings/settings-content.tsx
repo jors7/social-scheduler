@@ -369,6 +369,28 @@ export default function SettingsContent() {
       } finally {
         setLoading(false)
       }
+    } else if (platformId === 'linkedin') {
+      setLoading(true)
+      try {
+        console.log('Initiating LinkedIn OAuth...')
+        const response = await fetch('/api/auth/linkedin', {
+          method: 'GET',
+        })
+        
+        const data = await response.json()
+        
+        if (response.ok && data.authUrl) {
+          // Redirect to LinkedIn OAuth
+          window.location.href = data.authUrl
+        } else {
+          toast.error(data.error || 'Failed to connect LinkedIn account')
+        }
+      } catch (error) {
+        console.error('Error connecting to LinkedIn:', error)
+        toast.error('Failed to connect to LinkedIn')
+      } finally {
+        setLoading(false)
+      }
     } else if (platformId === 'youtube') {
       setLoading(true)
       try {
@@ -473,7 +495,7 @@ export default function SettingsContent() {
       toast.success(`Account disconnected`)
       
       // Show additional guidance for platforms that maintain authorization
-      if (platformName && ['TikTok', 'Facebook', 'Instagram', 'YouTube'].includes(platformName)) {
+      if (platformName && ['TikTok', 'Facebook', 'Instagram', 'YouTube', 'LinkedIn'].includes(platformName)) {
         toast.info(
           `To fully revoke ${platformName} access, visit your ${platformName} account settings`, 
           { duration: 5000 }

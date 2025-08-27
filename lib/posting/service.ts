@@ -150,6 +150,9 @@ export class PostingService {
       case 'tiktok':
         return await this.postToTikTok(textContent, account, mediaUrls);
       
+      case 'linkedin':
+        return await this.postToLinkedIn(textContent, account, mediaUrls);
+      
       default:
         return {
           platform,
@@ -385,5 +388,39 @@ export class PostingService {
       .trim();
     
     return cleaned;
+  }
+
+  private async postToLinkedIn(content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
+    try {
+      const response = await fetch('/api/post/linkedin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: content,
+          mediaUrl: mediaUrls?.[0], // LinkedIn supports one image per post
+          mediaType: mediaUrls?.[0] ? 'image' : undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'LinkedIn posting failed');
+      }
+
+      return {
+        platform: 'linkedin',
+        success: true,
+        postId: data.postId,
+      };
+    } catch (error) {
+      return {
+        platform: 'linkedin',
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
   }
 }
