@@ -38,9 +38,25 @@ export async function POST(request: NextRequest) {
 
     for (const file of files) {
       // Validate file
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-      if (!validTypes.includes(file.type)) {
+      const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      const validVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/x-flv', 'video/x-matroska'];
+      const isImage = validImageTypes.includes(file.type);
+      const isVideo = validVideoTypes.includes(file.type);
+      
+      if (!isImage && !isVideo) {
         continue; // Skip invalid file types
+      }
+
+      // Check file size limits
+      const maxImageSize = 50 * 1024 * 1024; // 50MB for images
+      const maxVideoSize = 500 * 1024 * 1024; // 500MB for videos
+      const maxSize = isVideo ? maxVideoSize : maxImageSize;
+      
+      if (file.size > maxSize) {
+        return NextResponse.json(
+          { error: `File ${file.name} exceeds size limit (${isVideo ? '500MB' : '50MB'})` },
+          { status: 400 }
+        );
       }
 
       // Generate unique filename
