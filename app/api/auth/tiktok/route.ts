@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 const TIKTOK_AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize/';
 const CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY || '';
 
-// TikTok v2 scopes (only basic scopes that don't require approval)
-const SCOPES = 'user.info.basic';
+// TikTok v2 scopes - these are available in the app
+const SCOPES = 'user.info.basic,video.publish,video.upload';
 
 export async function GET(request: NextRequest) {
   try {
