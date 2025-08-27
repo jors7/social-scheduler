@@ -525,7 +525,10 @@ function CreateNewPostPageContent() {
       clearTimeout(timeoutId)
       setIsPosting(false)
     }
-  }, [selectedPlatforms, postContent, platformContent, selectedFiles, uploadedMediaUrls, currentDraftId])
+  }, [selectedPlatforms, postContent, platformContent, selectedFiles, uploadedMediaUrls, currentDraftId, 
+      youtubeVideoFile, youtubeTitle, youtubeDescription, youtubeTags, youtubeCategoryId, youtubePrivacyStatus, youtubeThumbnailFile,
+      selectedPinterestBoard, pinterestTitle, pinterestDescription, pinterestLink,
+      tiktokPrivacyLevel, tiktokSaveAsDraft])
 
   const handleSchedulePost = async () => {
     if (!scheduledDate || !scheduledTime) {
