@@ -175,6 +175,12 @@ export class TikTokService {
         publishId: initData.data?.publish_id || initData.publish_id,
         fullResponse: JSON.stringify(initData, null, 2)
       });
+      
+      // CRITICAL: Store publish_id for debugging
+      if (initData.data?.publish_id || initData.publish_id) {
+        console.log('🎯 SAVE THIS PUBLISH ID FOR STATUS CHECK:', initData.data?.publish_id || initData.publish_id);
+        console.log('To check status, go to: /dashboard/tiktok-debug');
+      }
 
       // The actual video upload would happen here
       // TikTok's API requires uploading the video chunks to their servers
