@@ -14,6 +14,7 @@ export interface PostData {
   pinterestTitle?: string; // Pinterest specific - pin title
   pinterestDescription?: string; // Pinterest specific - pin description
   pinterestLink?: string; // Pinterest specific - destination URL
+  tiktokPrivacyLevel?: 'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY'; // TikTok specific - privacy/draft setting
 }
 
 export interface PostResult {
@@ -91,6 +92,11 @@ export class PostingService {
             account.pinterest_title = postData.pinterestTitle;
             account.pinterest_description = postData.pinterestDescription;
             account.pinterest_link = postData.pinterestLink;
+          }
+          
+          // Add TikTok-specific data to account if needed
+          if (platform === 'tiktok') {
+            account.tiktok_privacy_level = postData.tiktokPrivacyLevel;
           }
           
           const result = await this.postToPlatform(
@@ -276,6 +282,10 @@ export class PostingService {
       // In a production app, you'd need to verify this is actually a video
       const videoUrl = mediaUrls[0];
 
+      // Use privacy level from account (passed from postData) or default to public
+      const privacyLevel = account.tiktok_privacy_level || 'PUBLIC_TO_EVERYONE';
+      const isDraft = privacyLevel === 'SELF_ONLY';
+
       const response = await fetch('/api/post/tiktok', {
         method: 'POST',
         headers: {
@@ -285,12 +295,12 @@ export class PostingService {
           accessToken: account.access_token,
           content: content,
           videoUrl: videoUrl,
-          privacyLevel: 'PUBLIC_TO_EVERYONE', // Default to public
+          privacyLevel: privacyLevel,
           options: {
-            allowComment: true,
-            allowDuet: true,
-            allowStitch: true,
-            allowDownload: true,
+            allowComment: !isDraft,
+            allowDuet: !isDraft,
+            allowStitch: !isDraft,
+            allowDownload: !isDraft,
           }
         }),
       });

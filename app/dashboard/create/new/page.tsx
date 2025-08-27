@@ -16,6 +16,7 @@ import { SubscriptionGateNoSuspense as SubscriptionGate } from '@/components/sub
 const PinterestBoardSelector = dynamic(() => import('@/components/pinterest/board-selector').then(mod => ({ default: mod.PinterestBoardSelector })), { ssr: false })
 const VideoMetadata = dynamic(() => import('@/components/youtube/video-metadata'), { ssr: false })
 const VideoUpload = dynamic(() => import('@/components/youtube/video-upload'), { ssr: false })
+const TikTokVideoSettings = dynamic(() => import('@/components/tiktok/video-settings').then(mod => ({ default: mod.TikTokVideoSettings })), { ssr: false })
 import { 
   Calendar,
   Clock,
@@ -79,6 +80,10 @@ function CreateNewPostPageContent() {
   const [youtubePrivacyStatus, setYoutubePrivacyStatus] = useState<'private' | 'unlisted' | 'public'>('private')
   const [youtubeVideoFile, setYoutubeVideoFile] = useState<File | null>(null)
   const [youtubeThumbnailFile, setYoutubeThumbnailFile] = useState<File | null>(null)
+  
+  // TikTok states
+  const [tiktokPrivacyLevel, setTiktokPrivacyLevel] = useState<'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY'>('PUBLIC_TO_EVERYONE')
+  const [tiktokSaveAsDraft, setTiktokSaveAsDraft] = useState(false)
 
   const togglePlatform = (platformId: string) => {
     setSelectedPlatforms(prev =>
@@ -162,8 +167,15 @@ function CreateNewPostPageContent() {
       selectedPinterestBoard && 
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
     
+    // Check if we have video files for TikTok
+    const hasVideoFiles = selectedFiles.some(file => file.type.startsWith('video/')) || 
+                          uploadedMediaUrls.some(url => url.includes('.mp4') || url.includes('.mov') || url.includes('.avi'))
+    
+    // Special handling for TikTok - requires video
+    const hasTikTokContent = selectedPlatforms.includes('tiktok') && hasVideoFiles
+    
     // Check content requirements
-    if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent) {
+    if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
       toast.error('Please enter some content')
       return
     }
@@ -179,13 +191,21 @@ function CreateNewPostPageContent() {
         return
       }
     }
+    
+    // TikTok-specific validation
+    if (selectedPlatforms.includes('tiktok')) {
+      if (!hasVideoFiles) {
+        toast.error('TikTok requires a video file')
+        return
+      }
+    }
 
     // Filter to only supported platforms for now
-    const supportedPlatforms = selectedPlatforms.filter(p => ['facebook', 'bluesky', 'pinterest'].includes(p))
-    const unsupportedPlatforms = selectedPlatforms.filter(p => !['facebook', 'bluesky', 'pinterest'].includes(p))
+    const supportedPlatforms = selectedPlatforms.filter(p => ['facebook', 'bluesky', 'pinterest', 'tiktok'].includes(p))
+    const unsupportedPlatforms = selectedPlatforms.filter(p => !['facebook', 'bluesky', 'pinterest', 'tiktok'].includes(p))
 
     if (supportedPlatforms.length === 0) {
-      toast.error('Please select Facebook, Bluesky, or Pinterest (other platforms coming soon!)')
+      toast.error('Please select Facebook, Bluesky, Pinterest, or TikTok (other platforms coming soon!)')
       return
     }
 
@@ -247,6 +267,7 @@ function CreateNewPostPageContent() {
         pinterestTitle: pinterestTitle || undefined,
         pinterestDescription: pinterestDescription || undefined,
         pinterestLink: pinterestLink || undefined,
+        tiktokPrivacyLevel: selectedPlatforms.includes('tiktok') ? (tiktokSaveAsDraft ? 'SELF_ONLY' : tiktokPrivacyLevel) : undefined,
       }
 
       const results = await postingService.postToMultiplePlatforms(postData)
@@ -337,8 +358,15 @@ function CreateNewPostPageContent() {
       selectedPinterestBoard && 
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
     
+    // Check if we have video files for TikTok
+    const hasVideoFiles = selectedFiles.some(file => file.type.startsWith('video/')) || 
+                          uploadedMediaUrls.some(url => url.includes('.mp4') || url.includes('.mov') || url.includes('.avi'))
+    
+    // Special handling for TikTok - requires video
+    const hasTikTokContent = selectedPlatforms.includes('tiktok') && hasVideoFiles
+    
     // Check content requirements
-    if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent) {
+    if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
       toast.error('Please enter some content')
       return
     }
@@ -351,6 +379,14 @@ function CreateNewPostPageContent() {
       }
       if (!youtubeTitle.trim()) {
         toast.error('YouTube requires a video title')
+        return
+      }
+    }
+    
+    // TikTok-specific validation
+    if (selectedPlatforms.includes('tiktok')) {
+      if (!hasVideoFiles) {
+        toast.error('TikTok requires a video file')
         return
       }
     }
@@ -1185,7 +1221,8 @@ function CreateNewPostPageContent() {
                       loadingDraft ||
                       (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) && 
                         !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()) &&
-                        !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)))
+                        !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
+                        !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(url => url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')))))
                     }
                     onClick={handleSchedulePost}
                   >
@@ -1213,7 +1250,8 @@ function CreateNewPostPageContent() {
                     loadingDraft ||
                     (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) && 
                       !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()) &&
-                      !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)))
+                      !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
+                      !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(url => url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')))))
                   }
                   onClick={handlePostNow}
                 >
@@ -1336,6 +1374,18 @@ function CreateNewPostPageContent() {
                     />
                   </CardContent>
                 </Card>
+              )}
+              
+              {/* TikTok Video Settings */}
+              {selectedPlatforms.includes('tiktok') && (
+                <div className="mt-6">
+                  <TikTokVideoSettings
+                    privacyLevel={tiktokPrivacyLevel}
+                    setPrivacyLevel={setTiktokPrivacyLevel}
+                    saveAsDraft={tiktokSaveAsDraft}
+                    setSaveAsDraft={setTiktokSaveAsDraft}
+                  />
+                </div>
               )}
             </CardContent>
           </Card>
