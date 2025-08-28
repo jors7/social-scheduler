@@ -82,25 +82,37 @@ export default function PrivacyPolicyClient() {
               <div className="hidden md:flex items-center space-x-8">
                 <Link 
                   href="/?scroll=features"
-                  className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
+                  className="text-base font-medium text-gray-700 hover:text-purple-600 transition-all duration-200"
+                  style={{ 
+                    fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
+                  }}
                 >
                   Features
                 </Link>
                 <Link 
                   href="/?scroll=platforms"
-                  className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
+                  className="text-base font-medium text-gray-700 hover:text-purple-600 transition-all duration-200"
+                  style={{ 
+                    fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
+                  }}
                 >
                   Platforms
                 </Link>
                 <Link 
                   href="/pricing" 
-                  className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
+                  className="text-base font-medium text-gray-700 hover:text-purple-600 transition-all duration-200"
+                  style={{ 
+                    fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
+                  }}
                 >
                   Pricing
                 </Link>
                 <Link 
                   href="/pricing?scroll=faq" 
-                  className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
+                  className="text-base font-medium text-gray-700 hover:text-purple-600 transition-all duration-200"
+                  style={{ 
+                    fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
+                  }}
                 >
                   FAQ
                 </Link>
@@ -119,7 +131,10 @@ export default function PrivacyPolicyClient() {
                   <>
                     <button 
                       onClick={() => setSignInOpen(true)}
-                      className="text-base font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
+                      className="text-base font-medium text-gray-700 hover:text-purple-600 transition-all duration-200"
+                  style={{ 
+                    fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
+                  }}
                     >
                       Sign In
                     </button>
