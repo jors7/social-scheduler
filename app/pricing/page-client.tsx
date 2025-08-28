@@ -616,7 +616,11 @@ function PricingPageContent() {
           </div>
           <div className="mt-12 text-center">
             <p className="text-gray-600 mb-4">Still have questions?</p>
-            <Button variant="outline" className="gap-2">
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={() => router.push('/contact')}
+            >
               Contact Support
             </Button>
           </div>
