@@ -352,21 +352,21 @@ export function Sidebar() {
       </div>
 
       {/* Account Section */}
-      <div className="p-4 bg-white border-t mt-auto relative">
+      <div className="p-3 bg-white border-t mt-auto relative">
         <button
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
             setIsAccountMenuOpen(!isAccountMenuOpen)
           }}
-          className="w-full flex items-center justify-between rounded-xl px-3 py-3 hover:bg-gray-50 transition-all duration-200 relative z-10"
+          className="w-full flex items-center justify-between rounded-xl px-3 py-2 hover:bg-gray-50 transition-all duration-200 relative z-10"
         >
           <div className="flex items-center">
             <div className="relative">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center text-white font-semibold shadow-md">
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center text-white font-semibold shadow-md text-sm">
                 {user?.email?.[0]?.toUpperCase() || 'U'}
               </div>
-              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white"></div>
             </div>
             <div className="ml-3 text-left">
               <p className="text-sm font-semibold text-gray-900">My Account</p>

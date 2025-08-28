@@ -443,7 +443,7 @@ function LandingPageContent() {
                   <Button 
                     variant="outline" 
                     onClick={() => router.push('/dashboard')}
-                    className="border-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
+                    className="border border-blue-300 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200"
                   >
                     <BarChart className="h-4 w-4 mr-2" />
                     Dashboard
@@ -453,13 +453,13 @@ function LandingPageContent() {
                     <Button 
                       variant="outline"
                       onClick={() => setSignInOpen(true)}
-                      className="text-base font-semibold border-2 border-blue-500 text-blue-500 hover:bg-blue-50 transition-all duration-200 px-6 py-2"
+                      className="text-base font-medium border border-blue-500 text-blue-500 hover:bg-blue-50 transition-all duration-200 px-6 py-2"
                     >
                       Sign In
                     </Button>
                     <Button 
                       onClick={() => router.push('/pricing')}
-                      className="text-base font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 px-6 py-2"
+                      className="text-base font-medium bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 px-6 py-2"
                     >
                       Start Free Trial
                     </Button>
@@ -530,8 +530,12 @@ function LandingPageContent() {
               <div className="mb-8">
                 <Button 
                   size="lg" 
-                  className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-xl px-12 py-7 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+                  className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-lg font-normal px-12 py-7 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
                   onClick={() => router.push('/pricing')}
+                  style={{ 
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+                    letterSpacing: '0.025em'
+                  }}
                 >
                   Start Free Trial
                 </Button>

@@ -806,25 +806,7 @@ export default function SettingsContent() {
                   </div>
                 </CardContent>
               </Card>
-
-              <Card className="bg-white shadow-xl hover:shadow-2xl transition-all duration-300 border-0 overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 border-b">
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <div className="p-2 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg">
-                      <AlertCircle className="h-5 w-5 text-white" />
-                    </div>
-                    API Access
-                  </CardTitle>
-                  <CardDescription className="mt-2">
-                    Generate API keys to integrate with external tools
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <Button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-                    Generate API Key
-                  </Button>
-                </CardContent>
-              </Card>
+              <div className="pb-12"></div>
             </div>
           )}
 

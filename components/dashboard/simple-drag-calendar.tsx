@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, Edit, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Edit, Trash2, X, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -57,6 +57,7 @@ export function SimpleDragCalendar({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [draggedPostId, setDraggedPostId] = useState<string | null>(null)
   const [dragOverDate, setDragOverDate] = useState<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const months = [
@@ -133,6 +134,10 @@ export function SimpleDragCalendar({
 
   const handleDragStart = (e: React.DragEvent, postId: string) => {
     setDraggedPostId(postId)
+    // Only set dragging to true after mouse actually moves
+    setTimeout(() => {
+      setIsDragging(true)
+    }, 150)
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', postId)
   }
@@ -140,6 +145,8 @@ export function SimpleDragCalendar({
   const handleDragEnd = () => {
     setDraggedPostId(null)
     setDragOverDate(null)
+    setIsDragging(false)
+    // Modal will reappear after drag ends if it was open before
   }
 
   const handleDragOver = (e: React.DragEvent, dateString: string) => {
@@ -277,91 +284,73 @@ export function SimpleDragCalendar({
               return (
                 <div
                   key={dateString}
+                  style={{ height: '140px' }}
                   className={cn(
-                    "relative min-h-[140px] bg-white p-2 border-r border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors",
+                    "relative overflow-hidden bg-white p-2 border-r border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors",
                     !isCurrentMonth(date) ? "bg-gray-50 text-gray-400" : "",
                     isToday(date) ? "ring-2 ring-primary ring-inset" : "",
                     selectedDate?.toDateString() === date.toDateString() ? "bg-primary/10" : "",
-                    isDragOver ? "bg-blue-50 ring-2 ring-blue-400" : ""
+                    isDragOver ? "bg-blue-50 ring-2 ring-blue-400" : "",
+                    posts.length > 2 ? "bg-gradient-to-br from-white via-white to-purple-50" : ""
                   )}
-                  onClick={() => setSelectedDate(date)}
                   onDragOver={(e) => handleDragOver(e, dateString)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, date)}
                 >
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-1">
                     <div className="font-semibold text-sm">
                       {date.getDate()}
                     </div>
                     {posts.length > 0 && (
-                      <div className="text-xs text-gray-500">
+                      <div className={cn(
+                        "text-xs px-1.5 py-0.5 rounded-full font-medium",
+                        posts.length >= 3 ? "bg-purple-100 text-purple-700" :
+                        posts.length === 2 ? "bg-blue-100 text-blue-700" :
+                        "bg-gray-100 text-gray-600"
+                      )}>
                         {posts.length}
                       </div>
                     )}
                   </div>
                   
                   <div className="space-y-1">
-                    {posts.slice(0, 3).map((post) => (
-                      <div
-                        key={post.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, post.id)}
-                        onDragEnd={handleDragEnd}
-                        className={cn(
-                          "group text-xs p-1 sm:p-2 rounded text-white cursor-move transition-all hover:shadow-lg",
-                          getPostColor(post),
-                          draggedPostId === post.id ? "opacity-50" : ""
-                        )}
+                    {posts.slice(0, posts.length > 1 ? 1 : 1).map((post) => (
+                        <div
+                          key={post.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, post.id)}
+                          onDragEnd={handleDragEnd}
+                          className={cn(
+                            "group text-xs px-1.5 py-1 rounded text-white cursor-move transition-all hover:shadow-md",
+                            getPostColor(post),
+                            draggedPostId === post.id ? "opacity-50" : ""
+                          )}
                       >
-                        <div className="flex items-start justify-between">
+                        <div className="flex items-start justify-between gap-1">
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate mb-0.5 text-[11px] sm:text-xs">
+                            <div className="font-medium text-[11px]">
                               {formatTime(post.scheduled_for)}
                             </div>
-                            <div className="truncate opacity-90 text-[10px] sm:text-xs leading-relaxed hidden sm:block">
-                              {stripHtml(post.content).slice(0, 40)}...
+                            <div className="truncate opacity-90 text-[10px] leading-tight">
+                              {stripHtml(post.content).slice(0, 35)}...
                             </div>
-                            <div className="flex items-center gap-0.5 mt-1 flex-wrap">
-                              {post.platforms.slice(0, 3).map(platform => (
-                                <span key={platform} className="text-[10px] bg-white/20 px-1 py-0.5 rounded">
-                                  <span className="sm:hidden">{platformAbbreviations[platform] || platform.slice(0, 2).toUpperCase()}</span>
-                                  <span className="hidden sm:inline">{platform}</span>
-                                </span>
-                              ))}
-                              {post.platforms.length > 3 && (
-                                <span className="text-[10px] bg-white/20 px-1 py-0.5 rounded">
-                                  +{post.platforms.length - 3}
-                                </span>
-                              )}
+                            <div className="text-[9px] opacity-75 mt-0.5">
+                              {post.platforms.join(' · ')}
                             </div>
-                          </div>
-                          <div className="flex items-center space-x-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onPostEdit(post.id)
-                              }}
-                              className="p-1 hover:bg-white/20 rounded"
-                            >
-                              <Edit className="h-3 w-3" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onPostDelete(post.id)
-                              }}
-                              className="p-1 hover:bg-white/20 rounded"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
                           </div>
                         </div>
                       </div>
                     ))}
-                    {posts.length > 3 && (
-                      <div className="text-xs text-gray-500 text-center py-1">
-                        +{posts.length - 3} more
-                      </div>
+                    {posts.length > 1 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedDate(date)
+                        }}
+                        className="w-full text-[10px] text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded text-center font-medium mt-1 py-0.5 transition-colors"
+                      >
+                        +{posts.length - 1} more
+                      </button>
                     )}
                   </div>
                 </div>
@@ -370,6 +359,112 @@ export function SimpleDragCalendar({
           </div>
         </CardContent>
       </Card>
+
+      {/* Selected Date Modal */}
+      {selectedDate && getPostsForDate(selectedDate).length > 0 && !isDragging && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setSelectedDate(null)}
+          />
+          <Card className="relative z-10 w-full max-w-2xl max-h-[80vh] overflow-hidden">
+            <CardHeader className="border-b">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">
+                  Posts for {selectedDate.toLocaleDateString('en-US', { 
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedDate(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 overflow-y-auto max-h-[calc(80vh-4rem)]">
+              <div className="space-y-3">
+                {getPostsForDate(selectedDate).map((post) => (
+                  <div
+                    key={post.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, post.id)}
+                    onDragEnd={handleDragEnd}
+                    className={cn(
+                      "group p-4 rounded-lg text-white cursor-move transition-all hover:shadow-lg",
+                      getPostColor(post),
+                      draggedPostId === post.id ? "opacity-50" : ""
+                    )}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Clock className="h-4 w-4" />
+                          <span className="font-medium">
+                            {formatTime(post.scheduled_for)}
+                          </span>
+                        </div>
+                        <div className="text-sm opacity-90 mb-2">
+                          {stripHtml(post.content).slice(0, 150)}...
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {post.platforms.map(platform => (
+                            <span 
+                              key={platform} 
+                              className="text-xs bg-white/20 px-2 py-1 rounded"
+                            >
+                              {platform}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="hover:bg-white/20 text-white"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedDate(null)
+                            onPostEdit(post.id)
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="hover:bg-white/20 text-white"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (confirm('Are you sure you want to delete this post?')) {
+                              onPostDelete(post.id)
+                              // Refresh the modal if still open
+                              if (getPostsForDate(selectedDate).length === 1) {
+                                setSelectedDate(null)
+                              }
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 text-xs text-gray-500 text-center">
+                💡 Drag posts from here to any calendar day to reschedule
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Drag and drop hint */}
       <div className="text-center text-sm text-gray-500 bg-gray-50 p-4 rounded-lg">

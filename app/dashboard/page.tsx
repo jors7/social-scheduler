@@ -71,7 +71,7 @@ const platformIcons: Record<string, string> = {
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentPosts, setRecentPosts] = useState<PostData[]>([])
-  const [upcomingSchedule, setUpcomingSchedule] = useState<{date: string, posts: number}[]>([])
+  const [upcomingSchedule, setUpcomingSchedule] = useState<{date: string, posts: number, platforms: string[], dateObj: Date}[]>([])
   const [loading, setLoading] = useState(true)
   const [subscription, setSubscription] = useState<any>(null)
   const [usage, setUsage] = useState<UsageData | null>(null)
@@ -176,23 +176,24 @@ export default function DashboardPage() {
         avgEngagement
       })
       
-      // Get recent posts (last 5)
-      const sortedPosts = allPosts
+      // Get recent posts (last 5 posted only)
+      const recentPostedPosts = scheduled
+        .filter((p: PostData) => p.status === 'posted')
         .sort((a: PostData, b: PostData) => {
-          const aDate = new Date(a.scheduled_for || a.posted_at || a.created_at)
-          const bDate = new Date(b.scheduled_for || b.posted_at || b.created_at)
+          const aDate = new Date(a.posted_at || a.scheduled_for || a.created_at)
+          const bDate = new Date(b.posted_at || b.scheduled_for || b.created_at)
           return bDate.getTime() - aDate.getTime()
         })
         .slice(0, 5)
       
-      setRecentPosts(sortedPosts)
+      setRecentPosts(recentPostedPosts)
       
-      // Calculate upcoming schedule
+      // Calculate upcoming schedule with platforms
       const upcomingPosts = scheduled.filter((p: PostData) => 
         ['pending', 'posting'].includes(p.status) && p.scheduled_for
       )
       
-      const scheduleMap = new Map()
+      const scheduleMap = new Map<string, { count: number, platforms: Set<string>, dateObj: Date }>()
       const today = new Date()
       const tomorrow = new Date(today)
       tomorrow.setDate(tomorrow.getDate() + 1)
@@ -209,11 +210,24 @@ export default function DashboardPage() {
           dateKey = postDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         }
         
-        scheduleMap.set(dateKey, (scheduleMap.get(dateKey) || 0) + 1)
+        const existing = scheduleMap.get(dateKey) || { count: 0, platforms: new Set<string>(), dateObj: postDate }
+        existing.count += 1
+        post.platforms.forEach(platform => existing.platforms.add(platform))
+        scheduleMap.set(dateKey, existing)
       })
       
-      const scheduleArray = Array.from(scheduleMap.entries()).map(([date, posts]) => ({ date, posts }))
-      setUpcomingSchedule(scheduleArray.slice(0, 4))
+      // Sort by date (chronologically - nearest first)
+      const scheduleArray = Array.from(scheduleMap.entries())
+        .map(([date, data]) => ({ 
+          date, 
+          posts: data.count, 
+          platforms: Array.from(data.platforms),
+          dateObj: data.dateObj 
+        }))
+        .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime())
+        .slice(0, 4)
+      
+      setUpcomingSchedule(scheduleArray)
       
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
@@ -649,10 +663,25 @@ export default function DashboardPage() {
               ) : (
                 upcomingSchedule.map((day) => (
                   <div key={day.date} className="flex items-center justify-between p-5 border border-gray-100 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-gradient-to-r from-gray-50 to-white">
-                    <span className="font-medium">{day.date}</span>
-                    <span className="text-sm text-gray-600">
-                      {day.posts} post{day.posts !== 1 ? 's' : ''}
-                    </span>
+                    <div className="flex-1">
+                      <span className="font-medium">{day.date}</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-sm text-gray-600">
+                          {day.posts} post{day.posts !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      {day.platforms.map((platform) => (
+                        <div
+                          key={platform}
+                          className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-xs"
+                          title={platform}
+                        >
+                          {platformIcons[platform] || platform[0].toUpperCase()}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))
               )}

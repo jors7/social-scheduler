@@ -26,7 +26,7 @@ const pricingPlans = [
       'Email support',
       '7-day free trial',
     ],
-    gradient: 'from-gray-600 to-gray-700',
+    gradient: 'from-blue-600 to-indigo-700',
   },
   {
     id: 'professional',
@@ -356,25 +356,23 @@ function PricingPageContent() {
                   <Button 
                     variant="outline" 
                     onClick={() => router.push('/dashboard')}
-                    className="border-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
+                    className="border border-blue-300 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200"
                   >
                     <BarChart className="h-4 w-4 mr-2" />
                     Dashboard
                   </Button>
                 ) : (
                   <>
-                    <button 
+                    <Button 
+                      variant="outline"
                       onClick={() => setSignInOpen(true)}
-                      className="text-base font-medium text-gray-700 hover:text-purple-600 transition-all duration-200"
-                      style={{ 
-                        fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
-                      }}
+                      className="text-base font-medium border border-blue-500 text-blue-500 hover:bg-blue-50 transition-all duration-200 px-6 py-2"
                     >
                       Sign In
-                    </button>
+                    </Button>
                     <Button 
                       onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
-                      className="text-base font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 px-5 py-2"
+                      className="text-base font-medium bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 px-5 py-2"
                     >
                       Start Free Trial
                     </Button>
@@ -412,7 +410,7 @@ function PricingPageContent() {
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 rounded-full mb-6">
               <Sparkles className="h-4 w-4 text-purple-600" />
-              <span className="text-sm font-semibold text-purple-700">14-Day Money-Back Guarantee</span>
+              <span className="text-sm font-medium text-purple-700">14-Day Money-Back Guarantee</span>
             </div>
             <h2 className="text-3xl lg:text-4xl font-bold mb-4 text-gray-900">
               Plan, Schedule & Post — Without the Stress
@@ -501,7 +499,7 @@ function PricingPageContent() {
                       ))}
                     </ul>
                     <Button 
-                      className={`w-full h-12 font-semibold text-base transition-all duration-200 ${
+                      className={`w-full h-12 font-medium text-base transition-all duration-200 ${
                         selectedPlan === plan.id 
                           ? `bg-gradient-to-r ${plan.gradient} hover:shadow-lg hover:scale-[1.02] text-white` 
                           : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
@@ -549,7 +547,7 @@ function PricingPageContent() {
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-6">
               <Sparkles className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-semibold text-blue-700">Got Questions?</span>
+              <span className="text-sm font-medium text-blue-700">Got Questions?</span>
             </div>
             <h2 className="text-3xl lg:text-4xl font-bold mb-4 text-gray-900">
               Frequently Asked Questions

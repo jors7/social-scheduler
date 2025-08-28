@@ -122,25 +122,23 @@ export default function AboutPage() {
                   <Button 
                     variant="outline" 
                     onClick={() => router.push('/dashboard')}
-                    className="border-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
+                    className="border border-blue-300 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200"
                   >
                     <BarChart className="h-4 w-4 mr-2" />
                     Dashboard
                   </Button>
                 ) : (
                   <>
-                    <button 
+                    <Button 
+                      variant="outline"
                       onClick={() => setSignInOpen(true)}
-                      className="text-base font-medium text-gray-700 hover:text-purple-600 transition-all duration-200"
-                      style={{ 
-                        fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
-                      }}
+                      className="text-base font-medium border border-blue-500 text-blue-500 hover:bg-blue-50 transition-all duration-200 px-6 py-2"
                     >
                       Sign In
-                    </button>
+                    </Button>
                     <Button 
                       onClick={() => router.push('/pricing')}
-                      className="text-base font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 px-6 py-2"
+                      className="text-base font-medium bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 px-6 py-2"
                     >
                       Start Free Trial
                     </Button>
