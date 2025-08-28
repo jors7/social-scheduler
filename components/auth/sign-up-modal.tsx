@@ -22,7 +22,6 @@ interface SignUpModalProps {
 export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: SignUpModalProps) {
   const router = useRouter()
   const [formData, setFormData] = useState({
-    name: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -53,12 +52,7 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
     try {
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.name,
-          }
-        }
+        password: formData.password
       })
 
       if (error) {
@@ -155,7 +149,7 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[420px] w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] p-0 overflow-hidden border-0 [&>button]:hidden">
+      <DialogContent className="sm:max-w-[390px] w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] p-0 overflow-hidden border-0 [&>button]:hidden">
         <div className="relative bg-white rounded-2xl max-h-[calc(100vh-2rem)] overflow-y-auto">
           {/* Close button */}
           <button
@@ -168,22 +162,22 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
           <div className="p-4 sm:p-6 pt-6 sm:pt-8">
             {/* Header */}
             <div className="text-center mb-4 sm:mb-6">
-              <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-1 sm:mb-2">
+              <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-1 sm:mb-2">
                 Get Started Free
               </h2>
-              <p className="text-sm sm:text-base text-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600">
                 Create your account to start scheduling
               </p>
             </div>
 
             {/* Messages */}
             {error && (
-              <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
+              <div className="mb-4 p-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg">
                 {error}
               </div>
             )}
             {message && (
-              <div className="mb-4 p-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg">
+              <div className="mb-4 p-3 text-xs text-green-600 bg-green-50 border border-green-200 rounded-lg">
                 {message}
               </div>
             )}
@@ -193,10 +187,10 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
               <button
                 type="button"
                 onClick={handleGoogleSignUp}
-                className="w-full h-10 sm:h-11 px-3 sm:px-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 sm:gap-3 font-medium text-sm sm:text-base text-gray-700"
+                className="w-full h-9 sm:h-10 px-3 sm:px-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 sm:gap-3 font-medium text-xs sm:text-sm text-gray-700"
                 disabled={loading}
               >
-                <svg className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 24 24">
+                <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -211,32 +205,15 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200"></div>
               </div>
-              <div className="relative flex justify-center text-xs sm:text-sm">
+              <div className="relative flex justify-center text-xs">
                 <span className="bg-white px-3 sm:px-4 text-gray-500">Or sign up with email</span>
               </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-              {/* Name field */}
-              <div className="space-y-1 sm:space-y-1.5">
-                <Label htmlFor="name" className="text-xs sm:text-sm font-medium text-gray-700">
-                  Full Name
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  placeholder="John Doe"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="h-10 sm:h-11 px-3 sm:px-4 text-sm sm:text-base border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
               {/* Email field */}
               <div className="space-y-1 sm:space-y-1.5">
-                <Label htmlFor="email" className="text-xs sm:text-sm font-medium text-gray-700">
+                <Label htmlFor="email" className="text-xs font-medium text-gray-700">
                   Email
                 </Label>
                 <Input
@@ -246,14 +223,14 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
                   placeholder="your@email.com"
                   value={formData.email}
                   onChange={handleChange}
-                  className="h-10 sm:h-11 px-3 sm:px-4 text-sm sm:text-base border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="h-9 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   required
                 />
               </div>
 
               {/* Password field */}
               <div className="space-y-1 sm:space-y-1.5">
-                <Label htmlFor="password" className="text-xs sm:text-sm font-medium text-gray-700">
+                <Label htmlFor="password" className="text-xs font-medium text-gray-700">
                   Password
                 </Label>
                 <Input
@@ -263,14 +240,14 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={handleChange}
-                  className="h-10 sm:h-11 px-3 sm:px-4 text-sm sm:text-base border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="h-9 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   required
                 />
               </div>
 
               {/* Confirm Password field */}
               <div className="space-y-1 sm:space-y-1.5">
-                <Label htmlFor="confirmPassword" className="text-xs sm:text-sm font-medium text-gray-700">
+                <Label htmlFor="confirmPassword" className="text-xs font-medium text-gray-700">
                   Confirm Password
                 </Label>
                 <Input
@@ -280,7 +257,7 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
                   placeholder="••••••••"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="h-10 sm:h-11 px-3 sm:px-4 text-sm sm:text-base border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="h-9 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   required
                 />
               </div>
@@ -300,7 +277,7 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
               {/* Sign up button */}
               <Button
                 type="submit"
-                className="w-full h-10 sm:h-11 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-sm sm:text-base font-semibold rounded-xl shadow-lg transition-all duration-200 transform hover:scale-[1.02]"
+                className="w-full h-9 sm:h-10 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-lg transition-all duration-200 transform hover:scale-[1.02]"
                 disabled={loading}
               >
                 {loading ? 'Creating account...' : 'Create Free Account'}
@@ -308,7 +285,7 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
             </form>
 
             {/* Sign in link */}
-            <div className="mt-4 sm:mt-6 text-center text-sm sm:text-base">
+            <div className="mt-4 sm:mt-6 text-center text-xs sm:text-sm">
               <span className="text-gray-600">Already have an account? </span>
               <button
                 type="button"

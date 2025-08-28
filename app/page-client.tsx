@@ -251,6 +251,14 @@ function LandingPageContent() {
   useEffect(() => {
     checkAuth()
     
+    // Set up auth state listener for OAuth redirects
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // User just signed in, redirect to dashboard
+        router.push('/dashboard')
+      }
+    })
+    
     // Check URL parameters for modal triggers
     const shouldOpenSignIn = searchParams.get('signin') === 'true'
     const shouldOpenSignUp = searchParams.get('signup') === 'true'
@@ -311,6 +319,11 @@ function LandingPageContent() {
           })
         }
       }, 100)
+    }
+    
+    // Cleanup subscription on unmount
+    return () => {
+      subscription.unsubscribe()
     }
   }, [searchParams, router])
 
