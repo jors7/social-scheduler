@@ -97,10 +97,12 @@ export default function MediaLibraryPage() {
   const [showPreview, setShowPreview] = useState<MediaItem | null>(null)
   const [dragActive, setDragActive] = useState(false)
   const [subscription, setSubscription] = useState<UserSubscription | null>(null)
+  const [mounted, setMounted] = useState(false)
   
   const supabase = createClient()
 
   useEffect(() => {
+    setMounted(true)
     loadMedia()
     loadStats()
     loadSubscription()
@@ -353,8 +355,9 @@ export default function MediaLibraryPage() {
     return <FileText className="h-4 w-4" />
   }
 
-  return (
-    <MediaLibraryGate>
+  // Don't render anything until client-side mount to prevent hydration errors
+  if (!mounted) {
+    return (
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
@@ -367,12 +370,41 @@ export default function MediaLibraryPage() {
             <p className="text-gray-600 mt-2 text-lg">Manage your uploaded images and videos</p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" size="lg" onClick={() => document.getElementById('file-upload')?.click()} className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+            <Button variant="outline" size="lg" disabled className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
               <Upload className="mr-2 h-5 w-5" />
               Upload Files
             </Button>
           </div>
         </div>
+        <div className="flex items-center justify-center h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white">
+              <ImageIcon className="h-8 w-8" />
+            </div>
+            Media Library
+          </h1>
+          <p className="text-gray-600 mt-2 text-lg">Manage your uploaded images and videos</p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" size="lg" onClick={() => document.getElementById('file-upload')?.click()} className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+            <Upload className="mr-2 h-5 w-5" />
+            Upload Files
+          </Button>
+        </div>
+      </div>
+
+      <MediaLibraryGate>
+        <>
 
         {/* Storage Warning Banner */}
         {stats && subscription && getPlanById(subscription.plan_id).limits.storage_mb > 0 && (
@@ -431,13 +463,13 @@ export default function MediaLibraryPage() {
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Storage Used</p>
                     <div className="flex items-baseline gap-2">
                       <p className="text-2xl font-bold">{stats.total_size_mb.toFixed(1)} MB</p>
                       {subscription && getPlanById(subscription.plan_id).limits.storage_mb > 0 && (
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground" suppressHydrationWarning>
                           / {getPlanById(subscription.plan_id).limits.storage_mb} MB
                         </p>
                       )}
@@ -448,7 +480,7 @@ export default function MediaLibraryPage() {
                           value={(stats.total_size_mb / getPlanById(subscription.plan_id).limits.storage_mb) * 100} 
                           className="h-2"
                         />
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-muted-foreground mt-1" suppressHydrationWarning>
                           {((stats.total_size_mb / getPlanById(subscription.plan_id).limits.storage_mb) * 100).toFixed(0)}% used
                         </p>
                       </div>
@@ -600,84 +632,104 @@ export default function MediaLibraryPage() {
           ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4">
               {filteredMedia.map((item) => (
-                <div
-                  key={item.id}
-                  className={cn(
-                    "relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all",
-                    selectedItems.has(item.id) ? "border-primary ring-2 ring-primary" : "border-gray-200 hover:border-gray-300"
-                  )}
-                  onClick={() => {
-                    const newSelection = new Set(selectedItems)
-                    if (newSelection.has(item.id)) {
-                      newSelection.delete(item.id)
-                    } else {
-                      newSelection.add(item.id)
-                    }
-                    setSelectedItems(newSelection)
-                  }}
-                >
-                  <div className="aspect-square bg-gray-100">
-                    {item.mime_type.startsWith('image/') ? (
-                      <img
-                        src={item.url}
-                        alt={item.original_name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Video className="h-12 w-12 text-gray-400" />
+                <div key={item.id} className="flex flex-col">
+                  <div
+                    className={cn(
+                      "relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all",
+                      selectedItems.has(item.id) ? "border-primary ring-2 ring-primary" : "border-gray-200 hover:border-gray-300"
+                    )}
+                    onClick={() => {
+                      const newSelection = new Set(selectedItems)
+                      if (newSelection.has(item.id)) {
+                        newSelection.delete(item.id)
+                      } else {
+                        newSelection.add(item.id)
+                      }
+                      setSelectedItems(newSelection)
+                    }}
+                  >
+                    <div className="aspect-square bg-gray-100 relative">
+                      {item.mime_type.startsWith('image/') ? (
+                        <img
+                          src={item.url}
+                          alt={item.original_name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : item.mime_type.startsWith('video/') ? (
+                        <div className="relative w-full h-full bg-black">
+                          <video
+                            src={item.url}
+                            className="w-full h-full object-cover"
+                            muted
+                            preload="metadata"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="bg-white/90 rounded-full p-2 shadow-lg">
+                              <svg className="w-5 h-5 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Video className="h-12 w-12 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <div className="flex gap-2">
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setShowPreview(item)
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            copyToClipboard(item.url)
+                          }}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            downloadFile(item)
+                          }}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    {selectedItems.has(item.id) && (
+                      <div className="absolute top-2 right-2">
+                        <div className="bg-primary text-white rounded-full p-1">
+                          <Check className="h-3 w-3" />
+                        </div>
                       </div>
                     )}
+                    {item.used_in_posts > 0 && (
+                      <Badge className="absolute top-2 left-2" variant="secondary">
+                        {item.used_in_posts} posts
+                      </Badge>
+                    )}
                   </div>
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <div className="flex gap-2">
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setShowPreview(item)
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          copyToClipboard(item.url)
-                        }}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          downloadFile(item)
-                        }}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  {selectedItems.has(item.id) && (
-                    <div className="absolute top-2 right-2">
-                      <div className="bg-primary text-white rounded-full p-1">
-                        <Check className="h-3 w-3" />
-                      </div>
-                    </div>
-                  )}
-                  {item.used_in_posts > 0 && (
-                    <Badge className="absolute top-2 left-2" variant="secondary">
-                      {item.used_in_posts} posts
-                    </Badge>
-                  )}
+                  <p className="mt-1 text-xs text-gray-600 truncate" title={item.original_name}>
+                    {item.original_name}
+                  </p>
                 </div>
               ))}
             </div>
@@ -854,7 +906,8 @@ export default function MediaLibraryPage() {
             </DialogContent>
           </Dialog>
         )}
-      </div>
-    </MediaLibraryGate>
+        </>
+      </MediaLibraryGate>
+    </div>
   )
 }

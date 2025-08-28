@@ -41,50 +41,50 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
     {
       title: 'Total Posts',
       value: analyticsData.totalPosts.toLocaleString(),
-      change: analyticsData.totalPosts > 0 ? `${analyticsData.totalPosts} created` : 'No posts yet',
-      changeType: analyticsData.totalPosts > 0 ? 'neutral' as const : 'neutral' as const,
+      change: 'Active',
+      changeType: analyticsData.totalPosts > 0 ? 'positive' as const : 'neutral' as const,
       icon: BarChart3,
-      description: 'drafts & published'
+      description: `${analyticsData.totalPosts} created`
     },
     {
-      title: 'Total Engagement',
+      title: 'Engagement',
       value: analyticsData.totalEngagement.toLocaleString(),
-      change: analyticsData.totalEngagement > 0 ? 'From posted content' : 'No engagement yet',
+      change: 'Growing',
       changeType: analyticsData.totalEngagement > 0 ? 'positive' as const : 'neutral' as const,
       icon: Heart,
-      description: 'likes, comments, shares'
+      description: 'interactions'
     },
     {
-      title: 'Total Reach',
-      value: analyticsData.totalReach.toLocaleString(),
-      change: analyticsData.postedPosts.length > 0 ? `${analyticsData.postedPosts.length} posts published` : 'No posts published',
+      title: 'Reach',
+      value: analyticsData.totalReach > 999 ? `${(analyticsData.totalReach / 1000).toFixed(1)}k` : analyticsData.totalReach.toLocaleString(),
+      change: 'Expanding',
       changeType: analyticsData.totalReach > 0 ? 'positive' as const : 'neutral' as const,
       icon: Users,
-      description: 'accounts reached'
+      description: 'unique accounts'
     },
     {
       title: 'Impressions',
-      value: analyticsData.totalImpressions.toLocaleString(),
-      change: analyticsData.totalImpressions > 0 ? 'Content views' : 'No views yet',
+      value: analyticsData.totalImpressions > 999 ? `${(analyticsData.totalImpressions / 1000).toFixed(1)}k` : analyticsData.totalImpressions.toLocaleString(),
+      change: 'Tracking',
       changeType: analyticsData.totalImpressions > 0 ? 'positive' as const : 'neutral' as const,
       icon: Eye,
-      description: 'total views'
+      description: 'views'
     },
     {
-      title: 'Engagement Rate',
-      value: analyticsData.engagementRate > 0 ? `${analyticsData.engagementRate.toFixed(1)}%` : '0%',
-      change: analyticsData.totalReach > 0 ? 'Real performance' : 'Need more posts',
-      changeType: analyticsData.engagementRate > 0 ? 'positive' as const : 'neutral' as const,
+      title: 'Engagement',
+      value: analyticsData.engagementRate > 0 ? `${analyticsData.engagementRate.toFixed(1)}%` : '—',
+      change: 'Measuring',
+      changeType: analyticsData.engagementRate > 2 ? 'positive' as const : 'neutral' as const,
       icon: TrendingUp,
-      description: 'average rate'
+      description: 'avg. rate'
     },
     {
       title: 'Top Platform',
-      value: analyticsData.topPlatform,
-      change: analyticsData.topPlatform !== 'N/A' ? 'Best performer' : 'No data',
+      value: analyticsData.topPlatform !== 'N/A' ? analyticsData.topPlatform : '—',
+      change: 'Leading',
       changeType: analyticsData.topPlatform !== 'N/A' ? 'positive' as const : 'neutral' as const,
       icon: MessageCircle,
-      description: 'by engagement'
+      description: 'best performer'
     }
   ]
 
@@ -102,20 +102,17 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
             </CardHeader>
             <CardContent className="px-3 sm:px-4">
               <div className="text-lg sm:text-2xl font-bold">{card.value}</div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:space-x-1 text-[10px] sm:text-xs text-muted-foreground">
-                <span 
-                  className={`inline-flex items-center rounded-full px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium ${
-                    card.changeType === 'positive' 
-                      ? 'bg-green-100 text-green-800' 
-                      : card.changeType === 'neutral'
-                      ? 'bg-gray-100 text-gray-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}
-                >
-                  {card.change}
-                </span>
-                <span className="hidden sm:inline">{card.description}</span>
-              </div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
+                {card.description}
+              </p>
+              {card.changeType === 'positive' && (
+                <div className="flex items-center gap-1 mt-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-[10px] sm:text-xs text-green-600 font-medium">
+                    {card.change}
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
         )

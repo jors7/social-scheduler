@@ -189,8 +189,11 @@ export default function DashboardPage() {
       setRecentPosts(recentPostedPosts)
       
       // Calculate upcoming schedule with platforms
+      const now = new Date()
       const upcomingPosts = scheduled.filter((p: PostData) => 
-        ['pending', 'posting'].includes(p.status) && p.scheduled_for
+        ['pending', 'posting'].includes(p.status) && 
+        p.scheduled_for &&
+        new Date(p.scheduled_for) > now  // Only show future posts
       )
       
       const scheduleMap = new Map<string, { count: number, platforms: Set<string>, dateObj: Date }>()
@@ -202,7 +205,8 @@ export default function DashboardPage() {
         const postDate = new Date(post.scheduled_for!)
         let dateKey: string
         
-        if (postDate.toDateString() === today.toDateString()) {
+        // Only show as "Today" if the scheduled time hasn't passed yet
+        if (postDate.toDateString() === today.toDateString() && postDate > now) {
           dateKey = 'Today'
         } else if (postDate.toDateString() === tomorrow.toDateString()) {
           dateKey = 'Tomorrow'

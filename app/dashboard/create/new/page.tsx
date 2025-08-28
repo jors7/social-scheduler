@@ -1253,11 +1253,27 @@ function CreateNewPostPageContent() {
                               alt={file.name}
                               className="w-full h-full object-cover"
                             />
+                          ) : file.type.startsWith('video/') ? (
+                            <div className="relative w-full h-full bg-black">
+                              <video
+                                src={URL.createObjectURL(file)}
+                                className="w-full h-full object-cover"
+                                muted
+                                preload="metadata"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="bg-white/90 rounded-full p-3 shadow-lg">
+                                  <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                                  </svg>
+                                </div>
+                              </div>
+                            </div>
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <div className="text-center">
                                 <ImageIcon className="mx-auto h-8 w-8 text-gray-400" />
-                                <p className="text-xs text-gray-500 mt-1">Video</p>
+                                <p className="text-xs text-gray-500 mt-1">File</p>
                               </div>
                             </div>
                           )}
