@@ -442,15 +442,6 @@ function LandingPageContent() {
                 >
                   FAQ
                 </Link>
-                <Link 
-                  href="/privacy" 
-                  className="text-base font-medium text-gray-700 hover:text-purple-600 transition-all duration-200"
-                  style={{ 
-                    fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
-                  }}
-                >
-                  Privacy
-                </Link>
               </div>
               {/* Desktop buttons - hidden on mobile */}
               <div className="hidden md:flex items-center space-x-4">
@@ -557,13 +548,13 @@ function LandingPageContent() {
                 >
                   Start Free Trial
                 </Button>
-                <p className="mt-4 text-sm text-gray-500">
+                <p className="mt-4 text-xs text-gray-500">
                   By signing up, you agree to our{' '}
-                  <Link href="/terms" className="text-blue-600 hover:text-blue-700 underline">
+                  <Link href="/terms" className="text-gray-500 hover:text-gray-600 underline">
                     Terms of Service
                   </Link>
                   {' '}and{' '}
-                  <Link href="/privacy" className="text-blue-600 hover:text-blue-700 underline">
+                  <Link href="/privacy" className="text-gray-500 hover:text-gray-600 underline">
                     Privacy Policy
                   </Link>
                 </p>
@@ -1063,14 +1054,7 @@ function LandingPageContent() {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
-            <p className="mb-2">&copy; 2025 SocialCal. All rights reserved.</p>
-            <div className="flex justify-center space-x-4 text-sm">
-              <Link href="/privacy" className="hover:text-white transition-colors underline">Privacy Policy</Link>
-              <span>•</span>
-              <Link href="/terms" className="hover:text-white transition-colors underline">Terms of Service</Link>
-              <span>•</span>
-              <Link href="/contact" className="hover:text-white transition-colors underline">Contact Us</Link>
-            </div>
+            <p>&copy; 2025 SocialCal. All rights reserved.</p>
           </div>
         </div>
       </footer>
