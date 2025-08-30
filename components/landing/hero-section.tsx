@@ -14,17 +14,8 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
   const router = useRouter()
   
   return (
-    <section className="relative pt-4 pb-10 px-4">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50 overflow-hidden">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-20 left-20 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
-          <div className="absolute top-40 right-[-100px] md:right-20 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
-          <div className="absolute -bottom-8 left-40 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
-        </div>
-      </div>
-      
-      <div className="max-w-[1500px] mx-auto px-6 relative z-10">
+    <section className="relative pt-4 pb-10 px-4 overflow-hidden">
+      <div className="max-w-[1500px] mx-auto px-6 relative">
         <div className="flex flex-col lg:flex-row gap-0 items-center justify-center lg:pl-32">
           {/* Left Column - Text Content */}
           <div className="max-w-[600px]">
@@ -83,7 +74,7 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
               width={1800}
               height={1200}
               priority
-              className="w-full h-auto"
+              className="w-full h-auto scale-[1.24] origin-left"
             />
           </div>
         </div>
