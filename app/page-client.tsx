@@ -19,6 +19,7 @@ const TestimonialsSection = lazy(() => import('@/components/landing/testimonials
 const CapabilitiesCarousel = lazy(() => import('@/components/landing/capabilities-carousel').then(mod => ({ default: mod.CapabilitiesCarousel })))
 const HowItWorksSection = lazy(() => import('@/components/landing/how-it-works-section'))
 const GradientCTA = lazy(() => import('@/components/landing/gradient-cta'))
+const SupportedPlatforms = lazy(() => import('@/components/landing/supported-platforms').then(mod => ({ default: mod.SupportedPlatforms })))
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -459,6 +460,10 @@ function LandingPageContent() {
         <FeaturesSection />
       </Suspense>
 
+      {/* Supported Platforms Section */}
+      <Suspense fallback={<ComponentSkeleton />}>
+        <SupportedPlatforms />
+      </Suspense>
 
       {/* Testimonials Section */}
       <Suspense fallback={<ComponentSkeleton />}>
