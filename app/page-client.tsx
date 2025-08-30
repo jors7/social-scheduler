@@ -214,51 +214,49 @@ function LandingPageContent() {
       router.replace('/', { scroll: false })
     }
     
-    // Handle scroll parameter for smooth scrolling from other pages
-    if (scrollTo) {
-      // First scroll to top
-      window.scrollTo(0, 0)
-      
-      // Then smoothly scroll to the target section
-      setTimeout(() => {
-        const element = document.getElementById(scrollTo)
-        if (element) {
-          const headerOffset = 80
-          const elementPosition = element.getBoundingClientRect().top
-          const offsetPosition = elementPosition + window.pageYOffset - headerOffset
-          
-          window.scrollTo({
-            top: offsetPosition,
-            behavior: 'smooth'
-          })
+    // Consolidate all scroll operations with better timing
+    const handleScrolling = () => {
+      // Use requestAnimationFrame for smoother scrolling on mobile
+      requestAnimationFrame(() => {
+        let targetElement = null
+        let shouldScroll = false
+        
+        // Check for scroll parameter
+        if (scrollTo) {
+          targetElement = document.getElementById(scrollTo)
+          shouldScroll = true
+          // Clean up URL after identifying target
+          router.replace('/', { scroll: false })
+        }
+        // Check for hash navigation
+        else if (window.location.hash) {
+          const id = window.location.hash.substring(1)
+          targetElement = document.getElementById(id)
+          shouldScroll = true
         }
         
-        // Clean up URL after scrolling
-        router.replace('/', { scroll: false })
-      }, 100)
+        if (shouldScroll && targetElement) {
+          // Add a small delay for mobile browsers to stabilize
+          setTimeout(() => {
+            const headerOffset = 80
+            const elementPosition = targetElement.getBoundingClientRect().top
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+            
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            })
+          }, 300) // Increased delay for mobile stability
+        }
+      })
     }
     
-    // Handle hash navigation for smooth scrolling (for FAQ links, etc)
-    const hash = window.location.hash
-    if (hash) {
-      setTimeout(() => {
-        const id = hash.substring(1)
-        const element = document.getElementById(id)
-        if (element) {
-          const headerOffset = 80
-          const elementPosition = element.getBoundingClientRect().top
-          const offsetPosition = elementPosition + window.pageYOffset - headerOffset
-          
-          window.scrollTo({
-            top: offsetPosition,
-            behavior: 'smooth'
-          })
-        }
-      }, 100)
-    }
+    // Delay scroll operations to ensure DOM is ready
+    const scrollTimer = setTimeout(handleScrolling, 500)
     
     // Cleanup subscription on unmount
     return () => {
+      clearTimeout(scrollTimer)
       subscription.unsubscribe()
     }
   }, [searchParams, router])
