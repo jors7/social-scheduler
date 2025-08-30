@@ -95,7 +95,7 @@ const platforms = [
 
 export function SupportedPlatforms() {
   return (
-    <section id="platforms" className="py-24 px-4 bg-gray-50 scroll-mt-20">
+    <section id="platforms" className="py-16 px-4 bg-gray-50 scroll-mt-20">
       <div className="w-full max-w-[1600px] mx-auto px-6">
         {/* Section Header */}
         <div className="text-center mb-16">
@@ -109,21 +109,21 @@ export function SupportedPlatforms() {
         </div>
 
         {/* Platforms Grid - Single Row */}
-        <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-9 gap-3 md:gap-5 max-w-[1400px] mx-auto">
+        <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-9 gap-4 md:gap-6 max-w-[1200px] mx-auto">
           {platforms.map((platform, index) => (
             <div
               key={platform.name}
               className="group relative"
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              <div className="relative aspect-square rounded-xl bg-white shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 flex flex-col items-center justify-center p-2.5 gap-2">
+              <div className="relative aspect-square rounded-lg bg-white shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 flex flex-col items-center justify-center p-2 gap-1.5">
                 {/* Platform Icon - No Background */}
                 <div className="w-12 h-12 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
                   {platform.icon}
                 </div>
                 
                 {/* Platform Name */}
-                <h3 className="text-xs lg:text-sm font-medium text-center text-gray-700">
+                <h3 className="text-[10px] lg:text-xs font-medium text-center text-gray-700">
                   {platform.name}
                 </h3>
               </div>
