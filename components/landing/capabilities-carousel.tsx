@@ -524,3 +524,4 @@ export function CapabilitiesCarousel() {
     </section>
   )
 }
+export default CapabilitiesCarousel

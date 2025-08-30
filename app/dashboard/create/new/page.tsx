@@ -8,7 +8,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import dynamic from 'next/dynamic'
+
+// Lazy load the rich text editor to reduce initial bundle size
+const RichTextEditor = dynamic(
+  () => import('@/components/ui/rich-text-editor').then(mod => ({ default: mod.RichTextEditor })),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="border rounded-lg p-4 min-h-[200px] animate-pulse bg-gray-50">
+        <div className="flex gap-2 mb-3 border-b pb-3">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="w-8 h-8 bg-gray-200 rounded" />
+          ))}
+        </div>
+        <div className="space-y-2 mt-4">
+          <div className="h-4 bg-gray-200 rounded w-3/4" />
+          <div className="h-4 bg-gray-200 rounded w-1/2" />
+        </div>
+      </div>
+    )
+  }
+)
 import { AISuggestionsModal } from '@/components/dashboard/ai-suggestions-modal'
 import { SubscriptionGateNoSuspense as SubscriptionGate } from '@/components/subscription/subscription-gate-no-suspense'
 import { createBrowserClient } from '@supabase/ssr'
