@@ -96,16 +96,12 @@ export function MobileMenu({
     }
   }
 
-  // Prevent body scroll when menu is open
+  // Prevent body scroll when menu is open - simplified approach
   useEffect(() => {
     if (isOpen) {
-      // Save current overflow value
-      const originalOverflow = document.body.style.overflow
       document.body.style.overflow = 'hidden'
-      
-      // Cleanup function for when menu closes or component unmounts
       return () => {
-        document.body.style.overflow = originalOverflow
+        document.body.style.overflow = ''
       }
     }
   }, [isOpen])

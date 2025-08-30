@@ -176,12 +176,18 @@ function LandingPageContent() {
   const [signUpPlanId, setSignUpPlanId] = useState<string | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [pageReady, setPageReady] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
 
   useEffect(() => {
     checkAuth()
+    
+    // Mark page as ready after a short delay to prevent scroll issues
+    const readyTimer = setTimeout(() => {
+      setPageReady(true)
+    }, 50)
     
     // Check if we're coming back from OAuth callback
     const isOAuthCallback = window.location.hash?.includes('access_token') || 
@@ -214,49 +220,50 @@ function LandingPageContent() {
       router.replace('/', { scroll: false })
     }
     
-    // Consolidate all scroll operations with better timing
-    const handleScrolling = () => {
-      // Use requestAnimationFrame for smoother scrolling on mobile
-      requestAnimationFrame(() => {
-        let targetElement = null
-        let shouldScroll = false
-        
-        // Check for scroll parameter
-        if (scrollTo) {
-          targetElement = document.getElementById(scrollTo)
-          shouldScroll = true
-          // Clean up URL after identifying target
-          router.replace('/', { scroll: false })
+    // Handle scroll navigation if needed
+    if (scrollTo) {
+      const scrollTimer = setTimeout(() => {
+        const targetElement = document.getElementById(scrollTo)
+        if (targetElement) {
+          const headerOffset = 80
+          const elementPosition = targetElement.getBoundingClientRect().top
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+          
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          })
         }
-        // Check for hash navigation
-        else if (window.location.hash) {
-          const id = window.location.hash.substring(1)
-          targetElement = document.getElementById(id)
-          shouldScroll = true
-        }
-        
-        if (shouldScroll && targetElement) {
-          // Add a small delay for mobile browsers to stabilize
-          setTimeout(() => {
-            const headerOffset = 80
-            const elementPosition = targetElement.getBoundingClientRect().top
-            const offsetPosition = elementPosition + window.pageYOffset - headerOffset
-            
-            window.scrollTo({
-              top: offsetPosition,
-              behavior: 'smooth'
-            })
-          }, 300) // Increased delay for mobile stability
-        }
-      })
+        // Clean up URL after scrolling
+        router.replace('/', { scroll: false })
+      }, 100)
+      
+      return () => clearTimeout(scrollTimer)
     }
     
-    // Delay scroll operations to ensure DOM is ready
-    const scrollTimer = setTimeout(handleScrolling, 500)
+    // Handle hash navigation
+    if (window.location.hash) {
+      const hashTimer = setTimeout(() => {
+        const id = window.location.hash.substring(1)
+        const targetElement = document.getElementById(id)
+        if (targetElement) {
+          const headerOffset = 80
+          const elementPosition = targetElement.getBoundingClientRect().top
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+          
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          })
+        }
+      }, 100)
+      
+      return () => clearTimeout(hashTimer)
+    }
     
     // Cleanup subscription on unmount
     return () => {
-      clearTimeout(scrollTimer)
+      clearTimeout(readyTimer)
       subscription.unsubscribe()
     }
   }, [searchParams, router])
@@ -429,7 +436,7 @@ function LandingPageContent() {
       />
 
       {/* Main Content Wrapper */}
-      <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+      <div className="min-h-screen bg-gradient-to-b from-white to-gray-50" style={{ minHeight: pageReady ? 'auto' : '100vh' }}>
       {/* Hero Section with Platforms - Shared Background */}
       <Suspense fallback={<ComponentSkeleton />}>
         <HeroWithPlatforms 

@@ -5,49 +5,18 @@
 /* Smooth scrolling for the entire page */
 html {
   scroll-behavior: smooth;
-  width: 100%;
-  overflow-x: hidden;
-  /* Prevent iOS bounce-back scrolling issues */
-  -webkit-overflow-scrolling: touch;
 }
 
-/* Prevent horizontal overflow without breaking sticky */
+/* Basic body styles - don't interfere with scrolling */
 body {
-  width: 100%;
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
-  /* Ensure body doesn't have conflicting overflow rules */
-  overflow-y: auto;
-  /* Prevent iOS rubber-band scrolling from causing issues */
-  position: relative;
 }
 
 /* Fix mobile horizontal scroll by clipping specific sections */
 section, footer, main {
   overflow-x: hidden;
   max-width: 100vw;
-}
-
-/* Mobile-specific overflow fixes */
-@media (max-width: 768px) {
-  html, body {
-    /* Ensure smooth scrolling on mobile */
-    overflow-x: hidden;
-    width: 100%;
-    position: relative;
-  }
-  
-  /* Prevent content from causing horizontal scroll */
-  * {
-    max-width: 100vw;
-  }
-  
-  /* Ensure the main wrapper doesn't interfere with scrolling */
-  .min-h-screen {
-    overflow-x: hidden;
-    position: relative;
-  }
 }
 
 /* Ensure sticky header works properly */
