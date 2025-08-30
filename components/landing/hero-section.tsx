@@ -14,7 +14,7 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
   const router = useRouter()
   
   return (
-    <section className="relative pt-4 pb-10 px-4 overflow-hidden">
+    <section className="relative pt-4 pb-10 px-4">
       {/* Animated gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50 overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
@@ -83,7 +83,7 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
               width={1800}
               height={1200}
               priority
-              className="w-full h-auto scale-[1.24] origin-left"
+              className="w-full h-auto"
             />
           </div>
         </div>
