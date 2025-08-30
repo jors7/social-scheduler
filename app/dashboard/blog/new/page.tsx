@@ -38,6 +38,7 @@ export default function NewBlogPostPage() {
   const [tagInput, setTagInput] = useState('')
   const [featured, setFeatured] = useState(false)
   const [featuredImage, setFeaturedImage] = useState<string | null>(null)
+  const [featuredImageBlur, setFeaturedImageBlur] = useState<string | null>(null)
   const [status, setStatus] = useState<'draft' | 'published'>('draft')
   const [publishDate, setPublishDate] = useState('')
   const [categories, setCategories] = useState<Category[]>([])
@@ -127,6 +128,22 @@ export default function NewBlogPostPage() {
     const url = await uploadFeaturedImage(file)
     if (url) {
       setFeaturedImage(url)
+      
+      // Generate blur placeholder
+      try {
+        const response = await fetch('/api/generate-blur', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrl: url }),
+        })
+        
+        if (response.ok) {
+          const { blur } = await response.json()
+          setFeaturedImageBlur(blur)
+        }
+      } catch (error) {
+        console.error('Error generating blur:', error)
+      }
     }
   }
 
@@ -213,6 +230,7 @@ export default function NewBlogPostPage() {
         tags,
         featured,
         featured_image: featuredImage,
+        featured_image_blur: featuredImageBlur,
         author_id: author?.id,
         status: publishNow ? 'published' : status,
         published_at: publishNow ? new Date().toISOString() : (publishDate || null),
@@ -402,7 +420,10 @@ export default function NewBlogPostPage() {
                     variant="destructive"
                     size="sm"
                     className="absolute top-2 right-2"
-                    onClick={() => setFeaturedImage(null)}
+                    onClick={() => {
+                      setFeaturedImage(null)
+                      setFeaturedImageBlur(null)
+                    }}
                   >
                     <X className="h-4 w-4" />
                   </Button>

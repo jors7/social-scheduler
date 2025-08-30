@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { format } from 'date-fns'
 
 interface BlogPostHeaderProps {
@@ -7,6 +8,7 @@ interface BlogPostHeaderProps {
     title: string
     excerpt: string
     featured_image?: string
+    featured_image_blur?: string
     published_at: string
     reading_time: number
     view_count: number
@@ -84,10 +86,15 @@ export function BlogPostHeader({ post }: BlogPostHeaderProps) {
         {/* Right Column - Featured Image */}
         {post.featured_image && (
           <div className="relative aspect-[16/9] overflow-hidden rounded-2xl shadow-xl">
-            <img
+            <Image
               src={post.featured_image}
               alt={post.title}
-              className="w-full h-full object-cover"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover"
+              placeholder={post.featured_image_blur ? "blur" : "empty"}
+              blurDataURL={post.featured_image_blur}
+              priority
             />
           </div>
         )}

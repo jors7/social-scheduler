@@ -11,6 +11,7 @@ interface BlogPost {
   title: string
   excerpt: string
   featured_image?: string
+  featured_image_blur?: string
   published_at: string
   reading_time: number
   category: string
@@ -33,10 +34,14 @@ export function BlogCard({ post }: BlogCardProps) {
           {/* Featured Image */}
           <div className="relative aspect-[16/9] overflow-hidden bg-gray-100">
             {post.featured_image ? (
-              <img
+              <Image
                 src={post.featured_image}
                 alt={post.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                placeholder={post.featured_image_blur ? "blur" : "empty"}
+                blurDataURL={post.featured_image_blur}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">

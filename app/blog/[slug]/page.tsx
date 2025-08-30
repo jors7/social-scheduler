@@ -122,6 +122,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       title,
       excerpt,
       featured_image,
+      featured_image_blur,
       published_at,
       reading_time,
       author:blog_authors(display_name, avatar_url)

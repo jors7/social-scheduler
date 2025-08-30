@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Calendar, Clock, User, ChevronRight } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -11,6 +12,7 @@ interface BlogHeroProps {
     title: string
     excerpt: string
     featured_image: string
+    featured_image_blur?: string
     published_at: string
     reading_time: number
     category: string
@@ -88,11 +90,16 @@ export function BlogHero({ post }: BlogHeroProps) {
           {post.featured_image && (
             <div className="relative group">
               <Link href={`/blog/${post.slug}`}>
-                <div className="relative overflow-hidden rounded-2xl shadow-2xl">
-                  <img
+                <div className="relative overflow-hidden rounded-2xl shadow-2xl h-[400px]">
+                  <Image
                     src={post.featured_image}
                     alt={post.title}
-                    className="w-full h-[400px] object-cover group-hover:scale-105 transition-transform duration-300"
+                    fill
+                    sizes="(max-width: 1280px) 100vw, 1280px"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    placeholder={post.featured_image_blur ? "blur" : "empty"}
+                    blurDataURL={post.featured_image_blur}
+                    priority
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
