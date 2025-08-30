@@ -359,7 +359,7 @@ function LandingPageContent() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqData) }}
       />
       
-      <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+      <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 overflow-x-hidden">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-lg border-b border-gray-200 shadow-lg">
         <div className="container mx-auto px-6">
@@ -502,10 +502,10 @@ function LandingPageContent() {
       {/* Hero Section - Two Column Layout */}
       <section className="relative pt-4 pb-10 px-4 overflow-hidden">
         {/* Animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50">
-          <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50 overflow-hidden">
+          <div className="absolute inset-0 overflow-hidden">
             <div className="absolute top-20 left-20 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
-            <div className="absolute top-40 right-20 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
+            <div className="absolute top-40 right-[-100px] md:right-20 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
             <div className="absolute -bottom-8 left-40 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
           </div>
         </div>
@@ -944,7 +944,7 @@ function LandingPageContent() {
       </section>
 
       {/* Horizontal Scrolling Testimonials Section */}
-      <section className="py-20 overflow-hidden relative">
+      <section className="py-20 overflow-x-hidden overflow-y-visible relative">
         {/* Animated gradient background with white at top for smooth transition */}
         <div className="absolute inset-0 bg-gradient-to-b from-white via-blue-50/30 to-purple-50">
           <div className="absolute inset-0">

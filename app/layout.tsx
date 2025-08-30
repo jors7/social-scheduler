@@ -13,6 +13,12 @@ export const metadata: Metadata = {
     template: '%s | SocialCal'
   },
   description: 'Save 15+ hours weekly with SocialCal. Schedule and manage social media posts across Twitter/X, Instagram, Facebook, LinkedIn, YouTube, TikTok, Threads, Bluesky, and Pinterest from one powerful dashboard. AI-powered captions, analytics, and team collaboration.',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
   keywords: [
     'social media scheduler',
     'social media management',
@@ -104,8 +110,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning className="overflow-x-hidden">
+      <body className={`${inter.className} overflow-x-hidden`}>
         {children}
         <Toaster position="bottom-right" />
       </body>
