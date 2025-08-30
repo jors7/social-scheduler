@@ -13,24 +13,29 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch the image
-    const response = await fetch(imageUrl);
+    const imageResponse = await fetch(imageUrl);
     
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.statusText}`);
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
     }
 
-    const buffer = Buffer.from(await response.arrayBuffer());
+    const buffer = Buffer.from(await imageResponse.arrayBuffer());
 
     // Generate blur placeholder
     const { base64, metadata } = await getPlaiceholder(buffer, {
       size: 10, // Small size for blur
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       blur: base64,
       width: metadata.width,
       height: metadata.height,
     });
+
+    // Cache blur data for 30 days since it won't change
+    response.headers.set('Cache-Control', 'public, s-maxage=2592000, immutable');
+    
+    return response;
   } catch (error) {
     console.error('Error generating blur:', error);
     return NextResponse.json(

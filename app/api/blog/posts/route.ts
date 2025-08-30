@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       posts: posts || [],
       pagination: {
         page,
@@ -70,6 +70,12 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil((count || 0) / limit),
       },
     })
+
+    // Add cache headers for public blog data
+    // Cache for 5 minutes (300 seconds) with stale-while-revalidate
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600')
+    
+    return response
   } catch (error) {
     console.error('Error in blog posts API:', error)
     return NextResponse.json(
