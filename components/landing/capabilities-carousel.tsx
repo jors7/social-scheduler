@@ -146,62 +146,24 @@ function DemoPlayer({ capability }: { capability: typeof capabilities[0] }) {
     if (isInView && posterVideoRef.current && !isPlaying) {
       const video = posterVideoRef.current
       
-      // Set initial time to ensure we get a frame
-      video.currentTime = 0.1
-      
       const handleLoadedMetadata = () => {
-        // Try different approaches to ensure first frame loads on mobile
+        // Just show the first frame, don't try to play
         if (video) {
-          // Method 1: Set currentTime to trigger frame load
-          video.currentTime = 0.1
-          
-          // Method 2: Try to play and immediately pause (works on some mobile browsers)
-          const playPromise = video.play()
-          
-          if (playPromise !== undefined) {
-            playPromise
-              .then(() => {
-                // Pause immediately after play starts
-                video.pause()
-                video.currentTime = 0.1
-                setPosterReady(true)
-              })
-              .catch(() => {
-                // Autoplay was prevented, just set the frame
-                video.currentTime = 0.1
-                setPosterReady(true)
-              })
-          } else {
-            // Fallback for older browsers
-            video.pause()
-            setPosterReady(true)
-          }
-        }
-      }
-      
-      const handleCanPlay = () => {
-        // Additional event to ensure video is ready
-        if (video && !posterReady) {
-          video.currentTime = 0.1
+          video.currentTime = 0.01
           setPosterReady(true)
         }
       }
       
-      // Try multiple events to ensure compatibility across devices
+      // Single event listener for metadata
       video.addEventListener('loadedmetadata', handleLoadedMetadata)
-      video.addEventListener('canplay', handleCanPlay)
-      
-      // Also try to load immediately
-      video.load()
       
       return () => {
         if (video) {
           video.removeEventListener('loadedmetadata', handleLoadedMetadata)
-          video.removeEventListener('canplay', handleCanPlay)
         }
       }
     }
-  }, [isInView, capability.id, isPlaying, posterReady])
+  }, [isInView, capability.id, isPlaying])
 
   // Reset when capability changes
   useEffect(() => {
@@ -240,7 +202,8 @@ function DemoPlayer({ capability }: { capability: typeof capabilities[0] }) {
               )}
               muted
               playsInline
-              preload="auto" // Changed from metadata to auto for better mobile support
+              preload="metadata" // Only load metadata for poster frame
+              loading="lazy" // Native lazy loading
               {...{ 'webkit-playsinline': 'true' }} // iOS specific attribute
             >
               <source src={capability.video} type="video/mp4" />
@@ -282,6 +245,7 @@ function DemoPlayer({ capability }: { capability: typeof capabilities[0] }) {
               loop
               muted
               playsInline
+              preload="auto" // Full preload only when playing
               onLoadedData={() => setVideoLoaded(true)}
               onError={(e) => {
                 console.error('Video failed to load:', e)
