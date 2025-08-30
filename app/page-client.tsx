@@ -359,9 +359,8 @@ function LandingPageContent() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqData) }}
       />
       
-      <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 overflow-x-hidden">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-lg border-b border-gray-200 shadow-lg">
+      {/* Header - outside the main wrapper */}
+      <header className="sticky top-0 left-0 w-full z-50 bg-white backdrop-blur-lg border-b border-gray-200 shadow-lg">
         <div className="container mx-auto px-6">
           <nav className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2">
@@ -499,6 +498,8 @@ function LandingPageContent() {
         onSignUpClick={() => setSignUpOpen(true)}
       />
 
+      {/* Main Content Wrapper */}
+      <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       {/* Hero Section - Two Column Layout */}
       <section className="relative pt-4 pb-10 px-4 overflow-hidden">
         {/* Animated gradient background */}

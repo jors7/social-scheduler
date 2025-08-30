@@ -110,8 +110,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className="overflow-x-hidden">
-      <body className={`${inter.className} overflow-x-hidden`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
         {children}
         <Toaster position="bottom-right" />
       </body>
