@@ -203,7 +203,6 @@ function DemoPlayer({ capability }: { capability: typeof capabilities[0] }) {
               muted
               playsInline
               preload="metadata" // Only load metadata for poster frame
-              loading="lazy" // Native lazy loading
               {...{ 'webkit-playsinline': 'true' }} // iOS specific attribute
             >
               <source src={capability.video} type="video/mp4" />
