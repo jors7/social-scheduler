@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import dynamic from 'next/dynamic'
 
 // Lazy load the rich text editor to reduce initial bundle size
 const RichTextEditor = dynamic(
