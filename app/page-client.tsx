@@ -12,8 +12,7 @@ import { MobileMenu } from '@/components/layout/mobile-menu'
 import Script from 'next/script'
 
 // Lazy load heavy components
-const HeroSection = lazy(() => import('@/components/landing/hero-section').then(mod => ({ default: mod.HeroSection })))
-const PlatformsSection = lazy(() => import('@/components/landing/platforms-section').then(mod => ({ default: mod.PlatformsSection })))
+const HeroWithPlatforms = lazy(() => import('@/components/landing/hero-with-platforms').then(mod => ({ default: mod.HeroWithPlatforms })))
 const FeaturesSection = lazy(() => import('@/components/landing/features-section').then(mod => ({ default: mod.FeaturesSection })))
 const ImpactSection = lazy(() => import('@/components/landing/impact-section').then(mod => ({ default: mod.ImpactSection })))
 const TestimonialsSection = lazy(() => import('@/components/landing/testimonials-section').then(mod => ({ default: mod.TestimonialsSection })))
@@ -432,13 +431,12 @@ function LandingPageContent() {
 
       {/* Main Content Wrapper */}
       <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      {/* Hero Section with Lazy Loading */}
+      {/* Hero Section with Platforms - Shared Background */}
       <Suspense fallback={<ComponentSkeleton />}>
-        <HeroSection 
+        <HeroWithPlatforms 
           isAuthenticated={isAuthenticated} 
           onSignInClick={() => setSignInOpen(true)}
         />
-        <PlatformsSection />
       </Suspense>
 
       {/* Capabilities Carousel Section - MOVED UP */}

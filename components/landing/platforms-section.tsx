@@ -14,7 +14,7 @@ const platforms = [
 
 export function PlatformsSection() {
   return (
-    <div className="text-center mt-16 pb-2 px-4">
+    <div className="text-center pt-16 pb-2 px-4">
       <p className="text-sm text-gray-500 mb-6 font-medium uppercase tracking-wider">Works seamlessly with</p>
       {/* Mobile: Two rows with centered bottom row, Desktop: Single row */}
       <div className="sm:flex sm:flex-wrap sm:justify-center sm:gap-4">
