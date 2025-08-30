@@ -12,7 +12,8 @@
     "convert-images": "node scripts/convert-to-webp.js",
     "migrate-to-r2": "node scripts/migrate-to-r2.js",
     "update-r2-refs": "node scripts/update-r2-refs.js",
-    "cleanup-local-images": "node scripts/cleanup-local-images.js"
+    "cleanup-local-images": "node scripts/cleanup-local-images.js",
+    "generate-blur": "node scripts/generate-blur-data.js"
   },
   "dependencies": {
     "@atproto/api": "^0.16.0",
@@ -63,6 +64,7 @@
     "lucide-react": "^0.536.0",
     "next": "14.2.0",
     "openai": "^4.79.2",
+    "plaiceholder": "^3.0.0",
     "postcss": "^8",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

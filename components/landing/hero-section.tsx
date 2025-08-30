@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
+import { getBlurData } from '@/lib/image-blur'
 
 interface HeroSectionProps {
   isAuthenticated: boolean | null
@@ -12,6 +13,7 @@ interface HeroSectionProps {
 
 export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps) {
   const router = useRouter()
+  const heroBlurData = getBlurData('hero-dashboard')
   
   return (
     <section className="relative pt-4 pb-10 px-4 overflow-hidden">
@@ -74,6 +76,8 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
               width={1800}
               height={1200}
               priority
+              placeholder={heroBlurData ? "blur" : "empty"}
+              blurDataURL={heroBlurData?.base64}
               className="w-full h-auto scale-[1.24] origin-left"
             />
           </div>

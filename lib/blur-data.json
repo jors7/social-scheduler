@@ -1,0 +1,9 @@
+{
+  "hero-dashboard": {
+    "base64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAHCAYAAAAxrNxjAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAA7klEQVR4nGP4//8/AwhPmTo1KikjbXN4ZOAmSwfjTdrmmhu/fv3KBpMHEyC8aOniaHNb2/+hdnr/hZgY/jMwMPzfd2ifHobCWbOnJzEwc/3XE2f+XxHg/J9diOHf4cOH1VEUHjpwIuripbufnzx78f/mzTv/D+0493/zpm3/jxw7vv7r168IhZcvX04+dejZ/217X/w/sPXZ/6Onn/x///3r/5sPnn3/9OkTQuGd2/d01q3buLK9vfP/50/f/r94+/n/x1/f/t+5j6YQhO/evauzdPHiaXfu3Jl+8er16XPmzJ96/PipgD9//oAVAgBHjMAKjxcMLwAAAABJRU5ErkJggg==",
+    "width": 2001,
+    "height": 1335,
+    "url": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard.webp",
+    "description": "Hero section dashboard image"
+  }
+}
