@@ -1,14 +1,12 @@
 'use client'
-// Terms of Service page
 
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { BarChart, Menu, ChevronRight, Clock, TrendingUp, Users, Layers, Zap, Sparkles } from 'lucide-react'
+import { BarChart } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
 import { AuthModals } from '@/components/auth/auth-modals'
 import { MobileMenu } from '@/components/layout/mobile-menu'
 import { Navbar } from '@/components/layout/navbar'
@@ -34,7 +32,6 @@ export default function TermsOfServiceClient() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      {/* Shared Navbar Component */
       <Navbar 
         isAuthenticated={isAuthenticated}
         userEmail={userEmail}
@@ -43,7 +40,6 @@ export default function TermsOfServiceClient() {
         isMobileMenuOpen={isMobileMenuOpen}
       />
 
-      {/* Mobile Menu */}
       <MobileMenu 
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
@@ -53,9 +49,7 @@ export default function TermsOfServiceClient() {
         onSignUpClick={() => setSignUpOpen(true)}
       />
 
-      {/* Main Content */}
       <div className="container mx-auto max-w-4xl py-16 px-6">
-        {/* Page Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl lg:text-5xl font-bold mb-4 text-gray-900">
             Terms of Service
@@ -65,122 +59,30 @@ export default function TermsOfServiceClient() {
           </p>
         </div>
 
-        {/* Content */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 lg:p-12">
           <div className="prose prose-lg max-w-none">
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">Terms of Service</h2>
+            
             <section className="mb-10">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">1. Acceptance of Terms</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">1. Agreement to Terms</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                By accessing and using <strong>SocialCal</strong> (&quot;the Service&quot;), you agree to be bound by these Terms. If you do not agree, please discontinue use.
+                By using SocialCal, you agree to these Terms. If you disagree, please don&apos;t use the Service.
               </p>
             </section>
 
             <section className="mb-10">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">2. Service Description</h3>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                SocialCal is a web application that allows users to connect their social media accounts, schedule and publish posts, manage content across multiple platforms, and view analytics.
-              </p>
-            </section>
-
-            <section className="mb-10">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">3. User Accounts</h3>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                To access certain features, you must register an account. You agree to:
-              </p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">2. Use of Service</h3>
               <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>Provide accurate and complete registration information.</li>
-                <li>Maintain the confidentiality of your login credentials.</li>
-                <li>Accept responsibility for all activities under your account.</li>
-                <li>Notify us of any unauthorized use immediately.</li>
+                <li>You must be 13+ years old.</li>
+                <li>You&apos;re responsible for your account security.</li>
+                <li>Don&apos;t use the Service for illegal activities.</li>
+                <li>Don&apos;t violate third-party platform terms.</li>
               </ul>
-            </section>
-
-            <section className="mb-10">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">4. Social Media Integration</h3>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                By connecting your accounts, you grant SocialCal permission to:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>Access your connected accounts for scheduling, publishing, and analytics.</li>
-                <li>Act on your behalf only to the extent necessary to provide the Service.</li>
-              </ul>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                You remain fully responsible for the content you create and post. You must comply with the terms of each connected platform (e.g., Meta, X/Twitter, LinkedIn, YouTube, TikTok, Pinterest). You may revoke access at any time through your account settings or directly via the platform.
-              </p>
-            </section>
-
-            <section className="mb-10">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">5. Content Guidelines</h3>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                You agree not to post content through the Service that:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>Violates any law or regulation.</li>
-                <li>Infringes intellectual property rights.</li>
-                <li>Contains hate speech, harassment, or discriminatory content.</li>
-                <li>Includes spam or misleading information.</li>
-                <li>Violates the policies of the connected platform.</li>
-              </ul>
-            </section>
-
-            <section className="mb-10">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">6. Subscriptions & Payments</h3>
-              <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>SocialCal offers subscription plans with monthly or annual billing.</li>
-                <li>Payments are securely processed by <strong>Stripe</strong>.</li>
-                <li>Subscriptions renew automatically unless cancelled before the next billing date.</li>
-                <li>You may cancel at any time in your dashboard; cancellation takes effect at the end of the billing cycle.</li>
-              </ul>
-            </section>
-
-            <section className="mb-10">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">7. Refund Policy</h3>
-              <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>We provide a <strong>7-day free trial</strong> for new users.</li>
-                <li>Paid subscriptions include a <strong>14-day money-back guarantee</strong>.</li>
-                <li>Refund requests must be sent to <strong><a href="mailto:support@socialcal.app" className="text-blue-600 hover:text-blue-700">support@socialcal.app</a></strong>.</li>
-              </ul>
-            </section>
-
-            <section className="mb-10">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">8. Data Privacy</h3>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                We process personal and account data in accordance with our Privacy Policy. You retain ownership of your content and account data.
-              </p>
-            </section>
-
-            <section className="mb-10">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">9. Termination</h3>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                We may suspend or terminate your account if you violate these Terms or misuse the Service.
-              </p>
-            </section>
-
-            <section className="mb-10">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">10. Intellectual Property</h3>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                All app code, design, and branding belong to SocialCal. You retain ownership of any content you upload or schedule.
-              </p>
-            </section>
-
-            <section className="mb-10">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">11. Limitation of Liability</h3>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                The Service is provided &quot;as is.&quot; To the fullest extent permitted by law, SocialCal is not liable for indirect or consequential damages, including lost profits or lost data.
-              </p>
-            </section>
-
-            <section className="mb-10">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">12. Governing Law</h3>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                These Terms are governed by the laws of the <strong>Czech Republic</strong>.
-              </p>
             </section>
           </div>
         </div>
       </div>
 
-      {/* Footer - Same as homepage */}
       <footer className="bg-gray-900 text-white py-12 px-4">
         <div className="container mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -219,7 +121,6 @@ export default function TermsOfServiceClient() {
         </div>
       </footer>
 
-      {/* Auth Modals */}
       <AuthModals
         signInOpen={signInOpen}
         signUpOpen={signUpOpen}
@@ -229,4 +130,3 @@ export default function TermsOfServiceClient() {
     </div>
   )
 }
-
