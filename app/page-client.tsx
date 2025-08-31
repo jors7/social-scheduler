@@ -239,8 +239,8 @@ function LandingPageContent() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqData) }}
       />
       
-      {/* Header - outside the main wrapper */}
-      <header className="sticky top-0 left-0 w-full z-50 bg-white backdrop-blur-lg border-b border-gray-200 shadow-lg">
+      {/* Header - sticky on desktop, static on mobile */}
+      <header className="md:sticky md:top-0 left-0 w-full z-50 bg-white backdrop-blur-lg border-b border-gray-200 shadow-lg">
         <div className="container mx-auto px-6">
           <nav className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2">

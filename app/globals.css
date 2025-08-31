@@ -5,26 +5,11 @@
 /* Basic styles only */
 html {
   scroll-behavior: smooth;
-  /* Ensure html takes full height */
-  height: 100%;
 }
 
 body {
   margin: 0;
   padding: 0;
-  /* Ensure body takes full height */
-  min-height: 100%;
-}
-
-/* Fix for mobile devices - ensure proper scroll context */
-@media (max-width: 768px) {
-  body {
-    /* Reset any position issues on mobile */
-    position: relative;
-    /* Ensure scrolling works properly */
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
 }
 
 /* Ensure sticky header works properly */
