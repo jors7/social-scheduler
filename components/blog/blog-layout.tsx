@@ -9,8 +9,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { AuthModals } from '@/components/auth/auth-modals'
 import { toast } from 'sonner'
-
 import { MobileMenu } from '@/components/layout/mobile-menu'
+import { Navbar } from '@/components/layout/navbar'
 export function BlogLayout({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [signInOpen, setSignInOpen] = useState(false)
@@ -37,114 +37,14 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Main Site Header - Same as homepage */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-lg border-b border-gray-200 shadow-lg">
-        <div className="container mx-auto px-6">
-          <nav className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <Image 
-                src="https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/SocialCal.webp" 
-                alt="SocialCal Logo" 
-                width={32} 
-                height={32}
-                className="w-8 h-8"
-              />
-              <span 
-                className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent"
-                style={{ 
-                  fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif',
-                  fontWeight: 800 
-                }}
-              >
-                SocialCal
-              </span>
-            </Link>
-            <div className="flex items-center space-x-8">
-              <div className="hidden md:flex items-center space-x-8">
-                <Link 
-                  href="/?scroll=features"
-                  className="text-base font-medium text-gray-700 hover:text-purple-600 transition-all duration-200"
-                  style={{ 
-                    fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
-                  }}
-                >
-                  Features
-                </Link>
-                <Link 
-                  href="/?scroll=platforms"
-                  className="text-base font-medium text-gray-700 hover:text-purple-600 transition-all duration-200"
-                  style={{ 
-                    fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
-                  }}
-                >
-                  Platforms
-                </Link>
-                <Link 
-                  href="/pricing" 
-                  className="text-base font-medium text-gray-700 hover:text-purple-600 transition-all duration-200"
-                  style={{ 
-                    fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
-                  }}
-                >
-                  Pricing
-                </Link>
-                <Link 
-                  href="/pricing?scroll=faq" 
-                  className="text-base font-medium text-gray-700 hover:text-purple-600 transition-all duration-200"
-                  style={{ 
-                    fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
-                  }}
-                >
-                  FAQ
-                </Link>
-              </div>
-              {/* Desktop buttons - hidden on mobile */}
-              <div className="hidden md:flex items-center space-x-4">
-                {isAuthenticated === null ? (
-                  <div className="w-48 h-10" />
-                ) : isAuthenticated ? (
-                  <Button 
-                    variant="outline" 
-                    onClick={() => router.push('/dashboard')}
-                    className="border border-blue-300 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200"
-                  >
-                    <BarChart className="h-4 w-4 mr-2" />
-                    Dashboard
-                  </Button>
-                ) : (
-                  <>
-                    <Button 
-                      variant="outline"
-                      onClick={() => setSignInOpen(true)}
-                      className="text-base font-medium border border-blue-500 text-blue-500 hover:bg-blue-50 transition-all duration-200 px-6 py-2"
-                    >
-                      Sign In
-                    </Button>
-                    <Button 
-                      onClick={() => router.push('/pricing')}
-                      className="text-base font-medium bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 px-6 py-2"
-                    >
-                      Start Free Trial
-                    </Button>
-                  </>
-                )}
-              </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="md:hidden hover:bg-gray-100 transition-colors mobile-menu-button"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              >
-                {isMobileMenuOpen ? (
-                  <X className="h-5 w-5" />
-                ) : (
-                  <Menu className="h-5 w-5" />
-                )}
-              </Button>
-            </div>
-          </nav>
-        </div>
-      </header>
+      {/* Shared Navbar Component */}
+      <Navbar 
+        isAuthenticated={isAuthenticated}
+        userEmail={userEmail}
+        onSignInClick={() => setSignInOpen(true)}
+        onMobileMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        isMobileMenuOpen={isMobileMenuOpen}
+      />
 
       {/* Mobile Menu */}
       <MobileMenu 
