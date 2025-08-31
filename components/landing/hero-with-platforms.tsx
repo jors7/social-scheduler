@@ -11,8 +11,10 @@ interface HeroWithPlatformsProps {
 export function HeroWithPlatforms({ isAuthenticated, onSignInClick }: HeroWithPlatformsProps) {
   return (
     <div className="relative">
-      {/* Simple background on mobile */}
-      <div className="md:hidden bg-gradient-to-br from-purple-50 via-white to-blue-50" />
+      {/* Static gradient background on mobile - no absolute positioning or animations */}
+      <div className="md:hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50 opacity-70" />
+      </div>
       
       {/* Animated gradient background - desktop only */}
       <div className="hidden md:block absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50">

@@ -4,22 +4,24 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { BarChart } from 'lucide-react'
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, lazy } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AuthModals } from '@/components/auth/auth-modals'
 import { MobileMenu } from '@/components/layout/mobile-menu'
 import Script from 'next/script'
 
-// Import components directly - no lazy loading
+// Keep hero non-lazy for immediate display
 import { HeroWithPlatforms } from '@/components/landing/hero-with-platforms'
-import { FeaturesSection } from '@/components/landing/features-section'
-import { ImpactSection } from '@/components/landing/impact-section'
-import { TestimonialsSection } from '@/components/landing/testimonials-section'
-import { CapabilitiesCarousel } from '@/components/landing/capabilities-carousel'
-import HowItWorksSection from '@/components/landing/how-it-works-section'
-import GradientCTA from '@/components/landing/gradient-cta'
-import { SupportedPlatforms } from '@/components/landing/supported-platforms'
+
+// Lazy load heavy components for better performance
+const FeaturesSection = lazy(() => import('@/components/landing/features-section').then(mod => ({ default: mod.FeaturesSection })))
+const ImpactSection = lazy(() => import('@/components/landing/impact-section').then(mod => ({ default: mod.ImpactSection })))
+const TestimonialsSection = lazy(() => import('@/components/landing/testimonials-section').then(mod => ({ default: mod.TestimonialsSection })))
+const CapabilitiesCarousel = lazy(() => import('@/components/landing/capabilities-carousel').then(mod => ({ default: mod.CapabilitiesCarousel })))
+const HowItWorksSection = lazy(() => import('@/components/landing/how-it-works-section'))
+const GradientCTA = lazy(() => import('@/components/landing/gradient-cta'))
+const SupportedPlatforms = lazy(() => import('@/components/landing/supported-platforms').then(mod => ({ default: mod.SupportedPlatforms })))
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -239,8 +241,8 @@ function LandingPageContent() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqData) }}
       />
       
-      {/* Header - sticky on desktop, static on mobile */}
-      <header className="md:sticky md:top-0 left-0 w-full z-50 bg-white backdrop-blur-lg border-b border-gray-200 shadow-lg">
+      {/* Header - sticky on all devices */}
+      <header className="sticky top-0 left-0 w-full z-50 bg-white backdrop-blur-lg border-b border-gray-200 shadow-lg">
         <div className="container mx-auto px-6">
           <nav className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2">
@@ -380,32 +382,46 @@ function LandingPageContent() {
 
       {/* Main Content Wrapper - No margin needed as header is sticky */}
       <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      {/* Hero Section with Platforms - Shared Background */}
+      {/* Hero Section with Platforms - Not lazy loaded for immediate display */}
       <HeroWithPlatforms 
         isAuthenticated={isAuthenticated} 
         onSignInClick={() => setSignInOpen(true)}
       />
 
-      {/* Capabilities Carousel Section - MOVED UP */}
-      <CapabilitiesCarousel />
+      {/* Capabilities Carousel Section */}
+      <Suspense fallback={<div className="h-96 animate-pulse bg-gray-50" />}>
+        <CapabilitiesCarousel />
+      </Suspense>
 
       {/* How It Works Section */}
-      <HowItWorksSection />
+      <Suspense fallback={<div className="h-96 animate-pulse bg-white" />}>
+        <HowItWorksSection />
+      </Suspense>
 
       {/* Impact Section */}
-      <ImpactSection />
+      <Suspense fallback={<div className="h-96 animate-pulse bg-gray-50" />}>
+        <ImpactSection />
+      </Suspense>
 
       {/* Features Section */}
-      <FeaturesSection />
+      <Suspense fallback={<div className="h-96 animate-pulse bg-white" />}>
+        <FeaturesSection />
+      </Suspense>
 
       {/* Supported Platforms Section */}
-      <SupportedPlatforms />
+      <Suspense fallback={<div className="h-64 animate-pulse bg-gray-50" />}>
+        <SupportedPlatforms />
+      </Suspense>
 
       {/* Testimonials Section */}
-      <TestimonialsSection />
+      <Suspense fallback={<div className="h-96 animate-pulse bg-white" />}>
+        <TestimonialsSection />
+      </Suspense>
 
       {/* Gradient CTA Section */}
-      <GradientCTA />
+      <Suspense fallback={<div className="h-64 animate-pulse bg-gradient-to-br from-blue-50 to-indigo-50" />}>
+        <GradientCTA />
+      </Suspense>
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12 px-4">

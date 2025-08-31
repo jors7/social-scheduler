@@ -16,7 +16,7 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
   const heroBlurData = getBlurData('hero-dashboard')
   
   return (
-    <section className="relative pt-8 md:pt-20 pb-10 px-4 overflow-hidden">
+    <section className="relative pt-20 pb-10 px-4 overflow-hidden">
       <div className="max-w-[1500px] mx-auto px-6 relative">
         <div className="flex flex-col lg:flex-row gap-0 items-center justify-center lg:pl-32">
           {/* Left Column - Text Content */}
