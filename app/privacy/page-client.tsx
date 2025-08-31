@@ -26,7 +26,6 @@ export default function PrivacyPolicyClient() {
     checkAuth()
   }, [])
 
-
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     setIsAuthenticated(!!user)

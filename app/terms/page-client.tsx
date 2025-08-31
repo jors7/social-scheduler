@@ -26,7 +26,6 @@ export default function TermsOfServiceClient() {
     checkAuth()
   }, [])
 
-
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     setIsAuthenticated(!!user)
