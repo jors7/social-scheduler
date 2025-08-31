@@ -2,34 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Smooth scrolling for the entire page */
+/* Basic styles only */
 html {
   scroll-behavior: smooth;
-  /* Fix for iOS Safari */
-  -webkit-overflow-scrolling: touch;
 }
 
-/* Basic body styles - don't interfere with scrolling */
 body {
   margin: 0;
   padding: 0;
-  /* Prevent iOS bounce effect that can interfere with scrolling */
-  overscroll-behavior-y: none;
-}
-
-/* Mobile Safari specific fixes */
-@supports (-webkit-touch-callout: none) {
-  body {
-    /* Fix for iOS Safari scroll issues */
-    position: fixed;
-    position: static;
-  }
-}
-
-/* Fix mobile horizontal scroll by clipping specific sections */
-section, footer, main {
-  overflow-x: hidden;
-  max-width: 100vw;
 }
 
 /* Ensure sticky header works properly */

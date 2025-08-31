@@ -96,15 +96,15 @@ export function MobileMenu({
     }
   }
 
-  // Prevent body scroll when menu is open - simplified approach
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-      return () => {
-        document.body.style.overflow = ''
-      }
-    }
-  }, [isOpen])
+  // Don't manipulate scroll at all for now
+  // useEffect(() => {
+  //   if (isOpen) {
+  //     document.body.style.overflow = 'hidden'
+  //     return () => {
+  //       document.body.style.overflow = ''
+  //     }
+  //   }
+  // }, [isOpen])
 
   return (
     <>

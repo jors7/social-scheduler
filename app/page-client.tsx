@@ -4,22 +4,22 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { BarChart } from 'lucide-react'
-import { useEffect, useState, Suspense, lazy } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AuthModals } from '@/components/auth/auth-modals'
 import { MobileMenu } from '@/components/layout/mobile-menu'
 import Script from 'next/script'
 
-// Lazy load heavy components
-const HeroWithPlatforms = lazy(() => import('@/components/landing/hero-with-platforms').then(mod => ({ default: mod.HeroWithPlatforms })))
-const FeaturesSection = lazy(() => import('@/components/landing/features-section').then(mod => ({ default: mod.FeaturesSection })))
-const ImpactSection = lazy(() => import('@/components/landing/impact-section').then(mod => ({ default: mod.ImpactSection })))
-const TestimonialsSection = lazy(() => import('@/components/landing/testimonials-section').then(mod => ({ default: mod.TestimonialsSection })))
-const CapabilitiesCarousel = lazy(() => import('@/components/landing/capabilities-carousel').then(mod => ({ default: mod.CapabilitiesCarousel })))
-const HowItWorksSection = lazy(() => import('@/components/landing/how-it-works-section'))
-const GradientCTA = lazy(() => import('@/components/landing/gradient-cta'))
-const SupportedPlatforms = lazy(() => import('@/components/landing/supported-platforms').then(mod => ({ default: mod.SupportedPlatforms })))
+// Import components directly - no lazy loading
+import { HeroWithPlatforms } from '@/components/landing/hero-with-platforms'
+import { FeaturesSection } from '@/components/landing/features-section'
+import { ImpactSection } from '@/components/landing/impact-section'
+import { TestimonialsSection } from '@/components/landing/testimonials-section'
+import { CapabilitiesCarousel } from '@/components/landing/capabilities-carousel'
+import HowItWorksSection from '@/components/landing/how-it-works-section'
+import GradientCTA from '@/components/landing/gradient-cta'
+import { SupportedPlatforms } from '@/components/landing/supported-platforms'
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -163,11 +163,6 @@ const faqData = {
   ]
 }
 
-// Component loading skeleton
-const ComponentSkeleton = () => (
-  <div className="animate-pulse bg-gray-100 h-96 rounded-lg" />
-)
-
 
 function LandingPageContent() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
@@ -176,25 +171,12 @@ function LandingPageContent() {
   const [signUpPlanId, setSignUpPlanId] = useState<string | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
-  const [pageReady, setPageReady] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
 
   useEffect(() => {
     checkAuth()
-    
-    // Prevent scroll position from being reset
-    const currentScrollY = window.scrollY
-    
-    // Mark page as ready after components mount
-    const readyTimer = setTimeout(() => {
-      setPageReady(true)
-      // Restore scroll position if it was reset
-      if (window.scrollY === 0 && currentScrollY > 0) {
-        window.scrollTo(0, currentScrollY)
-      }
-    }, 10)
     
     // Check if we're coming back from OAuth callback
     const isOAuthCallback = window.location.hash?.includes('access_token') || 
@@ -212,73 +194,19 @@ function LandingPageContent() {
     const shouldOpenSignIn = searchParams.get('signin') === 'true'
     const shouldOpenSignUp = searchParams.get('signup') === 'true'
     const planFromUrl = searchParams.get('plan')
-    const scrollTo = searchParams.get('scroll')
     
     if (shouldOpenSignIn) {
       setSignInOpen(true)
-      // Clean up URL
       router.replace('/', { scroll: false })
     } else if (shouldOpenSignUp) {
       if (planFromUrl) {
         setSignUpPlanId(planFromUrl)
       }
       setSignUpOpen(true)
-      // Clean up URL
       router.replace('/', { scroll: false })
     }
     
-    // Only handle intentional scroll navigation, not on every mount
-    if (scrollTo) {
-      const scrollTimer = setTimeout(() => {
-        const targetElement = document.getElementById(scrollTo)
-        if (targetElement) {
-          const headerOffset = 80
-          const elementPosition = targetElement.getBoundingClientRect().top
-          const offsetPosition = elementPosition + window.pageYOffset - headerOffset
-          
-          window.scrollTo({
-            top: offsetPosition,
-            behavior: 'smooth'
-          })
-        }
-        // Clean up URL after scrolling
-        router.replace('/', { scroll: false })
-      }, 200)
-      
-      return () => {
-        clearTimeout(readyTimer)
-        clearTimeout(scrollTimer)
-        subscription.unsubscribe()
-      }
-    }
-    
-    // Only handle hash on initial load, not on every re-render
-    if (window.location.hash && !scrollTo) {
-      const hashTimer = setTimeout(() => {
-        const id = window.location.hash.substring(1)
-        const targetElement = document.getElementById(id)
-        if (targetElement) {
-          const headerOffset = 80
-          const elementPosition = targetElement.getBoundingClientRect().top
-          const offsetPosition = elementPosition + window.pageYOffset - headerOffset
-          
-          window.scrollTo({
-            top: offsetPosition,
-            behavior: 'smooth'
-          })
-        }
-      }, 200)
-      
-      return () => {
-        clearTimeout(readyTimer)
-        clearTimeout(hashTimer)
-        subscription.unsubscribe()
-      }
-    }
-    
-    // Default cleanup
     return () => {
-      clearTimeout(readyTimer)
       subscription.unsubscribe()
     }
   }, [searchParams, router])
@@ -453,47 +381,31 @@ function LandingPageContent() {
       {/* Main Content Wrapper */}
       <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       {/* Hero Section with Platforms - Shared Background */}
-      <Suspense fallback={<ComponentSkeleton />}>
-        <HeroWithPlatforms 
-          isAuthenticated={isAuthenticated} 
-          onSignInClick={() => setSignInOpen(true)}
-        />
-      </Suspense>
+      <HeroWithPlatforms 
+        isAuthenticated={isAuthenticated} 
+        onSignInClick={() => setSignInOpen(true)}
+      />
 
       {/* Capabilities Carousel Section - MOVED UP */}
-      <Suspense fallback={<ComponentSkeleton />}>
-        <CapabilitiesCarousel />
-      </Suspense>
+      <CapabilitiesCarousel />
 
       {/* How It Works Section */}
-      <Suspense fallback={<ComponentSkeleton />}>
-        <HowItWorksSection />
-      </Suspense>
+      <HowItWorksSection />
 
       {/* Impact Section */}
-      <Suspense fallback={<ComponentSkeleton />}>
-        <ImpactSection />
-      </Suspense>
+      <ImpactSection />
 
       {/* Features Section */}
-      <Suspense fallback={<ComponentSkeleton />}>
-        <FeaturesSection />
-      </Suspense>
+      <FeaturesSection />
 
       {/* Supported Platforms Section */}
-      <Suspense fallback={<ComponentSkeleton />}>
-        <SupportedPlatforms />
-      </Suspense>
+      <SupportedPlatforms />
 
       {/* Testimonials Section */}
-      <Suspense fallback={<ComponentSkeleton />}>
-        <TestimonialsSection />
-      </Suspense>
+      <TestimonialsSection />
 
       {/* Gradient CTA Section */}
-      <Suspense fallback={<ComponentSkeleton />}>
-        <GradientCTA />
-      </Suspense>
+      <GradientCTA />
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12 px-4">
@@ -552,13 +464,5 @@ function LandingPageContent() {
 }
 
 export default function LandingPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-gray-50">
-        <div className="animate-pulse">Loading...</div>
-      </div>
-    }>
-      <LandingPageContent />
-    </Suspense>
-  )
+  return <LandingPageContent />
 }
