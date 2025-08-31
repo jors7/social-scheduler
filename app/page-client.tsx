@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { BarChart } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AuthModals } from '@/components/auth/auth-modals'
@@ -464,5 +464,9 @@ function LandingPageContent() {
 }
 
 export default function LandingPage() {
-  return <LandingPageContent />
+  return (
+    <Suspense fallback={null}>
+      <LandingPageContent />
+    </Suspense>
+  )
 }
