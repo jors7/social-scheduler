@@ -39,8 +39,8 @@ export function Navbar({
         })
       }
     } else {
-      // If on another page, navigate to homepage with the section
-      router.push(`/#${sectionId}`)
+      // If on another page, navigate to homepage with scroll parameter (like FAQ does)
+      router.push(`/?scroll=${sectionId}`)
     }
   }
 

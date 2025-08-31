@@ -193,10 +193,11 @@ function LandingPageContent() {
       }
     })
     
-    // Check URL parameters for modal triggers
+    // Check URL parameters for modal triggers and scrolling
     const shouldOpenSignIn = searchParams.get('signin') === 'true'
     const shouldOpenSignUp = searchParams.get('signup') === 'true'
     const planFromUrl = searchParams.get('plan')
+    const scrollTo = searchParams.get('scroll')
     
     if (shouldOpenSignIn) {
       setSignInOpen(true)
@@ -209,63 +210,35 @@ function LandingPageContent() {
       router.replace('/', { scroll: false })
     }
     
+    // Handle scroll parameter (like pricing page does for FAQ)
+    if (scrollTo) {
+      // First scroll to top
+      window.scrollTo(0, 0)
+      
+      // Then smoothly scroll to the target section
+      setTimeout(() => {
+        const element = document.getElementById(scrollTo)
+        if (element) {
+          const headerOffset = 80
+          const elementPosition = element.getBoundingClientRect().top
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+          
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          })
+        }
+        
+        // Clean up URL after scrolling
+        router.replace('/', { scroll: false })
+      }, 500) // Delay to ensure lazy-loaded components are rendered
+    }
+    
     return () => {
       subscription.unsubscribe()
     }
   }, [searchParams, router])
 
-  // Separate useEffect for hash navigation
-  useEffect(() => {
-    const handleHashScroll = () => {
-      const hash = window.location.hash.substring(1)
-      
-      // Only handle specific section hashes
-      if (hash === 'features' || hash === 'platforms') {
-        // Use requestAnimationFrame to ensure DOM is ready
-        requestAnimationFrame(() => {
-          // Try multiple times in case components are still loading
-          let attempts = 0
-          const maxAttempts = 10
-          
-          const tryScroll = () => {
-            const element = document.getElementById(hash)
-            if (element) {
-              const headerOffset = 80
-              const elementPosition = element.getBoundingClientRect().top
-              const offsetPosition = elementPosition + window.pageYOffset - headerOffset
-              
-              window.scrollTo({
-                top: offsetPosition,
-                behavior: 'smooth'
-              })
-              
-              // Clear the hash after successful scroll
-              setTimeout(() => {
-                window.history.replaceState(null, '', window.location.pathname)
-              }, 1000)
-            } else if (attempts < maxAttempts) {
-              // Element not found yet, try again
-              attempts++
-              setTimeout(tryScroll, 200)
-            }
-          }
-          
-          // Start trying after a delay for components to mount
-          setTimeout(tryScroll, 300)
-        })
-      }
-    }
-    
-    // Check for hash on mount
-    handleHashScroll()
-    
-    // Listen for hash changes
-    window.addEventListener('hashchange', handleHashScroll)
-    
-    return () => {
-      window.removeEventListener('hashchange', handleHashScroll)
-    }
-  }, [])
 
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser()
