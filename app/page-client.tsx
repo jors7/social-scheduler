@@ -184,10 +184,17 @@ function LandingPageContent() {
   useEffect(() => {
     checkAuth()
     
-    // Mark page as ready after a short delay to prevent scroll issues
+    // Prevent scroll position from being reset
+    const currentScrollY = window.scrollY
+    
+    // Mark page as ready after components mount
     const readyTimer = setTimeout(() => {
       setPageReady(true)
-    }, 50)
+      // Restore scroll position if it was reset
+      if (window.scrollY === 0 && currentScrollY > 0) {
+        window.scrollTo(0, currentScrollY)
+      }
+    }, 10)
     
     // Check if we're coming back from OAuth callback
     const isOAuthCallback = window.location.hash?.includes('access_token') || 
@@ -220,7 +227,7 @@ function LandingPageContent() {
       router.replace('/', { scroll: false })
     }
     
-    // Handle scroll navigation if needed
+    // Only handle intentional scroll navigation, not on every mount
     if (scrollTo) {
       const scrollTimer = setTimeout(() => {
         const targetElement = document.getElementById(scrollTo)
@@ -236,13 +243,17 @@ function LandingPageContent() {
         }
         // Clean up URL after scrolling
         router.replace('/', { scroll: false })
-      }, 100)
+      }, 200)
       
-      return () => clearTimeout(scrollTimer)
+      return () => {
+        clearTimeout(readyTimer)
+        clearTimeout(scrollTimer)
+        subscription.unsubscribe()
+      }
     }
     
-    // Handle hash navigation
-    if (window.location.hash) {
+    // Only handle hash on initial load, not on every re-render
+    if (window.location.hash && !scrollTo) {
       const hashTimer = setTimeout(() => {
         const id = window.location.hash.substring(1)
         const targetElement = document.getElementById(id)
@@ -256,12 +267,16 @@ function LandingPageContent() {
             behavior: 'smooth'
           })
         }
-      }, 100)
+      }, 200)
       
-      return () => clearTimeout(hashTimer)
+      return () => {
+        clearTimeout(readyTimer)
+        clearTimeout(hashTimer)
+        subscription.unsubscribe()
+      }
     }
     
-    // Cleanup subscription on unmount
+    // Default cleanup
     return () => {
       clearTimeout(readyTimer)
       subscription.unsubscribe()
@@ -436,7 +451,7 @@ function LandingPageContent() {
       />
 
       {/* Main Content Wrapper */}
-      <div className="min-h-screen bg-gradient-to-b from-white to-gray-50" style={{ minHeight: pageReady ? 'auto' : '100vh' }}>
+      <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       {/* Hero Section with Platforms - Shared Background */}
       <Suspense fallback={<ComponentSkeleton />}>
         <HeroWithPlatforms 
