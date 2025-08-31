@@ -378,7 +378,7 @@ function LandingPageContent() {
         onSignUpClick={() => setSignUpOpen(true)}
       />
 
-      {/* Main Content Wrapper */}
+      {/* Main Content Wrapper - No margin needed as header is sticky */}
       <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       {/* Hero Section with Platforms - Shared Background */}
       <HeroWithPlatforms 
