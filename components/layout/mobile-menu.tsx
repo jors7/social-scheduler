@@ -145,7 +145,7 @@ export function MobileMenu({
                 <div className="space-y-1 mb-6">
                   <Link
                     href="/dashboard"
-                    onClick={() => handleNavigation('/dashboard')}
+                    onClick={onClose}
                     className="flex items-center gap-3 px-4 py-3.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group"
                   >
                     <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 group-hover:from-blue-100 group-hover:to-blue-200 rounded-xl flex items-center justify-center transition-colors">
@@ -159,7 +159,7 @@ export function MobileMenu({
 
                   <Link
                     href="/dashboard/create/new"
-                    onClick={() => handleNavigation('/dashboard/create/new')}
+                    onClick={onClose}
                     className="flex items-center gap-3 px-4 py-3.5 text-gray-700 hover:bg-purple-50 hover:text-purple-600 rounded-xl transition-all duration-200 group"
                   >
                     <div className="w-10 h-10 bg-gradient-to-br from-purple-50 to-purple-100 group-hover:from-purple-100 group-hover:to-purple-200 rounded-xl flex items-center justify-center transition-colors">
@@ -173,7 +173,7 @@ export function MobileMenu({
 
                   <Link
                     href="/dashboard/posts"
-                    onClick={() => handleNavigation('/dashboard/posts')}
+                    onClick={onClose}
                     className="flex items-center gap-3 px-4 py-3.5 text-gray-700 hover:bg-green-50 hover:text-green-600 rounded-xl transition-all duration-200 group"
                   >
                     <div className="w-10 h-10 bg-gradient-to-br from-green-50 to-green-100 group-hover:from-green-100 group-hover:to-green-200 rounded-xl flex items-center justify-center transition-colors">
@@ -187,7 +187,7 @@ export function MobileMenu({
 
                   <Link
                     href="/dashboard/analytics"
-                    onClick={() => handleNavigation('/dashboard/analytics')}
+                    onClick={onClose}
                     className="flex items-center gap-3 px-4 py-3.5 text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-xl transition-all duration-200 group"
                   >
                     <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-orange-100 group-hover:from-orange-100 group-hover:to-orange-200 rounded-xl flex items-center justify-center transition-colors">
@@ -203,7 +203,7 @@ export function MobileMenu({
                 <div className="border-t border-gray-200 pt-4 space-y-1">
                   <Link
                     href="/dashboard/profile"
-                    onClick={() => handleNavigation('/dashboard/profile')}
+                    onClick={onClose}
                     className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-xl transition-colors"
                   >
                     <UserIcon className="h-5 w-5 text-gray-500" />
@@ -212,7 +212,7 @@ export function MobileMenu({
 
                   <Link
                     href="/dashboard/billing"
-                    onClick={() => handleNavigation('/dashboard/billing')}
+                    onClick={onClose}
                     className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-xl transition-colors"
                   >
                     <CreditCard className="h-5 w-5 text-gray-500" />
@@ -237,7 +237,26 @@ export function MobileMenu({
               <>
                 <div className="space-y-1 mb-6">
                   <button
-                    onClick={() => handleNavigation('#features')}
+                    onClick={() => {
+                      const currentPath = window.location.pathname
+                      onClose()
+                      if (currentPath === '/') {
+                        // On homepage, just scroll
+                        const element = document.getElementById('features')
+                        if (element) {
+                          const headerOffset = 80
+                          const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
+                          const offsetPosition = elementPosition - headerOffset
+                          window.scrollTo({
+                            top: offsetPosition,
+                            behavior: 'smooth'
+                          })
+                        }
+                      } else {
+                        // On other pages, navigate to homepage with scroll parameter
+                        router.push('/?scroll=features')
+                      }
+                    }}
                     className="w-full flex items-center gap-3 px-4 py-3.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all duration-200 group text-left"
                   >
                     <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 group-hover:from-blue-100 group-hover:to-blue-200 rounded-xl flex items-center justify-center transition-colors">
@@ -250,7 +269,26 @@ export function MobileMenu({
                   </button>
 
                   <button
-                    onClick={() => handleNavigation('#platforms')}
+                    onClick={() => {
+                      const currentPath = window.location.pathname
+                      onClose()
+                      if (currentPath === '/') {
+                        // On homepage, just scroll
+                        const element = document.getElementById('platforms')
+                        if (element) {
+                          const headerOffset = 80
+                          const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
+                          const offsetPosition = elementPosition - headerOffset
+                          window.scrollTo({
+                            top: offsetPosition,
+                            behavior: 'smooth'
+                          })
+                        }
+                      } else {
+                        // On other pages, navigate to homepage with scroll parameter
+                        router.push('/?scroll=platforms')
+                      }
+                    }}
                     className="w-full flex items-center gap-3 px-4 py-3.5 text-gray-700 hover:bg-purple-50 hover:text-purple-600 rounded-xl transition-all duration-200 group text-left"
                   >
                     <div className="w-10 h-10 bg-gradient-to-br from-purple-50 to-purple-100 group-hover:from-purple-100 group-hover:to-purple-200 rounded-xl flex items-center justify-center transition-colors">
@@ -264,7 +302,7 @@ export function MobileMenu({
 
                   <Link
                     href="/pricing"
-                    onClick={() => handleNavigation('/pricing')}
+                    onClick={onClose}
                     className="flex items-center gap-3 px-4 py-3.5 text-gray-700 hover:bg-green-50 hover:text-green-600 rounded-xl transition-all duration-200 group"
                   >
                     <div className="w-10 h-10 bg-gradient-to-br from-green-50 to-green-100 group-hover:from-green-100 group-hover:to-green-200 rounded-xl flex items-center justify-center transition-colors">
@@ -276,9 +314,10 @@ export function MobileMenu({
                     </div>
                   </Link>
 
-                  <button
-                    onClick={() => handleNavigation('#faq-pricing')}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-xl transition-all duration-200 group text-left"
+                  <Link
+                    href="/pricing?scroll=faq"
+                    onClick={onClose}
+                    className="flex items-center gap-3 px-4 py-3.5 text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-xl transition-all duration-200 group"
                   >
                     <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-orange-100 group-hover:from-orange-100 group-hover:to-orange-200 rounded-xl flex items-center justify-center transition-colors">
                       <LifeBuoy className="h-5 w-5 text-orange-600" />
@@ -287,7 +326,7 @@ export function MobileMenu({
                       <span className="font-semibold text-base">FAQ</span>
                       <p className="text-xs text-gray-500">Get answers</p>
                     </div>
-                  </button>
+                  </Link>
                 </div>
 
                 <div className="border-t border-gray-200 pt-6 space-y-3 px-2">
