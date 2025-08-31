@@ -209,11 +209,21 @@ function LandingPageContent() {
       router.replace('/', { scroll: false })
     }
     
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [searchParams, router])
+
+  // Separate useEffect for hash navigation that runs on every render
+  useEffect(() => {
+    const isOAuthCallback = window.location.hash?.includes('access_token')
+    
     // Handle hash navigation for sections (features, platforms)
     if (window.location.hash && !isOAuthCallback) {
       const hash = window.location.hash.substring(1)
       if (hash === 'features' || hash === 'platforms') {
-        setTimeout(() => {
+        // Wait for the page to fully render
+        const scrollTimer = setTimeout(() => {
           const element = document.getElementById(hash)
           if (element) {
             const headerOffset = 80
@@ -223,15 +233,15 @@ function LandingPageContent() {
               top: offsetPosition,
               behavior: 'smooth'
             })
+            // Clear the hash after scrolling
+            window.history.replaceState(null, '', window.location.pathname)
           }
-        }, 100)
+        }, 500) // Increased delay to ensure components are loaded
+        
+        return () => clearTimeout(scrollTimer)
       }
     }
-    
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [searchParams, router])
+  })
 
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser()
