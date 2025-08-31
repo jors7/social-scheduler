@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { Home, Sparkles, Clock, BarChart, UserIcon, CreditCard, LogOut, Zap, Layers, LifeBuoy } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -26,6 +26,7 @@ export function MobileMenu({
   onSignUpClick
 }: MobileMenuProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const supabase = createClient()
 
   const handleLogout = async () => {
@@ -238,20 +239,21 @@ export function MobileMenu({
                 <div className="space-y-1 mb-6">
                   <button
                     onClick={() => {
-                      const currentPath = window.location.pathname
                       onClose()
-                      if (currentPath === '/') {
+                      if (pathname === '/') {
                         // On homepage, just scroll
-                        const element = document.getElementById('features')
-                        if (element) {
-                          const headerOffset = 80
-                          const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
-                          const offsetPosition = elementPosition - headerOffset
-                          window.scrollTo({
-                            top: offsetPosition,
-                            behavior: 'smooth'
-                          })
-                        }
+                        setTimeout(() => {
+                          const element = document.getElementById('features')
+                          if (element) {
+                            const headerOffset = 80
+                            const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
+                            const offsetPosition = elementPosition - headerOffset
+                            window.scrollTo({
+                              top: offsetPosition,
+                              behavior: 'smooth'
+                            })
+                          }
+                        }, 100)
                       } else {
                         // On other pages, navigate to homepage with scroll parameter
                         router.push('/?scroll=features')
@@ -270,20 +272,21 @@ export function MobileMenu({
 
                   <button
                     onClick={() => {
-                      const currentPath = window.location.pathname
                       onClose()
-                      if (currentPath === '/') {
+                      if (pathname === '/') {
                         // On homepage, just scroll
-                        const element = document.getElementById('platforms')
-                        if (element) {
-                          const headerOffset = 80
-                          const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
-                          const offsetPosition = elementPosition - headerOffset
-                          window.scrollTo({
-                            top: offsetPosition,
-                            behavior: 'smooth'
-                          })
-                        }
+                        setTimeout(() => {
+                          const element = document.getElementById('platforms')
+                          if (element) {
+                            const headerOffset = 80
+                            const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
+                            const offsetPosition = elementPosition - headerOffset
+                            window.scrollTo({
+                              top: offsetPosition,
+                              behavior: 'smooth'
+                            })
+                          }
+                        }, 100)
                       } else {
                         // On other pages, navigate to homepage with scroll parameter
                         router.push('/?scroll=platforms')
