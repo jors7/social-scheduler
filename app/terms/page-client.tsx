@@ -1,4 +1,5 @@
 'use client'
+// Terms of Service page
 
 import Link from 'next/link'
 import Image from 'next/image'
