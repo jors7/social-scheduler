@@ -23,7 +23,7 @@ export function HeroWithPlatforms({ isAuthenticated, onSignInClick }: HeroWithPl
           <div className="absolute top-20 left-20 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
           
           {/* Top right blue blob */}
-          <div className="absolute top-40 right-[-100px] md:right-20 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
+          <div className="absolute top-40 right-0 md:right-20 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
           
           {/* Middle pink blob */}
           <div className="absolute top-96 left-40 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
