@@ -10,9 +10,12 @@ interface HeroWithPlatformsProps {
 
 export function HeroWithPlatforms({ isAuthenticated, onSignInClick }: HeroWithPlatformsProps) {
   return (
-    <div className="relative overflow-x-hidden">
-      {/* Shared animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50">
+    <div className="relative">
+      {/* Simple background on mobile */}
+      <div className="md:hidden bg-gradient-to-br from-purple-50 via-white to-blue-50" />
+      
+      {/* Animated gradient background - desktop only */}
+      <div className="hidden md:block absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50">
         <div className="absolute inset-0 overflow-hidden">
           {/* Top left purple blob */}
           <div className="absolute top-20 left-20 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
