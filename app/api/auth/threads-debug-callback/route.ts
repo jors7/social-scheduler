@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
       `https://graph.facebook.com/v18.0/me?access_token=${accessToken}`,
     ];
     
-    const results = {};
+    const results: Record<string, any> = {};
     for (const endpoint of endpoints) {
       const response = await fetch(endpoint);
       const text = await response.text();
