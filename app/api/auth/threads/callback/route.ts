@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     });
     
     // Use the official Threads Graph API token endpoint
-    console.log('Exchanging code for token...');
+    console.log('Exchanging code for token with Threads API...');
     const tokenUrl = `https://graph.threads.net/oauth/access_token`;
     const tokenResponse = await fetch(tokenUrl, {
       method: 'POST',
@@ -103,40 +103,17 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenResponse.json();
     console.log('Token received, getting user info...');
 
-    // Exchange short-lived token for long-lived token
-    const longLivedParams = new URLSearchParams({
-      grant_type: 'fb_exchange_token',
-      client_id: appId!,
-      client_secret: appSecret!,
-      fb_exchange_token: tokenData.access_token,
-    });
-
-    const longLivedResponse = await fetch(
-      `https://graph.facebook.com/v18.0/oauth/access_token?${longLivedParams.toString()}`
-    );
-
-    let accessToken = tokenData.access_token;
-    let expiresIn = tokenData.expires_in;
-
-    if (longLivedResponse.ok) {
-      const longLivedData = await longLivedResponse.json();
-      accessToken = longLivedData.access_token;
-      expiresIn = longLivedData.expires_in;
-      console.log('Got long-lived token');
-    }
-
-    // Try to get Threads user info directly first
-    let meResponse = await fetch(
-      `https://graph.threads.net/v1.0/me?fields=id,username,threads_profile_picture_url,threads_biography&access_token=${accessToken}`
-    );
+    // For Threads, we use the token directly
+    const accessToken = tokenData.access_token;
+    const expiresIn = tokenData.expires_in;
+    const userId = tokenData.user_id; // Threads returns user_id in token response
     
-    // If Threads API fails, try Facebook Graph API
-    if (!meResponse.ok) {
-      console.log('Threads API failed, trying Facebook Graph API...');
-      meResponse = await fetch(
-        `https://graph.facebook.com/v18.0/me?access_token=${accessToken}`
-      );
-    }
+    console.log('Got Threads access token for user:', userId);
+
+    // Get Threads user info using the user_id from token response
+    const meResponse = await fetch(
+      `https://graph.threads.net/v1.0/${userId || 'me'}?fields=id,username,threads_profile_picture_url,threads_biography&access_token=${accessToken}`
+    );
     
     if (!meResponse.ok) {
       const errorText = await meResponse.text();
@@ -148,24 +125,16 @@ export async function GET(request: NextRequest) {
     }
     
     const userData = await meResponse.json();
-    console.log('User data:', userData);
+    console.log('Threads user data:', userData);
     
-    // Try to get Instagram Business/Creator accounts directly
-    // First, check if the user has Instagram accounts linked
-    let threadsUserId = null;
-    let threadsUsername = null;
-    let threadsProfilePic = null;
-    let pageAccessToken = accessToken; // Default to user token
+    // For Threads API, we use the data directly
+    const threadsUserId = userData.id || userId;
+    const threadsUsername = userData.username;
+    const threadsProfilePic = userData.threads_profile_picture_url;
+    const pageAccessToken = accessToken; // Use the Threads access token
     
-    // Try to get Instagram accounts through different methods
-    console.log('Looking for Instagram Business/Creator accounts...');
-    
-    // Method 1: Try to get pages (some Instagram Creator accounts are treated as pages)
-    const pagesResponse = await fetch(
-      `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
-    );
-    
-    if (pagesResponse.ok) {
+    // Skip Instagram Business Account lookup - we have Threads data directly
+    if (false) {
       const pagesData = await pagesResponse.json();
       console.log('Found pages/accounts:', pagesData.data?.length || 0);
       
