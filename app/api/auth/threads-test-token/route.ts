@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const { code } = await request.json();
+    const { code, redirect_uri } = await request.json();
     
     if (!code) {
       return NextResponse.json({ error: 'No code provided' }, { status: 400 });
@@ -15,7 +15,8 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NODE_ENV === 'production' 
       ? 'https://www.socialcal.app'
       : 'http://localhost:3001';
-    const redirectUri = `${baseUrl}/api/auth/threads/callback`;
+    // Use the redirect_uri that was used in the authorization request
+    const redirectUri = redirect_uri || `${baseUrl}/threads-capture`;
 
     // Try token exchange with detailed logging
     const tokenParams = new URLSearchParams({

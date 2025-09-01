@@ -52,7 +52,10 @@ export default function ThreadsCaptureTest() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ code })
+        body: JSON.stringify({ 
+          code,
+          redirect_uri: 'https://www.socialcal.app/threads-capture'
+        })
       });
 
       const data = await response.json();
