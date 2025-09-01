@@ -141,24 +141,49 @@ export async function GET(request: NextRequest) {
     console.log('Profile response status:', meResponse.status);
     console.log('Profile response body:', profileText);
     
-    if (!meResponse.ok) {
-      console.error('Failed to get user info:', profileText);
-      const errorUrl = process.env.NODE_ENV === 'production'
-        ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
-        : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
-      return NextResponse.redirect(errorUrl);
-    }
+    let userData = null;
     
-    let userData;
-    try {
-      userData = JSON.parse(profileText);
-    } catch (e) {
-      console.error('Failed to parse profile response:', e);
-      console.error('Profile text was:', profileText);
-      const errorUrl = process.env.NODE_ENV === 'production'
-        ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
-        : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
-      return NextResponse.redirect(errorUrl);
+    if (!meResponse.ok) {
+      console.warn('Failed to get full user profile:', profileText);
+      
+      // Check if it's a permission issue
+      try {
+        const errorData = JSON.parse(profileText);
+        if (errorData.error?.code === 100 && errorData.error?.error_subcode === 10) {
+          console.log('App needs review or user needs to be tester. Using minimal data from token response.');
+          // Use minimal data from the token response
+          userData = {
+            id: userId,
+            username: `threads_user_${userId}`, // Fallback username
+            threads_profile_picture_url: null,
+            threads_biography: ''
+          };
+        } else {
+          // Different error, fail the auth
+          const errorUrl = process.env.NODE_ENV === 'production'
+            ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
+            : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
+          return NextResponse.redirect(errorUrl);
+        }
+      } catch (e) {
+        // Can't parse error, fail the auth
+        const errorUrl = process.env.NODE_ENV === 'production'
+          ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
+          : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
+        return NextResponse.redirect(errorUrl);
+      }
+    } else {
+      // Profile fetch successful
+      try {
+        userData = JSON.parse(profileText);
+      } catch (e) {
+        console.error('Failed to parse profile response:', e);
+        console.error('Profile text was:', profileText);
+        const errorUrl = process.env.NODE_ENV === 'production'
+          ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
+          : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
+        return NextResponse.redirect(errorUrl);
+      }
     }
     
     console.log('Threads user data:', userData);
