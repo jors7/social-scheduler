@@ -33,9 +33,10 @@ export async function GET(request: NextRequest) {
     const cookieStore = cookies();
     cookieStore.set('threads_oauth_state', state, {
       httpOnly: true,
-      secure: false, // Allow HTTP for local development
+      secure: true, // Always use secure in production
       sameSite: 'lax',
       maxAge: 60 * 10, // 10 minutes
+      path: '/', // Ensure cookie is available across all paths
     });
 
     // Determine callback URL based on environment
