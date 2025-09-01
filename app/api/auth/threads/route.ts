@@ -45,13 +45,13 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
-    // Threads API - use empty scope to avoid defaults
+    // Threads API - completely omit scope parameter
     const params = new URLSearchParams({
       client_id: appId!,
       redirect_uri: redirectUri,
       response_type: 'code',
       state: state,
-      scope: '', // Empty scope - don't request any permissions
+      // NO scope parameter at all - let Threads decide
     });
 
     // Use www.threads.net OAuth (with www prefix!)
