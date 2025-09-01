@@ -46,19 +46,21 @@ export async function GET(request: NextRequest) {
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
     // Threads uses a privacy consent flow, not standard OAuth
-    // Build the consent URL with nested parameters
+    // Generate a logger ID (UUID-like)
+    const loggerId = `${Math.random().toString(36).substring(2)}-${Math.random().toString(36).substring(2)}-${Math.random().toString(36).substring(2)}`;
+    
+    // Build the consent URL with nested parameters - matching exact format from working example
     const consentParams = new URLSearchParams({
       flow: 'gdp',
-      'params[redirect_uri]': redirectUri,
+      'params[redirect_uri]': `"${redirectUri}"`, // Note the quotes around the URI
       'params[app_id]': appId!,
-      'params[display]': 'page',
-      'params[response_type]': 'code',
-      'params[scope]': JSON.stringify(['threads_basic', 'threads_content_publish']),
+      'params[display]': '"page"',
+      'params[logger_id]': `"${loggerId}"`,
+      'params[response_type]': '"code"',
+      'params[scope]': '["threads_basic","threads_content_publish"]', // Array without spaces
       'params[state]': state,
-      'params[next]': 'read',
-      'params[steps]': JSON.stringify({
-        read: ['threads_basic', 'threads_content_publish']
-      }),
+      'params[next]': '"read"',
+      'params[steps]': '{"read":["threads_basic","threads_content_publish"]}', // Object without spaces
       'params[south_korea_ux]': 'false',
       source: 'gdp_delegated'
     });
