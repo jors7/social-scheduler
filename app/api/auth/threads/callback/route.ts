@@ -149,21 +149,27 @@ export async function GET(request: NextRequest) {
       // Check if it's a permission issue
       try {
         const errorData = JSON.parse(profileText);
-        if (errorData.error?.code === 100 && errorData.error?.error_subcode === 10) {
-          console.log('App needs review or user needs to be tester. Using minimal data from token response.');
+        if (errorData.error?.code === 100) {
+          // Permission issue or object doesn't exist - use minimal data
+          console.log('Profile fetch failed but we have a token. Using minimal data from token response.');
+          console.log('Error details:', errorData.error);
+          
           // Use minimal data from the token response
           userData = {
             id: userId,
-            username: `threads_user_${userId}`, // Fallback username
+            username: `threads_${userId}`, // Fallback username
             threads_profile_picture_url: null,
             threads_biography: ''
           };
         } else {
-          // Different error, fail the auth
-          const errorUrl = process.env.NODE_ENV === 'production'
-            ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
-            : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
-          return NextResponse.redirect(errorUrl);
+          // Different error, but we have a token, so let's try to continue
+          console.warn('Unexpected error fetching profile, but continuing with minimal data');
+          userData = {
+            id: userId,
+            username: `threads_${userId}`,
+            threads_profile_picture_url: null,
+            threads_biography: ''
+          };
         }
       } catch (e) {
         // Can't parse error, fail the auth

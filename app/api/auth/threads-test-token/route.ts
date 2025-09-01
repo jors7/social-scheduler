@@ -67,23 +67,76 @@ export async function POST(request: NextRequest) {
           data
         });
 
-        // If successful, try to get profile
+        // If successful, try to get profile with different approaches
         if (response.ok && typeof data === 'object' && data.access_token) {
-          const profileUrl = `https://graph.threads.net/v1.0/${data.user_id || 'me'}?fields=id,username,threads_profile_picture_url&access_token=${data.access_token}`;
+          const profileTests = [];
           
+          // Test 1: Use 'me' endpoint
           try {
-            const profileResponse = await fetch(profileUrl);
-            const profileData = await profileResponse.json();
-            
-            results[results.length - 1].profile = {
-              status: profileResponse.status,
-              data: profileData
-            };
+            const meUrl = `https://graph.threads.net/v1.0/me?fields=id,username&access_token=${data.access_token}`;
+            const meResponse = await fetch(meUrl);
+            const meData = await meResponse.json();
+            profileTests.push({
+              endpoint: 'me',
+              status: meResponse.status,
+              data: meData
+            });
           } catch (e) {
-            results[results.length - 1].profile = {
-              error: String(e)
-            };
+            profileTests.push({ endpoint: 'me', error: String(e) });
           }
+          
+          // Test 2: Use user_id directly
+          if (data.user_id) {
+            try {
+              const userUrl = `https://graph.threads.net/v1.0/${data.user_id}?fields=id,username&access_token=${data.access_token}`;
+              const userResponse = await fetch(userUrl);
+              const userData = await userResponse.json();
+              profileTests.push({
+                endpoint: `user_id: ${data.user_id}`,
+                status: userResponse.status,
+                data: userData
+              });
+            } catch (e) {
+              profileTests.push({ endpoint: 'user_id', error: String(e) });
+            }
+          }
+          
+          // Test 3: Try threads_publishing_limit endpoint
+          try {
+            const limitUrl = `https://graph.threads.net/v1.0/${data.user_id || 'me'}/threads_publishing_limit?fields=quota_usage,config&access_token=${data.access_token}`;
+            const limitResponse = await fetch(limitUrl);
+            const limitData = await limitResponse.json();
+            profileTests.push({
+              endpoint: 'threads_publishing_limit',
+              status: limitResponse.status,
+              data: limitData
+            });
+          } catch (e) {
+            profileTests.push({ endpoint: 'threads_publishing_limit', error: String(e) });
+          }
+          
+          // Test 4: Try to create a test post (without actually posting)
+          try {
+            const testUrl = `https://graph.threads.net/v1.0/${data.user_id || 'me'}/threads?access_token=${data.access_token}`;
+            const testResponse = await fetch(testUrl, {
+              method: 'GET' // Just GET to see if endpoint exists
+            });
+            const testData = await testResponse.text();
+            profileTests.push({
+              endpoint: 'threads_endpoint_test',
+              status: testResponse.status,
+              data: testData
+            });
+          } catch (e) {
+            profileTests.push({ endpoint: 'threads_endpoint_test', error: String(e) });
+          }
+          
+          results[results.length - 1].profile_tests = profileTests;
+          results[results.length - 1].token_info = {
+            has_token: true,
+            user_id: data.user_id,
+            token_length: data.access_token.length
+          };
         }
       } catch (e) {
         results.push({
