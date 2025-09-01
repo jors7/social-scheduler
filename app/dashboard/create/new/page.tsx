@@ -38,6 +38,7 @@ const PinterestBoardSelector = dynamic(() => import('@/components/pinterest/boar
 const VideoMetadata = dynamic(() => import('@/components/youtube/video-metadata'), { ssr: false })
 const VideoUpload = dynamic(() => import('@/components/youtube/video-upload'), { ssr: false })
 const TikTokVideoSettings = dynamic(() => import('@/components/tiktok/video-settings').then(mod => ({ default: mod.TikTokVideoSettings })), { ssr: false })
+const ThreadComposer = dynamic(() => import('@/components/threads/thread-composer').then(mod => ({ default: mod.ThreadComposer })), { ssr: false })
 import { 
   Calendar,
   Clock,
@@ -84,6 +85,10 @@ function CreateNewPostPageContent() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploadedMediaUrls, setUploadedMediaUrls] = useState<string[]>([])
   const [loadingDraft, setLoadingDraft] = useState(false)
+  
+  // Threads-specific state
+  const [threadsMode, setThreadsMode] = useState<'single' | 'thread'>('single')
+  const [threadPosts, setThreadPosts] = useState<string[]>([''])
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
   const loadedDraftRef = useRef<string | null>(null)
   const [shouldAutoPublish, setShouldAutoPublish] = useState(false)
@@ -444,6 +449,63 @@ function CreateNewPostPageContent() {
           setIsPosting(false)
           return
         }
+      }
+
+      // Handle Threads thread mode separately
+      if (supportedPlatforms.length === 1 && supportedPlatforms[0] === 'threads' && threadsMode === 'thread' && threadPosts.length > 0) {
+        // Get Threads account
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          toast.error('User not authenticated')
+          clearTimeout(timeoutId)
+          setIsPosting(false)
+          return
+        }
+
+        const { data: threadsAccount } = await supabase
+          .from('social_accounts')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('platform', 'threads')
+          .single()
+
+        if (!threadsAccount) {
+          toast.error('Threads account not connected')
+          clearTimeout(timeoutId)
+          setIsPosting(false)
+          return
+        }
+
+        // Post thread
+        const response = await fetch('/api/post/threads/thread-numbered', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: threadsAccount.platform_user_id,
+            accessToken: threadsAccount.access_token,
+            posts: threadPosts.filter(p => p.trim().length > 0),
+            addNumbers: true
+          })
+        })
+
+        const data = await response.json()
+        
+        if (!response.ok) {
+          toast.error(data.error || 'Failed to post thread')
+        } else if (data.partial) {
+          toast.warning(data.message)
+        } else {
+          toast.success(`Thread posted with ${data.posts.length} posts!`)
+          // Clear form
+          setPostContent('')
+          setThreadPosts([''])
+          setThreadsMode('single')
+          setSelectedPlatforms([])
+        }
+        
+        clearTimeout(timeoutId)
+        setIsPosting(false)
+        return
       }
 
       const postData: PostData = {
@@ -1224,6 +1286,57 @@ function CreateNewPostPageContent() {
               )}
             </CardContent>
           </Card>
+
+          {/* Threads Thread Mode */}
+          {selectedPlatforms.length === 1 && selectedPlatforms[0] === 'threads' && (
+            <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 border-purple-200 dark:border-purple-800">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
+                  <span className="text-2xl">🧵</span>
+                  Threads Options
+                </CardTitle>
+                <CardDescription className="text-sm sm:text-base text-gray-600">
+                  Choose how to post to Threads
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <Button
+                    type="button"
+                    variant={threadsMode === 'single' ? 'default' : 'outline'}
+                    onClick={() => setThreadsMode('single')}
+                    size="sm"
+                  >
+                    Single Post
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={threadsMode === 'thread' ? 'default' : 'outline'}
+                    onClick={() => setThreadsMode('thread')}
+                    size="sm"
+                  >
+                    Thread (Multiple Posts)
+                  </Button>
+                </div>
+                
+                {threadsMode === 'thread' && (
+                  <div className="space-y-4">
+                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                      <p className="text-sm text-amber-800 dark:text-amber-200">
+                        <strong>Note:</strong> Thread posts will be numbered [1/n], [2/n], etc. 
+                        Connected threads require additional app permissions from Meta.
+                      </p>
+                    </div>
+                    <ThreadComposer
+                      onPost={(posts) => setThreadPosts(posts)}
+                      maxPosts={10}
+                      maxCharsPerPost={500}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Media Upload */}
           <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
