@@ -54,8 +54,8 @@ export async function GET(request: NextRequest) {
       scope: '', // Empty scope - don't request any permissions
     });
 
-    // Use threads.net OAuth (NOT graph.threads.net and NOT facebook.com!)
-    const authUrl = `https://threads.net/oauth/authorize?${params.toString()}`;
+    // Use www.threads.net OAuth (with www prefix!)
+    const authUrl = `https://www.threads.net/oauth/authorize?${params.toString()}`;
     
     console.log('Threads OAuth URL (Instagram direct):', authUrl);
     console.log('Parameters:', {
