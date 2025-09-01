@@ -40,24 +40,16 @@ export async function GET(request: NextRequest) {
     const cookieStore = cookies();
     const storedState = cookieStore.get('threads_oauth_state')?.value;
     
-    // Temporarily skip state validation to debug
-    console.log('State validation:', {
-      received: state,
-      stored: storedState,
-      match: storedState === state
-    });
-    
-    // Only warn about state mismatch, don't fail
     if (!storedState || storedState !== state) {
-      console.warn('State parameter mismatch - continuing anyway for debugging');
+      console.error('Invalid state parameter - CSRF protection');
+      const errorUrl = process.env.NODE_ENV === 'production'
+        ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
+        : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
+      return NextResponse.redirect(errorUrl);
     }
 
-    // Try to clear state cookie
-    try {
-      cookieStore.delete('threads_oauth_state');
-    } catch (e) {
-      console.warn('Could not delete state cookie:', e);
-    }
+    // Clear state cookie
+    cookieStore.delete('threads_oauth_state');
 
     // Exchange code for access token
     const baseUrl = process.env.NODE_ENV === 'production' 
