@@ -45,17 +45,36 @@ export async function POST(request: NextRequest) {
     });
 
     const createData = await createResponse.json();
-    console.log('Create container response:', createData);
+    console.log('Create container response:', {
+      status: createResponse.status,
+      data: createData
+    });
 
     if (!createResponse.ok) {
       console.error('Failed to create Threads container:', createData);
       return NextResponse.json(
-        { error: createData.error?.message || 'Failed to create post' },
+        { 
+          error: createData.error?.message || 'Failed to create post',
+          details: createData.error,
+          status: createResponse.status
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!createData.id) {
+      console.error('No container ID in response:', createData);
+      return NextResponse.json(
+        { 
+          error: 'No container ID returned from Threads API',
+          response: createData
+        },
         { status: 400 }
       );
     }
 
     const containerId = createData.id;
+    console.log('Container created with ID:', containerId);
 
     // Step 2: Publish the container
     const publishParams = {
@@ -75,20 +94,36 @@ export async function POST(request: NextRequest) {
     });
 
     const publishData = await publishResponse.json();
-    console.log('Publish response:', publishData);
+    console.log('Publish response:', {
+      status: publishResponse.status,
+      data: publishData
+    });
 
     if (!publishResponse.ok) {
       console.error('Failed to publish Threads post:', publishData);
       return NextResponse.json(
-        { error: publishData.error?.message || 'Failed to publish post' },
+        { 
+          error: publishData.error?.message || 'Failed to publish post',
+          details: publishData.error,
+          status: publishResponse.status,
+          containerId: containerId
+        },
         { status: 400 }
       );
     }
 
+    // Log success details
+    console.log('Threads post published successfully:', {
+      postId: publishData.id,
+      containerId: containerId,
+      response: publishData
+    });
+
     return NextResponse.json({
       success: true,
       id: publishData.id,
-      containerId: containerId
+      containerId: containerId,
+      fullResponse: publishData
     });
 
   } catch (error) {

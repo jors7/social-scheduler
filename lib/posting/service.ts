@@ -429,6 +429,12 @@ export class PostingService {
 
   private async postToThreads(content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
     try {
+      console.log('Posting to Threads with account:', {
+        platform_user_id: account.platform_user_id,
+        username: account.username,
+        has_token: !!account.access_token
+      });
+
       const response = await fetch('/api/post/threads', {
         method: 'POST',
         headers: {
@@ -443,10 +449,17 @@ export class PostingService {
       });
 
       const data = await response.json();
+      console.log('Threads API response:', data);
 
       if (!response.ok) {
+        console.error('Threads posting failed:', data);
         throw new Error(data.error || 'Threads posting failed');
       }
+
+      console.log('Threads post successful:', {
+        postId: data.id,
+        containerId: data.containerId
+      });
 
       return {
         platform: 'threads',
@@ -454,6 +467,7 @@ export class PostingService {
         postId: data.id,
       };
     } catch (error) {
+      console.error('Threads posting error:', error);
       return {
         platform: 'threads',
         success: false,
