@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { ThreadsService } from '@/lib/threads/service';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,15 +23,17 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Threads OAuth error:', error);
-      return NextResponse.redirect(
-        new URL('/dashboard/settings?error=threads_auth_failed', request.url)
-      );
+      const errorUrl = process.env.NODE_ENV === 'production'
+        ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
+        : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
+      return NextResponse.redirect(errorUrl);
     }
 
     if (!code) {
-      return NextResponse.redirect(
-        new URL('/dashboard/settings?error=threads_auth_failed', request.url)
-      );
+      const errorUrl = process.env.NODE_ENV === 'production'
+        ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
+        : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
+      return NextResponse.redirect(errorUrl);
     }
 
     // Verify state for CSRF protection
@@ -41,9 +42,10 @@ export async function GET(request: NextRequest) {
     
     if (!storedState || storedState !== state) {
       console.error('Invalid state parameter');
-      return NextResponse.redirect(
-        new URL('/dashboard/settings?error=threads_auth_failed', request.url)
-      );
+      const errorUrl = process.env.NODE_ENV === 'production'
+        ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
+        : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
+      return NextResponse.redirect(errorUrl);
     }
 
     // Clear state cookie
@@ -51,14 +53,18 @@ export async function GET(request: NextRequest) {
 
     // Exchange code for access token
     const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://social-scheduler-opal.vercel.app'
+      ? 'https://www.socialcal.app'
       : 'http://localhost:3001';
     
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
+    // MUST use THREADS_APP_ID, not the main Meta App ID!
+    const appId = process.env.THREADS_APP_ID || '1074593118154653';
+    const appSecret = process.env.THREADS_APP_SECRET;
+    
     const tokenParams = new URLSearchParams({
-      client_id: process.env.META_APP_ID!,
-      client_secret: process.env.META_APP_SECRET!,
+      client_id: appId!,
+      client_secret: appSecret!,
       grant_type: 'authorization_code',
       redirect_uri: redirectUri,
       code: code,
@@ -66,22 +72,32 @@ export async function GET(request: NextRequest) {
 
     console.log('Exchanging code for token...');
     console.log('Token exchange parameters:', {
-      client_id: process.env.META_APP_ID?.substring(0, 5) + '...',
+      client_id: appId?.substring(0, 5) + '...',
       redirect_uri: redirectUri,
       grant_type: 'authorization_code',
       code: code.substring(0, 10) + '...'
     });
     
-    // Use Facebook Graph API token exchange endpoint
-    const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?${tokenParams.toString()}`;
-    const tokenResponse = await fetch(tokenUrl);
+    // Use the official Threads Graph API token endpoint
+    console.log('Exchanging code for token...');
+    const tokenUrl = `https://graph.threads.net/oauth/access_token`;
+    const tokenResponse = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: tokenParams.toString()
+    });
+    
+    console.log('Token response status:', tokenResponse.status);
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error('Token exchange failed:', errorText);
-      return NextResponse.redirect(
-        new URL('/dashboard/settings?error=threads_auth_failed', request.url)
-      );
+      const errorUrl = process.env.NODE_ENV === 'production'
+        ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
+        : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
+      return NextResponse.redirect(errorUrl);
     }
 
     const tokenData = await tokenResponse.json();
@@ -90,8 +106,8 @@ export async function GET(request: NextRequest) {
     // Exchange short-lived token for long-lived token
     const longLivedParams = new URLSearchParams({
       grant_type: 'fb_exchange_token',
-      client_id: process.env.META_APP_ID!,
-      client_secret: process.env.META_APP_SECRET!,
+      client_id: appId!,
+      client_secret: appSecret!,
       fb_exchange_token: tokenData.access_token,
     });
 
@@ -109,59 +125,169 @@ export async function GET(request: NextRequest) {
       console.log('Got long-lived token');
     }
 
-    // Get Facebook user info
-    const fbUserResponse = await fetch(
-      `https://graph.facebook.com/v18.0/me?access_token=${accessToken}`
+    // Try to get Threads user info directly first
+    let meResponse = await fetch(
+      `https://graph.threads.net/v1.0/me?fields=id,username,threads_profile_picture_url,threads_biography&access_token=${accessToken}`
     );
     
-    if (!fbUserResponse.ok) {
-      const errorText = await fbUserResponse.text();
-      console.error('Failed to get Facebook user info:', errorText);
-      return NextResponse.redirect(
-        new URL('/dashboard/settings?error=threads_auth_failed', request.url)
+    // If Threads API fails, try Facebook Graph API
+    if (!meResponse.ok) {
+      console.log('Threads API failed, trying Facebook Graph API...');
+      meResponse = await fetch(
+        `https://graph.facebook.com/v18.0/me?access_token=${accessToken}`
       );
     }
     
-    const fbUserData = await fbUserResponse.json();
-    console.log('Facebook user data:', fbUserData);
+    if (!meResponse.ok) {
+      const errorText = await meResponse.text();
+      console.error('Failed to get user info:', errorText);
+      const errorUrl = process.env.NODE_ENV === 'production'
+        ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
+        : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
+      return NextResponse.redirect(errorUrl);
+    }
     
-    // Get user's Facebook pages (which can be used for Threads)
+    const userData = await meResponse.json();
+    console.log('User data:', userData);
+    
+    // Try to get Instagram Business/Creator accounts directly
+    // First, check if the user has Instagram accounts linked
+    let threadsUserId = null;
+    let threadsUsername = null;
+    let threadsProfilePic = null;
+    let pageAccessToken = accessToken; // Default to user token
+    
+    // Try to get Instagram accounts through different methods
+    console.log('Looking for Instagram Business/Creator accounts...');
+    
+    // Method 1: Try to get pages (some Instagram Creator accounts are treated as pages)
     const pagesResponse = await fetch(
       `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
     );
     
-    if (!pagesResponse.ok) {
-      const errorText = await pagesResponse.text();
-      console.error('Failed to get Facebook pages:', errorText);
+    if (pagesResponse.ok) {
+      const pagesData = await pagesResponse.json();
+      console.log('Found pages/accounts:', pagesData.data?.length || 0);
+      
+      // Check each page for Instagram Business Account
+      if (pagesData.data && pagesData.data.length > 0) {
+        for (const page of pagesData.data) {
+          console.log(`Checking account: ${page.name} (${page.id})`);
+          
+          // Check if this is an Instagram Business Account
+          const igCheckResponse = await fetch(
+            `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token || accessToken}`
+          );
+          
+          if (igCheckResponse.ok) {
+            const igCheckData = await igCheckResponse.json();
+            
+            if (igCheckData.instagram_business_account) {
+              const igAccountId = igCheckData.instagram_business_account.id;
+              console.log(`Found Instagram Business Account: ${igAccountId}`);
+              
+              // Get Instagram profile info
+              const profileResponse = await fetch(
+                `https://graph.facebook.com/v18.0/${igAccountId}?fields=id,username,profile_picture_url,biography,followers_count&access_token=${page.access_token || accessToken}`
+              );
+              
+              if (profileResponse.ok) {
+                const profileData = await profileResponse.json();
+                threadsUserId = igAccountId;
+                threadsUsername = profileData.username;
+                threadsProfilePic = profileData.profile_picture_url;
+                pageAccessToken = page.access_token || accessToken;
+                console.log(`Found Instagram account: @${threadsUsername}`);
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Method 2: Try to get Instagram Business Account directly from user
+    if (!threadsUserId) {
+      console.log('Checking for Instagram Business Account linked to user directly...');
+      const igBusinessResponse = await fetch(
+        `https://graph.facebook.com/v18.0/me?fields=instagram_business_account&access_token=${accessToken}`
+      );
+      
+      if (igBusinessResponse.ok) {
+        const igBusinessData = await igBusinessResponse.json();
+        
+        if (igBusinessData.instagram_business_account) {
+          const igAccountId = igBusinessData.instagram_business_account.id;
+          console.log(`Found Instagram Business Account on user: ${igAccountId}`);
+          
+          // Get Instagram profile info
+          const profileResponse = await fetch(
+            `https://graph.facebook.com/v18.0/${igAccountId}?fields=id,username,profile_picture_url,biography,followers_count&access_token=${accessToken}`
+          );
+          
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            threadsUserId = igAccountId;
+            threadsUsername = profileData.username;
+            threadsProfilePic = profileData.profile_picture_url;
+            pageAccessToken = accessToken;
+            console.log(`Found Instagram account: @${threadsUsername}`);
+          }
+        }
+      }
+    }
+    
+    // Method 3: Try Instagram Creator accounts (might be under different field)
+    if (!threadsUserId) {
+      console.log('Checking for Instagram Creator Account...');
+      
+      // Try with instagram_accounts field
+      const igCreatorResponse = await fetch(
+        `https://graph.facebook.com/v18.0/me/instagram_accounts?access_token=${accessToken}`
+      );
+      
+      if (igCreatorResponse.ok) {
+        const igCreatorData = await igCreatorResponse.json();
+        console.log('Instagram accounts response:', JSON.stringify(igCreatorData, null, 2));
+        
+        if (igCreatorData.data && igCreatorData.data.length > 0) {
+          const igAccount = igCreatorData.data[0];
+          const igAccountId = igAccount.id;
+          console.log(`Found Instagram Creator Account: ${igAccountId}`);
+          
+          // Get Instagram profile info
+          const profileResponse = await fetch(
+            `https://graph.facebook.com/v18.0/${igAccountId}?fields=id,username,profile_picture_url,biography,followers_count&access_token=${accessToken}`
+          );
+          
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            threadsUserId = igAccountId;
+            threadsUsername = profileData.username || igAccount.username;
+            threadsProfilePic = profileData.profile_picture_url;
+            pageAccessToken = accessToken;
+            console.log(`Found Instagram Creator account: @${threadsUsername}`);
+          }
+        }
+      }
+    }
+    
+    if (!threadsUserId) {
+      console.error('No Instagram Business/Creator Account found');
+      console.log('User needs to convert their Instagram account to Business/Creator type');
       return NextResponse.redirect(
-        new URL('/dashboard/settings?error=threads_auth_failed', request.url)
+        new URL('/dashboard/settings?error=threads_no_instagram_business', request.url)
       );
     }
     
-    const pagesData = await pagesResponse.json();
-    console.log('Pages data:', JSON.stringify(pagesData, null, 2));
-    
-    if (!pagesData.data || pagesData.data.length === 0) {
-      console.error('No Facebook pages found for Threads');
-      return NextResponse.redirect(
-        new URL('/dashboard/settings?error=threads_no_pages', request.url)
-      );
-    }
-    
-    // Use the first page for Threads (since Threads is connected to pages)
-    const page = pagesData.data[0];
-    console.log('Using page for Threads:', page.name);
-    
-    // For now, we'll save the Facebook page info as the "Threads" account
-    // In the future, when Threads API is more mature, we can get actual Threads profile info
-    const userData = {
-      id: page.id,
-      username: page.name,
-      threads_profile_picture_url: null, // Could get from page data if needed
-      threads_biography: page.about || ''
+    const threadsAccountData = {
+      id: threadsUserId,
+      username: threadsUsername,
+      threads_profile_picture_url: threadsProfilePic,
+      threads_biography: ''
     };
     
-    console.log('Threads account data:', userData);
+    console.log('Threads account data:', threadsAccountData);
 
     // Store in database
     const supabase = createServerClient(
@@ -186,11 +312,11 @@ export async function GET(request: NextRequest) {
     const accountData = {
       user_id: user.id,
       platform: 'threads',
-      platform_user_id: userData.id,
-      account_name: userData.username,
-      username: userData.username,
-      profile_image_url: userData.threads_profile_picture_url,
-      access_token: page.access_token, // Use page access token for posting
+      platform_user_id: threadsAccountData.id,
+      account_name: threadsAccountData.username,
+      username: threadsAccountData.username,
+      profile_image_url: threadsAccountData.threads_profile_picture_url,
+      access_token: pageAccessToken, // Use the appropriate access token for Threads API
       access_secret: '', // Threads doesn't use access secret
       is_active: true,
       expires_at: expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null,
@@ -215,9 +341,15 @@ export async function GET(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Threads callback error:', error);
-    return NextResponse.redirect(
-      new URL('/dashboard/settings?error=threads_callback_failed', request.url)
-    );
+    console.error('=== THREADS CALLBACK ERROR ===');
+    console.error('Error details:', error);
+    console.error('Request URL:', request.url);
+    
+    // Use the correct base URL for redirect
+    const errorRedirectUrl = process.env.NODE_ENV === 'production'
+      ? 'https://www.socialcal.app/dashboard/settings?error=threads_callback_failed'
+      : 'http://localhost:3001/dashboard/settings?error=threads_callback_failed';
+    
+    return NextResponse.redirect(errorRedirectUrl);
   }
 }

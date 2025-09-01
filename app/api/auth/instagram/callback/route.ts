@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     // Exchange code for access token
     const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://social-scheduler-opal.vercel.app'
+      ? 'https://www.socialcal.app'
       : 'http://localhost:3001';
     
     const redirectUri = `${baseUrl}/api/auth/instagram/callback`;

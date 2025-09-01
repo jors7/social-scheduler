@@ -14,10 +14,14 @@ export async function GET(request: NextRequest) {
       appIdLength: process.env.META_APP_ID?.length
     });
     
-    if (!process.env.META_APP_ID || !process.env.META_APP_SECRET) {
+    // MUST use THREADS_APP_ID, not the main Meta App ID!
+    const appId = process.env.THREADS_APP_ID || '1074593118154653'; // Your actual Threads App ID
+    const appSecret = process.env.THREADS_APP_SECRET;
+    
+    if (!appId || !appSecret) {
       console.error('Missing Threads API credentials');
+      console.error('THREADS_APP_ID:', process.env.THREADS_APP_ID ? 'set' : 'missing');
       console.error('META_APP_ID:', process.env.META_APP_ID ? 'set' : 'missing');
-      console.error('META_APP_SECRET:', process.env.META_APP_SECRET ? 'set' : 'missing');
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
@@ -28,36 +32,35 @@ export async function GET(request: NextRequest) {
     const cookieStore = cookies();
     cookieStore.set('threads_oauth_state', state, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // Allow HTTP for local development
       sameSite: 'lax',
       maxAge: 60 * 10, // 10 minutes
     });
 
     // Determine callback URL based on environment
     const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://social-scheduler-opal.vercel.app'
+      ? 'https://www.socialcal.app'
       : 'http://localhost:3001';
     
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
-    // Use valid Meta permissions for Threads access
-    // Threads API requires Instagram permissions since they're connected
+    // Threads API - no scope parameter, use defaults
     const params = new URLSearchParams({
-      client_id: process.env.META_APP_ID!,
+      client_id: appId!,
       redirect_uri: redirectUri,
-      scope: 'pages_show_list,pages_read_engagement',
       response_type: 'code',
       state: state,
+      // No scope - Threads will use default permissions
     });
 
-    // Use Facebook OAuth endpoint which handles Threads permissions
-    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
+    // Use threads.net OAuth (NOT graph.threads.net and NOT facebook.com!)
+    const authUrl = `https://threads.net/oauth/authorize?${params.toString()}`;
     
-    console.log('Threads OAuth URL (via Facebook):', authUrl);
+    console.log('Threads OAuth URL (Instagram direct):', authUrl);
     console.log('Parameters:', {
-      client_id: process.env.META_APP_ID,
+      client_id: appId,
       redirect_uri: redirectUri,
-      scope: 'threads_basic,threads_content_publish',
+      scope: 'instagram_basic,instagram_content_publish',
       response_type: 'code',
       state: state,
     });

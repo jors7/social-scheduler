@@ -6,7 +6,7 @@ export interface ThreadsCredentials {
 export class ThreadsClient {
   private accessToken: string;
   private userID: string;
-  private baseURL = 'https://graph.threads.net/v1.0';
+  private baseURL = 'https://graph.facebook.com/v18.0';
 
   constructor(credentials: ThreadsCredentials) {
     this.accessToken = credentials.accessToken;
@@ -15,8 +15,9 @@ export class ThreadsClient {
 
   async getProfile() {
     try {
+      // Get Instagram Business Account profile which is linked to Threads
       const response = await fetch(
-        `${this.baseURL}/${this.userID}?fields=id,username,threads_profile_picture_url,threads_biography&access_token=${this.accessToken}`
+        `${this.baseURL}/${this.userID}?fields=id,username,profile_picture_url,biography,followers_count,media_count&access_token=${this.accessToken}`
       );
 
       if (!response.ok) {
@@ -33,7 +34,8 @@ export class ThreadsClient {
 
   async createPost(text: string, imageUrl?: string) {
     try {
-      // Create media container
+      // Threads API posting through Instagram Graph API
+      // Step 1: Create a Threads media container
       const createParams = new URLSearchParams({
         media_type: 'TEXT',
         text: text,
@@ -41,10 +43,12 @@ export class ThreadsClient {
       });
 
       if (imageUrl) {
+        // For Threads with images
         createParams.set('media_type', 'IMAGE');
         createParams.set('image_url', imageUrl);
       }
 
+      // Use the threads endpoint for the Instagram Business Account
       const createResponse = await fetch(
         `${this.baseURL}/${this.userID}/threads`,
         {
@@ -55,12 +59,12 @@ export class ThreadsClient {
 
       if (!createResponse.ok) {
         const error = await createResponse.json();
-        throw new Error(`Failed to create media container: ${JSON.stringify(error)}`);
+        throw new Error(`Failed to create Threads container: ${JSON.stringify(error)}`);
       }
 
       const { id: creationId } = await createResponse.json();
 
-      // Publish the thread
+      // Step 2: Publish the Threads post
       const publishParams = new URLSearchParams({
         creation_id: creationId,
         access_token: this.accessToken,
@@ -92,8 +96,8 @@ export class ThreadsClient {
       return {
         id: profile.id,
         username: profile.username,
-        profilePictureUrl: profile.threads_profile_picture_url,
-        biography: profile.threads_biography,
+        profilePictureUrl: profile.profile_picture_url,
+        biography: profile.biography,
       };
     } catch (error: any) {
       console.error('Error verifying Threads credentials:', error);
