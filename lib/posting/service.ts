@@ -153,6 +153,9 @@ export class PostingService {
       case 'linkedin':
         return await this.postToLinkedIn(textContent, account, mediaUrls);
       
+      case 'threads':
+        return await this.postToThreads(textContent, account, mediaUrls);
+      
       default:
         return {
           platform,
@@ -418,6 +421,41 @@ export class PostingService {
     } catch (error) {
       return {
         platform: 'linkedin',
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  private async postToThreads(content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
+    try {
+      const response = await fetch('/api/post/threads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: account.platform_user_id,
+          accessToken: account.access_token,
+          text: content,
+          mediaUrl: mediaUrls?.[0], // Threads supports one image per post
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Threads posting failed');
+      }
+
+      return {
+        platform: 'threads',
+        success: true,
+        postId: data.id,
+      };
+    } catch (error) {
+      return {
+        platform: 'threads',
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
       };
