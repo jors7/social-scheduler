@@ -461,6 +461,31 @@ export class PostingService {
         containerId: data.containerId
       });
 
+      // Check post status
+      try {
+        const statusResponse = await fetch('/api/post/threads/check-status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            postId: data.id,
+            accessToken: account.access_token,
+          }),
+        });
+
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+          console.log('Threads post status:', statusData);
+          
+          if (statusData.permalink) {
+            console.log('View your post at:', statusData.permalink);
+          }
+        }
+      } catch (statusError) {
+        console.warn('Could not check post status:', statusError);
+      }
+
       return {
         platform: 'threads',
         success: true,
