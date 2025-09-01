@@ -45,16 +45,26 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
-    // Threads OAuth - try www.threads.net without scope
-    const params = new URLSearchParams({
-      client_id: appId!,
-      redirect_uri: redirectUri,
-      response_type: 'code',
-      state: state,
+    // Threads uses a privacy consent flow, not standard OAuth
+    // Build the consent URL with nested parameters
+    const consentParams = new URLSearchParams({
+      flow: 'gdp',
+      'params[redirect_uri]': redirectUri,
+      'params[app_id]': appId!,
+      'params[display]': 'page',
+      'params[response_type]': 'code',
+      'params[scope]': JSON.stringify(['threads_basic', 'threads_content_publish']),
+      'params[state]': state,
+      'params[next]': 'read',
+      'params[steps]': JSON.stringify({
+        read: ['threads_basic', 'threads_content_publish']
+      }),
+      'params[south_korea_ux]': 'false',
+      source: 'gdp_delegated'
     });
 
-    // Use www.threads.net OAuth endpoint
-    const authUrl = `https://www.threads.net/oauth/authorize?${params.toString()}`;
+    // Use Threads privacy consent endpoint
+    const authUrl = `https://www.threads.com/privacy/consent/?${consentParams.toString()}`;
     
     console.log('Threads OAuth URL (Instagram direct):', authUrl);
     console.log('Parameters:', {
