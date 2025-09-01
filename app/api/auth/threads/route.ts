@@ -45,13 +45,12 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
-    // Threads API - no scope parameter, use defaults
+    // Threads API - completely omit scope parameter
     const params = new URLSearchParams({
       client_id: appId!,
       redirect_uri: redirectUri,
       response_type: 'code',
       state: state,
-      // No scope - Threads will use default permissions
     });
 
     // Use threads.net OAuth (NOT graph.threads.net and NOT facebook.com!)
