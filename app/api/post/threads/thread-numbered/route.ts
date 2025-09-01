@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, accessToken, posts, mediaUrls = [] } = await request.json();
+    const { userId, accessToken, posts, mediaUrls = [], addNumbers = true } = await request.json();
 
     if (!userId || !accessToken || !posts || !Array.isArray(posts) || posts.length === 0) {
       return NextResponse.json(
@@ -11,15 +11,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`Creating thread with ${posts.length} posts`);
+    console.log(`Creating numbered thread with ${posts.length} posts`);
 
     const publishedPosts = [];
-    let previousPostId = null;
+    const totalPosts = posts.length;
 
     // Process each post in the thread sequentially
     for (let i = 0; i < posts.length; i++) {
-      const postText = posts[i];
+      let postText = posts[i];
       const mediaUrl = mediaUrls[i]; // Optional media for this specific post
+      
+      // Add numbering if requested and there's more than one post
+      if (addNumbers && totalPosts > 1) {
+        postText = `[${i + 1}/${totalPosts}] ${postText}`;
+      }
       
       try {
         // Step 1: Create media container for this post
@@ -33,16 +38,6 @@ export async function POST(request: NextRequest) {
           createParams.caption = postText;
         } else {
           createParams.text = postText;
-        }
-
-        // If this is not the first post, try to add reply_to_id
-        // Note: This requires the threads_manage_replies permission
-        if (previousPostId) {
-          // Only add reply_to_id if we're sure we have the permission
-          // For now, we'll skip this to avoid errors
-          // createParams.reply_to_id = previousPostId;
-          console.log(`Note: Thread chaining requires threads_manage_replies permission`);
-          console.log(`Creating standalone post instead of reply to ${previousPostId}`);
         }
 
         const createUrlParams = new URLSearchParams(createParams);
@@ -90,17 +85,14 @@ export async function POST(request: NextRequest) {
         publishedPosts.push({
           index: i,
           text: postText,
+          originalText: posts[i],
           postId: postId,
-          containerId: containerId,
-          isReply: previousPostId !== null
+          containerId: containerId
         });
 
-        // Update previousPostId for the next iteration
-        previousPostId = postId;
-
-        // Add a small delay between posts to avoid rate limiting
+        // Add a small delay between posts to avoid rate limiting and maintain order
         if (i < posts.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+          await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
         }
 
       } catch (error) {
@@ -126,10 +118,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Thread created with ${publishedPosts.length} posts`,
-      threadId: publishedPosts[0]?.postId, // First post ID can be considered the thread ID
+      message: `Thread created with ${publishedPosts.length} numbered posts`,
       posts: publishedPosts,
-      totalPosts: posts.length
+      totalPosts: posts.length,
+      note: 'Posts are numbered but not connected as replies due to API permission requirements'
     });
 
   } catch (error) {

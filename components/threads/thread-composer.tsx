@@ -16,12 +16,14 @@ interface ThreadComposerProps {
   onPost?: (posts: string[]) => void;
   maxPosts?: number;
   maxCharsPerPost?: number;
+  useNumbering?: boolean; // Add numbering to posts [1/3], [2/3], etc.
 }
 
 export function ThreadComposer({ 
   onPost, 
   maxPosts = 10, 
-  maxCharsPerPost = 500 
+  maxCharsPerPost = 500,
+  useNumbering = true 
 }: ThreadComposerProps) {
   const [posts, setPosts] = useState<ThreadPost[]>([
     { id: '1', text: '' }

@@ -45,13 +45,15 @@ export default function ThreadsThreadTest() {
     setResult(null);
 
     try {
-      const response = await fetch('/api/post/threads/thread', {
+      // Use the numbered approach since we don't have threads_manage_replies permission
+      const response = await fetch('/api/post/threads/thread-numbered', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: account.platform_user_id,
           accessToken: account.access_token,
-          posts: posts
+          posts: posts,
+          addNumbers: true
         })
       });
 
@@ -103,7 +105,9 @@ export default function ThreadsThreadTest() {
           <CardHeader>
             <CardTitle>Compose Thread</CardTitle>
             <CardDescription>
-              Add multiple posts to create a connected thread
+              Add multiple posts to create a numbered thread series (e.g., [1/3], [2/3], [3/3])
+              <br />
+              <span className="text-xs text-amber-600">Note: Connected threads require additional permissions. Posts will be numbered instead.</span>
             </CardDescription>
           </CardHeader>
           <CardContent>
