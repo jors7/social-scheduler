@@ -35,13 +35,13 @@ export async function POST(request: NextRequest) {
     // Step 1: Create media container
     console.log('Creating Threads media container:', createParams);
     
-    const createUrl = `https://graph.threads.net/v1.0/${userId}/threads`;
+    // Use 'me' endpoint instead of userId since the IDs don't match
+    // Threads API prefers URL parameters
+    const createUrlParams = new URLSearchParams(createParams);
+    const createUrl = `https://graph.threads.net/v1.0/me/threads?${createUrlParams.toString()}`;
+    
     const createResponse = await fetch(createUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(createParams)
+      method: 'POST'
     });
 
     const createData = await createResponse.json();
@@ -65,13 +65,13 @@ export async function POST(request: NextRequest) {
 
     console.log('Publishing Threads post:', publishParams);
     
-    const publishUrl = `https://graph.threads.net/v1.0/${userId}/threads_publish`;
+    // Use 'me' endpoint instead of userId since the IDs don't match
+    // Threads API prefers URL parameters
+    const publishUrlParams = new URLSearchParams(publishParams);
+    const publishUrl = `https://graph.threads.net/v1.0/me/threads_publish?${publishUrlParams.toString()}`;
+    
     const publishResponse = await fetch(publishUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(publishParams)
+      method: 'POST'
     });
 
     const publishData = await publishResponse.json();
