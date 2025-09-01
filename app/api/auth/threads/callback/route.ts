@@ -131,8 +131,8 @@ export async function GET(request: NextRequest) {
     
     console.log('Got Threads access token for user:', userId);
 
-    // Get Threads user info using the user_id from token response
-    const profileUrl = `https://graph.threads.net/v1.0/${userId || 'me'}?fields=id,username,threads_profile_picture_url,threads_biography&access_token=${accessToken}`;
+    // Get Threads user info - use /me endpoint which works better than user_id
+    const profileUrl = `https://graph.threads.net/v1.0/me?fields=id,username,threads_profile_picture_url,threads_biography&access_token=${accessToken}`;
     console.log('Fetching profile from:', profileUrl.replace(accessToken, 'TOKEN_HIDDEN'));
     
     const meResponse = await fetch(profileUrl);
@@ -194,10 +194,10 @@ export async function GET(request: NextRequest) {
     
     console.log('Threads user data:', userData);
     
-    // For Threads API, we use the data directly
-    let threadsUserId = userData.id || userId;
-    let threadsUsername = userData.username;
-    let threadsProfilePic = userData.threads_profile_picture_url;
+    // For Threads API, use the ID from the /me response if available, otherwise fallback
+    let threadsUserId = userData?.id || userId;
+    let threadsUsername = userData?.username || `threads_${userId}`;
+    let threadsProfilePic = userData?.threads_profile_picture_url || null;
     let pageAccessToken = accessToken; // Use the Threads access token
     
     // We have Threads data directly from the API
@@ -212,7 +212,7 @@ export async function GET(request: NextRequest) {
       id: threadsUserId,
       username: threadsUsername,
       threads_profile_picture_url: threadsProfilePic,
-      threads_biography: ''
+      threads_biography: userData?.threads_biography || ''
     };
     
     console.log('Threads account data:', threadsAccountData);
