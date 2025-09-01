@@ -45,17 +45,16 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
-    // Graph Threads API requires client_secret in authorize URL
+    // Threads OAuth - try www.threads.net without scope
     const params = new URLSearchParams({
       client_id: appId!,
-      client_secret: appSecret!, // Required by graph.threads.net
       redirect_uri: redirectUri,
       response_type: 'code',
       state: state,
     });
 
-    // Use graph.threads.net OAuth endpoint (requires client_secret)
-    const authUrl = `https://graph.threads.net/oauth/authorize?${params.toString()}`;
+    // Use www.threads.net OAuth endpoint
+    const authUrl = `https://www.threads.net/oauth/authorize?${params.toString()}`;
     
     console.log('Threads OAuth URL (Instagram direct):', authUrl);
     console.log('Parameters:', {
