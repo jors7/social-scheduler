@@ -16,14 +16,15 @@ export async function GET(request: NextRequest) {
     
     // MUST use THREADS_APP_ID, not the main Meta App ID!
     const appId = process.env.THREADS_APP_ID || '1074593118154653'; // Your actual Threads App ID
-    const appSecret = process.env.THREADS_APP_SECRET;
+    const appSecret = process.env.THREADS_APP_SECRET || process.env.META_APP_SECRET; // Fallback to META_APP_SECRET
     
-    if (!appId || !appSecret) {
-      console.error('Missing Threads API credentials');
-      console.error('THREADS_APP_ID:', process.env.THREADS_APP_ID ? 'set' : 'missing');
-      console.error('META_APP_ID:', process.env.META_APP_ID ? 'set' : 'missing');
+    if (!appId) {
+      console.error('Missing Threads App ID');
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
+    
+    // For OAuth initiation, we don't actually need the app secret yet
+    // It's only needed for token exchange in the callback
 
     // Generate state for CSRF protection
     const state = Math.random().toString(36).substring(7);
