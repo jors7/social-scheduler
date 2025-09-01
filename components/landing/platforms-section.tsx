@@ -16,10 +16,10 @@ export function PlatformsSection() {
   return (
     <div className="text-center pt-16 pb-2 px-4">
       <p className="text-sm text-gray-500 mb-6 font-medium uppercase tracking-wider">Works seamlessly with</p>
-      {/* Mobile: Two rows with centered bottom row, Desktop: Single row */}
+      {/* Mobile: Two rows with centered icons, Desktop: Single row */}
       <div className="sm:flex sm:flex-wrap sm:justify-center sm:gap-4">
-        {/* First row - 5 icons on mobile */}
-        <div className="grid grid-cols-5 gap-3 mb-3 sm:contents">
+        {/* First row - 5 icons on mobile, centered like second row */}
+        <div className="flex justify-center gap-3 mb-3 sm:contents">
           {platforms.slice(0, 5).map((platform, index) => (
             <div
               key={platform.name}
