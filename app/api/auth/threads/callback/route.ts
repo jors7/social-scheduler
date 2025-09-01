@@ -90,17 +90,38 @@ export async function GET(request: NextRequest) {
     });
     
     console.log('Token response status:', tokenResponse.status);
+    
+    const tokenText = await tokenResponse.text();
+    console.log('Token response body:', tokenText);
 
     if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      console.error('Token exchange failed:', errorText);
+      console.error('Token exchange failed:', tokenText);
+      
+      // Try to parse error details
+      try {
+        const errorData = JSON.parse(tokenText);
+        console.error('Token error details:', errorData);
+      } catch (e) {
+        console.error('Raw token error:', tokenText);
+      }
+      
       const errorUrl = process.env.NODE_ENV === 'production'
         ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
         : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
       return NextResponse.redirect(errorUrl);
     }
 
-    const tokenData = await tokenResponse.json();
+    let tokenData;
+    try {
+      tokenData = JSON.parse(tokenText);
+    } catch (e) {
+      console.error('Failed to parse token response:', e);
+      console.error('Token text was:', tokenText);
+      const errorUrl = process.env.NODE_ENV === 'production'
+        ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
+        : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
+      return NextResponse.redirect(errorUrl);
+    }
     console.log('Token received, getting user info...');
 
     // For Threads, we use the token directly
@@ -111,20 +132,35 @@ export async function GET(request: NextRequest) {
     console.log('Got Threads access token for user:', userId);
 
     // Get Threads user info using the user_id from token response
-    const meResponse = await fetch(
-      `https://graph.threads.net/v1.0/${userId || 'me'}?fields=id,username,threads_profile_picture_url,threads_biography&access_token=${accessToken}`
-    );
+    const profileUrl = `https://graph.threads.net/v1.0/${userId || 'me'}?fields=id,username,threads_profile_picture_url,threads_biography&access_token=${accessToken}`;
+    console.log('Fetching profile from:', profileUrl.replace(accessToken, 'TOKEN_HIDDEN'));
+    
+    const meResponse = await fetch(profileUrl);
+    
+    const profileText = await meResponse.text();
+    console.log('Profile response status:', meResponse.status);
+    console.log('Profile response body:', profileText);
     
     if (!meResponse.ok) {
-      const errorText = await meResponse.text();
-      console.error('Failed to get user info:', errorText);
+      console.error('Failed to get user info:', profileText);
       const errorUrl = process.env.NODE_ENV === 'production'
         ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
         : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
       return NextResponse.redirect(errorUrl);
     }
     
-    const userData = await meResponse.json();
+    let userData;
+    try {
+      userData = JSON.parse(profileText);
+    } catch (e) {
+      console.error('Failed to parse profile response:', e);
+      console.error('Profile text was:', profileText);
+      const errorUrl = process.env.NODE_ENV === 'production'
+        ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
+        : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
+      return NextResponse.redirect(errorUrl);
+    }
+    
     console.log('Threads user data:', userData);
     
     // For Threads API, we use the data directly
