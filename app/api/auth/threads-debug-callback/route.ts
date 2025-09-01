@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
     console.error('Debug callback error:', error);
     return NextResponse.json({ 
       error: 'Callback failed',
-      details: error.message 
+      details: error instanceof Error ? error.message : String(error)
     });
   }
 }
