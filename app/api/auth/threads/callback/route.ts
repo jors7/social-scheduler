@@ -128,10 +128,10 @@ export async function GET(request: NextRequest) {
     console.log('Threads user data:', userData);
     
     // For Threads API, we use the data directly
-    const threadsUserId = userData.id || userId;
-    const threadsUsername = userData.username;
-    const threadsProfilePic = userData.threads_profile_picture_url;
-    const pageAccessToken = accessToken; // Use the Threads access token
+    let threadsUserId = userData.id || userId;
+    let threadsUsername = userData.username;
+    let threadsProfilePic = userData.threads_profile_picture_url;
+    let pageAccessToken = accessToken; // Use the Threads access token
     
     // Skip Instagram Business Account lookup - we have Threads data directly
     if (false) {
