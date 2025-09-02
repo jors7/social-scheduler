@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       redirect_uri: redirectUri,
       response_type: 'code',
       state: state,
-      scope: 'instagram_business_basic,instagram_business_content_publish',
+      scope: 'instagram_business_basic-instagram_business_content_publish', // Use hyphen, not comma!
       logger_id: loggerId,
       app_id: process.env.META_APP_ID,
       platform_app_id: process.env.META_APP_ID
