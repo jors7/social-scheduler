@@ -36,6 +36,7 @@ export default function ThreadsAPITest() {
 
   useEffect(() => {
     loadAccount();
+    checkTokenExpiry();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadAccount = async () => {
@@ -51,6 +52,51 @@ export default function ThreadsAPITest() {
 
     if (data) {
       setAccount(data);
+      
+      // Check if token is expired
+      if (data.expires_at) {
+        const expiryDate = new Date(data.expires_at);
+        const now = new Date();
+        if (expiryDate < now) {
+          addTestResult({
+            permission: 'system',
+            endpoint: 'token_check',
+            success: false,
+            error: `Token expired on ${expiryDate.toLocaleString()}. Please reconnect in Settings.`,
+            timestamp: new Date().toISOString()
+          });
+        } else {
+          // Show when token expires
+          const daysUntilExpiry = Math.floor((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          if (daysUntilExpiry < 7) {
+            addTestResult({
+              permission: 'system',
+              endpoint: 'token_check',
+              success: true,
+              data: { message: `Token expires in ${daysUntilExpiry} days (${expiryDate.toLocaleDateString()})` },
+              timestamp: new Date().toISOString()
+            });
+          }
+        }
+      }
+    }
+  };
+
+  const checkTokenExpiry = async () => {
+    try {
+      const response = await fetch('/api/auth/threads/refresh');
+      const data = await response.json();
+      
+      if (data.expired && data.expired.length > 0) {
+        console.log('Expired tokens found:', data.expired);
+      }
+      
+      if (data.needsRefresh && data.needsRefresh.length > 0) {
+        console.log('Tokens need refresh:', data.needsRefresh);
+        // Could auto-refresh here if needed
+      }
+    } catch (error) {
+      console.error('Error checking token expiry:', error);
     }
   };
 
