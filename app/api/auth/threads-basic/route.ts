@@ -50,18 +50,30 @@ export async function GET(request: NextRequest) {
       'params[next]': '"read"',
       'params[steps]': '{"read":["threads_basic","threads_content_publish"]}',
       'params[south_korea_ux]': 'false',
+      'params[auth_type]': '"reauthorize"', // Force re-authorization with proper quotes
+      'params[re_auth_required]': 'true', // Additional parameter to force re-auth
       source: 'gdp_delegated'
     });
 
-    const authUrl = `https://www.threads.com/privacy/consent/?${consentParams.toString()}`;
+    // Use the standard OAuth URL which properly handles reauthorization
+    const oauthParams = new URLSearchParams({
+      client_id: appId,
+      redirect_uri: redirectUri,
+      scope: 'threads_basic,threads_content_publish',
+      response_type: 'code',
+      state: state,
+      auth_type: 'reauthorize'  // Force re-authorization
+    });
     
-    console.log('Threads Basic Auth URL generated');
+    const authUrl = `https://threads.net/oauth/authorize?${oauthParams.toString()}`;
+    
+    console.log('Threads Basic Auth URL generated (OAuth flow)');
     console.log('Redirect URI:', redirectUri);
     console.log('State:', state);
 
     return NextResponse.json({ 
       authUrl,
-      note: 'Basic permissions only (threads_basic, threads_content_publish)'
+      note: 'Basic permissions only (threads_basic, threads_content_publish) - OAuth flow'
     });
   } catch (error) {
     console.error('Threads OAuth initialization error:', error);

@@ -483,6 +483,11 @@ export default function SettingsContent() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
+      // For Threads, also call the disconnect endpoint to clear cookies
+      if (platformName === 'Threads') {
+        await fetch('/api/auth/threads/disconnect', { method: 'POST' })
+      }
+
       // Delete the record entirely for better security
       // The account can be re-added with upsert when reconnecting
       const { error } = await supabase
@@ -496,7 +501,7 @@ export default function SettingsContent() {
       toast.success(`Account disconnected`)
       
       // Show additional guidance for platforms that maintain authorization
-      if (platformName && ['TikTok', 'Facebook', 'Instagram', 'YouTube', 'LinkedIn'].includes(platformName)) {
+      if (platformName && ['Threads', 'TikTok', 'Facebook', 'Instagram', 'YouTube', 'LinkedIn'].includes(platformName)) {
         toast.info(
           `To fully revoke ${platformName} access, visit your ${platformName} account settings`, 
           { duration: 5000 }
