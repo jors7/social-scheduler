@@ -54,8 +54,8 @@ export async function GET(request: NextRequest) {
       auth_type: 'rerequest'
     });
     
-    // Try the Instagram OAuth endpoint which might handle Threads better
-    const authUrl = `https://api.instagram.com/oauth/authorize?${authParams.toString()}`;
+    // Use Threads OAuth endpoint
+    const authUrl = `https://www.threads.net/oauth/authorize?${authParams.toString()}`;
     
     console.log('Threads Force New Auth URL generated');
     console.log('Redirect URI:', redirectUri);

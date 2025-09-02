@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
-    // Use Instagram's OAuth endpoint with explicit parameters
+    // Use Threads OAuth endpoint (not Instagram!)
     const authParams = new URLSearchParams({
       client_id: appId,
       redirect_uri: redirectUri,
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     
     // Add a cache buster to the URL
     const cacheBuster = `cb=${timestamp}`;
-    const authUrl = `https://api.instagram.com/oauth/authorize?${authParams.toString()}&${cacheBuster}`;
+    const authUrl = `https://www.threads.net/oauth/authorize?${authParams.toString()}&${cacheBuster}`;
     
     console.log('Clean auth URL generated:', authUrl);
     console.log('State:', state);

@@ -280,23 +280,10 @@ export default function SettingsContent() {
     } else if (platformId === 'bluesky') {
       setShowBlueskyDialog(true)
     } else if (platformId === 'threads') {
-      // Check if there's an existing problematic account
-      const existingThreadsAccount = connectedAccounts.find(acc => 
-        acc.platform === 'threads' && 
-        (acc.username === 'janorsula' || acc.username === 'threads_janorsula')
-      )
-      
-      if (existingThreadsAccount) {
-        toast.error('Wrong account detected. Redirecting to fix the connection...')
-        // Redirect to the logout flow page
-        router.push('/threads-logout')
-        return
-      }
-      
       setLoading(true)
       try {
         console.log('Fetching Threads auth URL...')
-        // First deauthorize any existing connections
+        // First deauthorize any existing connections to ensure clean state
         await fetch('/api/auth/threads/deauthorize', { method: 'POST' })
         
         // Use the clean route to ensure fresh authorization
@@ -316,7 +303,7 @@ export default function SettingsContent() {
           if (data.cleared) {
             toast.info('Clearing previous account data...')
           }
-          // Direct redirect to Instagram OAuth
+          // Direct redirect to Threads OAuth (not Instagram)
           window.location.href = data.authUrl
         } else {
           toast.error('Failed to initialize Threads authentication')
