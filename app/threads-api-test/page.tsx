@@ -391,19 +391,16 @@ export default function ThreadsAPITest() {
 
   // Test 6: threads_read_replies - Get post replies
   const testReadReplies = async () => {
+    // Use the most recent post ID or indicate permission needed
     if (!lastPostId) {
-      // Try to create a post first
-      const created = await testPublishText();
-      if (!created || !lastPostId) {
-        addTestResult({
-          permission: 'threads_read_replies',
-          endpoint: 'post/replies',
-          success: false,
-          error: 'Could not create a post to test replies',
-          timestamp: new Date().toISOString()
-        });
-        return false;
-      }
+      addTestResult({
+        permission: 'threads_read_replies',
+        endpoint: 'post/replies',
+        success: false,
+        error: 'Permission not granted - requires app approval',
+        timestamp: new Date().toISOString()
+      });
+      return false;
     }
 
     const endpoint = `${lastPostId}/replies?fields=id,text,username,timestamp,like_count`;
@@ -436,19 +433,16 @@ export default function ThreadsAPITest() {
 
   // Test 7: threads_manage_insights - Get post insights
   const testPostInsights = async () => {
+    // Use the most recent post ID or indicate permission needed
     if (!lastPostId) {
-      // Try to create a post first
-      const created = await testPublishText();
-      if (!created || !lastPostId) {
-        addTestResult({
-          permission: 'threads_manage_insights',
-          endpoint: 'post/insights',
-          success: false,
-          error: 'Could not create a post to test insights',
-          timestamp: new Date().toISOString()
-        });
-        return false;
-      }
+      addTestResult({
+        permission: 'threads_manage_insights',
+        endpoint: 'post/insights',
+        success: false,
+        error: 'Permission not granted - requires app approval',
+        timestamp: new Date().toISOString()
+      });
+      return false;
     }
 
     // Fixed metrics - removed 'shares' which is not valid
@@ -718,6 +712,7 @@ export default function ThreadsAPITest() {
   const runAllTests = async () => {
     setLoading(true);
     setTestResults([]);
+    setLastPostId(''); // Reset post ID
 
     console.log('Starting Threads API tests...');
     
@@ -725,8 +720,8 @@ export default function ThreadsAPITest() {
     await testBasicProfile();
     await testBasicMedia();
 
-    // Test threads_content_publish (should work)
-    await testPublishText();
+    // Test threads_content_publish (should work) - Creates posts for other tests
+    await testPublishText(); // This should set lastPostId
     await testPublishImage();
 
     // Test threads_profile_discovery (may need approval)
@@ -735,7 +730,7 @@ export default function ThreadsAPITest() {
     // Test threads_location_tagging (needs approval)
     await testLocationTagging();
 
-    // Test threads_delete (needs approval)
+    // Test threads_delete (needs approval) - Creates its own post
     await testDeletePost();
 
     // Test threads_manage_mentions (may work)
@@ -747,15 +742,15 @@ export default function ThreadsAPITest() {
     // Test threads_manage_replies (needs approval)
     await testCreateThread();
 
-    // Test threads_read_replies (needs approval)
+    // Test threads_read_replies (needs approval) - Uses lastPostId from earlier
     await testReadReplies();
 
-    // Test threads_manage_insights (needs approval)
+    // Test threads_manage_insights (needs approval) - Uses lastPostId from earlier
     await testPostInsights();
     await testUserInsights();
 
     setLoading(false);
-    console.log('All tests completed');
+    console.log('All tests completed. Last post ID:', lastPostId);
   };
 
   // Export results for submission
