@@ -39,18 +39,27 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/auth/instagram/callback`;
 
-    // Build Facebook OAuth URL for Instagram permissions
-    const params = new URLSearchParams({
+    // Generate logger ID for tracking
+    const loggerId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+
+    // Build Instagram Business OAuth parameters
+    const params = {
       client_id: process.env.META_APP_ID,
       redirect_uri: redirectUri,
-      scope: 'pages_show_list,pages_read_engagement,business_management',
       response_type: 'code',
       state: state,
-    });
+      scope: 'instagram_business_basic,instagram_business_content_publish',
+      logger_id: loggerId,
+      app_id: process.env.META_APP_ID,
+      platform_app_id: process.env.META_APP_ID
+    };
 
-    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
+    // Use Instagram direct business OAuth flow (no Facebook Login required!)
+    const authUrl = `https://www.instagram.com/consent/?flow=ig_biz_login_oauth&params_json=${encodeURIComponent(JSON.stringify(params))}&source=oauth_permissions_page_www`;
 
-    console.log('Instagram OAuth URL:', authUrl);
+    console.log('Instagram Business OAuth URL generated');
+    console.log('Logger ID:', loggerId);
+    console.log('Redirect URI:', redirectUri);
 
     return NextResponse.json({ authUrl });
   } catch (error) {
