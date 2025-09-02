@@ -67,9 +67,17 @@ export async function GET(request: NextRequest) {
       code: code,
     });
 
-    console.log('Exchanging code for Instagram access token...');
-    // Use Instagram's token endpoint
+    console.log('=== Instagram Token Exchange ===');
+    console.log('Client ID:', instagramAppId);
+    console.log('Redirect URI:', redirectUri);
+    console.log('Code length:', code.length);
+    console.log('Has secret:', !!instagramAppSecret);
+    
+    // Try Instagram's token endpoint with POST body
     const tokenUrl = 'https://api.instagram.com/oauth/access_token';
+    console.log('Token URL:', tokenUrl);
+    console.log('Request body:', tokenBody.toString());
+    
     const tokenResponse = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
@@ -78,22 +86,38 @@ export async function GET(request: NextRequest) {
       body: tokenBody.toString()
     });
 
+    console.log('Token response status:', tokenResponse.status);
+    console.log('Token response headers:', Object.fromEntries(tokenResponse.headers.entries()));
+
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      console.error('Token exchange failed:', errorText);
+      console.error('Token exchange failed with status:', tokenResponse.status);
+      console.error('Error response:', errorText);
+      
+      // Try to parse error as JSON if possible
+      try {
+        const errorJson = JSON.parse(errorText);
+        console.error('Error details:', errorJson);
+      } catch (e) {
+        // Not JSON, already logged as text
+      }
+      
       return NextResponse.redirect(
         new URL('/dashboard/settings?error=instagram_auth_failed', request.url)
       );
     }
 
     const tokenData = await tokenResponse.json();
-    console.log('Token received:', tokenData);
+    console.log('Token data received:', JSON.stringify(tokenData, null, 2));
 
     // Instagram OAuth response includes: access_token, user_id
     const { access_token, user_id } = tokenData;
 
     if (!access_token || !user_id) {
-      console.error('Invalid token response:', tokenData);
+      console.error('Missing required fields in token response');
+      console.error('access_token:', access_token ? 'present' : 'missing');
+      console.error('user_id:', user_id ? 'present' : 'missing');
+      console.error('Full response:', tokenData);
       return NextResponse.redirect(
         new URL('/dashboard/settings?error=instagram_auth_failed', request.url)
       );
@@ -101,12 +125,20 @@ export async function GET(request: NextRequest) {
 
     // Get Instagram Business account info directly (no Facebook pages needed!)
     console.log('Fetching Instagram Business account info...');
-    const profileResponse = await fetch(
-      `https://graph.instagram.com/v20.0/${user_id}?fields=id,username,account_type,media_count,followers_count,follows_count,profile_picture_url,name&access_token=${access_token}`
-    );
+    console.log('User ID:', user_id);
+    console.log('Access token length:', access_token.length);
+    
+    const profileUrl = `https://graph.instagram.com/v20.0/${user_id}?fields=id,username,account_type,media_count,followers_count,follows_count,profile_picture_url,name&access_token=${access_token}`;
+    console.log('Profile URL:', profileUrl.replace(access_token, 'REDACTED'));
+    
+    const profileResponse = await fetch(profileUrl);
+
+    console.log('Profile response status:', profileResponse.status);
 
     if (!profileResponse.ok) {
+      const errorText = await profileResponse.text();
       console.error('Failed to get Instagram profile');
+      console.error('Profile fetch error:', errorText);
       return NextResponse.redirect(
         new URL('/dashboard/settings?error=instagram_auth_failed', request.url)
       );
