@@ -42,19 +42,18 @@ export async function GET(request: NextRequest) {
     // Generate logger ID for tracking
     const loggerId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 
-    // Use Facebook OAuth with Instagram permissions
-    // Instagram Business accounts require Facebook OAuth, not direct Instagram OAuth
+    // Use Instagram Business Login (no Facebook required!)
+    // This is the newer Instagram API with Instagram Login for Business/Creator accounts
     const authParams = new URLSearchParams({
-      client_id: process.env.META_APP_ID!, // Use main app ID for Facebook OAuth
+      client_id: process.env.META_APP_ID!, // Use main Meta app ID
       redirect_uri: redirectUri,
-      scope: 'instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement,business_management',
+      scope: 'instagram_business_basic,instagram_business_content_publish', // Business scopes
       response_type: 'code',
-      state: state,
-      auth_type: 'reauthorize' // Force new permissions
+      state: state
     });
 
-    // Use Facebook OAuth flow (Instagram Business requires Facebook authentication)
-    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?${authParams.toString()}`;
+    // Instagram Business Login OAuth endpoint (not Facebook!)
+    const authUrl = `https://api.instagram.com/oauth/authorize?${authParams.toString()}`;
 
     console.log('Instagram Business OAuth URL generated');
     console.log('Logger ID:', loggerId);
