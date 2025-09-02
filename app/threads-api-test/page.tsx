@@ -36,7 +36,7 @@ export default function ThreadsAPITest() {
 
   useEffect(() => {
     loadAccount();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadAccount = async () => {
     const { data: { user } } = await supabase.auth.getUser();

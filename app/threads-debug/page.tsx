@@ -107,8 +107,8 @@ export default function ThreadsDebugPage() {
           <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
             <h3 className="font-semibold mb-2">Common Issues:</h3>
             <ul className="list-disc list-inside text-sm space-y-1">
-              <li><strong>"redirect_uri" error</strong>: URI mismatch between app and Meta settings</li>
-              <li><strong>"TikTok" error</strong>: Generic Threads error, usually permissions or config issue</li>
+              <li><strong>&quot;redirect_uri&quot; error</strong>: URI mismatch between app and Meta settings</li>
+              <li><strong>&quot;TikTok&quot; error</strong>: Generic Threads error, usually permissions or config issue</li>
               <li><strong>Works locally but not production</strong>: Production redirect URI not added</li>
               <li><strong>Worked yesterday, not today</strong>: Meta changed something or app was restricted</li>
             </ul>
