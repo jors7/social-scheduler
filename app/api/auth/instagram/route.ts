@@ -42,21 +42,23 @@ export async function GET(request: NextRequest) {
     // Generate logger ID for tracking
     const loggerId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 
-    // Since Instagram shows as connected in Meta dashboard, use Facebook OAuth
-    // to access the Instagram account through Facebook pages
-    const authParams = new URLSearchParams({
-      client_id: process.env.META_APP_ID!, // Use main Meta app ID
-      redirect_uri: redirectUri,
-      scope: 'instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement,business_management',
-      response_type: 'code',
-      state: state,
-      auth_type: 'rerequest' // Force re-authorization
-    });
+    // Instagram API with Instagram Login - Option B (Instagram-only, no Facebook)
+    // Use the Instagram app ID, NOT the main Meta app ID
+    const instagramAppId = process.env.INSTAGRAM_CLIENT_ID || '1322876636131547';
+    
+    // Build params manually to ensure exact encoding
+    const authParams = new URLSearchParams();
+    authParams.append('force_reauth', 'true');
+    authParams.append('client_id', instagramAppId);
+    authParams.append('redirect_uri', redirectUri);
+    authParams.append('response_type', 'code');
+    authParams.append('scope', 'instagram_business_basic,instagram_business_content_publish,instagram_business_manage_messages,instagram_business_manage_comments,instagram_business_manage_insights');
+    authParams.append('state', state);
     
     console.log('Auth redirect URI:', redirectUri);
 
-    // Use Facebook OAuth to access Instagram Business accounts
-    const authUrl = `https://www.facebook.com/v20.0/dialog/oauth?${authParams.toString()}`;
+    // Use Instagram OAuth endpoint (NOT Facebook!)
+    const authUrl = `https://www.instagram.com/oauth/authorize?${authParams.toString()}`;
 
     console.log('Instagram Business OAuth URL generated');
     console.log('Logger ID:', loggerId);
