@@ -46,16 +46,18 @@ export async function GET(request: NextRequest) {
     // Use the Instagram app ID, NOT the main Meta app ID
     const instagramAppId = process.env.INSTAGRAM_CLIENT_ID || '1322876636131547';
     
-    // Build params manually to ensure exact encoding
+    // Build params exactly as needed - NO force_reauth!
     const authParams = new URLSearchParams();
-    authParams.append('force_reauth', 'true');
     authParams.append('client_id', instagramAppId);
     authParams.append('redirect_uri', redirectUri);
-    authParams.append('response_type', 'code');
     authParams.append('scope', 'instagram_business_basic,instagram_business_content_publish,instagram_business_manage_messages,instagram_business_manage_comments,instagram_business_manage_insights');
+    authParams.append('response_type', 'code');
     authParams.append('state', state);
     
-    console.log('Auth redirect URI:', redirectUri);
+    console.log('=== Instagram OAuth Authorize ===');
+    console.log('Client ID:', instagramAppId);
+    console.log('Redirect URI (exact):', redirectUri);
+    console.log('Full auth params:', authParams.toString());
 
     // Use Instagram OAuth endpoint (NOT Facebook!)
     const authUrl = `https://www.instagram.com/oauth/authorize?${authParams.toString()}`;

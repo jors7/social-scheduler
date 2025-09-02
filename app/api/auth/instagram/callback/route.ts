@@ -69,14 +69,27 @@ export async function GET(request: NextRequest) {
 
     console.log('=== Instagram Token Exchange ===');
     console.log('Client ID:', instagramAppId);
-    console.log('Redirect URI:', redirectUri);
+    console.log('Client Secret (first 4 chars):', instagramAppSecret?.substring(0, 4) + '...');
+    console.log('Redirect URI (exact):', redirectUri);
+    console.log('Code (first 20 chars):', code.substring(0, 20) + '...');
     console.log('Code length:', code.length);
-    console.log('Has secret:', !!instagramAppSecret);
+    
+    // Log each parameter separately for debugging
+    console.log('Token body parameters:');
+    tokenBody.forEach((value, key) => {
+      if (key === 'client_secret') {
+        console.log(`  ${key}: ${value.substring(0, 4)}...`);
+      } else if (key === 'code') {
+        console.log(`  ${key}: ${value.substring(0, 20)}...`);
+      } else {
+        console.log(`  ${key}: ${value}`);
+      }
+    });
     
     // Try Instagram's token endpoint with POST body
     const tokenUrl = 'https://api.instagram.com/oauth/access_token';
     console.log('Token URL:', tokenUrl);
-    console.log('Request body:', tokenBody.toString());
+    console.log('Full request body:', tokenBody.toString().replace(instagramAppSecret!, 'SECRET').replace(code, 'CODE'));
     
     const tokenResponse = await fetch(tokenUrl, {
       method: 'POST',
