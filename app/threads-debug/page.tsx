@@ -95,7 +95,7 @@ export default function ThreadsDebugPage() {
           <div className="p-4 bg-gray-50 dark:bg-gray-900/20 rounded-lg">
             <h3 className="font-semibold mb-2">Troubleshooting Steps:</h3>
             <ol className="list-decimal list-inside text-sm space-y-1">
-              <li>Check Meta Developer Console for app status (should be "Live" or "Development")</li>
+              <li>Check Meta Developer Console for app status (should be &quot;Live&quot; or &quot;Development&quot;)</li>
               <li>Verify both redirect URIs are added exactly as shown above</li>
               <li>Check if your Threads App ID is correct: <code>1074593118154653</code></li>
               <li>Ensure app secret is correctly set in environment variables</li>
