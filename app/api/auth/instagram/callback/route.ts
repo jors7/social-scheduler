@@ -55,9 +55,12 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/auth/instagram/callback`;
 
+    // Use Instagram product client ID for token exchange
+    const instagramClientId = process.env.INSTAGRAM_CLIENT_ID || '1322876636131547';
+    
     const tokenParams = new URLSearchParams({
-      client_id: process.env.META_APP_ID!,
-      client_secret: process.env.META_APP_SECRET!,
+      client_id: instagramClientId,
+      client_secret: process.env.META_APP_SECRET!, // Same app secret
       grant_type: 'authorization_code',
       redirect_uri: redirectUri,
       code: code,
