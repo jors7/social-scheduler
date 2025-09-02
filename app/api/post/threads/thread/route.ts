@@ -35,14 +35,11 @@ export async function POST(request: NextRequest) {
           createParams.text = postText;
         }
 
-        // If this is not the first post, try to add reply_to_id
-        // Note: This requires the threads_manage_replies permission
+        // If this is not the first post, add reply_to_id to create a thread
+        // This requires the threads_manage_replies permission
         if (previousPostId) {
-          // Only add reply_to_id if we're sure we have the permission
-          // For now, we'll skip this to avoid errors
-          // createParams.reply_to_id = previousPostId;
-          console.log(`Note: Thread chaining requires threads_manage_replies permission`);
-          console.log(`Creating standalone post instead of reply to ${previousPostId}`);
+          createParams.reply_to_id = previousPostId;
+          console.log(`Creating reply to post ${previousPostId}`);
         }
 
         const createUrlParams = new URLSearchParams(createParams);

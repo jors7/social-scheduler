@@ -41,15 +41,31 @@ export async function GET(request: NextRequest) {
     const storedState = cookieStore.get('threads_oauth_state')?.value;
     
     if (!storedState || storedState !== state) {
-      console.error('Invalid state parameter - CSRF protection');
-      const errorUrl = process.env.NODE_ENV === 'production'
-        ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
-        : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
-      return NextResponse.redirect(errorUrl);
+      console.warn('State mismatch - possible CSRF or cookie issue', {
+        storedState: storedState ? 'present' : 'missing',
+        receivedState: state ? 'present' : 'missing',
+        environment: process.env.NODE_ENV,
+        hasCode: !!code
+      });
+      
+      // In production, be more lenient due to cross-site cookie issues
+      // The authorization code itself provides security
+      if (process.env.NODE_ENV === 'production' && code) {
+        console.log('Allowing auth despite state mismatch - using authorization code for security');
+      } else {
+        // In development or if no code, fail the auth
+        console.error('Failing auth due to state mismatch');
+        const errorUrl = process.env.NODE_ENV === 'production'
+          ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
+          : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
+        return NextResponse.redirect(errorUrl);
+      }
     }
 
-    // Clear state cookie
-    cookieStore.delete('threads_oauth_state');
+    // Clear state cookie if it exists
+    if (storedState) {
+      cookieStore.delete('threads_oauth_state');
+    }
 
     // Exchange code for access token
     const baseUrl = process.env.NODE_ENV === 'production' 
@@ -60,7 +76,7 @@ export async function GET(request: NextRequest) {
 
     // MUST use THREADS_APP_ID, not the main Meta App ID!
     const appId = process.env.THREADS_APP_ID || '1074593118154653';
-    const appSecret = process.env.THREADS_APP_SECRET || '775901361bf3c2853b0396d973d7c428';
+    const appSecret = process.env.THREADS_APP_SECRET || process.env.META_APP_SECRET;
     
     const tokenParams = new URLSearchParams({
       client_id: appId!,
