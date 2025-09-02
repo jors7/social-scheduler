@@ -136,29 +136,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get Instagram Business account info directly (no Facebook pages needed!)
-    console.log('Fetching Instagram Business account info...');
+    // The user_id from Instagram OAuth is the actual Instagram Business account ID
+    // We can store this directly without additional API calls
+    console.log('Instagram Business account authenticated');
     console.log('User ID:', user_id);
-    console.log('Access token length:', access_token.length);
+    console.log('Permissions granted:', tokenData.permissions);
     
-    const profileUrl = `https://graph.instagram.com/v20.0/${user_id}?fields=id,username,account_type,media_count,followers_count,follows_count,profile_picture_url,name&access_token=${access_token}`;
-    console.log('Profile URL:', profileUrl.replace(access_token, 'REDACTED'));
+    // Create minimal profile data from what we have
+    // Username will be fetched later when needed
+    const profileData = {
+      id: user_id,
+      username: `instagram_${user_id}`, // Placeholder, will be updated on first use
+      profile_picture_url: null
+    };
     
-    const profileResponse = await fetch(profileUrl);
-
-    console.log('Profile response status:', profileResponse.status);
-
-    if (!profileResponse.ok) {
-      const errorText = await profileResponse.text();
-      console.error('Failed to get Instagram profile');
-      console.error('Profile fetch error:', errorText);
-      return NextResponse.redirect(
-        new URL('/dashboard/settings?error=instagram_auth_failed', request.url)
-      );
-    }
-
-    const profileData = await profileResponse.json();
-    console.log('Instagram profile received:', profileData.username);
+    console.log('Using Instagram account ID:', user_id);
 
     // Store in database
     const supabase = createServerClient(
