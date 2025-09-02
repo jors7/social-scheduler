@@ -184,6 +184,19 @@ export default function SettingsContent() {
   }, [supabase])
 
   useEffect(() => {
+    // Check for error messages in URL
+    const urlParams = new URLSearchParams(window.location.search)
+    const error = urlParams.get('error')
+    
+    if (error === 'threads_wrong_account') {
+      toast.error('Wrong Threads account detected. Please log out of Threads in your browser and try again.')
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname)
+    } else if (error === 'threads_auth_failed') {
+      toast.error('Threads authentication failed. Please try again.')
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+    
     // Fetch accounts on mount and set up real-time subscription
     const initialize = async () => {
       await fetchConnectedAccounts()
@@ -270,8 +283,8 @@ export default function SettingsContent() {
       setLoading(true)
       try {
         console.log('Fetching Threads auth URL...')
-        // Use the working threads-basic route instead
-        const response = await fetch('/api/auth/threads-basic')
+        // Use the clean route to ensure fresh authorization
+        const response = await fetch('/api/auth/threads-clean')
         
         if (!response.ok) {
           const errorText = await response.text()
@@ -283,7 +296,11 @@ export default function SettingsContent() {
         const data = await response.json()
         
         if (data.authUrl) {
-          console.log('Redirecting to:', data.authUrl)
+          console.log('Clean auth URL received:', data.authUrl)
+          if (data.cleared) {
+            toast.info('Clearing previous account data...')
+          }
+          // Direct redirect to Instagram OAuth
           window.location.href = data.authUrl
         } else {
           toast.error('Failed to initialize Threads authentication')

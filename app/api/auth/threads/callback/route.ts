@@ -216,6 +216,17 @@ export async function GET(request: NextRequest) {
     let threadsProfilePic = userData?.threads_profile_picture_url || null;
     let pageAccessToken = accessToken; // Use the Threads access token
     
+    // IMPORTANT: Validate the username to prevent connecting wrong account
+    // The non-existent account "janorsula" should be rejected
+    if (threadsUsername === 'janorsula' || threadsUsername === 'threads_janorsula') {
+      console.error('Invalid account detected:', threadsUsername);
+      console.error('This appears to be a cached/wrong account. Please try reconnecting.');
+      const errorUrl = process.env.NODE_ENV === 'production'
+        ? 'https://www.socialcal.app/dashboard/settings?error=threads_wrong_account'
+        : 'http://localhost:3001/dashboard/settings?error=threads_wrong_account';
+      return NextResponse.redirect(errorUrl);
+    }
+    
     // We have Threads data directly from the API
     if (!threadsUserId) {
       console.error('No Threads user ID found');
@@ -231,7 +242,7 @@ export async function GET(request: NextRequest) {
       threads_biography: userData?.threads_biography || ''
     };
     
-    console.log('Threads account data:', threadsAccountData);
+    console.log('Threads account data (validated):', threadsAccountData);
 
     // Store in database
     const supabase = createServerClient(
