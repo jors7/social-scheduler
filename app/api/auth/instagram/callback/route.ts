@@ -136,21 +136,33 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // The user_id from Instagram OAuth is the actual Instagram Business account ID
-    // We can store this directly without additional API calls
+    // Get Instagram Business account info from Facebook Graph API (not Instagram Graph!)
     console.log('Instagram Business account authenticated');
     console.log('User ID:', user_id);
     console.log('Permissions granted:', tokenData.permissions);
     
-    // Create minimal profile data from what we have
-    // Username will be fetched later when needed
-    const profileData = {
-      id: user_id,
-      username: `instagram_${user_id}`, // Placeholder, will be updated on first use
-      profile_picture_url: null
-    };
+    // IMPORTANT: Use graph.facebook.com for Instagram Business accounts, NOT graph.instagram.com!
+    const profileUrl = `https://graph.facebook.com/v20.0/${user_id}?fields=id,username,account_type,media_count,followers_count,follows_count,profile_picture_url,name&access_token=${access_token}`;
+    console.log('Fetching profile from Facebook Graph API...');
+    console.log('Profile URL:', profileUrl.replace(access_token, 'REDACTED'));
     
-    console.log('Using Instagram account ID:', user_id);
+    const profileResponse = await fetch(profileUrl);
+    console.log('Profile response status:', profileResponse.status);
+    
+    let profileData;
+    if (!profileResponse.ok) {
+      const errorText = await profileResponse.text();
+      console.error('Failed to get Instagram profile, using fallback:', errorText);
+      // Fallback if profile fetch fails
+      profileData = {
+        id: user_id,
+        username: `instagram_${user_id}`,
+        profile_picture_url: null
+      };
+    } else {
+      profileData = await profileResponse.json();
+      console.log('Instagram profile received:', profileData);
+    }
 
     // Store in database
     const supabase = createServerClient(

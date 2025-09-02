@@ -6,7 +6,7 @@ export interface InstagramCredentials {
 export class InstagramClient {
   private accessToken: string;
   private userID: string;
-  private baseURL = 'https://graph.instagram.com';
+  private baseURL = 'https://graph.facebook.com/v20.0'; // Use Facebook Graph API for Instagram Business!
 
   constructor(credentials: InstagramCredentials) {
     this.accessToken = credentials.accessToken;
