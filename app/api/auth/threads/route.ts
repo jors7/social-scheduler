@@ -58,10 +58,10 @@ export async function GET(request: NextRequest) {
       'params[display]': '"page"',
       'params[logger_id]': `"${loggerId}"`,
       'params[response_type]': '"code"',
-      'params[scope]': '["threads_basic","threads_content_publish"]', // Basic permissions only for now
+      'params[scope]': '["threads_basic","threads_content_publish"]', // Only approved permissions
       'params[state]': state,
       'params[next]': '"read"',
-      'params[steps]': '{"read":["threads_basic","threads_content_publish"]}', // Basic permissions only for now
+      'params[steps]': '{"read":["threads_basic","threads_content_publish"]}', // Only approved permissions
       'params[south_korea_ux]': 'false',
       source: 'gdp_delegated'
     });
