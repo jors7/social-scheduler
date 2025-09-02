@@ -55,19 +55,28 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/auth/instagram/callback`;
 
-    // Facebook Graph API token exchange
-    const tokenParams = new URLSearchParams({
-      client_id: process.env.META_APP_ID!,
-      client_secret: process.env.META_APP_SECRET!,
+    // Instagram OAuth token exchange (Instagram app, not Facebook!)
+    const instagramAppId = process.env.INSTAGRAM_CLIENT_ID || '1322876636131547';
+    const instagramAppSecret = process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET; // May need separate secret
+    
+    const tokenBody = new URLSearchParams({
+      client_id: instagramAppId,
+      client_secret: instagramAppSecret!,
       grant_type: 'authorization_code',
       redirect_uri: redirectUri,
       code: code,
     });
 
-    console.log('Exchanging code for access token via Facebook Graph API...');
-    // Use Facebook Graph API endpoint (NOT Instagram direct!)
-    const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?${tokenParams.toString()}`;
-    const tokenResponse = await fetch(tokenUrl);
+    console.log('Exchanging code for Instagram access token...');
+    // Use Instagram's token endpoint
+    const tokenUrl = 'https://api.instagram.com/oauth/access_token';
+    const tokenResponse = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: tokenBody.toString()
+    });
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
@@ -78,58 +87,22 @@ export async function GET(request: NextRequest) {
     }
 
     const tokenData = await tokenResponse.json();
-    console.log('Token received, getting Facebook pages...');
+    console.log('Token received:', tokenData);
 
-    const { access_token } = tokenData;
+    // Instagram OAuth response includes: access_token, user_id
+    const { access_token, user_id } = tokenData;
 
-    if (!access_token) {
+    if (!access_token || !user_id) {
       console.error('Invalid token response:', tokenData);
       return NextResponse.redirect(
         new URL('/dashboard/settings?error=instagram_auth_failed', request.url)
       );
     }
 
-    // Get user's Facebook pages to find Instagram Business accounts
-    console.log('Fetching Facebook pages...');
-    const pagesResponse = await fetch(
-      `https://graph.facebook.com/v18.0/me/accounts?fields=id,name,instagram_business_account,access_token&access_token=${access_token}`
-    );
-
-    if (!pagesResponse.ok) {
-      const errorText = await pagesResponse.text();
-      console.error('Failed to get Facebook pages:', errorText);
-      return NextResponse.redirect(
-        new URL('/dashboard/settings?error=instagram_no_pages', request.url)
-      );
-    }
-
-    const pagesData = await pagesResponse.json();
-    console.log('Pages data:', JSON.stringify(pagesData, null, 2));
-
-    // Find a page with Instagram Business account
-    let selectedPage = null;
-    let instagramAccountId = null;
-
-    for (const page of pagesData.data || []) {
-      if (page.instagram_business_account) {
-        selectedPage = page;
-        instagramAccountId = page.instagram_business_account.id;
-        console.log(`Found Instagram account on page: ${page.name}`);
-        break;
-      }
-    }
-
-    if (!selectedPage || !instagramAccountId) {
-      console.error('No Instagram Business account found on any page');
-      return NextResponse.redirect(
-        new URL('/dashboard/settings?error=instagram_not_business', request.url)
-      );
-    }
-
-    // Get Instagram Business account info
+    // Get Instagram Business account info directly (no Facebook pages needed!)
     console.log('Fetching Instagram Business account info...');
     const profileResponse = await fetch(
-      `https://graph.facebook.com/v18.0/${instagramAccountId}?fields=id,username,account_type,media_count,followers_count,follows_count,profile_picture_url,biography&access_token=${selectedPage.access_token}`
+      `https://graph.instagram.com/v20.0/${user_id}?fields=id,username,account_type,media_count,followers_count,follows_count,profile_picture_url,name&access_token=${access_token}`
     );
 
     if (!profileResponse.ok) {
@@ -165,11 +138,11 @@ export async function GET(request: NextRequest) {
     const accountData = {
       user_id: user.id,
       platform: 'instagram',
-      platform_user_id: instagramAccountId,
+      platform_user_id: user_id, // Instagram user ID from token response
       account_name: profileData.username,
       username: profileData.username,
       profile_image_url: profileData.profile_picture_url,
-      access_token: selectedPage.access_token, // Page access token for Instagram API
+      access_token: access_token, // Instagram access token (no Facebook page needed!)
       access_secret: '', // Not used for Instagram
       is_active: true,
     };
