@@ -389,7 +389,8 @@ export default function ThreadsAPITest() {
       return false;
     }
 
-    const endpoint = `${lastPostId}/insights?metric=views,likes,replies,reposts,quotes,shares`;
+    // Fixed metrics - removed 'shares' which is not valid
+    const endpoint = `${lastPostId}/insights?metric=views,likes,replies,reposts,quotes`;
     try {
       const url = `https://graph.threads.net/v1.0/${endpoint}&access_token=${account.access_token}`;
       const response = await fetch(url);
@@ -419,7 +420,8 @@ export default function ThreadsAPITest() {
 
   // Test 8: threads_manage_insights - Get user insights
   const testUserInsights = async () => {
-    const endpoint = 'me/threads_insights?metric=views,likes,replies,reposts,quotes,shares&period=day';
+    // Fixed metrics - removed 'shares' which is not valid
+    const endpoint = 'me/threads_insights?metric=views,likes,replies,reposts,quotes&period=day';
     try {
       const url = `https://graph.threads.net/v1.0/${endpoint}&access_token=${account.access_token}`;
       const response = await fetch(url);
@@ -447,6 +449,243 @@ export default function ThreadsAPITest() {
     }
   };
 
+  // Test 9: threads_profile_discovery - Get publishing limit
+  const testProfileDiscovery = async () => {
+    const endpoint = 'me/threads_publishing_limit';
+    try {
+      const url = `https://graph.threads.net/v1.0/${endpoint}?access_token=${account.access_token}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      addTestResult({
+        permission: 'threads_profile_discovery',
+        endpoint,
+        success: response.ok,
+        data: response.ok ? data : undefined,
+        error: !response.ok ? data.error?.message : undefined,
+        timestamp: new Date().toISOString()
+      });
+      
+      return response.ok;
+    } catch (error) {
+      addTestResult({
+        permission: 'threads_profile_discovery',
+        endpoint,
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed',
+        timestamp: new Date().toISOString()
+      });
+      return false;
+    }
+  };
+
+  // Test 10: threads_location_tagging - Post with location
+  const testLocationTagging = async () => {
+    try {
+      const createParams = new URLSearchParams({
+        media_type: 'TEXT',
+        text: 'Test post with location tagging for app review',
+        location_id: '106377336067638', // Generic US location
+        access_token: account.access_token
+      });
+      
+      const createUrl = `https://graph.threads.net/v1.0/me/threads?${createParams}`;
+      const createResponse = await fetch(createUrl, { method: 'POST' });
+      const createData = await createResponse.json();
+      
+      addTestResult({
+        permission: 'threads_location_tagging',
+        endpoint: 'me/threads (with location)',
+        success: createResponse.ok && !!createData.id,
+        data: createResponse.ok ? createData : undefined,
+        error: !createResponse.ok ? createData.error?.message : undefined,
+        timestamp: new Date().toISOString()
+      });
+      
+      // If creation successful, publish it
+      if (createResponse.ok && createData.id) {
+        const publishParams = new URLSearchParams({
+          creation_id: createData.id,
+          access_token: account.access_token
+        });
+        
+        const publishUrl = `https://graph.threads.net/v1.0/me/threads_publish?${publishParams}`;
+        const publishResponse = await fetch(publishUrl, { method: 'POST' });
+        const publishData = await publishResponse.json();
+        
+        if (publishResponse.ok && publishData.id) {
+          setLastPostId(publishData.id);
+        }
+      }
+      
+      return createResponse.ok;
+    } catch (error) {
+      addTestResult({
+        permission: 'threads_location_tagging',
+        endpoint: 'me/threads (with location)',
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed',
+        timestamp: new Date().toISOString()
+      });
+      return false;
+    }
+  };
+
+  // Test 11: threads_delete - Delete a post
+  const testDeletePost = async () => {
+    // First create a post to delete
+    try {
+      // Create
+      const createParams = new URLSearchParams({
+        media_type: 'TEXT',
+        text: 'Test post to delete for app review',
+        access_token: account.access_token
+      });
+      
+      const createUrl = `https://graph.threads.net/v1.0/me/threads?${createParams}`;
+      const createResponse = await fetch(createUrl, { method: 'POST' });
+      const createData = await createResponse.json();
+      
+      if (!createResponse.ok || !createData.id) {
+        addTestResult({
+          permission: 'threads_delete',
+          endpoint: 'delete test - creation failed',
+          success: false,
+          error: createData.error?.message || 'Failed to create post for deletion',
+          timestamp: new Date().toISOString()
+        });
+        return false;
+      }
+
+      // Publish
+      const publishParams = new URLSearchParams({
+        creation_id: createData.id,
+        access_token: account.access_token
+      });
+      
+      const publishUrl = `https://graph.threads.net/v1.0/me/threads_publish?${publishParams}`;
+      const publishResponse = await fetch(publishUrl, { method: 'POST' });
+      const publishData = await publishResponse.json();
+      
+      if (!publishResponse.ok || !publishData.id) {
+        addTestResult({
+          permission: 'threads_delete',
+          endpoint: 'delete test - publish failed',
+          success: false,
+          error: publishData.error?.message || 'Failed to publish post for deletion',
+          timestamp: new Date().toISOString()
+        });
+        return false;
+      }
+
+      // Now delete it
+      const deleteUrl = `https://graph.threads.net/v1.0/${publishData.id}?access_token=${account.access_token}`;
+      const deleteResponse = await fetch(deleteUrl, { method: 'DELETE' });
+      const deleteData = await deleteResponse.json();
+      
+      addTestResult({
+        permission: 'threads_delete',
+        endpoint: `DELETE ${publishData.id}`,
+        success: deleteResponse.ok,
+        data: deleteResponse.ok ? deleteData : undefined,
+        error: !deleteResponse.ok ? deleteData.error?.message : undefined,
+        timestamp: new Date().toISOString()
+      });
+      
+      return deleteResponse.ok;
+    } catch (error) {
+      addTestResult({
+        permission: 'threads_delete',
+        endpoint: 'delete post',
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed',
+        timestamp: new Date().toISOString()
+      });
+      return false;
+    }
+  };
+
+  // Test 12: threads_manage_mentions - Post with mentions
+  const testManageMentions = async () => {
+    try {
+      const createParams = new URLSearchParams({
+        media_type: 'TEXT',
+        text: 'Test post with @meta mention for app review',
+        access_token: account.access_token
+      });
+      
+      const createUrl = `https://graph.threads.net/v1.0/me/threads?${createParams}`;
+      const createResponse = await fetch(createUrl, { method: 'POST' });
+      const createData = await createResponse.json();
+      
+      addTestResult({
+        permission: 'threads_manage_mentions',
+        endpoint: 'me/threads (with mention)',
+        success: createResponse.ok && !!createData.id,
+        data: createResponse.ok ? createData : undefined,
+        error: !createResponse.ok ? createData.error?.message : undefined,
+        timestamp: new Date().toISOString()
+      });
+      
+      // If creation successful, publish it
+      if (createResponse.ok && createData.id) {
+        const publishParams = new URLSearchParams({
+          creation_id: createData.id,
+          access_token: account.access_token
+        });
+        
+        const publishUrl = `https://graph.threads.net/v1.0/me/threads_publish?${publishParams}`;
+        const publishResponse = await fetch(publishUrl, { method: 'POST' });
+        const publishData = await publishResponse.json();
+        
+        if (publishResponse.ok && publishData.id) {
+          setLastPostId(publishData.id);
+        }
+      }
+      
+      return createResponse.ok;
+    } catch (error) {
+      addTestResult({
+        permission: 'threads_manage_mentions',
+        endpoint: 'me/threads (with mention)',
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed',
+        timestamp: new Date().toISOString()
+      });
+      return false;
+    }
+  };
+
+  // Test 13: threads_keyword_search - Search for posts
+  const testKeywordSearch = async () => {
+    const endpoint = 'search?q=test&type=threads';
+    try {
+      const url = `https://graph.threads.net/v1.0/${endpoint}&access_token=${account.access_token}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      addTestResult({
+        permission: 'threads_keyword_search',
+        endpoint,
+        success: response.ok,
+        data: response.ok ? data : undefined,
+        error: !response.ok ? data.error?.message : undefined,
+        timestamp: new Date().toISOString()
+      });
+      
+      return response.ok;
+    } catch (error) {
+      addTestResult({
+        permission: 'threads_keyword_search',
+        endpoint,
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed',
+        timestamp: new Date().toISOString()
+      });
+      return false;
+    }
+  };
+
   // Run all tests
   const runAllTests = async () => {
     setLoading(true);
@@ -459,6 +698,21 @@ export default function ThreadsAPITest() {
     // Test threads_content_publish
     await testPublishText();
     await testPublishImage();
+
+    // Test threads_profile_discovery
+    await testProfileDiscovery();
+
+    // Test threads_location_tagging
+    await testLocationTagging();
+
+    // Test threads_delete
+    await testDeletePost();
+
+    // Test threads_manage_mentions
+    await testManageMentions();
+
+    // Test threads_keyword_search
+    await testKeywordSearch();
 
     // Test threads_manage_replies
     await testCreateThread();
@@ -555,10 +809,15 @@ export default function ThreadsAPITest() {
               </div>
 
               <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2">Permissions to Test:</h4>
+                <h4 className="font-semibold mb-2">All Permissions to Test:</h4>
                 <ul className="space-y-1 text-sm">
                   <li>✓ threads_basic - User profile and media</li>
                   <li>✓ threads_content_publish - Create posts</li>
+                  <li>✓ threads_profile_discovery - Publishing limits</li>
+                  <li>✓ threads_location_tagging - Location tags</li>
+                  <li>✓ threads_delete - Delete posts</li>
+                  <li>✓ threads_manage_mentions - Mentions</li>
+                  <li>✓ threads_keyword_search - Search</li>
                   <li>✓ threads_manage_replies - Create threads</li>
                   <li>✓ threads_read_replies - Read replies</li>
                   <li>✓ threads_manage_insights - Analytics</li>
@@ -596,6 +855,21 @@ export default function ThreadsAPITest() {
                   </Button>
                   <Button onClick={testPublishImage} disabled={loading} variant="outline">
                     Test: Publish Image Post (threads_content_publish)
+                  </Button>
+                  <Button onClick={testProfileDiscovery} disabled={loading} variant="outline">
+                    Test: Publishing Limit (threads_profile_discovery)
+                  </Button>
+                  <Button onClick={testLocationTagging} disabled={loading} variant="outline">
+                    Test: Location Tagging (threads_location_tagging)
+                  </Button>
+                  <Button onClick={testDeletePost} disabled={loading} variant="outline">
+                    Test: Delete Post (threads_delete)
+                  </Button>
+                  <Button onClick={testManageMentions} disabled={loading} variant="outline">
+                    Test: Mentions (threads_manage_mentions)
+                  </Button>
+                  <Button onClick={testKeywordSearch} disabled={loading} variant="outline">
+                    Test: Search (threads_keyword_search)
                   </Button>
                   <Button onClick={testCreateThread} disabled={loading} variant="outline">
                     Test: Create Thread (threads_manage_replies)
