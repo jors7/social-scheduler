@@ -59,13 +59,13 @@ export async function GET(request: NextRequest) {
     const instagramAppId = process.env.INSTAGRAM_CLIENT_ID || '1322876636131547';
     const instagramAppSecret = process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET; // May need separate secret
     
-    const tokenBody = new URLSearchParams({
-      client_id: instagramAppId,
-      client_secret: instagramAppSecret!,
-      grant_type: 'authorization_code',
-      redirect_uri: redirectUri,
-      code: code,
-    });
+    // Build token body manually to ensure exact encoding
+    const tokenBody = new URLSearchParams();
+    tokenBody.append('client_id', instagramAppId);
+    tokenBody.append('client_secret', instagramAppSecret!);
+    tokenBody.append('grant_type', 'authorization_code');
+    tokenBody.append('redirect_uri', redirectUri);
+    tokenBody.append('code', code);
 
     console.log('=== Instagram Token Exchange ===');
     console.log('Client ID:', instagramAppId);
