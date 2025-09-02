@@ -161,7 +161,14 @@ export async function GET(request: NextRequest) {
       };
     } else {
       profileData = await profileResponse.json();
-      console.log('Instagram profile received:', profileData);
+      console.log('Instagram profile received:', JSON.stringify(profileData, null, 2));
+      console.log('Username from profile:', profileData.username);
+      
+      // Ensure we have a username
+      if (!profileData.username) {
+        console.warn('No username in profile data, using fallback');
+        profileData.username = `instagram_${user_id}`;
+      }
     }
 
     // Store in database
@@ -188,13 +195,18 @@ export async function GET(request: NextRequest) {
       user_id: user.id,
       platform: 'instagram',
       platform_user_id: user_id, // Instagram user ID from token response
-      account_name: profileData.username,
-      username: profileData.username,
-      profile_image_url: profileData.profile_picture_url,
+      account_name: profileData.username || `instagram_${user_id}`,
+      username: profileData.username || `instagram_${user_id}`,
+      profile_image_url: profileData.profile_picture_url || null,
       access_token: access_token, // Instagram access token (no Facebook page needed!)
       access_secret: '', // Not used for Instagram
       is_active: true,
     };
+    
+    console.log('Storing Instagram account data:', {
+      ...accountData,
+      access_token: 'REDACTED'
+    });
 
     const { error: dbError } = await supabase
       .from('social_accounts')
