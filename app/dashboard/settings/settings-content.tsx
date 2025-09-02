@@ -280,9 +280,25 @@ export default function SettingsContent() {
     } else if (platformId === 'bluesky') {
       setShowBlueskyDialog(true)
     } else if (platformId === 'threads') {
+      // Check if there's an existing problematic account
+      const existingThreadsAccount = connectedAccounts.find(acc => 
+        acc.platform === 'threads' && 
+        (acc.username === 'janorsula' || acc.username === 'threads_janorsula')
+      )
+      
+      if (existingThreadsAccount) {
+        toast.error('Wrong account detected. Redirecting to fix the connection...')
+        // Redirect to the logout flow page
+        router.push('/threads-logout')
+        return
+      }
+      
       setLoading(true)
       try {
         console.log('Fetching Threads auth URL...')
+        // First deauthorize any existing connections
+        await fetch('/api/auth/threads/deauthorize', { method: 'POST' })
+        
         // Use the clean route to ensure fresh authorization
         const response = await fetch('/api/auth/threads-clean')
         
@@ -743,6 +759,16 @@ export default function SettingsContent() {
                                   className="text-gray-600 hover:text-gray-900 text-xs sm:text-sm px-2 sm:px-3"
                                 >
                                   {isExpanded ? 'Hide' : 'Show'} Accounts
+                                </Button>
+                              )}
+                              {platform.id === 'threads' && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => router.push('/threads-logout')}
+                                  className="text-xs text-blue-600 hover:text-blue-700 mr-2"
+                                >
+                                  Having issues?
                                 </Button>
                               )}
                               <Button
