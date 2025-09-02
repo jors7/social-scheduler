@@ -136,40 +136,64 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get Instagram Business account info from Facebook Graph API (not Instagram Graph!)
+    // Get Instagram Business account info
     console.log('Instagram Business account authenticated');
     console.log('User ID:', user_id);
     console.log('Permissions granted:', tokenData.permissions);
     
-    // IMPORTANT: Use graph.facebook.com for Instagram Business accounts, NOT graph.instagram.com!
-    const profileUrl = `https://graph.facebook.com/v20.0/${user_id}?fields=id,username,account_type,media_count,followers_count,follows_count,profile_picture_url,name&access_token=${access_token}`;
-    console.log('Fetching profile from Facebook Graph API...');
-    console.log('Profile URL:', profileUrl.replace(access_token, 'REDACTED'));
+    // Instagram Business Login tokens need special handling
+    // Try multiple endpoints to get the username
+    let profileData = null;
     
-    const profileResponse = await fetch(profileUrl);
-    console.log('Profile response status:', profileResponse.status);
+    // Try 1: Instagram Graph API with user_id
+    const instagramGraphUrl = `https://graph.instagram.com/${user_id}?fields=username,name,account_type,media_count&access_token=${access_token}`;
+    console.log('Trying Instagram Graph API with user_id...');
     
-    let profileData;
-    if (!profileResponse.ok) {
-      const errorText = await profileResponse.text();
-      console.error('Failed to get Instagram profile, using fallback:', errorText);
-      // Fallback if profile fetch fails
+    let profileResponse = await fetch(instagramGraphUrl);
+    console.log('Instagram Graph response:', profileResponse.status);
+    
+    if (profileResponse.ok) {
+      profileData = await profileResponse.json();
+      console.log('Got profile from Instagram Graph:', JSON.stringify(profileData, null, 2));
+    } else {
+      const error1 = await profileResponse.text();
+      console.log('Instagram Graph failed:', error1);
+      console.log('Trying /me endpoint...');
+      
+      // Try 2: Instagram Graph API /me endpoint
+      const meUrl = `https://graph.instagram.com/me?fields=username,account_type&access_token=${access_token}`;
+      profileResponse = await fetch(meUrl);
+      console.log('/me endpoint response:', profileResponse.status);
+      
+      if (profileResponse.ok) {
+        profileData = await profileResponse.json();
+        console.log('Got profile from /me:', JSON.stringify(profileData, null, 2));
+      } else {
+        const error2 = await profileResponse.text();
+        console.log('/me endpoint failed:', error2);
+      }
+    }
+    
+    // If all API calls failed, use fallback
+    if (!profileData) {
+      console.warn('All profile fetches failed, using fallback');
       profileData = {
         id: user_id,
         username: `instagram_${user_id}`,
         profile_picture_url: null
       };
-    } else {
-      profileData = await profileResponse.json();
-      console.log('Instagram profile received:', JSON.stringify(profileData, null, 2));
-      console.log('Username from profile:', profileData.username);
-      
-      // Ensure we have a username
-      if (!profileData.username) {
-        console.warn('No username in profile data, using fallback');
-        profileData.username = `instagram_${user_id}`;
-      }
     }
+    
+    // Ensure we have a username
+    if (!profileData.username) {
+      console.warn('No username in profile data, adding fallback username');
+      profileData.username = `instagram_${user_id}`;
+    }
+    
+    console.log('Final profile data:', {
+      id: profileData.id || user_id,
+      username: profileData.username
+    });
 
     // Store in database
     const supabase = createServerClient(
