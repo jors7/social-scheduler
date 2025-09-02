@@ -756,7 +756,7 @@ export default function SettingsContent() {
                                       </span>
                                     )}
                                     {/* Check if token is expired for Threads */}
-                                    {platform.id === 'threads' && account.expires_at && new Date(account.expires_at) < new Date() && (
+                                    {platform.id === 'threads' && (account as any).expires_at && new Date((account as any).expires_at) < new Date() && (
                                       <span className="inline-block mt-1 sm:mt-0 sm:ml-2 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs bg-red-100 text-red-700 rounded-full">
                                         Token Expired - Reconnect Required
                                       </span>
