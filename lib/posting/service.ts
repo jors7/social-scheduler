@@ -1,6 +1,7 @@
 import { FacebookService } from '@/lib/facebook/service';
 import { BlueskyService } from '@/lib/bluesky/service';
 import { PinterestService } from '@/lib/pinterest/service';
+import { InstagramService } from '@/lib/instagram/service';
 import { createBrowserClient } from '@supabase/ssr';
 
 export interface PostData {
@@ -141,6 +142,9 @@ export class PostingService {
       case 'facebook':
         return await this.postToFacebook(textContent, account, mediaUrls);
       
+      case 'instagram':
+        return await this.postToInstagram(textContent, account, mediaUrls);
+      
       case 'bluesky':
         return await this.postToBluesky(textContent, account, mediaUrls);
       
@@ -194,6 +198,46 @@ export class PostingService {
     } catch (error) {
       return {
         platform: 'facebook',
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  private async postToInstagram(content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
+    try {
+      // Instagram requires an image
+      if (!mediaUrls || mediaUrls.length === 0) {
+        throw new Error('Instagram posts require an image');
+      }
+
+      const response = await fetch('/api/post/instagram', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: account.platform_user_id,
+          accessToken: account.access_token,
+          text: content,
+          mediaUrl: mediaUrls[0], // Use first image
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Instagram posting failed');
+      }
+
+      return {
+        platform: 'instagram',
+        success: true,
+        postId: data.id,
+      };
+    } catch (error) {
+      return {
+        platform: 'instagram',
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
       };
