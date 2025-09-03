@@ -65,7 +65,7 @@ function DataDeletionStatusContent() {
                   <div className="space-y-1">
                     <p className="text-sm text-blue-700">
                       This data has been permanently removed and cannot be recovered.
-                      If you want to use Instagram with SocialCal again, you'll need to reconnect your account.
+                      If you want to use Instagram with SocialCal again, you&apos;ll need to reconnect your account.
                     </p>
                   </div>
                 </div>
@@ -93,9 +93,9 @@ function DataDeletionStatusContent() {
                 </p>
                 <ol className="list-decimal list-inside space-y-1 text-gray-500">
                   <li>Go to your Instagram settings</li>
-                  <li>Navigate to "Apps and Websites"</li>
+                  <li>Navigate to &quot;Apps and Websites&quot;</li>
                   <li>Remove SocialCal from your connected apps</li>
-                  <li>You'll receive a confirmation code</li>
+                  <li>You&apos;ll receive a confirmation code</li>
                   <li>Return here with that code</li>
                 </ol>
               </div>
