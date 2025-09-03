@@ -9,10 +9,15 @@ export async function GET(request: NextRequest) {
   try {
     console.log('=== Facebook OAuth Callback ===');
     console.log('Full callback URL:', request.url);
+    
+    // Use dedicated Facebook app credentials
+    const facebookAppId = process.env.FACEBOOK_APP_ID || process.env.META_APP_ID;
+    const facebookAppSecret = process.env.FACEBOOK_APP_SECRET || process.env.META_APP_SECRET;
+    
     console.log('Environment check:', {
-      hasMetaAppId: !!process.env.META_APP_ID,
-      hasMetaAppSecret: !!process.env.META_APP_SECRET,
-      metaAppIdLength: process.env.META_APP_ID?.length,
+      hasFacebookAppId: !!facebookAppId,
+      hasFacebookAppSecret: !!facebookAppSecret,
+      usingDedicatedApp: !!process.env.FACEBOOK_APP_ID,
       nodeEnv: process.env.NODE_ENV
     });
     

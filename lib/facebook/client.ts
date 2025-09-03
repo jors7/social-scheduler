@@ -3,8 +3,9 @@ export class FacebookClient {
   private appSecret: string;
 
   constructor() {
-    this.appId = process.env.META_APP_ID || '';
-    this.appSecret = process.env.META_APP_SECRET || '';
+    // Use dedicated Facebook app credentials, fallback to META for backward compatibility
+    this.appId = process.env.FACEBOOK_APP_ID || process.env.META_APP_ID || '';
+    this.appSecret = process.env.FACEBOOK_APP_SECRET || process.env.META_APP_SECRET || '';
     
     if (!this.appId || !this.appSecret) {
       throw new Error('Facebook API credentials not configured');

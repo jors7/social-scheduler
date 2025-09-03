@@ -6,17 +6,22 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     console.log('=== Facebook OAuth Initialization ===');
+    
+    // Use dedicated Facebook app credentials
+    const facebookAppId = process.env.FACEBOOK_APP_ID || process.env.META_APP_ID;
+    const facebookAppSecret = process.env.FACEBOOK_APP_SECRET || process.env.META_APP_SECRET;
+    
     console.log('Environment check:', {
-      hasMetaAppId: !!process.env.META_APP_ID,
-      hasMetaAppSecret: !!process.env.META_APP_SECRET,
-      metaAppIdLength: process.env.META_APP_ID?.length,
+      hasFacebookAppId: !!facebookAppId,
+      hasFacebookAppSecret: !!facebookAppSecret,
+      usingDedicatedApp: !!process.env.FACEBOOK_APP_ID,
       nodeEnv: process.env.NODE_ENV
     });
     
-    if (!process.env.META_APP_ID || !process.env.META_APP_SECRET) {
-      console.error('Missing Meta API credentials');
-      console.error('META_APP_ID:', process.env.META_APP_ID ? 'set' : 'missing');
-      console.error('META_APP_SECRET:', process.env.META_APP_SECRET ? 'set' : 'missing');
+    if (!facebookAppId || !facebookAppSecret) {
+      console.error('Missing Facebook API credentials');
+      console.error('FACEBOOK_APP_ID:', facebookAppId ? 'set' : 'missing');
+      console.error('FACEBOOK_APP_SECRET:', facebookAppSecret ? 'set' : 'missing');
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
@@ -41,7 +46,7 @@ export async function GET(request: NextRequest) {
 
     // Build Facebook OAuth URL
     const params = new URLSearchParams({
-      client_id: process.env.META_APP_ID,
+      client_id: facebookAppId,
       redirect_uri: redirectUri,
       scope: 'pages_show_list,pages_manage_posts,pages_read_engagement',
       response_type: 'code',
