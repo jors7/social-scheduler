@@ -15,8 +15,29 @@ export class FacebookService {
       // Get user's Facebook pages
       const pagesData = await this.client.getUserPages(tokenData.access_token);
       
+      // If no pages found, return user info for manual setup later
       if (!pagesData.data || pagesData.data.length === 0) {
-        throw new Error('No Facebook pages found');
+        console.log('No Facebook pages found - will allow manual setup');
+        
+        // Get user info to at least store the connection
+        const userResponse = await fetch(
+          `https://graph.facebook.com/v18.0/me?fields=id,name&access_token=${tokenData.access_token}`
+        );
+        const userData = await userResponse.json();
+        
+        // Return with flag indicating manual page setup is needed
+        return {
+          pageId: 'PENDING_SETUP',
+          pageName: userData.name || 'Facebook User', 
+          pageAccessToken: tokenData.access_token, // Store user token for later
+          pageInfo: {
+            id: userData.id,
+            name: userData.name,
+            requiresManualSetup: true
+          },
+          userAccessToken: tokenData.access_token,
+          requiresManualSetup: true
+        };
       }
 
       // Return the first page (you might want to let user choose)

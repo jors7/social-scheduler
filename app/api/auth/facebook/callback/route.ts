@@ -64,7 +64,8 @@ export async function GET(request: NextRequest) {
     const facebookService = new FacebookService();
     const authResult = await facebookService.authenticateUser(code, redirectUri);
     
-    console.log('Facebook page authenticated:', authResult.pageName);
+    console.log('Facebook authentication result:', authResult.pageName);
+    console.log('Requires manual setup:', authResult.requiresManualSetup);
 
     // Store in database
     const supabase = createServerClient(
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
       platform_user_id: authResult.pageId,
       account_name: authResult.pageName,
       username: authResult.pageName,
-      profile_image_url: authResult.pageInfo.picture?.data?.url || null,
+      profile_image_url: authResult.pageInfo?.picture?.data?.url || null,
       access_token: authResult.pageAccessToken,
       access_secret: '', // Not used for Facebook
       is_active: true,
@@ -112,6 +113,14 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('Facebook account connected successfully');
+    
+    // Redirect with appropriate success message
+    if (authResult.requiresManualSetup) {
+      return NextResponse.redirect(
+        new URL('/dashboard/settings?success=facebook_connected&setup=manual', request.url)
+      );
+    }
+    
     return NextResponse.redirect(
       new URL('/dashboard/settings?success=facebook_connected', request.url)
     );
