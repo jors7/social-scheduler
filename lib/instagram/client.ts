@@ -113,6 +113,47 @@ export class InstagramClient {
       const { id: creationId } = await containerResponse.json();
       console.log('Media container created with ID:', creationId);
 
+      // For videos, we need to wait for processing to complete
+      if (isVideo) {
+        console.log('Video detected, checking processing status...');
+        
+        // Wait for video to be processed (check status)
+        let attempts = 0;
+        const maxAttempts = 30; // 30 attempts with 2 second delays = ~60 seconds max
+        let isReady = false;
+        
+        while (attempts < maxAttempts && !isReady) {
+          attempts++;
+          
+          // Check container status
+          const statusUrl = `${this.baseURL}/${creationId}?fields=status,status_code&access_token=${this.accessToken}`;
+          const statusResponse = await fetch(statusUrl);
+          
+          if (statusResponse.ok) {
+            const statusData = await statusResponse.json();
+            console.log(`Status check ${attempts}:`, statusData);
+            
+            if (statusData.status_code === 'FINISHED') {
+              isReady = true;
+              console.log('Video processing complete!');
+            } else if (statusData.status_code === 'ERROR') {
+              throw new Error(`Video processing failed: ${JSON.stringify(statusData)}`);
+            } else {
+              // Still processing, wait 2 seconds
+              console.log(`Video still processing... (${statusData.status_code || 'IN_PROGRESS'})`);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+          } else {
+            console.warn('Failed to check status, proceeding anyway');
+            break;
+          }
+        }
+        
+        if (!isReady && attempts >= maxAttempts) {
+          console.warn('Video processing timeout, attempting to publish anyway...');
+        }
+      }
+
       // Step 2: Publish the media
       const publishParams = new URLSearchParams({
         creation_id: creationId,
