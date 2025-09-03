@@ -44,8 +44,10 @@ interface SocialAccount {
 function FacebookPageSetup({ account, onSuccess }: { account: SocialAccount; onSuccess: () => void }) {
   const [pageUrl, setPageUrl] = useState('')
   const [isConnecting, setIsConnecting] = useState(false)
+  const [showForceSave, setShowForceSave] = useState(false)
+  const [pageIdentifier, setPageIdentifier] = useState('')
   
-  const connectPage = async () => {
+  const connectPage = async (forceSave = false) => {
     if (!pageUrl) {
       toast.error('Please enter a Facebook Page URL')
       return
@@ -57,7 +59,7 @@ function FacebookPageSetup({ account, onSuccess }: { account: SocialAccount; onS
       const response = await fetch('/api/auth/facebook/connect-page', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pageUrl })
+        body: JSON.stringify({ pageUrl, forceSave })
       })
       
       const result = await response.json()
@@ -65,7 +67,13 @@ function FacebookPageSetup({ account, onSuccess }: { account: SocialAccount; onS
       if (result.success) {
         toast.success(result.message || 'Facebook page connected successfully!')
         setPageUrl('')
+        setShowForceSave(false)
         onSuccess()
+      } else if (result.canForceSave && !forceSave) {
+        // Show force save option
+        setShowForceSave(true)
+        setPageIdentifier(result.pageIdentifier)
+        toast.error(result.error || 'Failed to validate page')
       } else {
         toast.error(result.error || 'Failed to connect page')
       }
@@ -103,7 +111,7 @@ function FacebookPageSetup({ account, onSuccess }: { account: SocialAccount; onS
             }}
           />
           <Button 
-            onClick={connectPage} 
+            onClick={() => connectPage()} 
             disabled={isConnecting || !pageUrl}
             size="sm"
             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
@@ -111,6 +119,46 @@ function FacebookPageSetup({ account, onSuccess }: { account: SocialAccount; onS
             {isConnecting ? 'Connecting...' : 'Connect Page'}
           </Button>
         </div>
+        
+        {/* Force Save Option */}
+        {showForceSave && (
+          <div className="p-3 bg-red-50 rounded-lg border border-red-200 space-y-2">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-red-600 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-red-900">Page validation failed</p>
+                <p className="text-xs text-red-700 mt-1">
+                  Facebook couldn't validate this page (ID: {pageIdentifier}). This might happen with new pages or pages with special settings.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => connectPage(true)} 
+                disabled={isConnecting}
+                size="sm"
+                variant="outline"
+                className="flex-1 border-red-300 text-red-700 hover:bg-red-100"
+              >
+                {isConnecting ? 'Saving...' : 'Save Anyway'}
+              </Button>
+              <Button 
+                onClick={() => {
+                  setShowForceSave(false)
+                  setPageUrl('')
+                }} 
+                size="sm"
+                variant="ghost"
+                className="text-gray-600"
+              >
+                Cancel
+              </Button>
+            </div>
+            <p className="text-xs text-red-600">
+              ⚠️ Some features may not work if this isn't a valid Facebook Page
+            </p>
+          </div>
+        )}
         
         <div className="border-t border-amber-200 pt-2">
           <p className="text-xs text-amber-600">
@@ -908,6 +956,12 @@ export default function SettingsContent() {
                                       {platform.id === 'facebook' && account.platform_user_id === 'PENDING_SETUP' && (
                                         <span className="inline-block mt-1 sm:mt-0 sm:ml-2 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs bg-amber-100 text-amber-700 rounded-full">
                                           Page Setup Required
+                                        </span>
+                                      )}
+                                      {/* Check if Facebook page was force-saved */}
+                                      {platform.id === 'facebook' && (account as any).metadata?.forcedSave && (
+                                        <span className="inline-block mt-1 sm:mt-0 sm:ml-2 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs bg-orange-100 text-orange-700 rounded-full">
+                                          ⚠️ Unverified Page
                                         </span>
                                       )}
                                     </div>

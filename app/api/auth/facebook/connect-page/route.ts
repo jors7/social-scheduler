@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const { pageUrl } = await request.json();
+    const { pageUrl, forceSave = false } = await request.json();
     
     if (!pageUrl) {
       return NextResponse.json({ error: 'Page URL required' }, { status: 400 });
@@ -136,7 +136,23 @@ export async function POST(request: NextRequest) {
           `https://graph.facebook.com/v18.0/${pageIdentifier}?fields=id,name,about,picture`
         );
         
-        // Method 2: If that fails and identifier looks like a username, try encoding it
+        // Method 2: If numeric ID, try with metadata parameter
+        if (!publicPageResponse.ok && /^\d+$/.test(pageIdentifier)) {
+          console.log(`Trying numeric ID with metadata: ${pageIdentifier}`);
+          publicPageResponse = await fetch(
+            `https://graph.facebook.com/v18.0/${pageIdentifier}?metadata=1&fields=id,name,about,picture`
+          );
+        }
+        
+        // Method 3: If numeric ID, try pages endpoint
+        if (!publicPageResponse.ok && /^\d+$/.test(pageIdentifier)) {
+          console.log(`Trying pages endpoint: pages/${pageIdentifier}`);
+          publicPageResponse = await fetch(
+            `https://graph.facebook.com/v18.0/pages/${pageIdentifier}?fields=id,name,about,picture`
+          );
+        }
+        
+        // Method 4: If not numeric, try encoding for special characters
         if (!publicPageResponse.ok && !/^\d+$/.test(pageIdentifier)) {
           console.log(`Trying with encoded identifier: ${encodeURIComponent(pageIdentifier)}`);
           publicPageResponse = await fetch(
@@ -168,12 +184,33 @@ export async function POST(request: NextRequest) {
           }
         } else {
           // Page doesn't exist or is not accessible at all
-          const error = await publicPageResponse.json();
+          const error = await publicPageResponse.json().catch(() => ({ error: 'Unknown error' }));
           console.error('Page not found or not accessible:', error);
           
-          return NextResponse.json({ 
-            error: 'Page not found. Please check the URL and ensure the page exists and is public.'
-          }, { status: 404 });
+          // If forceSave is enabled and we have a numeric ID, save it anyway
+          if (forceSave && /^\d+$/.test(pageIdentifier)) {
+            console.log('Force-saving page with ID:', pageIdentifier);
+            pageData = {
+              id: pageIdentifier,
+              name: `Facebook Page ${pageIdentifier}`,
+              forcedSave: true
+            };
+            // Continue with forced save
+          } else {
+            // Provide helpful error message based on the URL type
+            let errorMessage = 'Cannot connect this page. ';
+            if (/profile\.php\?id=\d+/.test(pageUrl)) {
+              errorMessage += 'This appears to be a Facebook Page with a numeric ID. The page might be new or have restricted settings. You can try the "Save Anyway" option if you\'re sure this is your page.';
+            } else {
+              errorMessage += 'Please check the URL and ensure the page exists and is public.';
+            }
+            
+            return NextResponse.json({ 
+              error: errorMessage,
+              canForceSave: /^\d+$/.test(pageIdentifier),
+              pageIdentifier: pageIdentifier
+            }, { status: 404 });
+          }
         }
       }
       
@@ -202,7 +239,9 @@ export async function POST(request: NextRequest) {
           metadata: {
             hasPageToken: hasPageToken,
             pageUrl: pageUrl,
-            connectedAt: new Date().toISOString()
+            connectedAt: new Date().toISOString(),
+            forcedSave: pageData.forcedSave || false,
+            warning: pageData.forcedSave ? 'Page was saved without API validation. Some features may not work.' : null
           }
         })
         .eq('user_id', user.id)
