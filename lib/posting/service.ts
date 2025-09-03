@@ -1,4 +1,3 @@
-import { FacebookService } from '@/lib/facebook/service';
 import { BlueskyService } from '@/lib/bluesky/service';
 import { PinterestService } from '@/lib/pinterest/service';
 import { InstagramService } from '@/lib/instagram/service';
@@ -150,7 +149,11 @@ export class PostingService {
 
     switch (platform) {
       case 'facebook':
-        return await this.postToFacebook(textContent, account, mediaUrls);
+        // Facebook integration temporarily disabled
+        return {
+          success: false,
+          error: 'Facebook integration is currently being rebuilt. Please check back soon.'
+        };
       
       case 'instagram':
         return await this.postToInstagram(
@@ -184,40 +187,6 @@ export class PostingService {
     }
   }
 
-  private async postToFacebook(content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
-    try {
-      const response = await fetch('/api/post/facebook', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          pageId: account.platform_user_id,
-          pageAccessToken: account.access_token,
-          message: content,
-          mediaUrls: mediaUrls,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Facebook posting failed');
-      }
-
-      return {
-        platform: 'facebook',
-        success: true,
-        postId: data.id,
-      };
-    } catch (error) {
-      return {
-        platform: 'facebook',
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
-    }
-  }
 
   private async postToInstagram(
     content: string, 

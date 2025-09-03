@@ -40,144 +40,6 @@ interface SocialAccount {
   display_order?: number
 }
 
-// Facebook Page Setup Component
-function FacebookPageSetup({ account, onSuccess }: { account: SocialAccount; onSuccess: () => void }) {
-  const [pageUrl, setPageUrl] = useState('')
-  const [isConnecting, setIsConnecting] = useState(false)
-  const [showForceSave, setShowForceSave] = useState(false)
-  const [pageIdentifier, setPageIdentifier] = useState('')
-  
-  const connectPage = async (forceSave = false) => {
-    if (!pageUrl) {
-      toast.error('Please enter a Facebook Page URL')
-      return
-    }
-    
-    setIsConnecting(true)
-    
-    try {
-      const response = await fetch('/api/auth/facebook/connect-page', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pageUrl, forceSave })
-      })
-      
-      const result = await response.json()
-      
-      if (result.success) {
-        toast.success(result.message || 'Facebook page connected successfully!')
-        setPageUrl('')
-        setShowForceSave(false)
-        onSuccess()
-      } else if (result.canForceSave && !forceSave) {
-        // Show force save option
-        setShowForceSave(true)
-        setPageIdentifier(result.pageIdentifier)
-        toast.error(result.error || 'Failed to validate page')
-      } else {
-        toast.error(result.error || 'Failed to connect page')
-      }
-    } catch (error) {
-      toast.error('Connection failed. Please try again.')
-    } finally {
-      setIsConnecting(false)
-    }
-  }
-  
-  return (
-    <div className="ml-3 sm:ml-0 p-3 bg-amber-50 rounded-lg border border-amber-200">
-      <div className="space-y-3">
-        <div className="flex items-start gap-2">
-          <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
-          <div className="flex-1 space-y-2">
-            <p className="text-sm font-medium text-amber-900">Complete Facebook Setup</p>
-            <p className="text-xs text-amber-700">
-              Enter your Facebook Page URL to complete the connection
-            </p>
-          </div>
-        </div>
-        
-        <div className="space-y-2">
-          <Input
-            placeholder="https://facebook.com/YourPageName or Page ID"
-            value={pageUrl}
-            onChange={(e) => setPageUrl(e.target.value)}
-            disabled={isConnecting}
-            className="text-sm"
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                connectPage()
-              }
-            }}
-          />
-          <Button 
-            onClick={() => connectPage()} 
-            disabled={isConnecting || !pageUrl}
-            size="sm"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            {isConnecting ? 'Connecting...' : 'Connect Page'}
-          </Button>
-        </div>
-        
-        {/* Force Save Option */}
-        {showForceSave && (
-          <div className="p-3 bg-red-50 rounded-lg border border-red-200 space-y-2">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-red-600 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-red-900">Page validation failed</p>
-                <p className="text-xs text-red-700 mt-1">
-                  Facebook couldn&apos;t validate this page (ID: {pageIdentifier}). This might happen with new pages or pages with special settings.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => connectPage(true)} 
-                disabled={isConnecting}
-                size="sm"
-                variant="outline"
-                className="flex-1 border-red-300 text-red-700 hover:bg-red-100"
-              >
-                {isConnecting ? 'Saving...' : 'Save Anyway'}
-              </Button>
-              <Button 
-                onClick={() => {
-                  setShowForceSave(false)
-                  setPageUrl('')
-                }} 
-                size="sm"
-                variant="ghost"
-                className="text-gray-600"
-              >
-                Cancel
-              </Button>
-            </div>
-            <p className="text-xs text-red-600">
-              ⚠️ Some features may not work if this isn&apos;t a valid Facebook Page
-            </p>
-          </div>
-        )}
-        
-        <div className="border-t border-amber-200 pt-2">
-          <p className="text-xs text-amber-600">
-            How to connect your page:
-          </p>
-          <ol className="text-xs text-amber-600 ml-4 space-y-0.5 mt-1">
-            <li>1. Go to your Facebook Page</li>
-            <li>2. Copy the URL from your browser</li>
-            <li>3. Paste it above (or just enter your page name)</li>
-          </ol>
-          <p className="text-xs text-amber-600 mt-2">
-            <strong>Tip:</strong> You can also enter just your page username or page ID
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 const settingsSections = [
   { id: 'accounts', label: 'Social Media Accounts', icon: Link2 },
   { id: 'notifications', label: 'Post Notifications', icon: Bell },
@@ -480,32 +342,8 @@ export default function SettingsContent() {
         setLoading(false)
       }
     } else if (platformId === 'facebook') {
-      setLoading(true)
-      try {
-        console.log('Fetching Facebook auth URL...')
-        const response = await fetch('/api/auth/facebook')
-        
-        if (!response.ok) {
-          const errorText = await response.text()
-          console.error('API Error:', errorText)
-          toast.error(`Failed to connect: ${response.status}`)
-          return
-        }
-        
-        const data = await response.json()
-        
-        if (data.authUrl) {
-          console.log('Redirecting to:', data.authUrl)
-          window.location.href = data.authUrl
-        } else {
-          toast.error('Failed to initialize Facebook authentication')
-        }
-      } catch (error) {
-        console.error('Error connecting to Facebook:', error)
-        toast.error('Failed to connect to Facebook')
-      } finally {
-        setLoading(false)
-      }
+      // Facebook integration temporarily disabled
+      toast.info('Facebook integration is currently being rebuilt. Please check back soon.')
     } else if (platformId === 'pinterest') {
       setLoading(true)
       try {
@@ -1007,14 +845,6 @@ export default function SettingsContent() {
                                     </Button>
                                   </div>
                                 </div>
-                                
-                                {/* Facebook Page URL Input for PENDING_SETUP accounts */}
-                                {platform.id === 'facebook' && account.platform_user_id === 'PENDING_SETUP' && (
-                                  <FacebookPageSetup 
-                                    account={account}
-                                    onSuccess={() => fetchConnectedAccounts()}
-                                  />
-                                )}
                               </div>
                             ))}
                           </div>
