@@ -124,11 +124,11 @@ export async function GET(request: NextRequest) {
     console.log('Token data received:', JSON.stringify(tokenData, null, 2));
 
     // Instagram OAuth response includes: access_token, user_id
-    const { access_token, user_id } = tokenData;
+    const { access_token: shortLivedToken, user_id } = tokenData;
 
-    if (!access_token || !user_id) {
+    if (!shortLivedToken || !user_id) {
       console.error('Missing required fields in token response');
-      console.error('access_token:', access_token ? 'present' : 'missing');
+      console.error('access_token:', shortLivedToken ? 'present' : 'missing');
       console.error('user_id:', user_id ? 'present' : 'missing');
       console.error('Full response:', tokenData);
       return NextResponse.redirect(
@@ -136,18 +136,77 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Exchange short-lived token for long-lived token
+    console.log('=== Exchanging for Long-Lived Token ===');
+    console.log('Short-lived token (first 20 chars):', shortLivedToken.substring(0, 20) + '...');
+    
+    const exchangeUrl = new URL('https://graph.instagram.com/access_token');
+    exchangeUrl.searchParams.append('grant_type', 'ig_exchange_token');
+    exchangeUrl.searchParams.append('client_secret', instagramAppSecret!);
+    exchangeUrl.searchParams.append('access_token', shortLivedToken);
+    
+    console.log('Exchange URL (without secrets):', exchangeUrl.toString().replace(instagramAppSecret!, 'SECRET').replace(shortLivedToken, 'TOKEN'));
+    
+    const exchangeResponse = await fetch(exchangeUrl.toString());
+    
+    console.log('Exchange response status:', exchangeResponse.status);
+    
+    let access_token = shortLivedToken; // Fallback to short-lived token if exchange fails
+    let token_type = 'short_lived';
+    
+    if (exchangeResponse.ok) {
+      const exchangeData = await exchangeResponse.json();
+      console.log('Exchange response:', JSON.stringify(exchangeData, null, 2));
+      
+      if (exchangeData.access_token) {
+        access_token = exchangeData.access_token;
+        token_type = 'long_lived';
+        console.log('Successfully obtained long-lived token');
+        console.log('Token expires in:', exchangeData.expires_in, 'seconds');
+      }
+    } else {
+      const errorText = await exchangeResponse.text();
+      console.error('Token exchange failed:', errorText);
+      console.warn('Continuing with short-lived token');
+    }
+
     // Get Instagram Business account info
     console.log('Instagram Business account authenticated');
     console.log('User ID:', user_id);
+    console.log('Token type:', token_type);
     console.log('Permissions granted:', tokenData.permissions);
     
-    // Instagram Business Login tokens need special handling
-    // Try multiple endpoints to get the username
+    // Now we need to get the Instagram Business Account ID
+    // The user_id from OAuth might be different from the IG Business Account ID
     let profileData = null;
+    let igBusinessAccountId = user_id; // Default to OAuth user_id
     
-    // Try 1: Instagram Graph API with user_id
-    const instagramGraphUrl = `https://graph.instagram.com/${user_id}?fields=username,name,account_type,media_count&access_token=${access_token}`;
-    console.log('Trying Instagram Graph API with user_id...');
+    // If we have a long-lived token, try to get IG Business Account ID
+    if (token_type === 'long_lived') {
+      // Try to get pages and their connected Instagram accounts
+      const pagesUrl = `https://graph.facebook.com/v20.0/me/accounts?fields=instagram_business_account,name&access_token=${access_token}`;
+      console.log('Fetching Facebook Pages with Instagram Business Accounts...');
+      
+      const pagesResponse = await fetch(pagesUrl);
+      console.log('Pages response status:', pagesResponse.status);
+      
+      if (pagesResponse.ok) {
+        const pagesData = await pagesResponse.json();
+        console.log('Pages data:', JSON.stringify(pagesData, null, 2));
+        
+        // Find the first page with an Instagram Business Account
+        const pageWithInstagram = pagesData.data?.find((page: any) => page.instagram_business_account);
+        
+        if (pageWithInstagram?.instagram_business_account?.id) {
+          igBusinessAccountId = pageWithInstagram.instagram_business_account.id;
+          console.log('Found Instagram Business Account ID:', igBusinessAccountId);
+        }
+      }
+    }
+    
+    // Try 1: Instagram Graph API with the Business Account ID
+    const instagramGraphUrl = `https://graph.instagram.com/${igBusinessAccountId}?fields=username,name,account_type,media_count&access_token=${access_token}`;
+    console.log('Trying Instagram Graph API with ID:', igBusinessAccountId);
     
     let profileResponse = await fetch(instagramGraphUrl);
     console.log('Instagram Graph response:', profileResponse.status);
@@ -178,7 +237,7 @@ export async function GET(request: NextRequest) {
     if (!profileData) {
       console.warn('All profile fetches failed, using fallback');
       profileData = {
-        id: user_id,
+        id: igBusinessAccountId,
         username: `instagram_${user_id}`,
         profile_picture_url: null
       };
@@ -191,8 +250,9 @@ export async function GET(request: NextRequest) {
     }
     
     console.log('Final profile data:', {
-      id: profileData.id || user_id,
-      username: profileData.username
+      id: profileData.id || igBusinessAccountId,
+      username: profileData.username,
+      token_type: token_type
     });
 
     // Store in database
@@ -218,12 +278,12 @@ export async function GET(request: NextRequest) {
     const accountData = {
       user_id: user.id,
       platform: 'instagram',
-      platform_user_id: user_id, // Instagram user ID from token response
+      platform_user_id: profileData.id || igBusinessAccountId, // Use the IG Business Account ID
       account_name: profileData.username || `instagram_${user_id}`,
       username: profileData.username || `instagram_${user_id}`,
       profile_image_url: profileData.profile_picture_url || null,
-      access_token: access_token, // Instagram access token (no Facebook page needed!)
-      access_secret: '', // Not used for Instagram
+      access_token: access_token, // Long-lived token that works with Graph API
+      access_secret: token_type, // Store token type for debugging
       is_active: true,
     };
     
