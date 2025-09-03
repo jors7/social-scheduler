@@ -128,7 +128,7 @@ function FacebookPageSetup({ account, onSuccess }: { account: SocialAccount; onS
               <div className="flex-1">
                 <p className="text-sm font-medium text-red-900">Page validation failed</p>
                 <p className="text-xs text-red-700 mt-1">
-                  Facebook couldn't validate this page (ID: {pageIdentifier}). This might happen with new pages or pages with special settings.
+                  Facebook couldn&apos;t validate this page (ID: {pageIdentifier}). This might happen with new pages or pages with special settings.
                 </p>
               </div>
             </div>
@@ -155,7 +155,7 @@ function FacebookPageSetup({ account, onSuccess }: { account: SocialAccount; onS
               </Button>
             </div>
             <p className="text-xs text-red-600">
-              ⚠️ Some features may not work if this isn't a valid Facebook Page
+              ⚠️ Some features may not work if this isn&apos;t a valid Facebook Page
             </p>
           </div>
         )}
