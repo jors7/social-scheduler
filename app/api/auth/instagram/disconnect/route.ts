@@ -13,98 +13,54 @@ function generateAppSecretProof(accessToken: string, appSecret: string): string 
 }
 
 async function revokeInstagramPermissions(accessToken: string, igUserId?: string) {
-  console.log('=== Attempting to revoke Instagram permissions ===');
-  console.log('Has access token:', !!accessToken);
-  console.log('Instagram user ID:', igUserId || 'not provided');
-  
-  // Get app secret for appsecret_proof
-  const appSecret = process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET;
-  
-  // Try multiple approaches to ensure revocation works
-  const attempts = [];
-  
-  // Attempt 1: Try Instagram Graph API with user ID
-  if (igUserId) {
-    try {
-      const appSecretProof = appSecret ? generateAppSecretProof(accessToken, appSecret) : '';
-      const params = new URLSearchParams({
-        access_token: accessToken,
-        ...(appSecretProof && { appsecret_proof: appSecretProof })
-      });
-      
-      const url = `https://graph.instagram.com/v20.0/${igUserId}/permissions?${params}`;
-      console.log('Attempt 1: DELETE to Instagram API with user ID');
-      
-      const response = await fetch(url, { method: 'DELETE' });
-      const result = await response.text();
-      
-      if (response.ok) {
-        console.log('✅ Successfully revoked via Instagram API with user ID');
-        return true;
-      }
-      console.log('Instagram API with user ID failed:', response.status, result);
-      attempts.push({ method: 'instagram_user_id', status: response.status, error: result });
-    } catch (error) {
-      console.log('Instagram API with user ID error:', error);
-      attempts.push({ method: 'instagram_user_id', error: String(error) });
-    }
-  }
-  
-  // Attempt 2: Try Facebook Graph API with me endpoint
+  // For Instagram Business Login tokens, use Facebook Graph API
+  // Instagram tokens (IGAA format) should work with Facebook's permission endpoint
   try {
-    const appSecretProof = appSecret ? generateAppSecretProof(accessToken, appSecret) : '';
-    const params = new URLSearchParams({
-      access_token: accessToken,
-      ...(appSecretProof && { appsecret_proof: appSecretProof })
+    // Get app secret for appsecret_proof (optional but recommended)
+    const appSecret = process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET;
+    
+    // Build the URL with just the access token
+    // The Facebook Graph API should handle Instagram Business Login tokens
+    const url = new URL('https://graph.facebook.com/v20.0/me/permissions');
+    url.searchParams.append('access_token', accessToken);
+    
+    // Add app secret proof if available
+    if (appSecret) {
+      const appSecretProof = generateAppSecretProof(accessToken, appSecret);
+      url.searchParams.append('appsecret_proof', appSecretProof);
+    }
+    
+    const response = await fetch(url.toString(), { 
+      method: 'DELETE',
+      headers: {
+        'Accept': 'application/json'
+      }
     });
     
-    const url = `https://graph.facebook.com/v20.0/me/permissions?${params}`;
-    console.log('Attempt 2: DELETE to Facebook API with /me endpoint');
-    
-    const response = await fetch(url, { method: 'DELETE' });
-    const result = await response.text();
-    
     if (response.ok) {
-      console.log('✅ Successfully revoked via Facebook API');
+      // Success - permissions revoked
       return true;
-    }
-    console.log('Facebook API /me failed:', response.status, result);
-    attempts.push({ method: 'facebook_me', status: response.status, error: result });
-  } catch (error) {
-    console.log('Facebook API /me error:', error);
-    attempts.push({ method: 'facebook_me', error: String(error) });
-  }
-  
-  // Attempt 3: Try Facebook Graph API with user ID if available
-  if (igUserId) {
-    try {
-      const appSecretProof = appSecret ? generateAppSecretProof(accessToken, appSecret) : '';
-      const params = new URLSearchParams({
-        access_token: accessToken,
-        ...(appSecretProof && { appsecret_proof: appSecretProof })
-      });
-      
-      const url = `https://graph.facebook.com/v20.0/${igUserId}/permissions?${params}`;
-      console.log('Attempt 3: DELETE to Facebook API with user ID');
-      
-      const response = await fetch(url, { method: 'DELETE' });
-      const result = await response.text();
-      
-      if (response.ok) {
-        console.log('✅ Successfully revoked via Facebook API with user ID');
-        return true;
+    } else {
+      // Log the error but don't fail - token might be expired or already revoked
+      const errorText = await response.text();
+      try {
+        const errorJson = JSON.parse(errorText);
+        // Check for specific error codes that mean the token is already invalid
+        if (errorJson.error?.code === 190 || // Invalid OAuth access token
+            errorJson.error?.code === 102 || // Session key invalid or no longer valid
+            errorJson.error?.code === 467) { // Invalid access token
+          // Token is already invalid, which achieves our goal
+          return true;
+        }
+      } catch {
+        // Not JSON, just log the text
       }
-      console.log('Facebook API with user ID failed:', response.status, result);
-      attempts.push({ method: 'facebook_user_id', status: response.status, error: result });
-    } catch (error) {
-      console.log('Facebook API with user ID error:', error);
-      attempts.push({ method: 'facebook_user_id', error: String(error) });
+      return false;
     }
+  } catch (error) {
+    // Network error or other issue - continue with local cleanup
+    return false;
   }
-  
-  console.log('❌ All revocation attempts failed:', attempts);
-  console.log('Token might be expired or already revoked, proceeding with local cleanup');
-  return false;
 }
 
 export async function POST(request: NextRequest) {
