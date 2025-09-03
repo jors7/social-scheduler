@@ -22,13 +22,26 @@ export class InstagramService {
 
   async createPost(content: {
     imageUrl?: string;
+    mediaUrl?: string;
     caption: string;
+    isVideo?: boolean;
   }) {
-    if (!content.imageUrl) {
-      throw new Error('Instagram posts require an image URL');
+    const mediaUrl = content.mediaUrl || content.imageUrl;
+    
+    if (!mediaUrl) {
+      throw new Error('Instagram posts require a media URL');
     }
 
-    return this.client.createPost(content.imageUrl, content.caption);
+    // Detect if it's a video based on file extension or explicit flag
+    const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
+    const isVideo = content.isVideo || videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
+    
+    console.log('InstagramService: Creating post with:', {
+      mediaUrl: mediaUrl.substring(0, 50) + '...',
+      isVideo: isVideo
+    });
+
+    return this.client.createPost(mediaUrl, content.caption, isVideo);
   }
 
   async getProfile() {

@@ -59,27 +59,37 @@ export class InstagramClient {
     }
   }
 
-  async createPost(imageUrl: string, caption: string) {
+  async createPost(mediaUrl: string, caption: string, isVideo: boolean = false) {
     try {
       console.log('Creating Instagram post with:', {
         userID: this.userID,
-        imageUrl: imageUrl,
+        mediaUrl: mediaUrl,
         captionLength: caption.length,
+        isVideo: isVideo,
         tokenType: this.accessToken.substring(0, 4) // Should be IGAA for Instagram Login
       });
 
       // Step 1: Create media container
       // For Instagram Login tokens (IGAA...), we use graph.instagram.com WITHOUT appsecret_proof
       const containerParams = new URLSearchParams({
-        image_url: imageUrl,
         caption: caption,
         access_token: this.accessToken,
       });
+
+      if (isVideo) {
+        // For videos/reels
+        containerParams.append('media_type', 'REELS');
+        containerParams.append('video_url', mediaUrl);
+      } else {
+        // For images
+        containerParams.append('image_url', mediaUrl);
+      }
 
       // Do NOT add appsecret_proof for graph.instagram.com calls
       // appsecret_proof is only for graph.facebook.com
 
       console.log('Container API call to:', `${this.baseURL}/${this.userID}/media`);
+      console.log('Media type:', isVideo ? 'REELS' : 'IMAGE');
       
       const containerResponse = await fetch(
         `${this.baseURL}/${this.userID}/media`,

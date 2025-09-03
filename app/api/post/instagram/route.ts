@@ -41,9 +41,19 @@ export async function POST(request: NextRequest) {
       appSecret: appSecret
     });
 
+    // Detect if media is a video
+    const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
+    const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
+    
+    console.log('Media detection:', {
+      url: mediaUrl.substring(0, 50) + '...',
+      isVideo: isVideo
+    });
+
     const result = await service.createPost({
-      imageUrl: mediaUrl,
+      mediaUrl: mediaUrl,
       caption: text,
+      isVideo: isVideo
     });
 
     console.log('Instagram post created:', result);
