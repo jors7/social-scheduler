@@ -46,13 +46,14 @@ export async function GET(request: NextRequest) {
     // Use the Instagram app ID, NOT the main Meta app ID
     const instagramAppId = process.env.INSTAGRAM_CLIENT_ID || '1322876636131547';
     
-    // Build params exactly as needed - NO force_reauth!
+    // Build params exactly as needed - with force_reauth to ensure fresh consent
     const authParams = new URLSearchParams();
     authParams.append('client_id', instagramAppId);
     authParams.append('redirect_uri', redirectUri);
-    authParams.append('scope', 'instagram_business_basic,instagram_business_content_publish,instagram_business_manage_messages,instagram_business_manage_comments,instagram_business_manage_insights');
+    authParams.append('scope', 'instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights');
     authParams.append('response_type', 'code');
     authParams.append('state', state);
+    authParams.append('force_reauth', 'true'); // Force fresh consent screen
     
     console.log('=== Instagram OAuth Authorize ===');
     console.log('Client ID:', instagramAppId);

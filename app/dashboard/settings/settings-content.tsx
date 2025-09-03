@@ -508,15 +508,24 @@ export default function SettingsContent() {
         await fetch('/api/auth/threads/disconnect', { method: 'POST' })
       }
 
-      // Delete the record entirely for better security
-      // The account can be re-added with upsert when reconnecting
-      const { error } = await supabase
-        .from('social_accounts')
-        .delete()
-        .eq('id', accountId)
-        .eq('user_id', user.id)
+      // For Instagram, call the disconnect endpoint to revoke permissions
+      if (platformName === 'Instagram') {
+        const response = await fetch('/api/auth/instagram/disconnect', { method: 'POST' })
+        if (!response.ok) {
+          console.error('Failed to revoke Instagram permissions')
+        }
+      } else {
+        // For other platforms, just delete the record
+        // Delete the record entirely for better security
+        // The account can be re-added with upsert when reconnecting
+        const { error } = await supabase
+          .from('social_accounts')
+          .delete()
+          .eq('id', accountId)
+          .eq('user_id', user.id)
 
-      if (error) throw error
+        if (error) throw error
+      }
 
       toast.success(`Account disconnected`)
       
