@@ -10,7 +10,7 @@ export class InstagramClient {
   private accessToken: string;
   private userID: string;
   private appSecret?: string;
-  private baseURL = 'https://graph.facebook.com/v20.0'; // Use Facebook Graph API for Instagram Business!
+  private baseURL = 'https://graph.instagram.com/v20.0'; // Use Instagram Graph API for Instagram Login tokens!
 
   constructor(credentials: InstagramCredentials) {
     this.accessToken = credentials.accessToken;
@@ -42,8 +42,9 @@ export class InstagramClient {
 
   async getProfile() {
     try {
+      // Use Instagram Graph API endpoint for Instagram Login tokens
       const response = await fetch(
-        `${this.baseURL}/${this.userID}?fields=id,username,media_count,followers_count,follows_count,profile_picture_url,biography&access_token=${this.accessToken}`
+        `https://graph.instagram.com/${this.userID}?fields=id,username,media_count,followers_count,follows_count,profile_picture_url,biography&access_token=${this.accessToken}`
       );
 
       if (!response.ok) {
@@ -64,21 +65,19 @@ export class InstagramClient {
         userID: this.userID,
         imageUrl: imageUrl,
         captionLength: caption.length,
-        hasAppSecret: !!this.appSecret
+        tokenType: this.accessToken.substring(0, 4) // Should be IGAA for Instagram Login
       });
 
       // Step 1: Create media container
+      // For Instagram Login tokens (IGAA...), we use graph.instagram.com WITHOUT appsecret_proof
       const containerParams = new URLSearchParams({
         image_url: imageUrl,
         caption: caption,
         access_token: this.accessToken,
       });
 
-      // Add appsecret_proof if we have the app secret
-      const appSecretProof = this.generateAppSecretProof();
-      if (appSecretProof) {
-        containerParams.append('appsecret_proof', appSecretProof);
-      }
+      // Do NOT add appsecret_proof for graph.instagram.com calls
+      // appsecret_proof is only for graph.facebook.com
 
       console.log('Container API call to:', `${this.baseURL}/${this.userID}/media`);
       
@@ -110,10 +109,7 @@ export class InstagramClient {
         access_token: this.accessToken,
       });
 
-      // Add appsecret_proof for publish call too
-      if (appSecretProof) {
-        publishParams.append('appsecret_proof', appSecretProof);
-      }
+      // Do NOT add appsecret_proof for graph.instagram.com calls
 
       console.log('Publishing media container...');
       
@@ -147,8 +143,9 @@ export class InstagramClient {
 
   async getMedia(limit = 10) {
     try {
+      // Use Instagram Graph API endpoint
       const response = await fetch(
-        `${this.baseURL}/${this.userID}/media?fields=id,media_type,media_url,permalink,caption,timestamp&limit=${limit}&access_token=${this.accessToken}`
+        `https://graph.instagram.com/${this.userID}/media?fields=id,media_type,media_url,permalink,caption,timestamp&limit=${limit}&access_token=${this.accessToken}`
       );
 
       if (!response.ok) {
