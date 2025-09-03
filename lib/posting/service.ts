@@ -151,6 +151,7 @@ export class PostingService {
       case 'facebook':
         // Facebook integration temporarily disabled
         return {
+          platform: 'facebook',
           success: false,
           error: 'Facebook integration is currently being rebuilt. Please check back soon.'
         };
