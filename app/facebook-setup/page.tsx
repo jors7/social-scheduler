@@ -144,7 +144,7 @@ export default function FacebookSetupPage() {
                 <h3 className="font-medium mb-2">How to find your Page URL:</h3>
                 <ol className="text-sm text-muted-foreground space-y-1">
                   <li>1. Go to your Facebook Page</li>
-                  <li>2. Copy the URL from your browser's address bar</li>
+                  <li>2. Copy the URL from your browser&apos;s address bar</li>
                   <li>3. Paste it above</li>
                 </ol>
               </div>

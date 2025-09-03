@@ -40,6 +40,93 @@ interface SocialAccount {
   display_order?: number
 }
 
+// Facebook Page Setup Component
+function FacebookPageSetup({ account, onSuccess }: { account: SocialAccount; onSuccess: () => void }) {
+  const [pageUrl, setPageUrl] = useState('')
+  const [isConnecting, setIsConnecting] = useState(false)
+  
+  const connectPage = async () => {
+    if (!pageUrl) {
+      toast.error('Please enter a Facebook Page URL')
+      return
+    }
+    
+    setIsConnecting(true)
+    
+    try {
+      const response = await fetch('/api/auth/facebook/connect-page', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pageUrl })
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        toast.success(result.message || 'Facebook page connected successfully!')
+        setPageUrl('')
+        onSuccess()
+      } else {
+        toast.error(result.error || 'Failed to connect page')
+      }
+    } catch (error) {
+      toast.error('Connection failed. Please try again.')
+    } finally {
+      setIsConnecting(false)
+    }
+  }
+  
+  return (
+    <div className="ml-3 sm:ml-0 p-3 bg-amber-50 rounded-lg border border-amber-200">
+      <div className="space-y-3">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
+          <div className="flex-1 space-y-2">
+            <p className="text-sm font-medium text-amber-900">Complete Facebook Setup</p>
+            <p className="text-xs text-amber-700">
+              Enter your Facebook Page URL to complete the connection
+            </p>
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <Input
+            placeholder="https://facebook.com/YourPageName"
+            value={pageUrl}
+            onChange={(e) => setPageUrl(e.target.value)}
+            disabled={isConnecting}
+            className="text-sm"
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                connectPage()
+              }
+            }}
+          />
+          <Button 
+            onClick={connectPage} 
+            disabled={isConnecting || !pageUrl}
+            size="sm"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            {isConnecting ? 'Connecting...' : 'Connect Page'}
+          </Button>
+        </div>
+        
+        <div className="border-t border-amber-200 pt-2">
+          <p className="text-xs text-amber-600">
+            How to find your Page URL:
+          </p>
+          <ol className="text-xs text-amber-600 ml-4 space-y-0.5 mt-1">
+            <li>1. Go to your Facebook Page</li>
+            <li>2. Copy the URL from your browser</li>
+            <li>3. Paste it above</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const settingsSections = [
   { id: 'accounts', label: 'Social Media Accounts', icon: Link2 },
   { id: 'notifications', label: 'Post Notifications', icon: Bell },
@@ -793,68 +880,84 @@ export default function SettingsContent() {
                         {hasAccounts && isExpanded && (
                           <div className="border-t bg-white p-3 sm:p-4 space-y-2">
                             {platformAccounts.map((account, index) => (
-                              <div key={account.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                                <div className="flex items-center gap-2 sm:gap-3">
-                                  <div className="text-xs sm:text-sm">
-                                    <span className="font-medium text-gray-900 block sm:inline">
-                                      {account.account_label || account.username || account.account_name || `Account ${index + 1}`}
-                                    </span>
-                                    {account.username && (
-                                      <span className="text-gray-600 block sm:inline sm:ml-2 text-[11px] sm:text-xs">@{account.username}</span>
-                                    )}
-                                    {account.is_primary && (
-                                      <span className="inline-block mt-1 sm:mt-0 sm:ml-2 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs bg-purple-100 text-purple-700 rounded-full">
-                                        Primary
+                              <div key={account.id} className="space-y-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 sm:p-3 bg-gray-50 rounded-lg">
+                                  <div className="flex items-center gap-2 sm:gap-3">
+                                    <div className="text-xs sm:text-sm">
+                                      <span className="font-medium text-gray-900 block sm:inline">
+                                        {account.account_label || account.username || account.account_name || `Account ${index + 1}`}
                                       </span>
+                                      {account.username && (
+                                        <span className="text-gray-600 block sm:inline sm:ml-2 text-[11px] sm:text-xs">@{account.username}</span>
+                                      )}
+                                      {account.is_primary && (
+                                        <span className="inline-block mt-1 sm:mt-0 sm:ml-2 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs bg-purple-100 text-purple-700 rounded-full">
+                                          Primary
+                                        </span>
+                                      )}
+                                      {/* Check if token is expired for Threads */}
+                                      {platform.id === 'threads' && (account as any).expires_at && new Date((account as any).expires_at) < new Date() && (
+                                        <span className="inline-block mt-1 sm:mt-0 sm:ml-2 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs bg-red-100 text-red-700 rounded-full">
+                                          Token Expired - Reconnect Required
+                                        </span>
+                                      )}
+                                      {/* Check if Facebook page needs setup */}
+                                      {platform.id === 'facebook' && account.platform_user_id === 'PENDING_SETUP' && (
+                                        <span className="inline-block mt-1 sm:mt-0 sm:ml-2 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs bg-amber-100 text-amber-700 rounded-full">
+                                          Page Setup Required
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1 sm:gap-2 self-end sm:self-auto">
+                                    {account.is_primary !== true && platformAccounts.length > 1 && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={async () => {
+                                          try {
+                                            // This will only work if the migration has been applied
+                                            const { error } = await supabase
+                                              .from('social_accounts')
+                                              .update({ is_primary: true })
+                                              .eq('id', account.id)
+                                            
+                                            if (error) {
+                                              console.error('Error setting primary:', error)
+                                              toast.error('This feature requires database migration')
+                                            } else {
+                                              toast.success('Set as primary account')
+                                              fetchConnectedAccounts()
+                                            }
+                                          } catch (error) {
+                                            toast.error('Failed to update account')
+                                          }
+                                        }}
+                                        className="text-xs"
+                                      >
+                                        Set as Primary
+                                      </Button>
                                     )}
-                                    {/* Check if token is expired for Threads */}
-                                    {platform.id === 'threads' && (account as any).expires_at && new Date((account as any).expires_at) < new Date() && (
-                                      <span className="inline-block mt-1 sm:mt-0 sm:ml-2 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs bg-red-100 text-red-700 rounded-full">
-                                        Token Expired - Reconnect Required
-                                      </span>
-                                    )}
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleDisconnect(account.id, platform.name)}
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300"
+                                      disabled={loading}
+                                    >
+                                      <X className="mr-1 h-3 w-3" />
+                                      Remove
+                                    </Button>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-1 sm:gap-2 self-end sm:self-auto">
-                                  {account.is_primary !== true && platformAccounts.length > 1 && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={async () => {
-                                        try {
-                                          // This will only work if the migration has been applied
-                                          const { error } = await supabase
-                                            .from('social_accounts')
-                                            .update({ is_primary: true })
-                                            .eq('id', account.id)
-                                          
-                                          if (error) {
-                                            console.error('Error setting primary:', error)
-                                            toast.error('This feature requires database migration')
-                                          } else {
-                                            toast.success('Set as primary account')
-                                            fetchConnectedAccounts()
-                                          }
-                                        } catch (error) {
-                                          toast.error('Failed to update account')
-                                        }
-                                      }}
-                                      className="text-xs"
-                                    >
-                                      Set as Primary
-                                    </Button>
-                                  )}
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleDisconnect(account.id, platform.name)}
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300"
-                                    disabled={loading}
-                                  >
-                                    <X className="mr-1 h-3 w-3" />
-                                    Remove
-                                  </Button>
-                                </div>
+                                
+                                {/* Facebook Page URL Input for PENDING_SETUP accounts */}
+                                {platform.id === 'facebook' && account.platform_user_id === 'PENDING_SETUP' && (
+                                  <FacebookPageSetup 
+                                    account={account}
+                                    onSuccess={() => fetchConnectedAccounts()}
+                                  />
+                                )}
                               </div>
                             ))}
                           </div>
