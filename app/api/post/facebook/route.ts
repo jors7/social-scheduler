@@ -13,6 +13,14 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    
+    // Check if page needs to be configured
+    if (pageId === 'PENDING_SETUP') {
+      return NextResponse.json(
+        { error: 'Facebook page not configured. Please enter your Facebook Page URL in settings to complete setup.' },
+        { status: 400 }
+      );
+    }
 
     console.log('Posting to Facebook page:', pageId);
     console.log('Message length:', message.length);
