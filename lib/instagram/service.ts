@@ -4,7 +4,16 @@ export class InstagramService {
   private client: InstagramClient;
 
   constructor(credentials: InstagramCredentials) {
-    this.client = new InstagramClient(credentials);
+    // Add Instagram app secret from environment
+    const credentialsWithSecret: InstagramCredentials = {
+      ...credentials,
+      appSecret: process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET
+    };
+    
+    console.log('InstagramService: Initializing with app secret:', 
+      credentialsWithSecret.appSecret ? 'YES' : 'NO');
+    
+    this.client = new InstagramClient(credentialsWithSecret);
   }
 
   async verifyCredentials() {

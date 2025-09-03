@@ -27,9 +27,18 @@ export async function POST(request: NextRequest) {
       hasMedia: !!mediaUrl
     });
 
+    // Get Instagram app secret from environment
+    const appSecret = process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET;
+    
+    console.log('Instagram API endpoint:', {
+      hasAppSecret: !!appSecret,
+      secretStart: appSecret ? appSecret.substring(0, 4) + '...' : 'none'
+    });
+
     const service = new InstagramService({
       accessToken,
       userID: userId,
+      appSecret: appSecret
     });
 
     const result = await service.createPost({
