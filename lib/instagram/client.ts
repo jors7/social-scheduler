@@ -59,7 +59,12 @@ export class InstagramClient {
     }
   }
 
-  async createPost(mediaUrl: string, caption: string, isVideo: boolean = false) {
+  async createPost(
+    mediaUrl: string, 
+    caption: string, 
+    isVideo: boolean = false,
+    onProgress?: (status: string, progress?: number) => void
+  ) {
     try {
       console.log('Creating Instagram post with:', {
         userID: this.userID,
@@ -91,6 +96,11 @@ export class InstagramClient {
       console.log('Container API call to:', `${this.baseURL}/${this.userID}/media`);
       console.log('Media type:', isVideo ? 'REELS' : 'IMAGE');
       
+      // Report progress
+      if (onProgress) {
+        onProgress(isVideo ? 'Uploading video to Instagram...' : 'Uploading image to Instagram...');
+      }
+      
       const containerResponse = await fetch(
         `${this.baseURL}/${this.userID}/media`,
         {
@@ -117,10 +127,15 @@ export class InstagramClient {
       if (isVideo) {
         console.log('Video detected, checking processing status...');
         
+        if (onProgress) {
+          onProgress('Processing video... This may take a moment.');
+        }
+        
         // Wait for video to be processed (check status)
         let attempts = 0;
         const maxAttempts = 30; // 30 attempts with 2 second delays = ~60 seconds max
         let isReady = false;
+        const startTime = Date.now();
         
         while (attempts < maxAttempts && !isReady) {
           attempts++;
@@ -136,11 +151,29 @@ export class InstagramClient {
             if (statusData.status_code === 'FINISHED') {
               isReady = true;
               console.log('Video processing complete!');
+              if (onProgress) {
+                onProgress('Video processed! Publishing...');
+              }
             } else if (statusData.status_code === 'ERROR') {
               throw new Error(`Video processing failed: ${JSON.stringify(statusData)}`);
             } else {
               // Still processing, wait 2 seconds
               console.log(`Video still processing... (${statusData.status_code || 'IN_PROGRESS'})`);
+              
+              // Calculate elapsed time and progress
+              const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+              const estimatedProgress = Math.min(90, (attempts / maxAttempts) * 90); // Cap at 90% until actually finished
+              
+              if (onProgress) {
+                if (elapsedSeconds < 10) {
+                  onProgress(`Processing video... (${elapsedSeconds}s)`, estimatedProgress);
+                } else if (elapsedSeconds < 30) {
+                  onProgress(`Processing video... Please wait (${elapsedSeconds}s)`, estimatedProgress);
+                } else {
+                  onProgress(`Processing larger video... Almost done (${elapsedSeconds}s)`, estimatedProgress);
+                }
+              }
+              
               await new Promise(resolve => setTimeout(resolve, 2000));
             }
           } else {
@@ -151,6 +184,9 @@ export class InstagramClient {
         
         if (!isReady && attempts >= maxAttempts) {
           console.warn('Video processing timeout, attempting to publish anyway...');
+          if (onProgress) {
+            onProgress('Processing taking longer than expected, attempting to publish...');
+          }
         }
       }
 
@@ -163,6 +199,10 @@ export class InstagramClient {
       // Do NOT add appsecret_proof for graph.instagram.com calls
 
       console.log('Publishing media container...');
+      
+      if (onProgress) {
+        onProgress(isVideo ? 'Publishing your reel...' : 'Publishing your post...', 95);
+      }
       
       const publishResponse = await fetch(
         `${this.baseURL}/${this.userID}/media_publish`,

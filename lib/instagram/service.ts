@@ -25,6 +25,7 @@ export class InstagramService {
     mediaUrl?: string;
     caption: string;
     isVideo?: boolean;
+    onProgress?: (status: string, progress?: number) => void;
   }) {
     const mediaUrl = content.mediaUrl || content.imageUrl;
     
@@ -41,7 +42,7 @@ export class InstagramService {
       isVideo: isVideo
     });
 
-    return this.client.createPost(mediaUrl, content.caption, isVideo);
+    return this.client.createPost(mediaUrl, content.caption, isVideo, content.onProgress);
   }
 
   async getProfile() {

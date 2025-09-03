@@ -35,7 +35,10 @@ export class PostingService {
     );
   }
 
-  async postToMultiplePlatforms(postData: PostData): Promise<PostResult[]> {
+  async postToMultiplePlatforms(
+    postData: PostData,
+    onProgress?: (platform: string, status: string) => void
+  ): Promise<PostResult[]> {
     const results: PostResult[] = [];
 
     // Get user's connected accounts
@@ -104,7 +107,8 @@ export class PostingService {
             platform, 
             content, 
             account, 
-            postData.mediaUrls
+            postData.mediaUrls,
+            onProgress
           );
           // Add account info to result
           results.push({
@@ -128,7 +132,13 @@ export class PostingService {
     return results;
   }
 
-  private async postToPlatform(platform: string, content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
+  private async postToPlatform(
+    platform: string, 
+    content: string, 
+    account: any, 
+    mediaUrls?: string[],
+    onProgress?: (platform: string, status: string) => void
+  ): Promise<PostResult> {
     // Clean content for text-only platforms
     const textContent = this.cleanHtmlContent(content);
     
@@ -143,7 +153,12 @@ export class PostingService {
         return await this.postToFacebook(textContent, account, mediaUrls);
       
       case 'instagram':
-        return await this.postToInstagram(textContent, account, mediaUrls);
+        return await this.postToInstagram(
+          textContent, 
+          account, 
+          mediaUrls,
+          onProgress ? (status) => onProgress('instagram', status) : undefined
+        );
       
       case 'bluesky':
         return await this.postToBluesky(textContent, account, mediaUrls);
@@ -204,37 +219,109 @@ export class PostingService {
     }
   }
 
-  private async postToInstagram(content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
+  private async postToInstagram(
+    content: string, 
+    account: any, 
+    mediaUrls?: string[],
+    onProgress?: (status: string) => void
+  ): Promise<PostResult> {
     try {
-      // Instagram requires an image
+      // Instagram requires media
       if (!mediaUrls || mediaUrls.length === 0) {
-        throw new Error('Instagram posts require an image');
+        throw new Error('Instagram posts require an image or video');
       }
 
-      const response = await fetch('/api/post/instagram', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: account.platform_user_id,
-          accessToken: account.access_token,
-          text: content,
-          mediaUrl: mediaUrls[0], // Use first image
-        }),
-      });
+      const mediaUrl = mediaUrls[0];
+      const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
+      const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
 
-      const data = await response.json();
+      // Use progress endpoint for videos, regular endpoint for images
+      if (isVideo && onProgress) {
+        // Use Server-Sent Events for progress updates
+        const response = await fetch('/api/post/instagram/progress', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: account.platform_user_id,
+            accessToken: account.access_token,
+            text: content,
+            mediaUrl: mediaUrl,
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Instagram posting failed');
+        if (!response.ok || !response.body) {
+          throw new Error('Failed to start Instagram posting');
+        }
+
+        // Read the stream
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let result: any = null;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const text = decoder.decode(value);
+          const lines = text.split('\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                if (data.type === 'progress' && onProgress) {
+                  onProgress(data.status);
+                } else if (data.type === 'complete') {
+                  result = data;
+                } else if (data.type === 'error') {
+                  throw new Error(data.error);
+                }
+              } catch (e) {
+                // Ignore parse errors for empty lines
+              }
+            }
+          }
+        }
+
+        if (!result || !result.success) {
+          throw new Error('Instagram posting failed');
+        }
+
+        return {
+          platform: 'instagram',
+          success: true,
+          postId: result.id,
+        };
+      } else {
+        // Regular posting without progress for images
+        const response = await fetch('/api/post/instagram', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: account.platform_user_id,
+            accessToken: account.access_token,
+            text: content,
+            mediaUrl: mediaUrl,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Instagram posting failed');
+        }
+
+        return {
+          platform: 'instagram',
+          success: true,
+          postId: data.id,
+        };
       }
-
-      return {
-        platform: 'instagram',
-        success: true,
-        postId: data.id,
-      };
     } catch (error) {
       return {
         platform: 'instagram',

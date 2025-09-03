@@ -377,6 +377,16 @@ function CreateNewPostPageContent() {
 
       const postingService = new PostingService()
       
+      // Check if we're posting a video to Instagram
+      let instagramProgressToast: any = null;
+      const hasInstagramVideo = supportedPlatforms.includes('instagram') && 
+        mediaUrls.length > 0 && 
+        mediaUrls.some(url => ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'].some(ext => url.toLowerCase().includes(ext)));
+      
+      if (hasInstagramVideo) {
+        instagramProgressToast = toast.loading('Preparing Instagram video post...');
+      }
+      
       // Only include platform-specific content if it's actually different from main content
       const filteredPlatformContent: Record<string, string> = {}
       Object.entries(platformContent).forEach(([platform, content]) => {
@@ -520,7 +530,20 @@ function CreateNewPostPageContent() {
         tiktokPrivacyLevel: selectedPlatforms.includes('tiktok') ? (tiktokSaveAsDraft ? 'SELF_ONLY' : tiktokPrivacyLevel) : undefined,
       }
 
-      const results = await postingService.postToMultiplePlatforms(postData)
+      const results = await postingService.postToMultiplePlatforms(
+        postData,
+        instagramProgressToast ? (platform, status) => {
+          if (platform === 'instagram' && instagramProgressToast) {
+            // Update the existing toast with new status
+            toast.loading(status, { id: instagramProgressToast });
+          }
+        } : undefined
+      )
+      
+      // Dismiss the progress toast if it exists
+      if (instagramProgressToast) {
+        toast.dismiss(instagramProgressToast);
+      }
       
       // Show results
       const successful = results.filter(r => r.success)
