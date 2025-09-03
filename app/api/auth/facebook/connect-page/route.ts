@@ -75,42 +75,90 @@ export async function POST(request: NextRequest) {
     
     // Try to get page info and validate access
     try {
-      // First, try to get page info with user token
-      const pageResponse = await fetch(
-        `https://graph.facebook.com/v18.0/${pageIdentifier}?fields=id,name,about,picture&access_token=${account.access_token}`
+      // First, try the /me/accounts endpoint to see if the page is listed there
+      console.log('Checking /me/accounts for page access...');
+      const accountsResponse = await fetch(
+        `https://graph.facebook.com/v18.0/me/accounts?access_token=${account.access_token}`
       );
       
-      if (!pageResponse.ok) {
-        const error = await pageResponse.json();
-        console.error('Failed to access page:', error);
-        return NextResponse.json({ 
-          error: 'Cannot access this page. Please ensure you are an admin or editor.' 
-        }, { status: 403 });
-      }
-      
-      const pageData = await pageResponse.json();
-      console.log('Page data retrieved:', { id: pageData.id, name: pageData.name });
-      
-      // Try to get a page access token
-      let pageAccessToken = account.access_token; // Default to user token
+      let pageData = null;
+      let pageAccessToken = account.access_token;
       let hasPageToken = false;
       
-      try {
-        const tokenResponse = await fetch(
-          `https://graph.facebook.com/v18.0/${pageData.id}?fields=access_token&access_token=${account.access_token}`
-        );
+      if (accountsResponse.ok) {
+        const accountsData = await accountsResponse.json();
+        console.log('Pages from /me/accounts:', accountsData.data?.length || 0);
         
-        if (tokenResponse.ok) {
-          const tokenData = await tokenResponse.json();
-          if (tokenData.access_token) {
-            pageAccessToken = tokenData.access_token;
-            hasPageToken = true;
-            console.log('Successfully obtained page access token');
+        // Check if the page is in the accounts list
+        if (accountsData.data && accountsData.data.length > 0) {
+          const foundPage = accountsData.data.find((page: any) => 
+            page.id === pageIdentifier || 
+            page.name?.toLowerCase() === pageIdentifier.toLowerCase()
+          );
+          
+          if (foundPage) {
+            console.log('Page found in accounts list!');
+            pageData = foundPage;
+            pageAccessToken = foundPage.access_token || account.access_token;
+            hasPageToken = !!foundPage.access_token;
           }
         }
-      } catch (e) {
-        console.log('Could not get page token, will use user token');
       }
+      
+      // If not found in accounts, try direct access (public page info)
+      if (!pageData) {
+        console.log('Page not in accounts list, trying direct access...');
+        
+        // First try to get public page info without token to validate it exists
+        const publicPageResponse = await fetch(
+          `https://graph.facebook.com/v18.0/${pageIdentifier}?fields=id,name,about,picture`
+        );
+        
+        if (publicPageResponse.ok) {
+          pageData = await publicPageResponse.json();
+          console.log('Page exists (public data):', { id: pageData.id, name: pageData.name });
+          
+          // Now try with user token to see if we have any access
+          const pageWithTokenResponse = await fetch(
+            `https://graph.facebook.com/v18.0/${pageIdentifier}?fields=id,name,about,picture,access_token&access_token=${account.access_token}`
+          );
+          
+          if (pageWithTokenResponse.ok) {
+            const fullPageData = await pageWithTokenResponse.json();
+            if (fullPageData.access_token) {
+              pageAccessToken = fullPageData.access_token;
+              hasPageToken = true;
+              console.log('Got page token from direct query');
+            }
+            pageData = fullPageData;
+          } else {
+            // We can see the page publicly but don't have admin access
+            // Still allow connection - user token might work for some operations
+            console.log('Warning: No admin access to page, but will try with user token');
+          }
+        } else {
+          // Page doesn't exist or is not accessible at all
+          const error = await publicPageResponse.json();
+          console.error('Page not found or not accessible:', error);
+          
+          return NextResponse.json({ 
+            error: 'Page not found. Please check the URL and ensure the page exists and is public.'
+          }, { status: 404 });
+        }
+      }
+      
+      // If we still don't have pageData, something went wrong
+      if (!pageData) {
+        return NextResponse.json({ 
+          error: 'Could not retrieve page information. Please check the URL and try again.'
+        }, { status: 404 });
+      }
+      
+      console.log('Final page data:', { 
+        id: pageData.id, 
+        name: pageData.name,
+        hasPageToken: hasPageToken 
+      });
       
       // Update the database with the actual page info
       const { error: updateError } = await supabase

@@ -45,10 +45,11 @@ export async function GET(request: NextRequest) {
     const redirectUri = `${baseUrl}/api/auth/facebook/callback`;
 
     // Build Facebook OAuth URL
+    // Adding pages_read_user_content for better page access
     const params = new URLSearchParams({
       client_id: facebookAppId,
       redirect_uri: redirectUri,
-      scope: 'pages_show_list,pages_manage_posts,pages_read_engagement',
+      scope: 'pages_show_list,pages_manage_posts,pages_read_engagement,pages_read_user_content',
       response_type: 'code',
       state: state,
     });
