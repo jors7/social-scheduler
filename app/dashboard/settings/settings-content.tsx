@@ -503,17 +503,25 @@ export default function SettingsContent() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
-      // For Threads, also call the disconnect endpoint to clear cookies
+      // Handle platform-specific disconnection
       if (platformName === 'Threads') {
+        // For Threads, call the disconnect endpoint to clear cookies
         await fetch('/api/auth/threads/disconnect', { method: 'POST' })
-      }
-
-      // For Instagram, call the disconnect endpoint to revoke permissions
-      if (platformName === 'Instagram') {
+      } else if (platformName === 'Instagram') {
+        // For Instagram, call the disconnect endpoint to revoke permissions
+        console.log('Calling Instagram disconnect endpoint...')
         const response = await fetch('/api/auth/instagram/disconnect', { method: 'POST' })
+        const result = await response.json()
+        console.log('Instagram disconnect result:', result)
         if (!response.ok) {
-          console.error('Failed to revoke Instagram permissions')
+          console.error('Failed to revoke Instagram permissions:', result)
+          throw new Error(result.error || 'Failed to disconnect Instagram')
+        } else if (result.revokeSuccess) {
+          console.log('✅ Instagram permissions successfully revoked')
+        } else {
+          console.warn('⚠️ Instagram local data cleared but revoke may have failed:', result.note)
         }
+        // Instagram disconnect endpoint handles database deletion, so we're done
       } else {
         // For other platforms, just delete the record
         // Delete the record entirely for better security
