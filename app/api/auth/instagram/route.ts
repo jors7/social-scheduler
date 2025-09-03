@@ -46,14 +46,18 @@ export async function GET(request: NextRequest) {
     // Use the Instagram app ID, NOT the main Meta app ID
     const instagramAppId = process.env.INSTAGRAM_CLIENT_ID || '1322876636131547';
     
-    // Build params exactly as needed - with auth_type=rerequest to ensure fresh consent
+    // Build params exactly as needed - with multiple parameters to force fresh consent
     const authParams = new URLSearchParams();
     authParams.append('client_id', instagramAppId);
     authParams.append('redirect_uri', redirectUri);
     authParams.append('scope', 'instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights');
     authParams.append('response_type', 'code');
     authParams.append('state', state);
+    
+    // Use both parameters to maximize chance of fresh consent
     authParams.append('auth_type', 'rerequest'); // Force re-request permissions
+    authParams.append('force_reauth', 'true'); // Also try force_reauth
+    
     // Add timestamp to prevent caching
     authParams.append('t', Date.now().toString());
     
