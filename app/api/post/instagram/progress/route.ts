@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   // Process the request
   (async () => {
     try {
-      const { userId, accessToken, text, mediaUrl } = await request.json();
+      const { userId, accessToken, text, mediaUrl, mediaUrls } = await request.json();
 
       if (!userId || !accessToken || !text) {
         await writer.write(encoder.encode(`data: ${JSON.stringify({ error: 'Missing required fields' })}\n\n`));
@@ -19,7 +19,10 @@ export async function POST(request: NextRequest) {
         return;
       }
 
-      if (!mediaUrl) {
+      // Instagram requires at least one media item
+      const allMediaUrls = mediaUrls || (mediaUrl ? [mediaUrl] : []);
+      
+      if (allMediaUrls.length === 0) {
         await writer.write(encoder.encode(`data: ${JSON.stringify({ error: 'Instagram posts require media' })}\n\n`));
         await writer.close();
         return;
@@ -27,10 +30,6 @@ export async function POST(request: NextRequest) {
 
       // Get Instagram app secret from environment
       const appSecret = process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET;
-      
-      // Detect if media is a video
-      const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
-      const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
       
       const service = new InstagramService({
         accessToken,
@@ -40,9 +39,8 @@ export async function POST(request: NextRequest) {
 
       // Create post with progress callback
       const result = await service.createPost({
-        mediaUrl: mediaUrl,
+        mediaUrls: allMediaUrls,
         caption: text,
-        isVideo: isVideo,
         onProgress: (status: string, progress?: number) => {
           // Send progress update
           writer.write(encoder.encode(`data: ${JSON.stringify({ 

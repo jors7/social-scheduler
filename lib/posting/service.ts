@@ -235,8 +235,11 @@ export class PostingService {
       const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
       const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
 
-      // Use progress endpoint for videos, regular endpoint for images
-      if (isVideo && onProgress) {
+      // Use progress endpoint for videos or carousels with videos
+      const hasVideo = mediaUrls.some(url => videoExtensions.some(ext => url.toLowerCase().includes(ext)));
+      const isCarousel = mediaUrls.length > 1;
+      
+      if ((hasVideo || isCarousel) && onProgress) {
         // Use Server-Sent Events for progress updates
         const response = await fetch('/api/post/instagram/progress', {
           method: 'POST',
@@ -247,7 +250,7 @@ export class PostingService {
             userId: account.platform_user_id,
             accessToken: account.access_token,
             text: content,
-            mediaUrl: mediaUrl,
+            mediaUrls: mediaUrls,
           }),
         });
 
@@ -296,7 +299,7 @@ export class PostingService {
           postId: result.id,
         };
       } else {
-        // Regular posting without progress for images
+        // Regular posting without progress for images or carousels
         const response = await fetch('/api/post/instagram', {
           method: 'POST',
           headers: {
@@ -306,7 +309,7 @@ export class PostingService {
             userId: account.platform_user_id,
             accessToken: account.access_token,
             text: content,
-            mediaUrl: mediaUrl,
+            mediaUrls: mediaUrls, // Pass all media URLs for carousel support
           }),
         });
 

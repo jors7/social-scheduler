@@ -3,7 +3,7 @@ import { InstagramService } from '@/lib/instagram/service';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, accessToken, text, mediaUrl } = await request.json();
+    const { userId, accessToken, text, mediaUrl, mediaUrls } = await request.json();
 
     if (!userId || !accessToken || !text) {
       return NextResponse.json(
@@ -12,10 +12,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Instagram requires an image
-    if (!mediaUrl) {
+    // Instagram requires at least one media item
+    const allMediaUrls = mediaUrls || (mediaUrl ? [mediaUrl] : []);
+    
+    if (allMediaUrls.length === 0) {
       return NextResponse.json(
-        { error: 'Instagram posts require an image' },
+        { error: 'Instagram posts require at least one image or video' },
         { status: 400 }
       );
     }
@@ -24,7 +26,8 @@ export async function POST(request: NextRequest) {
       userId,
       hasToken: !!accessToken,
       textLength: text.length,
-      hasMedia: !!mediaUrl
+      mediaCount: allMediaUrls.length,
+      isCarousel: allMediaUrls.length > 1
     });
 
     // Get Instagram app secret from environment
@@ -41,19 +44,9 @@ export async function POST(request: NextRequest) {
       appSecret: appSecret
     });
 
-    // Detect if media is a video
-    const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
-    const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
-    
-    console.log('Media detection:', {
-      url: mediaUrl.substring(0, 50) + '...',
-      isVideo: isVideo
-    });
-
     const result = await service.createPost({
-      mediaUrl: mediaUrl,
-      caption: text,
-      isVideo: isVideo
+      mediaUrls: allMediaUrls,
+      caption: text
     });
 
     console.log('Instagram post created:', result);

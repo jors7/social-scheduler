@@ -59,6 +59,179 @@ export class InstagramClient {
     }
   }
 
+  async createCarouselPost(
+    mediaItems: Array<{ url: string; isVideo: boolean }>,
+    caption: string,
+    onProgress?: (status: string, progress?: number) => void
+  ) {
+    try {
+      if (mediaItems.length < 2 || mediaItems.length > 10) {
+        throw new Error('Instagram carousels require 2-10 media items');
+      }
+
+      console.log(`Creating Instagram carousel with ${mediaItems.length} items`);
+      if (onProgress) {
+        onProgress(`Preparing carousel with ${mediaItems.length} items...`);
+      }
+
+      // Step 1: Create individual media containers for carousel items
+      const containerIds: string[] = [];
+      
+      for (let i = 0; i < mediaItems.length; i++) {
+        const item = mediaItems[i];
+        if (onProgress) {
+          onProgress(`Uploading item ${i + 1} of ${mediaItems.length}...`, (i / mediaItems.length) * 50);
+        }
+
+        const itemParams = new URLSearchParams({
+          is_carousel_item: 'true',
+          access_token: this.accessToken,
+        });
+
+        if (item.isVideo) {
+          itemParams.append('media_type', 'REELS');
+          itemParams.append('video_url', item.url);
+        } else {
+          itemParams.append('image_url', item.url);
+        }
+
+        console.log(`Creating carousel item ${i + 1}:`, item.isVideo ? 'video' : 'image');
+
+        const itemResponse = await fetch(
+          `${this.baseURL}/${this.userID}/media`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: itemParams.toString(),
+          }
+        );
+
+        if (!itemResponse.ok) {
+          const error = await itemResponse.json();
+          throw new Error(`Failed to create carousel item ${i + 1}: ${JSON.stringify(error)}`);
+        }
+
+        const { id: itemId } = await itemResponse.json();
+        containerIds.push(itemId);
+        console.log(`Carousel item ${i + 1} created with ID:`, itemId);
+      }
+
+      // Step 2: Wait for all video items to process
+      const videoIndices = mediaItems
+        .map((item, index) => item.isVideo ? index : -1)
+        .filter(index => index >= 0);
+
+      if (videoIndices.length > 0) {
+        if (onProgress) {
+          onProgress(`Processing ${videoIndices.length} video(s) in carousel...`, 60);
+        }
+
+        for (const index of videoIndices) {
+          await this.waitForMediaProcessing(containerIds[index], onProgress);
+        }
+      }
+
+      // Step 3: Create carousel container
+      if (onProgress) {
+        onProgress('Creating carousel post...', 80);
+      }
+
+      const carouselParams = new URLSearchParams({
+        media_type: 'CAROUSEL',
+        children: containerIds.join(','),
+        caption: caption,
+        access_token: this.accessToken,
+      });
+
+      console.log('Creating carousel container with children:', containerIds);
+
+      const carouselResponse = await fetch(
+        `${this.baseURL}/${this.userID}/media`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: carouselParams.toString(),
+        }
+      );
+
+      if (!carouselResponse.ok) {
+        const error = await carouselResponse.json();
+        throw new Error(`Failed to create carousel container: ${JSON.stringify(error)}`);
+      }
+
+      const { id: carouselId } = await carouselResponse.json();
+      console.log('Carousel container created with ID:', carouselId);
+
+      // Step 4: Publish carousel
+      if (onProgress) {
+        onProgress('Publishing carousel...', 95);
+      }
+
+      const publishParams = new URLSearchParams({
+        creation_id: carouselId,
+        access_token: this.accessToken,
+      });
+
+      const publishResponse = await fetch(
+        `${this.baseURL}/${this.userID}/media_publish`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: publishParams.toString(),
+        }
+      );
+
+      if (!publishResponse.ok) {
+        const error = await publishResponse.json();
+        throw new Error(`Failed to publish carousel: ${JSON.stringify(error)}`);
+      }
+
+      const result = await publishResponse.json();
+      console.log('Instagram carousel published successfully:', result);
+      return result;
+    } catch (error: any) {
+      console.error('Error creating Instagram carousel:', error);
+      throw new Error(`Failed to create carousel: ${error.message}`);
+    }
+  }
+
+  private async waitForMediaProcessing(
+    containerId: string,
+    onProgress?: (status: string, progress?: number) => void
+  ) {
+    let attempts = 0;
+    const maxAttempts = 60; // 60 attempts with 2 second delays = 2 minutes max per video
+    
+    while (attempts < maxAttempts) {
+      attempts++;
+      
+      const statusUrl = `${this.baseURL}/${containerId}?fields=status_code&access_token=${this.accessToken}`;
+      const statusResponse = await fetch(statusUrl);
+      
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json();
+        
+        if (statusData.status_code === 'FINISHED') {
+          return; // Processing complete
+        } else if (statusData.status_code === 'ERROR') {
+          throw new Error(`Media processing failed: ${JSON.stringify(statusData)}`);
+        }
+        
+        // Still processing
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } else {
+        console.warn('Failed to check media status');
+        break;
+      }
+    }
+  }
+
   async createPost(
     mediaUrl: string, 
     caption: string, 

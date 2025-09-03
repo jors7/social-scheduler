@@ -963,6 +963,14 @@ function CreateNewPostPageContent() {
     if (!files) return
     
     const fileArray = Array.from(files)
+    
+    // Check Instagram carousel limit (including already selected files)
+    const totalFiles = selectedFiles.length + fileArray.length;
+    if (selectedPlatforms.includes('instagram') && totalFiles > 10) {
+      toast.error(`Instagram supports maximum 10 items in a carousel. You have ${selectedFiles.length} selected and trying to add ${fileArray.length} more.`)
+      return
+    }
+    
     const validFiles = fileArray.filter(file => {
       const isImage = file.type.startsWith('image/')
       const isVideo = file.type.startsWith('video/')
@@ -1426,16 +1434,36 @@ function CreateNewPostPageContent() {
                 <p className="text-xs text-gray-500">
                   Videos: MP4, MOV, AVI up to 500MB
                 </p>
+                {selectedPlatforms.includes('instagram') && (
+                  <p className="text-xs text-blue-600 font-medium mt-2">
+                    💡 Instagram: Select 2-10 files to create a carousel post
+                  </p>
+                )}
               </div>
               
               {/* Selected Files Display */}
               {selectedFiles.length > 0 && (
                 <div className="mt-4">
-                  <Label className="text-sm font-medium">Selected Files ({selectedFiles.length})</Label>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium">
+                      Selected Files ({selectedFiles.length})
+                    </Label>
+                    {selectedPlatforms.includes('instagram') && selectedFiles.length > 1 && (
+                      <span className="text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-1 rounded-full font-medium">
+                        Instagram Carousel: {selectedFiles.length} items
+                      </span>
+                    )}
+                  </div>
                   <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {filePreviewUrls.map(({ file, url }, index) => (
                       <div key={`${file.name}-${file.size}-${index}`} className="relative group">
-                        <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                        <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
+                          {/* Carousel order indicator */}
+                          {selectedPlatforms.includes('instagram') && selectedFiles.length > 1 && (
+                            <div className="absolute top-2 left-2 z-10 bg-black/60 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                              {index + 1}
+                            </div>
+                          )}
                           {file.type.startsWith('image/') ? (
                             <img
                               src={url}
