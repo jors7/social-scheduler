@@ -133,7 +133,7 @@ export class InstagramClient {
         
         // Wait for video to be processed (check status)
         let attempts = 0;
-        const maxAttempts = 30; // 30 attempts with 2 second delays = ~60 seconds max
+        const maxAttempts = 120; // 120 attempts with 2 second delays = ~240 seconds (4 minutes) max
         let isReady = false;
         const startTime = Date.now();
         
@@ -165,12 +165,18 @@ export class InstagramClient {
               const estimatedProgress = Math.min(90, (attempts / maxAttempts) * 90); // Cap at 90% until actually finished
               
               if (onProgress) {
-                if (elapsedSeconds < 10) {
+                if (elapsedSeconds < 15) {
                   onProgress(`Processing video... (${elapsedSeconds}s)`, estimatedProgress);
                 } else if (elapsedSeconds < 30) {
                   onProgress(`Processing video... Please wait (${elapsedSeconds}s)`, estimatedProgress);
+                } else if (elapsedSeconds < 60) {
+                  onProgress(`Processing video... This may take 2-3 minutes (${elapsedSeconds}s)`, estimatedProgress);
+                } else if (elapsedSeconds < 120) {
+                  onProgress(`Processing HD video... Still working (${Math.floor(elapsedSeconds/60)}m ${elapsedSeconds%60}s)`, estimatedProgress);
+                } else if (elapsedSeconds < 180) {
+                  onProgress(`Processing large video... Please be patient (${Math.floor(elapsedSeconds/60)}m ${elapsedSeconds%60}s)`, estimatedProgress);
                 } else {
-                  onProgress(`Processing larger video... Almost done (${elapsedSeconds}s)`, estimatedProgress);
+                  onProgress(`Still processing... Almost done (${Math.floor(elapsedSeconds/60)}m ${elapsedSeconds%60}s)`, estimatedProgress);
                 }
               }
               
@@ -183,9 +189,9 @@ export class InstagramClient {
         }
         
         if (!isReady && attempts >= maxAttempts) {
-          console.warn('Video processing timeout, attempting to publish anyway...');
+          console.warn('Video processing timeout after 4 minutes, attempting to publish anyway...');
           if (onProgress) {
-            onProgress('Processing taking longer than expected, attempting to publish...');
+            onProgress('Processing taking unusually long. Attempting to publish - this may still succeed.');
           }
         }
       }

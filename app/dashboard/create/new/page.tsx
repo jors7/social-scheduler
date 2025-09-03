@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, Suspense, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { toast } from 'sonner'
 import { PostingService, PostData } from '@/lib/posting/service'
@@ -85,6 +85,24 @@ function CreateNewPostPageContent() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploadedMediaUrls, setUploadedMediaUrls] = useState<string[]>([])
   const [loadingDraft, setLoadingDraft] = useState(false)
+  
+  // Memoize file preview URLs to prevent re-creation on every render
+  const filePreviewUrls = useMemo(() => {
+    const urls = selectedFiles.map(file => ({
+      file,
+      url: URL.createObjectURL(file)
+    }));
+    
+    // Cleanup function to revoke URLs when files change
+    return urls;
+  }, [selectedFiles])
+  
+  // Cleanup blob URLs when component unmounts or files change
+  useEffect(() => {
+    return () => {
+      filePreviewUrls.forEach(({ url }) => URL.revokeObjectURL(url));
+    };
+  }, [filePreviewUrls])
   
   // Threads-specific state
   const [threadsMode, setThreadsMode] = useState<'single' | 'thread'>('single')
@@ -355,12 +373,27 @@ function CreateNewPostPageContent() {
 
     setIsPosting(true)
 
+    // Check if we're posting a video to Instagram (needs longer timeout)
+    const hasInstagramVideoPost = selectedPlatforms.includes('instagram') && 
+      selectedFiles.some(file => 
+        file.type.startsWith('video/') || 
+        ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'].some(ext => file.name.toLowerCase().endsWith(ext))
+      );
+    
     // Safety timeout to prevent button getting stuck
+    // Instagram videos need much more time for processing (especially HD/4K videos)
+    const timeoutDuration = hasInstagramVideoPost ? 300000 : 60000; // 5 minutes for IG video, 1 minute for others
     const timeoutId = setTimeout(() => {
       console.warn('Posting timeout - resetting button state')
       setIsPosting(false)
-      toast.error('Posting timed out - please try again')
-    }, 60000) // 60 second timeout for uploads
+      if (hasInstagramVideoPost) {
+        toast.warning('Instagram video is taking longer than expected. It should still complete - check Instagram in a few moments.', {
+          duration: 8000
+        });
+      } else {
+        toast.error('Posting timed out - please try again');
+      }
+    }, timeoutDuration)
 
     try {
       // Upload files first if any
@@ -1400,19 +1433,19 @@ function CreateNewPostPageContent() {
                 <div className="mt-4">
                   <Label className="text-sm font-medium">Selected Files ({selectedFiles.length})</Label>
                   <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {selectedFiles.map((file, index) => (
-                      <div key={index} className="relative group">
+                    {filePreviewUrls.map(({ file, url }, index) => (
+                      <div key={`${file.name}-${file.size}-${index}`} className="relative group">
                         <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                           {file.type.startsWith('image/') ? (
                             <img
-                              src={URL.createObjectURL(file)}
+                              src={url}
                               alt={file.name}
                               className="w-full h-full object-cover"
                             />
                           ) : file.type.startsWith('video/') ? (
                             <div className="relative w-full h-full bg-black">
                               <video
-                                src={URL.createObjectURL(file)}
+                                src={url}
                                 className="w-full h-full object-cover"
                                 muted
                                 preload="metadata"
