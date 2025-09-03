@@ -47,31 +47,49 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    // Extract page identifier from URL
+    // Extract page identifier from URL or use as-is if it's just an ID
     let pageIdentifier = '';
     
-    // Handle different Facebook URL formats
-    const patterns = [
-      /facebook\.com\/pages\/[^\/]+\/(\d+)/i,  // /pages/Name/123456
-      /facebook\.com\/profile\.php\?id=(\d+)/i, // /profile.php?id=123456
-      /facebook\.com\/([^\/\?\#]+)/i,           // /pagename
-    ];
+    // Clean the input - remove trailing slashes and whitespace
+    const cleanUrl = pageUrl.trim().replace(/\/$/, '');
+    console.log('Original input:', pageUrl);
+    console.log('Cleaned input:', cleanUrl);
     
-    for (const pattern of patterns) {
-      const match = pageUrl.match(pattern);
-      if (match) {
-        pageIdentifier = match[1];
-        break;
+    // Check if it's just a page ID or username (no URL)
+    if (!cleanUrl.includes('facebook.com') && !cleanUrl.includes('fb.com')) {
+      // Assume it's a direct page ID or username
+      pageIdentifier = cleanUrl;
+      console.log('Direct identifier provided (no URL):', pageIdentifier);
+    } else {
+      // Handle different Facebook URL formats
+      const patterns = [
+        /facebook\.com\/pages\/[^\/]+\/(\d+)/i,     // /pages/Name/123456
+        /facebook\.com\/profile\.php\?id=(\d+)/i,   // /profile.php?id=123456  
+        /fb\.com\/([^\/\?\#]+)/i,                   // fb.com/pagename
+        /facebook\.com\/([^\/\?\#]+)$/i,            // facebook.com/pagename (at end of URL)
+        /facebook\.com\/([^\/\?\#]+)\/?\??/i,       // facebook.com/pagename/ or with query
+      ];
+      
+      for (const pattern of patterns) {
+        const match = cleanUrl.match(pattern);
+        if (match) {
+          pageIdentifier = match[1];
+          // Remove common suffixes that aren't part of the page ID
+          pageIdentifier = pageIdentifier.replace(/\/(about|photos|videos|events|reviews|posts|community)$/i, '');
+          console.log(`Matched pattern: ${pattern}, extracted: ${pageIdentifier}`);
+          break;
+        }
       }
     }
     
     if (!pageIdentifier) {
+      console.error('Could not extract page identifier from input:', pageUrl);
       return NextResponse.json({ 
-        error: 'Invalid Facebook page URL format' 
+        error: 'Invalid input. Please enter a Facebook page URL (e.g., facebook.com/YourPageName) or your page ID directly.' 
       }, { status: 400 });
     }
     
-    console.log('Extracted page identifier:', pageIdentifier);
+    console.log('Final extracted page identifier:', pageIdentifier);
     
     // Try to get page info and validate access
     try {
@@ -109,10 +127,22 @@ export async function POST(request: NextRequest) {
       if (!pageData) {
         console.log('Page not in accounts list, trying direct access...');
         
-        // First try to get public page info without token to validate it exists
-        const publicPageResponse = await fetch(
+        // Try different methods to find the page
+        let publicPageResponse;
+        
+        // Method 1: Try with the identifier as-is (could be username or ID)
+        console.log(`Trying with identifier: ${pageIdentifier}`);
+        publicPageResponse = await fetch(
           `https://graph.facebook.com/v18.0/${pageIdentifier}?fields=id,name,about,picture`
         );
+        
+        // Method 2: If that fails and identifier looks like a username, try encoding it
+        if (!publicPageResponse.ok && !/^\d+$/.test(pageIdentifier)) {
+          console.log(`Trying with encoded identifier: ${encodeURIComponent(pageIdentifier)}`);
+          publicPageResponse = await fetch(
+            `https://graph.facebook.com/v18.0/${encodeURIComponent(pageIdentifier)}?fields=id,name,about,picture`
+          );
+        }
         
         if (publicPageResponse.ok) {
           pageData = await publicPageResponse.json();

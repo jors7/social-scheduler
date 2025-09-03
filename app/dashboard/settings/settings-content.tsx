@@ -91,7 +91,7 @@ function FacebookPageSetup({ account, onSuccess }: { account: SocialAccount; onS
         
         <div className="space-y-2">
           <Input
-            placeholder="https://facebook.com/YourPageName"
+            placeholder="https://facebook.com/YourPageName or Page ID"
             value={pageUrl}
             onChange={(e) => setPageUrl(e.target.value)}
             disabled={isConnecting}
@@ -114,13 +114,16 @@ function FacebookPageSetup({ account, onSuccess }: { account: SocialAccount; onS
         
         <div className="border-t border-amber-200 pt-2">
           <p className="text-xs text-amber-600">
-            How to find your Page URL:
+            How to connect your page:
           </p>
           <ol className="text-xs text-amber-600 ml-4 space-y-0.5 mt-1">
             <li>1. Go to your Facebook Page</li>
             <li>2. Copy the URL from your browser</li>
-            <li>3. Paste it above</li>
+            <li>3. Paste it above (or just enter your page name)</li>
           </ol>
+          <p className="text-xs text-amber-600 mt-2">
+            <strong>Tip:</strong> You can also enter just your page username or page ID
+          </p>
         </div>
       </div>
     </div>
