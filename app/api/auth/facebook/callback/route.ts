@@ -272,8 +272,24 @@ export async function GET(request: NextRequest) {
 
         if (insertError) {
           console.error(`Error storing Facebook page ${page.name}:`, insertError);
+          console.error('Insert error details:', JSON.stringify(insertError, null, 2));
         } else {
           console.log(`Stored Facebook page: ${page.name}`);
+          
+          // Verify the insert worked
+          const { data: verifyData, error: verifyError } = await supabaseAdmin
+            .from('social_accounts')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('platform', 'facebook')
+            .eq('account_id', page.id)
+            .single();
+            
+          if (verifyError) {
+            console.error('Failed to verify Facebook page storage:', verifyError);
+          } else {
+            console.log('Verified Facebook page in database:', verifyData);
+          }
         }
       }
     });
