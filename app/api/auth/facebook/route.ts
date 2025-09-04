@@ -45,7 +45,6 @@ export async function GET(request: NextRequest) {
         'business_management'
       ].join(','),
       response_type: 'code',
-      auth_type: 'rerequest', // Force re-request permissions
       display: 'popup'
     });
 
