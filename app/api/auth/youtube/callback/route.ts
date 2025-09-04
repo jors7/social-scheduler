@@ -137,30 +137,65 @@ export async function GET(request: NextRequest) {
     }
 
     // Store the account info - handle case where channel might be null
-    const accountData = {
-      user_id: user.id,
-      platform: 'youtube',
-      platform_user_id: channel?.id || `youtube_${user.id}`,
-      account_name: channel?.snippet?.title || 'YouTube Channel',
-      username: channel?.snippet?.customUrl || channel?.snippet?.title || 'YouTube',
-      profile_image_url: channel?.snippet?.thumbnails?.default?.url || null,
-      access_token: accessToken,
-      refresh_token: refreshToken,
-      is_active: true,
-      expires_at: expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null,
-    };
-
-    const { error: dbError } = await supabase
+    const platformUserId = channel?.id || `youtube_${user.id}`;
+    const accountName = channel?.snippet?.title || 'YouTube Channel';
+    const username = channel?.snippet?.customUrl || channel?.snippet?.title || 'YouTube';
+    const profileImageUrl = channel?.snippet?.thumbnails?.default?.url || null;
+    const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
+    
+    // Check if this account already exists
+    const { data: existingAccount } = await supabase
       .from('social_accounts')
-      .upsert(accountData, {
-        onConflict: 'user_id,platform'
-      });
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('platform', 'youtube')
+      .single();
 
-    if (dbError) {
-      console.error('Database error:', dbError);
-      return NextResponse.redirect(
-        new URL('/dashboard/settings?error=youtube_db_failed', request.url)
-      );
+    if (existingAccount) {
+      // Update existing account
+      const { error: dbError } = await supabase
+        .from('social_accounts')
+        .update({
+          platform_user_id: platformUserId,
+          account_name: accountName,
+          username: username,
+          profile_image_url: profileImageUrl,
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          expires_at: expiresAt,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingAccount.id);
+        
+      if (dbError) {
+        console.error('Database update error:', dbError);
+        return NextResponse.redirect(
+          new URL('/dashboard/settings?error=youtube_db_failed', request.url)
+        );
+      }
+    } else {
+      // Insert new account
+      const { error: dbError } = await supabase
+        .from('social_accounts')
+        .insert({
+          user_id: user.id,
+          platform: 'youtube',
+          platform_user_id: platformUserId,
+          account_name: accountName,
+          username: username,
+          profile_image_url: profileImageUrl,
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          is_active: true,
+          expires_at: expiresAt
+        });
+        
+      if (dbError) {
+        console.error('Database insert error:', dbError);
+        return NextResponse.redirect(
+          new URL('/dashboard/settings?error=youtube_db_failed', request.url)
+        );
+      }
     }
 
     // Clear the state cookie

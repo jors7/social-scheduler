@@ -6,17 +6,21 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     console.log('=== Instagram OAuth Initialization ===');
+    
+    // Use Instagram-specific credentials
+    const instagramAppId = process.env.INSTAGRAM_CLIENT_ID || '1322876636131547';
+    const instagramAppSecret = process.env.INSTAGRAM_CLIENT_SECRET;
+    
     console.log('Environment check:', {
-      hasMetaAppId: !!process.env.META_APP_ID,
-      hasMetaAppSecret: !!process.env.META_APP_SECRET,
-      metaAppIdLength: process.env.META_APP_ID?.length,
+      hasInstagramClientId: !!instagramAppId,
+      hasInstagramClientSecret: !!instagramAppSecret,
       nodeEnv: process.env.NODE_ENV
     });
     
-    if (!process.env.META_APP_ID || !process.env.META_APP_SECRET) {
-      console.error('Missing Meta API credentials');
-      console.error('META_APP_ID:', process.env.META_APP_ID ? 'set' : 'missing');
-      console.error('META_APP_SECRET:', process.env.META_APP_SECRET ? 'set' : 'missing');
+    if (!instagramAppId || !instagramAppSecret) {
+      console.error('Missing Instagram API credentials');
+      console.error('INSTAGRAM_CLIENT_ID:', instagramAppId ? 'set' : 'missing');
+      console.error('INSTAGRAM_CLIENT_SECRET:', instagramAppSecret ? 'set' : 'missing');
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
@@ -43,8 +47,7 @@ export async function GET(request: NextRequest) {
     const loggerId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 
     // Instagram API with Instagram Login - Option B (Instagram-only, no Facebook)
-    // Use the Instagram app ID, NOT the main Meta app ID
-    const instagramAppId = process.env.INSTAGRAM_CLIENT_ID || '1322876636131547';
+    // instagramAppId is already defined above
     
     // Build params exactly as needed - with multiple parameters to force fresh consent
     const authParams = new URLSearchParams();

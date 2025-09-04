@@ -93,30 +93,65 @@ export async function GET(request: NextRequest) {
     }
 
     // Store the account info
-    const accountData = {
-      user_id: user.id,
-      platform: 'pinterest',
-      platform_user_id: userData.id || userData.username,
-      account_name: userData.business_name || userData.username,
-      username: userData.username,
-      profile_image_url: userData.profile_image || null,
-      access_token: accessToken,
-      refresh_token: refreshToken,
-      is_active: true,
-      expires_at: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString() : null,
-    };
-
-    const { error: dbError } = await supabase
+    const platformUserId = userData.id || userData.username;
+    const accountName = userData.business_name || userData.username;
+    const username = userData.username;
+    const profileImageUrl = userData.profile_image || null;
+    const expiresAt = tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString() : null;
+    
+    // Check if this account already exists
+    const { data: existingAccount } = await supabase
       .from('social_accounts')
-      .upsert(accountData, {
-        onConflict: 'user_id,platform'
-      });
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('platform', 'pinterest')
+      .single();
 
-    if (dbError) {
-      console.error('Database error:', dbError);
-      return NextResponse.redirect(
-        new URL('/dashboard/settings?error=pinterest_db_failed', request.url)
-      );
+    if (existingAccount) {
+      // Update existing account
+      const { error: dbError } = await supabase
+        .from('social_accounts')
+        .update({
+          platform_user_id: platformUserId,
+          account_name: accountName,
+          username: username,
+          profile_image_url: profileImageUrl,
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          expires_at: expiresAt,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingAccount.id);
+        
+      if (dbError) {
+        console.error('Database update error:', dbError);
+        return NextResponse.redirect(
+          new URL('/dashboard/settings?error=pinterest_db_failed', request.url)
+        );
+      }
+    } else {
+      // Insert new account
+      const { error: dbError } = await supabase
+        .from('social_accounts')
+        .insert({
+          user_id: user.id,
+          platform: 'pinterest',
+          platform_user_id: platformUserId,
+          account_name: accountName,
+          username: username,
+          profile_image_url: profileImageUrl,
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          is_active: true,
+          expires_at: expiresAt
+        });
+        
+      if (dbError) {
+        console.error('Database insert error:', dbError);
+        return NextResponse.redirect(
+          new URL('/dashboard/settings?error=pinterest_db_failed', request.url)
+        );
+      }
     }
 
     return NextResponse.redirect(
