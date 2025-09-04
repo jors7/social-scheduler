@@ -24,15 +24,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Deactivate the Threads account
+    // Delete the Threads account record completely
     const { error } = await supabase
       .from('social_accounts')
-      .update({ 
-        is_active: false,
-        access_token: null,
-        expires_at: null,
-        updated_at: new Date().toISOString()
-      })
+      .delete()
       .eq('user_id', user.id)
       .eq('platform', 'threads');
 
