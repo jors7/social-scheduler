@@ -320,13 +320,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (dbError) {
-      console.error('Database error:', dbError);
-      return NextResponse.redirect(
-        new URL('/dashboard/settings?error=database_error', request.url)
-      );
-    }
-
     console.log('Threads account connected successfully');
     return NextResponse.redirect(
       new URL('/dashboard/settings?success=threads_connected', request.url)
