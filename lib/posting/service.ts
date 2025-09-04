@@ -149,12 +149,7 @@ export class PostingService {
 
     switch (platform) {
       case 'facebook':
-        // Facebook integration temporarily disabled
-        return {
-          platform: 'facebook',
-          success: false,
-          error: 'Facebook integration is currently being rebuilt. Please check back soon.'
-        };
+        return await this.postToFacebook(textContent, account, mediaUrls);
       
       case 'instagram':
         return await this.postToInstagram(
@@ -188,6 +183,46 @@ export class PostingService {
     }
   }
 
+
+  private async postToFacebook(content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
+    try {
+      // Facebook requires a page ID (stored in platform_user_id)
+      if (!account.platform_user_id) {
+        throw new Error('Facebook page ID not found');
+      }
+
+      const response = await fetch('/api/post/facebook', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pageId: account.platform_user_id,
+          accessToken: account.access_token,
+          text: content,
+          mediaUrls: mediaUrls,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Facebook posting failed');
+      }
+
+      return {
+        platform: 'facebook',
+        success: true,
+        postId: data.id,
+      };
+    } catch (error) {
+      return {
+        platform: 'facebook',
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
 
   private async postToInstagram(
     content: string, 
