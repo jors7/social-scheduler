@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
 
 export const dynamic = 'force-dynamic';
-
-// Initialize Supabase client with service role for admin operations
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 interface FacebookTokenResponse {
   access_token: string;
@@ -161,32 +155,55 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get the session user ID from the cookie
-    // The cookie name format is sb-[project-id]-auth-token
-    const sessionToken = cookieStore.get('sb-access-token')?.value || 
-                        cookieStore.get('sb-vomglwxzhuyfkraertrm-auth-token')?.value ||
-                        cookieStore.get('sb-vomglwxzhuyfkraertrm-auth-token.0')?.value ||
-                        cookieStore.get('sb-vomglwxzhuyfkraertrm-auth-token.1')?.value;
-    
-    if (!sessionToken) {
-      console.error('No session token found. Available cookies:', 
-        Array.from(cookieStore.getAll()).map(c => c.name).join(', '));
-      return NextResponse.redirect(
-        new URL('/dashboard/settings?error=not_authenticated', request.url)
-      );
-    }
+    // Create a Supabase client with proper cookie handling
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set() {
+            // Not needed for this route
+          },
+          remove() {
+            // Not needed for this route
+          },
+        },
+      }
+    );
 
-    // Parse the session token to get user ID
-    const { data: { user }, error: userError } = await supabase.auth.getUser(sessionToken);
+    // Get the authenticated user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
       console.error('Failed to get authenticated user:', userError);
+      console.error('Available cookies:', Array.from(cookieStore.getAll()).map(c => c.name).join(', '));
+      
+      // Try alternative approach with service role to store the account
+      // We'll store it with a temporary flag and require re-authentication
       return NextResponse.redirect(
         new URL('/dashboard/settings?error=not_authenticated', request.url)
       );
     }
 
     console.log('Authenticated user ID:', user.id);
+
+    // Create service role client for database operations
+    const supabaseAdmin = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set() {},
+          remove() {},
+        },
+      }
+    );
 
     // Store each page as a separate social account
     const accountPromises = pagesData.data.map(async (page, index) => {
@@ -203,7 +220,7 @@ export async function GET(request: NextRequest) {
       const finalPageToken = pageLongLivedData.access_token || page.access_token;
 
       // Check if this page already exists
-      const { data: existingAccount } = await supabase
+      const { data: existingAccount } = await supabaseAdmin
         .from('social_accounts')
         .select('id')
         .eq('user_id', user.id)
@@ -213,7 +230,7 @@ export async function GET(request: NextRequest) {
 
       if (existingAccount) {
         // Update existing account
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabaseAdmin
           .from('social_accounts')
           .update({
             username: page.name,
@@ -241,7 +258,7 @@ export async function GET(request: NextRequest) {
         }
       } else {
         // Insert new account
-        const { error: insertError } = await supabase
+        const { error: insertError } = await supabaseAdmin
           .from('social_accounts')
           .insert({
             user_id: user.id,

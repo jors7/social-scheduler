@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
-
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,36 +16,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get the session user ID from the cookie
+    // Get the session user from cookies
     const cookieStore = cookies();
-    // The cookie name format is sb-[project-id]-auth-token
-    const sessionToken = cookieStore.get('sb-access-token')?.value || 
-                        cookieStore.get('sb-vomglwxzhuyfkraertrm-auth-token')?.value ||
-                        cookieStore.get('sb-vomglwxzhuyfkraertrm-auth-token.0')?.value ||
-                        cookieStore.get('sb-vomglwxzhuyfkraertrm-auth-token.1')?.value;
     
-    if (!sessionToken) {
+    // Create a Supabase client with proper cookie handling
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set() {},
+          remove() {},
+        },
+      }
+    );
+
+    // Get the authenticated user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
       );
     }
 
-    // Parse the session token to get user ID
-    const { data: { user }, error: userError } = await supabase.auth.getUser(sessionToken);
-    
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: 'Failed to get authenticated user' },
-        { status: 401 }
-      );
-    }
+    // Create admin client for database operations
+    const supabaseAdmin = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set() {},
+          remove() {},
+        },
+      }
+    );
 
     console.log('Disconnecting Facebook account:', accountId);
     console.log('User ID:', user.id);
 
     // Get the account details first (for potential cleanup)
-    const { data: account, error: fetchError } = await supabase
+    const { data: account, error: fetchError } = await supabaseAdmin
       .from('social_accounts')
       .select('*')
       .eq('id', accountId)
@@ -96,7 +108,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Delete the account from our database
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabaseAdmin
       .from('social_accounts')
       .delete()
       .eq('id', accountId)
