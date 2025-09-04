@@ -342,8 +342,32 @@ export default function SettingsContent() {
         setLoading(false)
       }
     } else if (platformId === 'facebook') {
-      // Facebook integration temporarily disabled
-      toast.info('Facebook integration is currently being rebuilt. Please check back soon.')
+      setLoading(true)
+      try {
+        console.log('Fetching Facebook auth URL...')
+        const response = await fetch('/api/auth/facebook')
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('API Error:', errorText)
+          toast.error(`Failed to connect: ${response.status}`)
+          return
+        }
+        
+        const data = await response.json()
+        
+        if (data.authUrl) {
+          console.log('Redirecting to Facebook OAuth:', data.authUrl)
+          window.location.href = data.authUrl
+        } else {
+          toast.error('Failed to initialize Facebook authentication')
+        }
+      } catch (error) {
+        console.error('Error connecting to Facebook:', error)
+        toast.error('Failed to connect to Facebook')
+      } finally {
+        setLoading(false)
+      }
     } else if (platformId === 'pinterest') {
       setLoading(true)
       try {
@@ -498,6 +522,21 @@ export default function SettingsContent() {
           console.warn('⚠️ Instagram local data cleared but revoke may have failed:', result.note)
         }
         // Instagram disconnect endpoint handles database deletion, so we're done
+      } else if (platformName === 'Facebook') {
+        // For Facebook, call the disconnect endpoint to revoke permissions
+        console.log('Calling Facebook disconnect endpoint...')
+        const response = await fetch('/api/auth/facebook/disconnect', { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accountId })
+        })
+        const result = await response.json()
+        console.log('Facebook disconnect result:', result)
+        if (!response.ok) {
+          console.error('Failed to disconnect Facebook:', result)
+          throw new Error(result.error || 'Failed to disconnect Facebook')
+        }
+        // Facebook disconnect endpoint handles database deletion, so we're done
       } else {
         // For other platforms, just delete the record
         // Delete the record entirely for better security
