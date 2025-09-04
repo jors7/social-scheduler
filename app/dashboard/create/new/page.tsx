@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, Suspense, useMemo } from 'rea
 import dynamic from 'next/dynamic'
 import { toast } from 'sonner'
 import { PostingService, PostData } from '@/lib/posting/service'
+import { PostingProgressTracker } from '@/lib/posting/progress-tracker'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -372,6 +373,10 @@ function CreateNewPostPageContent() {
     }
 
     setIsPosting(true)
+    
+    // Create progress tracker for supported platforms
+    const progressTracker = new PostingProgressTracker(supportedPlatforms);
+    progressTracker.start();
 
     // Check if we're posting a video to Instagram (needs longer timeout)
     const hasInstagramVideoPost = selectedPlatforms.includes('instagram') && 
@@ -399,10 +404,10 @@ function CreateNewPostPageContent() {
       // Upload files first if any
       let mediaUrls: string[] = []
       if (selectedFiles.length > 0) {
-        toast.info('Uploading media...')
         mediaUrls = await uploadFiles()
         if (mediaUrls.length === 0 && selectedFiles.length > 0) {
           toast.error('Failed to upload media files')
+          progressTracker.finish();
           return
         }
         setUploadedMediaUrls(mediaUrls)
@@ -570,20 +575,21 @@ function CreateNewPostPageContent() {
             // Update the existing toast with new status
             toast.loading(status, { id: instagramProgressToast });
           }
-        } : undefined
+        } : undefined,
+        progressTracker
       )
       
-      // Dismiss the progress toast if it exists
+      // Dismiss the Instagram-specific toast if it exists
       if (instagramProgressToast) {
         toast.dismiss(instagramProgressToast);
       }
       
-      // Show results
+      // The progress tracker will show final results
+      progressTracker.finish();
+      
+      // Process results
       const successful = results.filter(r => r.success)
       const failed = results.filter(r => !r.success)
-
-      if (successful.length > 0) {
-        toast.success(`Successfully posted to ${successful.map(r => r.platform).join(', ')}!`)
         
         // Check if TikTok was posted and show status check info
         const tiktokResult = results.find(r => r.platform === 'tiktok' || r.platform.startsWith('tiktok'))
@@ -657,6 +663,7 @@ function CreateNewPostPageContent() {
 
     } catch (error) {
       console.error('Posting error:', error)
+      progressTracker.finish(); // Make sure to finish the tracker on error
       toast.error('Failed to post: ' + (error instanceof Error ? error.message : 'Unknown error'))
     } finally {
       // Clear timeout and always reset posting state

@@ -780,16 +780,6 @@ export default function SettingsContent() {
                                   {isExpanded ? 'Hide' : 'Show'} Accounts
                                 </Button>
                               )}
-                              {platform.id === 'threads' && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => router.push('/threads-logout')}
-                                  className="text-xs text-blue-600 hover:text-blue-700 mr-2"
-                                >
-                                  Having issues?
-                                </Button>
-                              )}
                               <Button
                                 size="sm"
                                 onClick={() => handleConnect(platform.id)}

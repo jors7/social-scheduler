@@ -2,6 +2,7 @@ import { BlueskyService } from '@/lib/bluesky/service';
 import { PinterestService } from '@/lib/pinterest/service';
 import { InstagramService } from '@/lib/instagram/service';
 import { createBrowserClient } from '@supabase/ssr';
+import { PostingProgressTracker } from './progress-tracker';
 
 export interface PostData {
   content: string;
@@ -36,7 +37,8 @@ export class PostingService {
 
   async postToMultiplePlatforms(
     postData: PostData,
-    onProgress?: (platform: string, status: string) => void
+    onProgress?: (platform: string, status: string) => void,
+    progressTracker?: PostingProgressTracker
   ): Promise<PostResult[]> {
     const results: PostResult[] = [];
 
@@ -89,6 +91,9 @@ export class PostingService {
         try {
           const content = postData.platformContent?.[platform] || postData.content;
           
+          // Update progress tracker - starting upload
+          progressTracker?.updatePlatform(platform, 'uploading');
+          
           // Add Pinterest-specific data to account if needed
           if (platform === 'pinterest') {
             account.pinterest_board_id = postData.pinterestBoardId;
@@ -102,6 +107,16 @@ export class PostingService {
             account.tiktok_privacy_level = postData.tiktokPrivacyLevel;
           }
           
+          // Update progress tracker - processing
+          const isVideo = postData.mediaUrls?.some(url => 
+            ['.mp4', '.mov', '.avi', '.webm'].some(ext => url.toLowerCase().includes(ext))
+          );
+          if (platform === 'instagram' && isVideo) {
+            progressTracker?.updatePlatform(platform, 'processing', 'reel');
+          } else if (postData.mediaUrls && postData.mediaUrls.length > 0) {
+            progressTracker?.updatePlatform(platform, 'processing');
+          }
+          
           const result = await this.postToPlatform(
             platform, 
             content, 
@@ -109,6 +124,13 @@ export class PostingService {
             postData.mediaUrls,
             onProgress
           );
+          
+          // Update progress tracker - success or error
+          if (result.success) {
+            progressTracker?.updatePlatform(platform, 'success');
+          } else {
+            progressTracker?.updatePlatform(platform, 'error', undefined, result.error);
+          }
           // Add account info to result
           results.push({
             ...result,
@@ -117,12 +139,14 @@ export class PostingService {
               : platform
           });
         } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          progressTracker?.updatePlatform(platform, 'error', undefined, errorMessage);
           results.push({
             platform: account.account_label 
               ? `${platform} (${account.account_label})`
               : platform,
             success: false,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: errorMessage
           });
         }
       }
