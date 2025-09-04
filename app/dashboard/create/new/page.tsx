@@ -590,7 +590,9 @@ function CreateNewPostPageContent() {
       // Process results
       const successful = results.filter(r => r.success)
       const failed = results.filter(r => !r.success)
-        
+      
+      // Check if we had any successful posts
+      if (successful.length > 0) {
         // Check if TikTok was posted and show status check info
         const tiktokResult = results.find(r => r.platform === 'tiktok' || r.platform.startsWith('tiktok'))
         if (tiktokResult?.success && tiktokResult.postId) {
@@ -612,11 +614,7 @@ function CreateNewPostPageContent() {
         }
       }
 
-      if (failed.length > 0) {
-        failed.forEach(result => {
-          toast.error(`Failed to post to ${result.platform}: ${result.error}`)
-        })
-      }
+      // Progress tracker already shows individual errors, so we don't duplicate them here
 
       // Clear form if all successful
       if (failed.length === 0) {
