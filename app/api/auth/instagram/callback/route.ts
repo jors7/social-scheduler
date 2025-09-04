@@ -275,34 +275,70 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const accountData = {
-      user_id: user.id,
-      platform: 'instagram',
-      platform_user_id: profileData.id || igBusinessAccountId, // Use the IG Business Account ID
-      account_name: profileData.username || `instagram_${user_id}`,
-      username: profileData.username || `instagram_${user_id}`,
-      profile_image_url: profileData.profile_picture_url || null,
-      access_token: access_token, // Long-lived token that works with Graph API
-      access_secret: token_type, // Store token type for debugging
-      is_active: true,
-    };
+    const platformUserId = profileData.id || igBusinessAccountId;
+    const accountName = profileData.username || `instagram_${user_id}`;
+    const username = profileData.username || `instagram_${user_id}`;
+    const profileImageUrl = profileData.profile_picture_url || null;
     
     console.log('Storing Instagram account data:', {
-      ...accountData,
+      user_id: user.id,
+      platform: 'instagram',
+      platform_user_id: platformUserId,
+      username: username,
       access_token: 'REDACTED'
     });
-
-    const { error: dbError } = await supabase
+    
+    // Check if this account already exists
+    const { data: existingAccount } = await supabase
       .from('social_accounts')
-      .upsert(accountData, {
-        onConflict: 'user_id,platform'
-      });
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('platform', 'instagram')
+      .single();
 
-    if (dbError) {
-      console.error('Database error:', dbError);
-      return NextResponse.redirect(
-        new URL('/dashboard/settings?error=database_error', request.url)
-      );
+    if (existingAccount) {
+      // Update existing account
+      const { error: dbError } = await supabase
+        .from('social_accounts')
+        .update({
+          platform_user_id: platformUserId,
+          account_name: accountName,
+          username: username,
+          profile_image_url: profileImageUrl,
+          access_token: access_token, // Long-lived token
+          access_secret: token_type, // Store token type for debugging
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingAccount.id);
+        
+      if (dbError) {
+        console.error('Database update error:', dbError);
+        return NextResponse.redirect(
+          new URL('/dashboard/settings?error=database_error', request.url)
+        );
+      }
+    } else {
+      // Insert new account
+      const { error: dbError } = await supabase
+        .from('social_accounts')
+        .insert({
+          user_id: user.id,
+          platform: 'instagram',
+          platform_user_id: platformUserId,
+          account_name: accountName,
+          username: username,
+          profile_image_url: profileImageUrl,
+          access_token: access_token, // Long-lived token
+          access_secret: token_type, // Store token type for debugging
+          is_active: true
+        });
+        
+      if (dbError) {
+        console.error('Database insert error:', dbError);
+        return NextResponse.redirect(
+          new URL('/dashboard/settings?error=database_error', request.url)
+        );
+      }
     }
 
     console.log('Instagram account connected successfully');
