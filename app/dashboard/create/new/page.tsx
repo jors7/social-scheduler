@@ -58,15 +58,15 @@ import { cn } from '@/lib/utils'
 import { useSearchParams, useRouter } from 'next/navigation'
 
 const platforms = [
-  { id: 'twitter', name: 'X (Twitter)', icon: '𝕏', charLimit: 280 },
-  { id: 'instagram', name: 'Instagram', icon: '📷', charLimit: 2200 },
-  { id: 'facebook', name: 'Facebook', icon: 'f', charLimit: 63206 },
-  { id: 'linkedin', name: 'LinkedIn', icon: 'in', charLimit: 3000 },
-  { id: 'youtube', name: 'YouTube', icon: '▶', charLimit: 5000 },
-  { id: 'tiktok', name: 'TikTok', icon: '♪', charLimit: 2200 },
-  { id: 'threads', name: 'Threads', icon: '@', charLimit: 500 },
-  { id: 'bluesky', name: 'Bluesky', icon: '🦋', charLimit: 300 },
-  { id: 'pinterest', name: 'Pinterest', icon: 'P', charLimit: 500 },
+  { id: 'twitter', name: 'X (Twitter)', icon: '𝕏', charLimit: 280, gradient: 'from-gray-50 to-slate-50', borderColor: 'border-gray-200' },
+  { id: 'instagram', name: 'Instagram', icon: '📷', charLimit: 2200, gradient: 'from-purple-50 to-pink-50', borderColor: 'border-purple-200' },
+  { id: 'facebook', name: 'Facebook', icon: 'f', charLimit: 63206, gradient: 'from-blue-50 to-sky-50', borderColor: 'border-blue-200' },
+  { id: 'linkedin', name: 'LinkedIn', icon: 'in', charLimit: 3000, gradient: 'from-indigo-50 to-blue-50', borderColor: 'border-indigo-200' },
+  { id: 'youtube', name: 'YouTube', icon: '▶', charLimit: 5000, gradient: 'from-red-50 to-rose-50', borderColor: 'border-red-200' },
+  { id: 'tiktok', name: 'TikTok', icon: '♪', charLimit: 2200, gradient: 'from-pink-50 to-purple-50', borderColor: 'border-pink-200' },
+  { id: 'threads', name: 'Threads', icon: '@', charLimit: 500, gradient: 'from-slate-50 to-gray-50', borderColor: 'border-slate-200' },
+  { id: 'bluesky', name: 'Bluesky', icon: '🦋', charLimit: 300, gradient: 'from-sky-50 to-cyan-50', borderColor: 'border-sky-200' },
+  { id: 'pinterest', name: 'Pinterest', icon: 'P', charLimit: 500, gradient: 'from-red-50 to-pink-50', borderColor: 'border-red-200' },
 ]
 
 function CreateNewPostPageContent() {
@@ -1849,19 +1849,29 @@ function CreateNewPostPageContent() {
                       </button>
                       
                       {selectedPlatforms.includes(platform.id) && platformAccounts.length > 0 && (
-                        <div className="pl-11">
-                          <AccountSelector
-                            platform={platform.name}
-                            accounts={platformAccounts}
-                            selectedAccountIds={selectedAccounts[platform.id] || []}
-                            onSelectionChange={(accountIds) => {
-                              setSelectedAccounts(prev => ({
-                                ...prev,
-                                [platform.id]: accountIds
-                              }))
-                            }}
-                            multiSelect={platformAccounts.length > 1}
-                          />
+                        <div className="mt-2 ml-11 mr-2 animate-in slide-in-from-top-1 duration-200">
+                          <div className={cn(
+                            "p-3 rounded-lg bg-gradient-to-r border transition-all",
+                            platform.gradient,
+                            platform.borderColor
+                          )}>
+                            <Label className="text-[11px] font-medium text-gray-600 mb-1.5 block">
+                              Account Settings
+                            </Label>
+                            <AccountSelector
+                              platform={platform.name}
+                              platformId={platform.id}
+                              accounts={platformAccounts}
+                              selectedAccountIds={selectedAccounts[platform.id] || []}
+                              onSelectionChange={(accountIds) => {
+                                setSelectedAccounts(prev => ({
+                                  ...prev,
+                                  [platform.id]: accountIds
+                                }))
+                              }}
+                              multiSelect={platformAccounts.length > 1}
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
