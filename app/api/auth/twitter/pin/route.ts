@@ -117,39 +117,80 @@ export async function POST(request: NextRequest) {
     console.log('Preparing to save Twitter account...');
     
     try {
-      const accountData = {
-        user_id: user.id,
-        platform: 'twitter',
-        platform_user_id: twitterUser.id, // Changed from account_id to platform_user_id
-        account_name: twitterUser.name,
-        username: twitterUser.username,
-        profile_image_url: twitterUser.profile_image_url,
-        access_token: accessToken,
-        access_secret: accessSecret,
-        is_active: true,
-      };
+      const platformUserId = twitterUser.id;
+      const accountName = twitterUser.name;
+      const username = twitterUser.username;
+      const profileImageUrl = twitterUser.profile_image_url;
       
       console.log('Account data to save:', { 
-        ...accountData, 
+        user_id: user.id,
+        platform: 'twitter',
+        platform_user_id: platformUserId,
+        username: username,
         access_token: 'hidden', 
         access_secret: 'hidden' 
       });
-
-      // Use upsert with the correct conflict resolution
-      const { data, error: dbError } = await supabase
+      
+      // Check if this account already exists
+      const { data: existingAccount } = await supabase
         .from('social_accounts')
-        .upsert(accountData, {
-          onConflict: 'user_id,platform'
-        })
-        .select();
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('platform', 'twitter')
+        .single();
 
-      if (dbError) {
-        console.error('Database error:', dbError);
-        return NextResponse.json({ 
-          error: 'Database error', 
-          details: dbError.message,
-          code: dbError.code
-        }, { status: 500 });
+      let data;
+      if (existingAccount) {
+        // Update existing account
+        const { data: updateData, error: dbError } = await supabase
+          .from('social_accounts')
+          .update({
+            platform_user_id: platformUserId,
+            account_name: accountName,
+            username: username,
+            profile_image_url: profileImageUrl,
+            access_token: accessToken,
+            access_secret: accessSecret,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingAccount.id)
+          .select();
+          
+        if (dbError) {
+          console.error('Database update error:', dbError);
+          return NextResponse.json({ 
+            error: 'Database error', 
+            details: dbError.message,
+            code: dbError.code
+          }, { status: 500 });
+        }
+        data = updateData;
+      } else {
+        // Insert new account
+        const { data: insertData, error: dbError } = await supabase
+          .from('social_accounts')
+          .insert({
+            user_id: user.id,
+            platform: 'twitter',
+            platform_user_id: platformUserId,
+            account_name: accountName,
+            username: username,
+            profile_image_url: profileImageUrl,
+            access_token: accessToken,
+            access_secret: accessSecret,
+            is_active: true
+          })
+          .select();
+          
+        if (dbError) {
+          console.error('Database insert error:', dbError);
+          return NextResponse.json({ 
+            error: 'Database error', 
+            details: dbError.message,
+            code: dbError.code
+          }, { status: 500 });
+        }
+        data = insertData;
       }
 
       console.log('Account saved successfully:', data);

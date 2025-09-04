@@ -66,28 +66,62 @@ export async function GET(request: NextRequest) {
     }
 
     // Store Twitter credentials in database
-    const { error: dbError } = await supabase
+    const platformUserId = twitterUser.id;
+    const accountName = twitterUser.name;
+    const username = twitterUser.username;
+    const profileImageUrl = twitterUser.profile_image_url;
+    
+    // Check if this account already exists
+    const { data: existingAccount } = await supabase
       .from('social_accounts')
-      .upsert({
-        user_id: user.id,
-        platform: 'twitter',
-        account_id: twitterUser.id,
-        account_name: twitterUser.name,
-        account_username: twitterUser.username,
-        profile_image_url: twitterUser.profile_image_url,
-        access_token: accessToken,
-        access_secret: accessSecret,
-        is_active: true,
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'user_id,platform',
-      });
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('platform', 'twitter')
+      .single();
 
-    if (dbError) {
-      console.error('Database error:', dbError);
-      return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings?error=database_error`
-      );
+    if (existingAccount) {
+      // Update existing account
+      const { error: dbError } = await supabase
+        .from('social_accounts')
+        .update({
+          platform_user_id: platformUserId,
+          account_name: accountName,
+          username: username,
+          profile_image_url: profileImageUrl,
+          access_token: accessToken,
+          access_secret: accessSecret,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingAccount.id);
+        
+      if (dbError) {
+        console.error('Database update error:', dbError);
+        return NextResponse.redirect(
+          `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings?error=database_error`
+        );
+      }
+    } else {
+      // Insert new account
+      const { error: dbError } = await supabase
+        .from('social_accounts')
+        .insert({
+          user_id: user.id,
+          platform: 'twitter',
+          platform_user_id: platformUserId,
+          account_name: accountName,
+          username: username,
+          profile_image_url: profileImageUrl,
+          access_token: accessToken,
+          access_secret: accessSecret,
+          is_active: true
+        });
+        
+      if (dbError) {
+        console.error('Database insert error:', dbError);
+        return NextResponse.redirect(
+          `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings?error=database_error`
+        );
+      }
     }
 
     // Clear OAuth cookies

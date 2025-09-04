@@ -60,33 +60,71 @@ export async function POST(request: NextRequest) {
     console.log('Bluesky credentials verified for:', blueskyProfile.handle);
 
     // Store Bluesky credentials in database
-    const accountData = {
-      user_id: user.id,
-      platform: 'bluesky',
-      platform_user_id: blueskyProfile.did,
-      account_name: blueskyProfile.displayName,
-      username: blueskyProfile.handle,
-      profile_image_url: blueskyProfile.avatar,
-      access_token: identifier, // Store identifier as access token
-      access_secret: password,  // Store app password as secret (encrypted in production!)
-      is_active: true,
-    };
+    const platformUserId = blueskyProfile.did;
+    const accountName = blueskyProfile.displayName;
+    const username = blueskyProfile.handle;
+    const profileImageUrl = blueskyProfile.avatar;
 
     console.log('Saving Bluesky account data...');
-
-    const { data, error: dbError } = await supabase
+    
+    // Check if this account already exists
+    const { data: existingAccount } = await supabase
       .from('social_accounts')
-      .upsert(accountData, {
-        onConflict: 'user_id,platform'
-      })
-      .select();
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('platform', 'bluesky')
+      .single();
 
-    if (dbError) {
-      console.error('Database error:', dbError);
-      return NextResponse.json({ 
-        error: 'Failed to save account', 
-        details: dbError.message 
-      }, { status: 500 });
+    let data;
+    if (existingAccount) {
+      // Update existing account
+      const { data: updateData, error: dbError } = await supabase
+        .from('social_accounts')
+        .update({
+          platform_user_id: platformUserId,
+          account_name: accountName,
+          username: username,
+          profile_image_url: profileImageUrl,
+          access_token: identifier, // Store identifier as access token
+          access_secret: password,  // Store app password as secret
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingAccount.id)
+        .select();
+        
+      if (dbError) {
+        console.error('Database update error:', dbError);
+        return NextResponse.json({ 
+          error: 'Failed to update account', 
+          details: dbError.message 
+        }, { status: 500 });
+      }
+      data = updateData;
+    } else {
+      // Insert new account
+      const { data: insertData, error: dbError } = await supabase
+        .from('social_accounts')
+        .insert({
+          user_id: user.id,
+          platform: 'bluesky',
+          platform_user_id: platformUserId,
+          account_name: accountName,
+          username: username,
+          profile_image_url: profileImageUrl,
+          access_token: identifier, // Store identifier as access token
+          access_secret: password,  // Store app password as secret
+          is_active: true
+        })
+        .select();
+        
+      if (dbError) {
+        console.error('Database insert error:', dbError);
+        return NextResponse.json({ 
+          error: 'Failed to save account', 
+          details: dbError.message 
+        }, { status: 500 });
+      }
+      data = insertData;
     }
 
     console.log('Bluesky account connected successfully');
