@@ -144,24 +144,63 @@ export async function GET(request: NextRequest) {
     }
 
     // Store the account info
-    const accountData = {
-      user_id: user.id,
-      platform: 'tiktok',
-      platform_user_id: openId || userInfo?.open_id || `tiktok_${user.id}`,
-      account_name: userInfo?.display_name || 'TikTok Account',
-      username: userInfo?.display_name || 'TikTok User',
-      profile_image_url: userInfo?.avatar_url || null,
-      access_token: accessToken,
-      refresh_token: refreshToken,
-      is_active: true,
-      expires_at: expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null,
-    };
-
-    const { error: dbError } = await supabase
+    const platformUserId = openId || userInfo?.open_id || `tiktok_${user.id}`;
+    const username = userInfo?.display_name || 'TikTok User';
+    const profileImageUrl = userInfo?.avatar_url || null;
+    const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
+    
+    // Check if this account already exists
+    const { data: existingAccount } = await supabase
       .from('social_accounts')
-      .upsert(accountData, {
-        onConflict: 'user_id,platform'
-      });
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('platform', 'tiktok')
+      .single();
+
+    if (existingAccount) {
+      // Update existing account
+      const { error: dbError } = await supabase
+        .from('social_accounts')
+        .update({
+          platform_user_id: platformUserId,
+          username: username,
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          profile_image_url: profileImageUrl,
+          expires_at: expiresAt,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingAccount.id);
+        
+      if (dbError) {
+        console.error('Database update error:', dbError);
+        return NextResponse.redirect(
+          new URL('/dashboard/settings?error=tiktok_db_failed', request.url)
+        );
+      }
+    } else {
+      // Insert new account
+      const { error: dbError } = await supabase
+        .from('social_accounts')
+        .insert({
+          user_id: user.id,
+          platform: 'tiktok',
+          platform_user_id: platformUserId,
+          username: username,
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          profile_image_url: profileImageUrl,
+          is_active: true,
+          expires_at: expiresAt
+        });
+        
+      if (dbError) {
+        console.error('Database insert error:', dbError);
+        return NextResponse.redirect(
+          new URL('/dashboard/settings?error=tiktok_db_failed', request.url)
+        );
+      }
+    }
 
     if (dbError) {
       console.error('Database error:', dbError);

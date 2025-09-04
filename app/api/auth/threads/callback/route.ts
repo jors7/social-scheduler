@@ -264,24 +264,61 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const accountData = {
-      user_id: user.id,
-      platform: 'threads',
-      platform_user_id: threadsAccountData.id,
-      account_name: threadsAccountData.username,
-      username: threadsAccountData.username,
-      profile_image_url: threadsAccountData.threads_profile_picture_url,
-      access_token: pageAccessToken, // Use the appropriate access token for Threads API
-      access_secret: '', // Threads doesn't use access secret
-      is_active: true,
-      expires_at: expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null,
-    };
-
-    const { error: dbError } = await supabase
+    // Threads tokens expire after 60 days, not the value from expiresIn
+    const expiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000); // 60 days from now
+    
+    // Check if this account already exists
+    const { data: existingAccount } = await supabase
       .from('social_accounts')
-      .upsert(accountData, {
-        onConflict: 'user_id,platform'
-      });
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('platform', 'threads')
+      .single();
+
+    if (existingAccount) {
+      // Update existing account
+      const { error: dbError } = await supabase
+        .from('social_accounts')
+        .update({
+          platform_user_id: threadsAccountData.id,
+          username: threadsAccountData.username,
+          access_token: pageAccessToken,
+          access_secret: '', // Threads doesn't use access secret
+          profile_image_url: threadsAccountData.threads_profile_picture_url,
+          expires_at: expiresAt.toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingAccount.id);
+        
+      if (dbError) {
+        console.error('Database update error:', dbError);
+        return NextResponse.redirect(
+          new URL('/dashboard/settings?error=database_error', request.url)
+        );
+      }
+    } else {
+      // Insert new account
+      const { error: dbError } = await supabase
+        .from('social_accounts')
+        .insert({
+          user_id: user.id,
+          platform: 'threads',
+          platform_user_id: threadsAccountData.id,
+          username: threadsAccountData.username,
+          access_token: pageAccessToken,
+          access_secret: '', // Threads doesn't use access secret
+          profile_image_url: threadsAccountData.threads_profile_picture_url,
+          is_active: true,
+          expires_at: expiresAt.toISOString()
+        });
+        
+      if (dbError) {
+        console.error('Database insert error:', dbError);
+        return NextResponse.redirect(
+          new URL('/dashboard/settings?error=database_error', request.url)
+        );
+      }
+    }
 
     if (dbError) {
       console.error('Database error:', dbError);
