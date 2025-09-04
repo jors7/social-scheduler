@@ -55,6 +55,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { content, mediaUrl, mediaType } = body;
 
+    console.log('LinkedIn post request:', { 
+      hasContent: !!content, 
+      mediaUrl, 
+      mediaType,
+      contentLength: content?.length 
+    });
+
     if (!content) {
       return NextResponse.json(
         { error: 'Content is required' },
@@ -78,19 +85,27 @@ export async function POST(request: NextRequest) {
 
     // Handle media if provided
     if (mediaUrl && mediaType === 'image') {
+      console.log('Processing LinkedIn image post, mediaUrl:', mediaUrl);
+      
       // Fetch the image from Supabase storage
+      // The URL format is: /storage/v1/object/public/post-media/filename
+      const pathToDownload = mediaUrl.replace('/storage/v1/object/public/post-media/', '');
+      console.log('Downloading from path:', pathToDownload);
+      
       const { data: mediaData, error: mediaError } = await supabase
         .storage
-        .from('media')
-        .download(mediaUrl.replace('/storage/v1/object/public/media/', ''));
+        .from('post-media')
+        .download(pathToDownload);
 
       if (mediaError || !mediaData) {
         console.error('Failed to download media:', mediaError);
+        console.error('Media URL was:', mediaUrl);
         // Post without media if download fails
         result = await linkedinService.shareContent({
           text: LinkedInService.formatContent(content)
         });
       } else {
+        console.log('Successfully downloaded media, size:', mediaData.size);
         // Convert blob to buffer
         const buffer = Buffer.from(await mediaData.arrayBuffer());
         

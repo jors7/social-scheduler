@@ -558,6 +558,13 @@ export class PostingService {
 
   private async postToLinkedIn(content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
     try {
+      console.log('PostToLinkedIn called with:', {
+        hasContent: !!content,
+        contentLength: content?.length,
+        mediaUrls: mediaUrls,
+        mediaUrlsLength: mediaUrls?.length
+      });
+
       const response = await fetch('/api/post/linkedin', {
         method: 'POST',
         headers: {
