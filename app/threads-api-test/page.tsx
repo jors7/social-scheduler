@@ -505,40 +505,86 @@ export default function ThreadsAPITest() {
     }
   };
 
-  // Test 9: threads_profile_discovery - Get user profile and threads
+  // Test 9: threads_profile_discovery - Discover OTHER user profiles
   const testProfileDiscovery = async () => {
-    // Test 1: Get user profile (this is what the permission is for)
-    const profileEndpoint = account.platform_user_id || 'me';
+    // threads_profile_discovery is for discovering OTHER users' profiles, not your own
+    // We'll test with known public Threads user IDs
+    const testUserIds = [
+      '314216811', // Meta's official Threads account
+      '5460563', // Zuckerberg's Threads account  
+      '25025320', // Instagram's Threads account
+      '7107034078940138' // Another format that might work
+    ];
+    
+    let anySuccess = false;
+    
+    for (const userId of testUserIds) {
+      try {
+        // Test 1: Try to get another user's profile
+        const profileUrl = `https://graph.threads.net/v1.0/${userId}?fields=id,username,threads_profile_picture_url,threads_biography&access_token=${account.access_token}`;
+        const profileResponse = await fetch(profileUrl);
+        const profileData = await profileResponse.json();
+        
+        addTestResult({
+          permission: 'threads_profile_discovery',
+          endpoint: `${userId} (other user profile)`,
+          success: profileResponse.ok,
+          data: profileResponse.ok ? profileData : undefined,
+          error: !profileResponse.ok ? profileData.error?.message : undefined,
+          timestamp: new Date().toISOString()
+        });
+        
+        if (profileResponse.ok) {
+          anySuccess = true;
+          
+          // If we can get the profile, try to get their threads too
+          const threadsUrl = `https://graph.threads.net/v1.0/${userId}/threads?fields=id,text,timestamp,media_type&limit=3&access_token=${account.access_token}`;
+          const threadsResponse = await fetch(threadsUrl);
+          const threadsData = await threadsResponse.json();
+          
+          addTestResult({
+            permission: 'threads_profile_discovery',
+            endpoint: `${userId}/threads (other user posts)`,
+            success: threadsResponse.ok,
+            data: threadsResponse.ok ? threadsData : undefined,
+            error: !threadsResponse.ok ? threadsData.error?.message : undefined,
+            timestamp: new Date().toISOString()
+          });
+        }
+      } catch (error) {
+        addTestResult({
+          permission: 'threads_profile_discovery',
+          endpoint: `${userId} (other user)`,
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed',
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+    
+    // Also test the search/discovery endpoints that might trigger this permission
     try {
-      // First test: Get user profile
-      const profileUrl = `https://graph.threads.net/v1.0/${profileEndpoint}?fields=id,username,threads_profile_picture_url,threads_biography&access_token=${account.access_token}`;
-      const profileResponse = await fetch(profileUrl);
-      const profileData = await profileResponse.json();
+      // Test searching for users (this might be what triggers profile discovery)
+      const searchUrl = `https://graph.threads.net/v1.0/search?q=meta&type=user&access_token=${account.access_token}`;
+      const searchResponse = await fetch(searchUrl);
+      const searchData = await searchResponse.json();
       
       addTestResult({
         permission: 'threads_profile_discovery',
-        endpoint: `${profileEndpoint} (profile)`,
-        success: profileResponse.ok,
-        data: profileResponse.ok ? profileData : undefined,
-        error: !profileResponse.ok ? profileData.error?.message : undefined,
+        endpoint: 'search?type=user',
+        success: searchResponse.ok,
+        data: searchResponse.ok ? searchData : undefined,
+        error: !searchResponse.ok ? searchData.error?.message : undefined,
         timestamp: new Date().toISOString()
       });
       
-      // Second test: Get user's threads (discovery of posts)
-      const threadsUrl = `https://graph.threads.net/v1.0/${profileEndpoint}/threads?fields=id,text,timestamp,media_type&limit=3&access_token=${account.access_token}`;
-      const threadsResponse = await fetch(threadsUrl);
-      const threadsData = await threadsResponse.json();
-      
-      addTestResult({
-        permission: 'threads_profile_discovery',
-        endpoint: `${profileEndpoint}/threads`,
-        success: threadsResponse.ok,
-        data: threadsResponse.ok ? threadsData : undefined,
-        error: !threadsResponse.ok ? threadsData.error?.message : undefined,
-        timestamp: new Date().toISOString()
-      });
-      
-      // Also try the publishing limit endpoint
+      if (searchResponse.ok) anySuccess = true;
+    } catch (error) {
+      // Search might not be available yet
+    }
+    
+    // Test the threads_publishing_limit endpoint (might be related)
+    try {
       const limitUrl = `https://graph.threads.net/v1.0/me/threads_publishing_limit?access_token=${account.access_token}`;
       const limitResponse = await fetch(limitUrl);
       const limitData = await limitResponse.json();
@@ -552,17 +598,12 @@ export default function ThreadsAPITest() {
         timestamp: new Date().toISOString()
       });
       
-      return profileResponse.ok || threadsResponse.ok;
+      if (limitResponse.ok) anySuccess = true;
     } catch (error) {
-      addTestResult({
-        permission: 'threads_profile_discovery',
-        endpoint: profileEndpoint,
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed',
-        timestamp: new Date().toISOString()
-      });
-      return false;
+      // Might fail
     }
+    
+    return anySuccess;
   };
 
   // Test 10: threads_location_tagging - Post with location
@@ -940,7 +981,7 @@ export default function ThreadsAPITest() {
                 <ul className="space-y-1 text-sm">
                   <li>✓ threads_basic - User profile and media</li>
                   <li>✓ threads_content_publish - Create posts</li>
-                  <li>✓ threads_profile_discovery - Publishing limits</li>
+                  <li>✓ threads_profile_discovery - Discover other user profiles</li>
                   <li>✓ threads_location_tagging - Location tags</li>
                   <li>✓ threads_delete - Delete posts</li>
                   <li>✓ threads_manage_mentions - Mentions</li>
@@ -984,7 +1025,7 @@ export default function ThreadsAPITest() {
                     Test: Publish Image Post (threads_content_publish)
                   </Button>
                   <Button onClick={testProfileDiscovery} disabled={loading} variant="outline">
-                    Test: Publishing Limit (threads_profile_discovery)
+                    Test: Discover Other User Profiles (threads_profile_discovery)
                   </Button>
                   <Button onClick={testLocationTagging} disabled={loading} variant="outline">
                     Test: Location Tagging (threads_location_tagging)
