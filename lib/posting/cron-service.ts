@@ -5,7 +5,7 @@ import { FacebookService } from '@/lib/facebook/service';
 export async function postToFacebookDirect(content: string, account: any, mediaUrls?: string[]) {
   console.log('=== DIRECT FACEBOOK POST ===');
   console.log('Content:', content);
-  console.log('Page ID:', account.platform_user_id);
+  console.log('Page ID:', account.account_id);
   console.log('Has media:', !!mediaUrls && mediaUrls.length > 0);
   
   try {
@@ -17,7 +17,7 @@ export async function postToFacebookDirect(content: string, account: any, mediaU
       // Text-only post
       console.log('Creating text-only Facebook post');
       result = await facebookService.createPost(
-        account.platform_user_id,
+        account.account_id,
         account.access_token,
         content
       );
@@ -30,7 +30,7 @@ export async function postToFacebookDirect(content: string, account: any, mediaU
       if (isVideo) {
         console.log('Creating Facebook video post');
         result = await facebookService.createVideoPost(
-          account.platform_user_id,
+          account.account_id,
           account.access_token,
           content,
           mediaUrl
@@ -38,7 +38,7 @@ export async function postToFacebookDirect(content: string, account: any, mediaU
       } else {
         console.log('Creating Facebook photo post');
         result = await facebookService.createPhotoPost(
-          account.platform_user_id,
+          account.account_id,
           account.access_token,
           content,
           mediaUrl
@@ -57,7 +57,7 @@ export async function postToFacebookDirect(content: string, account: any, mediaU
 
       console.log(`Creating Facebook carousel post with ${imageUrls.length} images`);
       result = await facebookService.createCarouselPost(
-        account.platform_user_id,
+        account.account_id,
         account.access_token,
         content,
         imageUrls

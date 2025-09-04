@@ -186,8 +186,8 @@ export class PostingService {
 
   private async postToFacebook(content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
     try {
-      // Facebook requires a page ID (stored in platform_user_id)
-      if (!account.platform_user_id) {
+      // Facebook requires a page ID (stored in account_id)
+      if (!account.account_id) {
         throw new Error('Facebook page ID not found');
       }
 
@@ -197,7 +197,7 @@ export class PostingService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          pageId: account.platform_user_id,
+          pageId: account.account_id,
           accessToken: account.access_token,
           text: content,
           mediaUrls: mediaUrls,

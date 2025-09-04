@@ -225,7 +225,7 @@ export async function GET(request: NextRequest) {
         .select('id')
         .eq('user_id', user.id)
         .eq('platform', 'facebook')
-        .eq('platform_user_id', page.id)
+        .eq('account_id', page.id)
         .single();
 
       if (existingAccount) {
@@ -233,18 +233,12 @@ export async function GET(request: NextRequest) {
         const { error: updateError } = await supabaseAdmin
           .from('social_accounts')
           .update({
-            username: page.name,
+            account_name: page.name,
+            account_username: page.name,
             access_token: finalPageToken,
             access_secret: finalAccessToken, // Store user token as backup
             account_label: page.name,
-            metadata: {
-              category: page.category,
-              tasks: page.tasks,
-              user_id: userData.id,
-              user_name: userData.name,
-              token_expires_in: longLivedData.expires_in || tokenData.expires_in
-            },
-            expires_at: longLivedData.expires_in 
+            token_expires_at: longLivedData.expires_in 
               ? new Date(Date.now() + (longLivedData.expires_in * 1000)).toISOString()
               : null,
             updated_at: new Date().toISOString()
@@ -263,21 +257,15 @@ export async function GET(request: NextRequest) {
           .insert({
             user_id: user.id,
             platform: 'facebook',
-            platform_user_id: page.id,
-            username: page.name,
+            account_id: page.id,
+            account_name: page.name,
+            account_username: page.name,
             access_token: finalPageToken,
             access_secret: finalAccessToken, // Store user token as backup
             account_label: page.name,
             is_active: true,
             is_primary: index === 0, // First page is primary
-            metadata: {
-              category: page.category,
-              tasks: page.tasks,
-              user_id: userData.id,
-              user_name: userData.name,
-              token_expires_in: longLivedData.expires_in || tokenData.expires_in
-            },
-            expires_at: longLivedData.expires_in 
+            token_expires_at: longLivedData.expires_in 
               ? new Date(Date.now() + (longLivedData.expires_in * 1000)).toISOString()
               : null
           });
