@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { AccountSelector } from '@/components/dashboard/account-selector'
 
 // Lazy load the rich text editor to reduce initial bundle size
 const RichTextEditor = dynamic(
@@ -77,6 +78,8 @@ function CreateNewPostPageContent() {
   )
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
   const [postContent, setPostContent] = useState('')
+  const [connectedAccounts, setConnectedAccounts] = useState<any[]>([])
+  const [selectedAccounts, setSelectedAccounts] = useState<Record<string, string[]>>({})
   const [platformContent, setPlatformContent] = useState<Record<string, string>>({})
   const [showPlatformCustomization, setShowPlatformCustomization] = useState(false)
   const [scheduledDate, setScheduledDate] = useState('')
@@ -104,6 +107,40 @@ function CreateNewPostPageContent() {
       filePreviewUrls.forEach(({ url }) => URL.revokeObjectURL(url));
     };
   }, [filePreviewUrls])
+  
+  // Fetch connected accounts on mount
+  useEffect(() => {
+    async function fetchAccounts() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
+      const { data: accounts } = await supabase
+        .from('social_accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('platform')
+        .order('is_primary', { ascending: false })
+      
+      if (accounts) {
+        setConnectedAccounts(accounts)
+        
+        // Initialize selected accounts with primary accounts
+        const initialSelected: Record<string, string[]> = {}
+        accounts.forEach(account => {
+          if (!initialSelected[account.platform]) {
+            initialSelected[account.platform] = []
+          }
+          if (account.is_primary || !initialSelected[account.platform].length) {
+            initialSelected[account.platform] = [account.id]
+          }
+        })
+        setSelectedAccounts(initialSelected)
+      }
+    }
+    
+    fetchAccounts()
+  }, [])
   
   // Threads-specific state
   const [threadsMode, setThreadsMode] = useState<'single' | 'thread'>('single')
@@ -567,6 +604,7 @@ function CreateNewPostPageContent() {
         platforms: supportedPlatforms,
         platformContent: Object.keys(filteredPlatformContent).length > 0 ? filteredPlatformContent : undefined,
         mediaUrls: mediaUrls,
+        selectedAccounts: selectedAccounts,
         pinterestBoardId: selectedPinterestBoard,
         pinterestTitle: pinterestTitle || undefined,
         pinterestDescription: pinterestDescription || undefined,
@@ -578,7 +616,8 @@ function CreateNewPostPageContent() {
         platforms: postData.platforms,
         hasContent: !!postData.content,
         mediaUrls: postData.mediaUrls,
-        mediaUrlsCount: postData.mediaUrls?.length
+        mediaUrlsCount: postData.mediaUrls?.length,
+        selectedAccounts: postData.selectedAccounts
       })
 
       const results = await postingService.postToMultiplePlatforms(
@@ -816,6 +855,7 @@ function CreateNewPostPageContent() {
         platformContent: Object.keys(filteredPlatformContent).length > 0 ? filteredPlatformContent : undefined,
         mediaUrls: mediaUrls,
         scheduledFor: scheduledFor.toISOString(),
+        selectedAccounts: selectedAccounts,
         pinterestBoardId: selectedPinterestBoard || undefined,
         pinterestTitle: pinterestTitle || undefined,
         pinterestDescription: pinterestDescription || undefined,
@@ -1776,29 +1816,57 @@ function CreateNewPostPageContent() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {platforms.map((platform) => (
-                  <button
-                    key={platform.id}
-                    onClick={() => togglePlatform(platform.id)}
-                    className={cn(
-                      "w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left",
-                      selectedPlatforms.includes(platform.id)
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-gray-200 hover:border-gray-300"
-                    )}
-                  >
-                    <span className="text-lg">{platform.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{platform.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {platform.charLimit.toLocaleString()} chars
-                      </p>
+                {platforms.map((platform) => {
+                  const platformAccounts = connectedAccounts.filter(acc => acc.platform === platform.id)
+                  const hasAccounts = platformAccounts.length > 0
+                  
+                  return (
+                    <div key={platform.id} className="space-y-2">
+                      <button
+                        onClick={() => togglePlatform(platform.id)}
+                        className={cn(
+                          "w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left",
+                          selectedPlatforms.includes(platform.id)
+                            ? "border-primary bg-primary/10 text-primary"
+                            : hasAccounts 
+                              ? "border-gray-200 hover:border-gray-300"
+                              : "border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed"
+                        )}
+                        disabled={!hasAccounts}
+                      >
+                        <span className="text-lg">{platform.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{platform.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {hasAccounts 
+                              ? `${platformAccounts.length} account${platformAccounts.length > 1 ? 's' : ''} connected`
+                              : 'Not connected'}
+                          </p>
+                        </div>
+                        {selectedPlatforms.includes(platform.id) && (
+                          <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
+                        )}
+                      </button>
+                      
+                      {selectedPlatforms.includes(platform.id) && platformAccounts.length > 0 && (
+                        <div className="pl-11">
+                          <AccountSelector
+                            platform={platform.name}
+                            accounts={platformAccounts}
+                            selectedAccountIds={selectedAccounts[platform.id] || []}
+                            onSelectionChange={(accountIds) => {
+                              setSelectedAccounts(prev => ({
+                                ...prev,
+                                [platform.id]: accountIds
+                              }))
+                            }}
+                            multiSelect={platformAccounts.length > 1}
+                          />
+                        </div>
+                      )}
                     </div>
-                    {selectedPlatforms.includes(platform.id) && (
-                      <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
-                    )}
-                  </button>
-                ))}
+                  )
+                })}
               </div>
               
               {selectedPlatforms.length > 0 && (
@@ -1809,10 +1877,21 @@ function CreateNewPostPageContent() {
                   <div className="flex flex-wrap gap-2 mt-3">
                     {selectedPlatforms.map(id => {
                       const platform = platforms.find(p => p.id === id)
+                      const platformAccounts = connectedAccounts.filter(acc => acc.platform === id)
+                      const selectedAccountIds = selectedAccounts[id] || []
+                      const selectedAccountsForPlatform = platformAccounts.filter(acc => selectedAccountIds.includes(acc.id))
+                      
                       return (
                         <span key={id} className="inline-flex items-center gap-1 px-3 py-1.5 bg-white rounded-lg text-xs font-medium shadow-sm border border-green-100">
                           <span>{platform?.icon}</span>
                           <span>{platform?.name}</span>
+                          {selectedAccountsForPlatform.length > 0 && (
+                            <span className="text-gray-500">
+                              ({selectedAccountsForPlatform.length === 1
+                                ? selectedAccountsForPlatform[0].username || selectedAccountsForPlatform[0].account_name || 'Account'
+                                : `${selectedAccountsForPlatform.length} accounts`})
+                            </span>
+                          )}
                         </span>
                       )
                     })}
