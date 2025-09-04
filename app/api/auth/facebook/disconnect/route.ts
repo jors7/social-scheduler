@@ -24,8 +24,11 @@ export async function POST(request: NextRequest) {
 
     // Get the session user ID from the cookie
     const cookieStore = cookies();
+    // The cookie name format is sb-[project-id]-auth-token
     const sessionToken = cookieStore.get('sb-access-token')?.value || 
-                        cookieStore.get('sb-eppohzalybrjcizqeleu-auth-token')?.value;
+                        cookieStore.get('sb-vomglwxzhuyfkraertrm-auth-token')?.value ||
+                        cookieStore.get('sb-vomglwxzhuyfkraertrm-auth-token.0')?.value ||
+                        cookieStore.get('sb-vomglwxzhuyfkraertrm-auth-token.1')?.value;
     
     if (!sessionToken) {
       return NextResponse.json(

@@ -52,6 +52,11 @@ function SettingsWithParams() {
           instagram_not_business: 'Please convert your Instagram account to a Business account.',
           facebook_auth_failed: 'Facebook authentication failed. Please try again.',
           facebook_callback_failed: 'Failed to complete Facebook authentication.',
+          facebook_token_failed: 'Failed to exchange Facebook authorization code for access token.',
+          facebook_user_failed: 'Failed to retrieve Facebook user information.',
+          facebook_pages_failed: 'Failed to retrieve your Facebook Pages.',
+          facebook_no_pages: 'No Facebook Pages found. Please create a Facebook Page first.',
+          not_authenticated: 'Session expired. Please log in again to connect Facebook.',
         }
         toast.error(errorMessages[error] || 'An error occurred. Please try again.')
       }

@@ -162,11 +162,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Get the session user ID from the cookie
+    // The cookie name format is sb-[project-id]-auth-token
     const sessionToken = cookieStore.get('sb-access-token')?.value || 
-                        cookieStore.get('sb-eppohzalybrjcizqeleu-auth-token')?.value;
+                        cookieStore.get('sb-vomglwxzhuyfkraertrm-auth-token')?.value ||
+                        cookieStore.get('sb-vomglwxzhuyfkraertrm-auth-token.0')?.value ||
+                        cookieStore.get('sb-vomglwxzhuyfkraertrm-auth-token.1')?.value;
     
     if (!sessionToken) {
-      console.error('No session token found');
+      console.error('No session token found. Available cookies:', 
+        Array.from(cookieStore.getAll()).map(c => c.name).join(', '));
       return NextResponse.redirect(
         new URL('/dashboard/settings?error=not_authenticated', request.url)
       );
