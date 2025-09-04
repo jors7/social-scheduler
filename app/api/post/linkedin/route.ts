@@ -87,36 +87,48 @@ export async function POST(request: NextRequest) {
     if (mediaUrl && mediaType === 'image') {
       console.log('Processing LinkedIn image post, mediaUrl:', mediaUrl);
       
-      // Fetch the image from Supabase storage
-      // The URL format is: /storage/v1/object/public/post-media/filename
-      const pathToDownload = mediaUrl.replace('/storage/v1/object/public/post-media/', '');
-      console.log('Downloading from path:', pathToDownload);
+      // Construct the full public URL for the image
+      // The mediaUrl is already a public URL from Supabase
+      const fullMediaUrl = mediaUrl.startsWith('http') 
+        ? mediaUrl 
+        : `${process.env.NEXT_PUBLIC_SUPABASE_URL}${mediaUrl}`;
       
-      const { data: mediaData, error: mediaError } = await supabase
-        .storage
-        .from('post-media')
-        .download(pathToDownload);
-
-      if (mediaError || !mediaData) {
-        console.error('Failed to download media:', mediaError);
-        console.error('Media URL was:', mediaUrl);
-        // Post without media if download fails
-        result = await linkedinService.shareContent({
-          text: LinkedInService.formatContent(content)
-        });
-      } else {
-        console.log('Successfully downloaded media, size:', mediaData.size);
-        // Convert blob to buffer
-        const buffer = Buffer.from(await mediaData.arrayBuffer());
+      console.log('Fetching image from public URL:', fullMediaUrl);
+      
+      try {
+        // Fetch the image directly from the public URL
+        const imageResponse = await fetch(fullMediaUrl);
         
-        // Determine mime type from file extension
-        let mimeType = 'image/jpeg';
-        if (mediaUrl.includes('.png')) mimeType = 'image/png';
-        else if (mediaUrl.includes('.gif')) mimeType = 'image/gif';
-        else if (mediaUrl.includes('.webp')) mimeType = 'image/webp';
+        if (!imageResponse.ok) {
+          throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+        }
+        
+        const arrayBuffer = await imageResponse.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        
+        console.log('Successfully fetched image, size:', buffer.length);
+        
+        // Determine mime type from content-type header or file extension
+        let mimeType = imageResponse.headers.get('content-type') || 'image/jpeg';
+        if (!mimeType.startsWith('image/')) {
+          // Fallback to extension-based detection
+          if (mediaUrl.includes('.png')) mimeType = 'image/png';
+          else if (mediaUrl.includes('.gif')) mimeType = 'image/gif';
+          else if (mediaUrl.includes('.webp')) mimeType = 'image/webp';
+          else mimeType = 'image/jpeg';
+        }
+        
+        console.log('Image MIME type:', mimeType);
 
         // Post with image
         result = await linkedinService.postWithImage(content, buffer, mimeType);
+      } catch (fetchError) {
+        console.error('Failed to fetch image from URL:', fetchError);
+        console.error('Media URL was:', mediaUrl);
+        // Post without media if fetch fails
+        result = await linkedinService.shareContent({
+          text: LinkedInService.formatContent(content)
+        });
       }
     } else {
       // Post text only

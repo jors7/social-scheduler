@@ -402,15 +402,16 @@ function CreateNewPostPageContent() {
     }, timeoutDuration)
 
     try {
-      // Upload files first if any
-      let mediaUrls: string[] = []
+      // Upload files first if any, and include already uploaded media
+      let mediaUrls: string[] = [...uploadedMediaUrls]  // Start with already uploaded URLs
       if (selectedFiles.length > 0) {
-        mediaUrls = await uploadFiles()
-        if (mediaUrls.length === 0 && selectedFiles.length > 0) {
+        const newMediaUrls = await uploadFiles()
+        if (newMediaUrls.length === 0 && selectedFiles.length > 0) {
           toast.error('Failed to upload media files')
           progressTracker.finish();
           return
         }
+        mediaUrls = [...mediaUrls, ...newMediaUrls]
         setUploadedMediaUrls(mediaUrls)
       }
 
@@ -572,6 +573,13 @@ function CreateNewPostPageContent() {
         pinterestLink: pinterestLink || undefined,
         tiktokPrivacyLevel: selectedPlatforms.includes('tiktok') ? (tiktokSaveAsDraft ? 'SELF_ONLY' : tiktokPrivacyLevel) : undefined,
       }
+      
+      console.log('Posting with data:', {
+        platforms: postData.platforms,
+        hasContent: !!postData.content,
+        mediaUrls: postData.mediaUrls,
+        mediaUrlsCount: postData.mediaUrls?.length
+      })
 
       const results = await postingService.postToMultiplePlatforms(
         postData,

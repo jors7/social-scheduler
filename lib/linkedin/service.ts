@@ -154,6 +154,8 @@ export class LinkedInService {
         }
       };
 
+      console.log('LinkedIn: Registering image upload for profile:', profile.id);
+
       const registerResponse = await fetch('https://api.linkedin.com/v2/assets?action=registerUpload', {
         method: 'POST',
         headers: {
@@ -167,6 +169,7 @@ export class LinkedInService {
       if (!registerResponse.ok) {
         const errorData = await registerResponse.text();
         console.error('LinkedIn image register failed:', errorData);
+        console.error('Register response status:', registerResponse.status);
         throw new Error('Failed to register image upload');
       }
 
@@ -174,7 +177,11 @@ export class LinkedInService {
       const uploadUrl = registerData.value.uploadMechanism['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'].uploadUrl;
       const asset = registerData.value.asset;
 
+      console.log('LinkedIn: Got upload URL and asset URN:', { uploadUrl, asset });
+
       // Step 2: Upload the image binary
+      console.log('LinkedIn: Uploading image, size:', imageBuffer.length, 'mime:', mimeType);
+      
       const uploadResponse = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
@@ -185,9 +192,13 @@ export class LinkedInService {
       });
 
       if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        console.error('LinkedIn image upload failed:', uploadResponse.status, errorText);
         throw new Error('Failed to upload image to LinkedIn');
       }
 
+      console.log('LinkedIn: Image uploaded successfully, asset URN:', asset);
+      
       // Return the asset URN which can be used in posts
       return asset;
     } catch (error) {
