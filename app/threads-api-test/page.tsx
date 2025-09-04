@@ -850,49 +850,34 @@ export default function ThreadsAPITest() {
     }
   };
 
-  // Run all tests
+  // Run all tests - Only the 5 permissions we actually need
   const runAllTests = async () => {
     setLoading(true);
     setTestResults([]);
     setLastPostId(''); // Reset post ID
 
-    console.log('Starting Threads API tests...');
+    console.log('Starting Threads API tests for SocialCal required permissions...');
     
-    // Test threads_basic (should work)
+    // Test 1: threads_basic (Essential for authentication)
     await testBasicProfile();
     await testBasicMedia();
 
-    // Test threads_content_publish (should work) - Creates posts for other tests
+    // Test 2: threads_content_publish (Essential for posting)
     await testPublishText(); // This should set lastPostId
     await testPublishImage();
 
-    // Test threads_profile_discovery (may need approval)
-    await testProfileDiscovery();
-
-    // Test threads_location_tagging (needs approval)
-    await testLocationTagging();
-
-    // Test threads_delete (needs approval) - Creates its own post
-    await testDeletePost();
-
-    // Test threads_manage_mentions (may work)
-    await testManageMentions();
-
-    // Test threads_keyword_search (not available)
-    await testKeywordSearch();
-
-    // Test threads_manage_replies (needs approval)
+    // Test 3: threads_manage_replies (Essential for creating threads)
     await testCreateThread();
 
-    // Test threads_read_replies (needs approval) - Uses lastPostId from earlier
-    await testReadReplies();
-
-    // Test threads_manage_insights (needs approval) - Uses lastPostId from earlier
+    // Test 4: threads_manage_insights (Important for analytics)
     await testPostInsights();
     await testUserInsights();
 
+    // Test 5: threads_read_replies (Nice to have for engagement)
+    await testReadReplies();
+
     setLoading(false);
-    console.log('All tests completed. Last post ID:', lastPostId);
+    console.log('All required tests completed. Last post ID:', lastPostId);
   };
 
   // Export results for submission
@@ -977,19 +962,15 @@ export default function ThreadsAPITest() {
               </div>
 
               <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2">All Permissions to Test:</h4>
+                <h4 className="font-semibold mb-2">Permissions Required for SocialCal:</h4>
                 <ul className="space-y-1 text-sm">
-                  <li>✓ threads_basic - User profile and media</li>
-                  <li>✓ threads_content_publish - Create posts</li>
-                  <li>✓ threads_profile_discovery - Publishing limits & quota</li>
-                  <li>✓ threads_location_tagging - Location tags</li>
-                  <li>✓ threads_delete - Delete posts</li>
-                  <li>✓ threads_manage_mentions - Mentions</li>
-                  <li>✓ threads_keyword_search - Search</li>
-                  <li>✓ threads_manage_replies - Create threads</li>
-                  <li>✓ threads_read_replies - Read replies</li>
-                  <li>✓ threads_manage_insights - Analytics</li>
+                  <li className="font-bold">✓ threads_basic - User authentication & profile</li>
+                  <li className="font-bold">✓ threads_content_publish - Create posts & images</li>
+                  <li className="font-bold">✓ threads_manage_replies - Create multi-post threads</li>
+                  <li className="font-bold">✓ threads_manage_insights - Analytics & metrics</li>
+                  <li className="font-bold">✓ threads_read_replies - Read engagement data</li>
                 </ul>
+                <p className="text-xs text-gray-500 mt-2">Only these 5 permissions are needed for full functionality</p>
               </div>
             </TabsContent>
 
@@ -1012,44 +993,38 @@ export default function ThreadsAPITest() {
                 </Button>
 
                 <div className="grid gap-2">
-                  <Button onClick={testBasicProfile} disabled={loading} variant="outline">
-                    Test: Get User Profile (threads_basic)
+                  <h3 className="text-sm font-semibold text-gray-600">1. threads_basic</h3>
+                  <Button onClick={testBasicProfile} disabled={loading} variant="outline" className="ml-4">
+                    Test: Get User Profile
                   </Button>
-                  <Button onClick={testBasicMedia} disabled={loading} variant="outline">
-                    Test: Get User Media (threads_basic)
+                  <Button onClick={testBasicMedia} disabled={loading} variant="outline" className="ml-4">
+                    Test: Get User Media
                   </Button>
-                  <Button onClick={testPublishText} disabled={loading} variant="outline">
-                    Test: Publish Text Post (threads_content_publish)
+                  
+                  <h3 className="text-sm font-semibold text-gray-600 mt-2">2. threads_content_publish</h3>
+                  <Button onClick={testPublishText} disabled={loading} variant="outline" className="ml-4">
+                    Test: Publish Text Post
                   </Button>
-                  <Button onClick={testPublishImage} disabled={loading} variant="outline">
-                    Test: Publish Image Post (threads_content_publish)
+                  <Button onClick={testPublishImage} disabled={loading} variant="outline" className="ml-4">
+                    Test: Publish Image Post
                   </Button>
-                  <Button onClick={testProfileDiscovery} disabled={loading} variant="outline">
-                    Test: Publishing Limits & Quota (threads_profile_discovery)
+                  
+                  <h3 className="text-sm font-semibold text-gray-600 mt-2">3. threads_manage_replies</h3>
+                  <Button onClick={testCreateThread} disabled={loading} variant="outline" className="ml-4">
+                    Test: Create Multi-Post Thread
                   </Button>
-                  <Button onClick={testLocationTagging} disabled={loading} variant="outline">
-                    Test: Location Tagging (threads_location_tagging)
+                  
+                  <h3 className="text-sm font-semibold text-gray-600 mt-2">4. threads_manage_insights</h3>
+                  <Button onClick={testPostInsights} disabled={loading} variant="outline" className="ml-4">
+                    Test: Get Post Analytics
                   </Button>
-                  <Button onClick={testDeletePost} disabled={loading} variant="outline">
-                    Test: Delete Post (threads_delete)
+                  <Button onClick={testUserInsights} disabled={loading} variant="outline" className="ml-4">
+                    Test: Get Account Analytics
                   </Button>
-                  <Button onClick={testManageMentions} disabled={loading} variant="outline">
-                    Test: Mentions (threads_manage_mentions)
-                  </Button>
-                  <Button onClick={testKeywordSearch} disabled={loading} variant="outline">
-                    Test: Search (threads_keyword_search)
-                  </Button>
-                  <Button onClick={testCreateThread} disabled={loading} variant="outline">
-                    Test: Create Thread (threads_manage_replies)
-                  </Button>
-                  <Button onClick={testReadReplies} disabled={loading} variant="outline">
-                    Test: Read Replies (threads_read_replies)
-                  </Button>
-                  <Button onClick={testPostInsights} disabled={loading} variant="outline">
-                    Test: Post Insights (threads_manage_insights)
-                  </Button>
-                  <Button onClick={testUserInsights} disabled={loading} variant="outline">
-                    Test: User Insights (threads_manage_insights)
+                  
+                  <h3 className="text-sm font-semibold text-gray-600 mt-2">5. threads_read_replies</h3>
+                  <Button onClick={testReadReplies} disabled={loading} variant="outline" className="ml-4">
+                    Test: Read Post Replies
                   </Button>
                 </div>
               </div>

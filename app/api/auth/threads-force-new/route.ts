@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     console.log('=== Threads Force New Authorization ===');
     
-    const appId = process.env.THREADS_APP_ID || '1074593118154653';
+    const appId = process.env.THREADS_APP_ID || '2288572204931387';
     
     if (!appId) {
       console.error('Missing Threads App ID');
