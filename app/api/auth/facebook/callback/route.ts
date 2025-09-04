@@ -206,18 +206,26 @@ export async function GET(request: NextRequest) {
     );
 
     // Store each page as a separate social account
+    let successCount = 0;
+    let errorCount = 0;
+    const errors: string[] = [];
+    
     const accountPromises = pagesData.data.map(async (page, index) => {
-      // Exchange page access token for long-lived page access token
-      const pageLongLivedUrl = new URL('https://graph.facebook.com/v18.0/oauth/access_token');
-      pageLongLivedUrl.searchParams.append('grant_type', 'fb_exchange_token');
-      pageLongLivedUrl.searchParams.append('client_id', process.env.FACEBOOK_APP_ID!);
-      pageLongLivedUrl.searchParams.append('client_secret', process.env.FACEBOOK_APP_SECRET!);
-      pageLongLivedUrl.searchParams.append('fb_exchange_token', page.access_token);
+      try {
+        console.log(`Processing page ${index + 1}/${pagesData.data.length}: ${page.name} (ID: ${page.id})`);
+        
+        // Exchange page access token for long-lived page access token
+        const pageLongLivedUrl = new URL('https://graph.facebook.com/v18.0/oauth/access_token');
+        pageLongLivedUrl.searchParams.append('grant_type', 'fb_exchange_token');
+        pageLongLivedUrl.searchParams.append('client_id', process.env.FACEBOOK_APP_ID!);
+        pageLongLivedUrl.searchParams.append('client_secret', process.env.FACEBOOK_APP_SECRET!);
+        pageLongLivedUrl.searchParams.append('fb_exchange_token', page.access_token);
 
-      const pageLongLivedResponse = await fetch(pageLongLivedUrl.toString());
-      const pageLongLivedData: FacebookTokenResponse = await pageLongLivedResponse.json();
+        const pageLongLivedResponse = await fetch(pageLongLivedUrl.toString());
+        const pageLongLivedData: FacebookTokenResponse = await pageLongLivedResponse.json();
 
-      const finalPageToken = pageLongLivedData.access_token || page.access_token;
+        const finalPageToken = pageLongLivedData.access_token || page.access_token;
+        console.log(`Got ${pageLongLivedData.access_token ? 'long-lived' : 'standard'} token for page ${page.name}`);
 
       // Check if this page already exists
       const { data: existingAccount } = await supabaseAdmin
@@ -225,7 +233,7 @@ export async function GET(request: NextRequest) {
         .select('id')
         .eq('user_id', user.id)
         .eq('platform', 'facebook')
-        .eq('account_id', page.id)
+        .eq('platform_user_id', page.id)
         .single();
 
       if (existingAccount) {
@@ -233,12 +241,10 @@ export async function GET(request: NextRequest) {
         const { error: updateError } = await supabaseAdmin
           .from('social_accounts')
           .update({
-            account_name: page.name,
-            account_username: page.name,
+            username: page.name,
             access_token: finalPageToken,
             access_secret: finalAccessToken, // Store user token as backup
-            account_label: page.name,
-            token_expires_at: longLivedData.expires_in 
+            expires_at: longLivedData.expires_in 
               ? new Date(Date.now() + (longLivedData.expires_in * 1000)).toISOString()
               : null,
             updated_at: new Date().toISOString()
@@ -251,21 +257,18 @@ export async function GET(request: NextRequest) {
           console.log(`Updated Facebook page: ${page.name}`);
         }
       } else {
-        // Insert new account
+        // Insert new account - using the actual column names from the database
         const { error: insertError } = await supabaseAdmin
           .from('social_accounts')
           .insert({
             user_id: user.id,
             platform: 'facebook',
-            account_id: page.id,
-            account_name: page.name,
-            account_username: page.name,
+            platform_user_id: page.id,
+            username: page.name,
             access_token: finalPageToken,
             access_secret: finalAccessToken, // Store user token as backup
-            account_label: page.name,
             is_active: true,
-            is_primary: index === 0, // First page is primary
-            token_expires_at: longLivedData.expires_in 
+            expires_at: longLivedData.expires_in 
               ? new Date(Date.now() + (longLivedData.expires_in * 1000)).toISOString()
               : null
           });
@@ -273,8 +276,11 @@ export async function GET(request: NextRequest) {
         if (insertError) {
           console.error(`Error storing Facebook page ${page.name}:`, insertError);
           console.error('Insert error details:', JSON.stringify(insertError, null, 2));
+          errorCount++;
+          errors.push(`${page.name}: ${insertError.message || 'Unknown error'}`);
         } else {
           console.log(`Stored Facebook page: ${page.name}`);
+          successCount++;
           
           // Verify the insert worked
           const { data: verifyData, error: verifyError } = await supabaseAdmin
@@ -282,7 +288,7 @@ export async function GET(request: NextRequest) {
             .select('*')
             .eq('user_id', user.id)
             .eq('platform', 'facebook')
-            .eq('account_id', page.id)
+            .eq('platform_user_id', page.id)
             .single();
             
           if (verifyError) {
@@ -292,9 +298,27 @@ export async function GET(request: NextRequest) {
           }
         }
       }
+      } catch (pageError) {
+        console.error(`Failed to process page ${page.name}:`, pageError);
+        errorCount++;
+        errors.push(`${page.name}: ${pageError instanceof Error ? pageError.message : 'Unknown error'}`);
+      }
     });
 
     await Promise.all(accountPromises);
+
+    console.log(`Facebook pages processing complete. Success: ${successCount}, Errors: ${errorCount}`);
+    
+    if (errorCount > 0) {
+      console.error('Errors encountered:', errors);
+      
+      // If all failed, redirect with error
+      if (successCount === 0) {
+        return NextResponse.redirect(
+          new URL(`/dashboard/settings?error=facebook_storage_failed&details=${encodeURIComponent(errors.join(', '))}`, request.url)
+        );
+      }
+    }
 
     console.log('Facebook pages successfully connected');
     return NextResponse.redirect(

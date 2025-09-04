@@ -57,6 +57,7 @@ function SettingsWithParams() {
           facebook_pages_failed: 'Failed to retrieve your Facebook Pages.',
           facebook_no_pages: 'No Facebook Pages found. Please create a Facebook Page first.',
           not_authenticated: 'Session expired. Please log in again to connect Facebook.',
+          facebook_storage_failed: 'Failed to save Facebook pages to database. Please check logs.',
         }
         toast.error(errorMessages[error] || 'An error occurred. Please try again.')
       }

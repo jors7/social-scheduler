@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     // This is good practice but not required
     if (account.access_token) {
       try {
-        const revokeUrl = `https://graph.facebook.com/v18.0/${account.account_id}/permissions`;
+        const revokeUrl = `https://graph.facebook.com/v18.0/${account.platform_user_id}/permissions`;
         const revokeParams = new URLSearchParams({
           access_token: account.access_token
         });
