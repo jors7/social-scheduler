@@ -10,12 +10,23 @@ export async function POST(request: NextRequest) {
     console.log('=== Bluesky Authentication ===');
     
     const body = await request.json();
-    const { identifier, password } = body;
+    let { identifier, password } = body;
     
     if (!identifier || !password) {
       return NextResponse.json({ 
         error: 'Both identifier (handle) and password are required' 
       }, { status: 400 });
+    }
+    
+    // Clean the identifier - remove @ if present and ensure it ends with .bsky.social
+    identifier = identifier.trim();
+    if (identifier.startsWith('@')) {
+      identifier = identifier.substring(1);
+    }
+    
+    // If the user just entered a username without domain, add .bsky.social
+    if (!identifier.includes('.')) {
+      identifier = `${identifier}.bsky.social`;
     }
 
     console.log('Attempting Bluesky login for:', identifier);

@@ -992,17 +992,20 @@ export default function SettingsContent() {
           
           <div className="space-y-4">
             <div>
-              <Label htmlFor="bluesky-identifier">Handle or Email</Label>
+              <Label htmlFor="bluesky-identifier">Handle</Label>
               <Input
                 id="bluesky-identifier"
                 type="text"
-                placeholder="your-handle.bsky.social or email@example.com"
+                placeholder="handle.bsky.social (without @)"
                 value={blueskyCredentials.identifier}
                 onChange={(e) => setBlueskyCredentials(prev => ({
                   ...prev,
                   identifier: e.target.value
                 }))}
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Enter your Bluesky handle without the @ symbol
+              </p>
             </div>
             
             <div>
