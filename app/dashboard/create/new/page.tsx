@@ -374,7 +374,7 @@ function CreateNewPostPageContent() {
 
     setIsPosting(true)
     
-    // Create progress tracker for supported platforms
+    // Create progress tracker for ALL posts (even single platform)
     const progressTracker = new PostingProgressTracker(supportedPlatforms);
     progressTracker.start();
 
@@ -390,6 +390,7 @@ function CreateNewPostPageContent() {
     const timeoutDuration = hasInstagramVideoPost ? 300000 : 60000; // 5 minutes for IG video, 1 minute for others
     const timeoutId = setTimeout(() => {
       console.warn('Posting timeout - resetting button state')
+      progressTracker.finish()
       setIsPosting(false)
       if (hasInstagramVideoPost) {
         toast.warning('Instagram video is taking longer than expected. It should still complete - check Instagram in a few moments.', {
@@ -438,7 +439,7 @@ function CreateNewPostPageContent() {
       let youtubeVideoUrl: string | undefined;
       if (selectedPlatforms.includes('youtube') && youtubeVideoFile) {
         // Upload YouTube video first
-        toast.info('Uploading video to YouTube...')
+        progressTracker.updatePlatform('youtube', 'uploading', 'Uploading video to YouTube...')
         
         const formData = new FormData()
         formData.append('video', youtubeVideoFile)
@@ -464,14 +465,14 @@ function CreateNewPostPageContent() {
           
           const result = await response.json()
           youtubeVideoUrl = result.video.url
-          toast.success('Video uploaded to YouTube successfully!')
+          progressTracker.updatePlatform('youtube', 'success', 'Video uploaded to YouTube successfully!')
           
           // Remove YouTube from platforms to post (since it's already posted)
           const platformsWithoutYouTube = supportedPlatforms.filter(p => p !== 'youtube')
           
           // If YouTube was the only platform, we're done
           if (platformsWithoutYouTube.length === 0) {
-            toast.success(`Video posted to YouTube: ${youtubeVideoUrl}`)
+            progressTracker.finish()
             // Clear form
             setPostContent('')
             setPlatformContent({})
@@ -492,7 +493,8 @@ function CreateNewPostPageContent() {
           supportedPlatforms.splice(supportedPlatforms.indexOf('youtube'), 1)
         } catch (error) {
           console.error('YouTube upload error:', error)
-          toast.error(`YouTube upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+          progressTracker.updatePlatform('youtube', 'error', undefined, error instanceof Error ? error.message : 'Unknown error')
+          progressTracker.finish()
           clearTimeout(timeoutId)
           setIsPosting(false)
           return
@@ -504,7 +506,8 @@ function CreateNewPostPageContent() {
         // Get Threads account
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
-          toast.error('User not authenticated')
+          progressTracker.updatePlatform('threads', 'error', undefined, 'User not authenticated')
+          progressTracker.finish()
           clearTimeout(timeoutId)
           setIsPosting(false)
           return
@@ -518,7 +521,8 @@ function CreateNewPostPageContent() {
           .single()
 
         if (!threadsAccount) {
-          toast.error('Threads account not connected')
+          progressTracker.updatePlatform('threads', 'error', undefined, 'Threads account not connected')
+          progressTracker.finish()
           clearTimeout(timeoutId)
           setIsPosting(false)
           return
@@ -551,6 +555,7 @@ function CreateNewPostPageContent() {
           setSelectedPlatforms([])
         }
         
+        progressTracker.finish()
         clearTimeout(timeoutId)
         setIsPosting(false)
         return
