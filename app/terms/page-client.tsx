@@ -66,7 +66,7 @@ export default function TermsOfServiceClient() {
             <section className="mb-10">
               <h3 className="text-2xl font-bold text-gray-900 mb-4">1. Acceptance of Terms</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                By accessing and using <strong>SocialCal</strong> ("the Service"), you agree to be bound by these Terms. If you do not agree, please discontinue use.
+                By accessing and using <strong>SocialCal</strong> (&quot;the Service&quot;), you agree to be bound by these Terms. If you do not agree, please discontinue use.
               </p>
             </section>
 
@@ -173,7 +173,7 @@ export default function TermsOfServiceClient() {
             <section className="mb-10">
               <h3 className="text-2xl font-bold text-gray-900 mb-4">11. Limitation of Liability</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                The Service is provided "as is." To the fullest extent permitted by law, SocialCal is not liable for indirect or consequential damages, including lost profits or lost data.
+                The Service is provided &quot;as is.&quot; To the fullest extent permitted by law, SocialCal is not liable for indirect or consequential damages, including lost profits or lost data.
               </p>
             </section>
 

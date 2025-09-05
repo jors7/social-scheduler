@@ -104,7 +104,7 @@ export default function PrivacyPolicyClient() {
                 <li><strong>Data We Access</strong>: Only the minimum data required to post content and read basic analytics.</li>
                 <li><strong>Data Storage</strong>: Access tokens are encrypted and stored securely in our database.</li>
                 <li><strong>Data Usage</strong>: Used solely to perform actions you explicitly request (posting, scheduling, analytics).</li>
-                <li><strong>Data Deletion</strong>: You can disconnect accounts anytime. We support Meta's data deletion callbacks.</li>
+                <li><strong>Data Deletion</strong>: You can disconnect accounts anytime. We support Meta&apos;s data deletion callbacks.</li>
                 <li><strong>No Third-Party Sharing</strong>: We never sell or share your Meta platform data with advertisers or other third parties.</li>
               </ul>
             </section>
@@ -217,7 +217,7 @@ export default function PrivacyPolicyClient() {
               <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
                 <li>Review the legality of all requests</li>
                 <li>Challenge unlawful requests when appropriate</li>
-                <li>Minimize data disclosure to what's legally required</li>
+                <li>Minimize data disclosure to what&apos;s legally required</li>
                 <li>Notify you of requests unless legally prohibited</li>
                 <li>Document all requests and our responses</li>
               </ul>
@@ -226,7 +226,7 @@ export default function PrivacyPolicyClient() {
             <section className="mb-10">
               <h3 className="text-2xl font-bold text-gray-900 mb-4">13. California Privacy Rights (CCPA)</h3>
               <p className="text-gray-600 leading-relaxed mb-4">
-                California residents have additional rights including the right to know, delete, and opt-out of data sales (we don't sell data).
+                California residents have additional rights including the right to know, delete, and opt-out of data sales (we don&apos;t sell data).
               </p>
             </section>
 
