@@ -281,7 +281,7 @@ export default function PrivacyPolicyClient() {
               </p>
               <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
                 <li>Email: support@socialcal.app</li>
-                <li>Data Deletion Requests: Email support@socialcal.app with subject "Data Deletion Request"</li>
+                <li>Data Deletion Requests: Email support@socialcal.app with subject &quot;Data Deletion Request&quot;</li>
                 <li>Support: <Link href="/contact" className="text-blue-600 hover:underline">Contact Form</Link></li>
               </ul>
             </section>
