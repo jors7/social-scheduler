@@ -126,6 +126,47 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Helper function to revoke TikTok access token
+async function revokeTikTokToken(accessToken: string): Promise<boolean> {
+  try {
+    const clientKey = process.env.TIKTOK_CLIENT_KEY;
+    const clientSecret = process.env.TIKTOK_CLIENT_SECRET;
+
+    if (!clientKey || !clientSecret) {
+      console.error('TikTok client credentials not configured for revocation');
+      return false;
+    }
+
+    console.log('Revoking TikTok access token...');
+    
+    const response = await fetch('https://open.tiktokapis.com/v2/oauth/revoke/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Cache-Control': 'no-cache'
+      },
+      body: new URLSearchParams({
+        client_key: clientKey,
+        client_secret: clientSecret,
+        token: accessToken
+      })
+    });
+
+    if (response.ok) {
+      console.log('✅ TikTok token revoked successfully');
+      return true;
+    } else {
+      const errorText = await response.text();
+      console.error('Failed to revoke TikTok token:', response.status, errorText);
+      // Don't fail the disconnect even if revocation fails (token might be expired)
+      return false;
+    }
+  } catch (error) {
+    console.error('Error revoking TikTok token:', error);
+    return false;
+  }
+}
+
 // Disconnect TikTok account
 export async function POST(request: NextRequest) {
   try {
@@ -151,6 +192,26 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
+      // First, get the account details to retrieve the access token
+      const { data: account } = await supabase
+        .from('social_accounts')
+        .select('access_token, username')
+        .eq('user_id', user.id)
+        .eq('platform', 'tiktok')
+        .single();
+
+      // Revoke the token if we have one
+      let revokeSuccess = false;
+      if (account?.access_token) {
+        revokeSuccess = await revokeTikTokToken(account.access_token);
+        if (!revokeSuccess) {
+          console.log('⚠️ Failed to revoke TikTok token, but continuing with local cleanup');
+        }
+      } else {
+        console.log('No TikTok access token found, skipping revocation');
+      }
+
+      // Delete the account from our database
       const { error } = await supabase
         .from('social_accounts')
         .delete()
@@ -162,7 +223,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to disconnect' }, { status: 500 });
       }
 
-      return NextResponse.json({ success: true });
+      console.log(`TikTok account ${account?.username || 'unknown'} disconnected${revokeSuccess ? ' and revoked' : ''}`);
+      return NextResponse.json({ success: true, revoked: revokeSuccess });
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
