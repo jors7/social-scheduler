@@ -50,18 +50,50 @@ export async function POST(request: NextRequest) {
         url: `https://www.pinterest.com/pin/${result.id}/`,
       });
     } catch (pinError: any) {
-      // If we get a 401, it might be because the token doesn't work with sandbox
-      // For now, return a more informative error
-      if (pinError.message.includes('401')) {
+      console.error('Pinterest pin creation error:', pinError);
+      
+      // Handle different error scenarios
+      if (pinError.message.includes('401') || pinError.message.includes('Authentication')) {
         return NextResponse.json(
           { 
-            error: 'Pinterest authentication failed. Note: Trial apps are limited and may not support posting. Please upgrade your Pinterest app to production for full functionality.',
+            error: 'Pinterest authentication failed. Please reconnect your Pinterest account.',
+            requiresReauth: true,
             details: pinError.message 
           },
           { status: 401 }
         );
       }
-      throw pinError;
+      
+      if (pinError.message.includes('403') || pinError.message.includes('Forbidden')) {
+        return NextResponse.json(
+          { 
+            error: 'Pinterest posting is not available. Your app may need approval from Pinterest for posting capabilities.',
+            pendingApproval: true,
+            details: 'Pinterest requires app review for public posting. Posts are currently limited to sandbox mode.'
+          },
+          { status: 403 }
+        );
+      }
+      
+      if (pinError.message.includes('400') || pinError.message.includes('Bad Request')) {
+        return NextResponse.json(
+          { 
+            error: 'Invalid pin data. Please check your board selection and ensure you have an image attached.',
+            details: pinError.message 
+          },
+          { status: 400 }
+        );
+      }
+      
+      // Generic error with helpful message
+      return NextResponse.json(
+        { 
+          error: 'Unable to post to Pinterest. This may be due to app limitations or Pinterest API restrictions.',
+          details: pinError.message,
+          helpText: 'Pinterest posting requires app review approval. Contact support if this persists.'
+        },
+        { status: 500 }
+      );
     }
 
   } catch (error) {

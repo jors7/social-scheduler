@@ -80,8 +80,11 @@ export class PinterestClient {
       ...pinData,
     };
     
-    console.log('Creating pin with data:', JSON.stringify(requestBody, null, 2));
-    console.log('Using API URL:', `${this.apiBaseUrl}/pins`);
+    console.log('=== Pinterest Pin Creation Debug ===');
+    console.log('API Endpoint:', `${this.apiBaseUrl}/pins`);
+    console.log('Using Sandbox:', this.apiBaseUrl.includes('sandbox'));
+    console.log('Request Body:', JSON.stringify(requestBody, null, 2));
+    console.log('Token (first 20 chars):', this.accessToken.substring(0, 20) + '...');
     
     const response = await fetch(
       `${this.apiBaseUrl}/pins`,
@@ -95,12 +98,30 @@ export class PinterestClient {
       }
     );
 
+    console.log('Response Status:', response.status);
+    console.log('Response Headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Pinterest API error:', response.status, errorText);
+      console.error('=== Pinterest API Error ===');
+      console.error('Status:', response.status);
+      console.error('Error Response:', errorText);
+      
+      // Try to parse error as JSON for better debugging
+      let errorJson;
+      try {
+        errorJson = JSON.parse(errorText);
+        console.error('Parsed Error:', JSON.stringify(errorJson, null, 2));
+      } catch (e) {
+        // Not JSON, that's okay
+      }
+      
       throw new Error(`Pinterest API error: ${response.status} - ${errorText}`);
     }
 
-    return response.json();
+    const result = await response.json();
+    console.log('=== Pin Created Successfully ===');
+    console.log('Result:', JSON.stringify(result, null, 2));
+    return result;
   }
 }

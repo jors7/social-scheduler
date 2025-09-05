@@ -623,7 +623,8 @@ export default function SettingsContent() {
       id: 'pinterest',
       name: 'Pinterest',
       icon: 'P',
-      color: 'bg-red-700'
+      color: 'bg-red-700',
+      note: 'Pending app review - Posting limited to sandbox mode'
     },
   ]
 

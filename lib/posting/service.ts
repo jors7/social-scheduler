@@ -412,6 +412,13 @@ export class PostingService {
         throw new Error('Pinterest requires at least one image');
       }
 
+      // For sandbox testing, we may need to handle image URLs differently
+      // Pinterest sandbox may not accept all external URLs
+      let imageUrl = mediaUrls[0];
+      
+      // If it's a Supabase URL or similar, we might need to handle it specially
+      console.log('Pinterest: Using image URL:', imageUrl);
+
       const response = await fetch('/api/post/pinterest', {
         method: 'POST',
         headers: {
@@ -422,7 +429,7 @@ export class PostingService {
           boardId: account.pinterest_board_id, // This needs to be set
           title: account.pinterest_title || 'New Pin',
           description: account.pinterest_description || content, // Use custom description or fallback to content
-          imageUrl: mediaUrls[0], // Use first image
+          imageUrl: imageUrl, // Use first image
           link: account.pinterest_link, // Optional destination URL
         }),
       });
@@ -430,6 +437,15 @@ export class PostingService {
       const data = await response.json();
 
       if (!response.ok) {
+        // Check if it's an approval-related error
+        if (data.pendingApproval || data.error?.includes('approval') || data.error?.includes('limited')) {
+          return {
+            platform: 'pinterest',
+            success: false,
+            error: 'Pinterest posting requires app review approval. Currently limited to sandbox mode.',
+            requiresApproval: true
+          };
+        }
         throw new Error(data.error || 'Pinterest posting failed');
       }
 
@@ -439,10 +455,21 @@ export class PostingService {
         postId: data.id,
       };
     } catch (error) {
+      // Provide more helpful error messages
+      let errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('requires at least one image')) {
+        errorMessage = 'Pinterest requires an image to create a pin';
+      } else if (errorMessage.includes('authentication') || errorMessage.includes('401')) {
+        errorMessage = 'Pinterest account needs to be reconnected';
+      } else if (errorMessage.includes('app review') || errorMessage.includes('sandbox')) {
+        errorMessage = 'Pinterest posting requires app review approval';
+      }
+      
       return {
         platform: 'pinterest',
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMessage
       };
     }
   }

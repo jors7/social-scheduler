@@ -6,7 +6,7 @@ export class PinterestService {
   private client: PinterestClient;
 
   constructor(accessToken: string) {
-    this.client = new PinterestClient(accessToken, false); // Use production API for real data
+    this.client = new PinterestClient(accessToken, false); // Use production API
   }
 
   async getUserProfile() {
@@ -48,21 +48,28 @@ export class PinterestService {
   async createPin(boardId: string, title: string, description: string, imageUrl?: string, link?: string) {
     try {
       // Note: This requires pins:write permission
+      // Pinterest v5 API requires specific structure
       const pinData: any = {
-        title: title,
-        description: description,
+        title: title || undefined, // Only include if provided
+        description: description || undefined, // Only include if provided
       };
 
       if (imageUrl) {
+        // Pinterest requires media_source with specific structure
         pinData.media_source = {
           source_type: 'image_url',
-          url: imageUrl,
+          url: imageUrl
         };
       }
 
       if (link) {
         pinData.link = link;
       }
+
+      // Remove undefined values
+      Object.keys(pinData).forEach(key => 
+        pinData[key] === undefined && delete pinData[key]
+      );
 
       const result = await this.client.createPin(boardId, pinData);
       return result;
