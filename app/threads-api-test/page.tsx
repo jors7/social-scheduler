@@ -317,15 +317,9 @@ export default function ThreadsAPITest() {
         
         // Add reply_to_id for subsequent posts (requires threads_manage_replies permission)
         if (previousPostId && i > 0) {
-          // Skip replies if permission not granted
-          addTestResult({
-            permission: 'threads_manage_replies',
-            endpoint: `Thread post ${i + 1}/${threadPosts.length} (reply)`,
-            success: false,
-            error: 'threads_manage_replies permission required for replies',
-            timestamp: new Date().toISOString()
-          });
-          continue; // Skip to next iteration
+          // THIS IS THE KEY PART - Actually add the reply_to_id parameter
+          createParams.reply_to_id = previousPostId;
+          console.log(`Creating reply to post ${previousPostId}`);
         }
         
         const createUrlParams = new URLSearchParams(createParams);
@@ -391,16 +385,21 @@ export default function ThreadsAPITest() {
 
   // Test 6: threads_read_replies - Get post replies
   const testReadReplies = async () => {
-    // Use the most recent post ID or indicate permission needed
+    // First, ensure we have a post with potential replies
     if (!lastPostId) {
-      addTestResult({
-        permission: 'threads_read_replies',
-        endpoint: 'post/replies',
-        success: false,
-        error: 'Permission not granted - requires app approval',
-        timestamp: new Date().toISOString()
-      });
-      return false;
+      // Create a post first to get replies from
+      console.log('No post available for reading replies, creating one first');
+      const created = await testPublishText();
+      if (!created) {
+        addTestResult({
+          permission: 'threads_read_replies',
+          endpoint: 'post/replies',
+          success: false,
+          error: 'Could not create a post to read replies from',
+          timestamp: new Date().toISOString()
+        });
+        return false;
+      }
     }
 
     const endpoint = `${lastPostId}/replies?fields=id,text,username,timestamp,like_count`;
@@ -850,6 +849,160 @@ export default function ThreadsAPITest() {
     }
   };
 
+  // Test 14: COMPREHENSIVE threads_manage_replies + threads_read_replies test
+  const testComprehensiveReplies = async () => {
+    console.log('Starting comprehensive reply test...');
+    
+    try {
+      // Step 1: Create a main post
+      const mainPostText = `Main post for reply testing - ${new Date().toLocaleTimeString()}`;
+      const createMainParams = new URLSearchParams({
+        media_type: 'TEXT',
+        text: mainPostText,
+        access_token: account.access_token
+      });
+      
+      const createMainUrl = `https://graph.threads.net/v1.0/me/threads?${createMainParams}`;
+      const createMainResponse = await fetch(createMainUrl, { method: 'POST' });
+      const createMainData = await createMainResponse.json();
+      
+      if (!createMainResponse.ok || !createMainData.id) {
+        addTestResult({
+          permission: 'threads_manage_replies',
+          endpoint: 'Comprehensive test - create main post',
+          success: false,
+          error: createMainData.error?.message || 'Failed to create main post',
+          timestamp: new Date().toISOString()
+        });
+        return false;
+      }
+
+      // Publish the main post
+      const publishMainParams = new URLSearchParams({
+        creation_id: createMainData.id,
+        access_token: account.access_token
+      });
+      
+      const publishMainUrl = `https://graph.threads.net/v1.0/me/threads_publish?${publishMainParams}`;
+      const publishMainResponse = await fetch(publishMainUrl, { method: 'POST' });
+      const publishMainData = await publishMainResponse.json();
+      
+      if (!publishMainResponse.ok || !publishMainData.id) {
+        addTestResult({
+          permission: 'threads_manage_replies',
+          endpoint: 'Comprehensive test - publish main post',
+          success: false,
+          error: publishMainData.error?.message || 'Failed to publish main post',
+          timestamp: new Date().toISOString()
+        });
+        return false;
+      }
+
+      const mainPostId = publishMainData.id;
+      console.log(`Main post created: ${mainPostId}`);
+      
+      addTestResult({
+        permission: 'threads_manage_replies',
+        endpoint: 'Comprehensive test - main post created',
+        success: true,
+        data: { postId: mainPostId, text: mainPostText },
+        timestamp: new Date().toISOString()
+      });
+
+      // Wait a bit before creating reply
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Step 2: Create a reply using threads_manage_replies permission
+      const replyText = `Reply to main post - ${new Date().toLocaleTimeString()}`;
+      const createReplyParams = new URLSearchParams({
+        media_type: 'TEXT',
+        text: replyText,
+        reply_to_id: mainPostId, // THIS IS THE KEY PARAMETER FOR threads_manage_replies
+        access_token: account.access_token
+      });
+      
+      console.log(`Creating reply to post ${mainPostId} with reply_to_id parameter`);
+      const createReplyUrl = `https://graph.threads.net/v1.0/me/threads?${createReplyParams}`;
+      const createReplyResponse = await fetch(createReplyUrl, { method: 'POST' });
+      const createReplyData = await createReplyResponse.json();
+      
+      addTestResult({
+        permission: 'threads_manage_replies',
+        endpoint: 'me/threads (with reply_to_id parameter)',
+        success: createReplyResponse.ok && !!createReplyData.id,
+        data: createReplyResponse.ok ? { containerId: createReplyData.id, replyToId: mainPostId } : undefined,
+        error: !createReplyResponse.ok ? createReplyData.error?.message : undefined,
+        timestamp: new Date().toISOString()
+      });
+
+      if (!createReplyResponse.ok || !createReplyData.id) {
+        return false;
+      }
+
+      // Publish the reply
+      const publishReplyParams = new URLSearchParams({
+        creation_id: createReplyData.id,
+        access_token: account.access_token
+      });
+      
+      const publishReplyUrl = `https://graph.threads.net/v1.0/me/threads_publish?${publishReplyParams}`;
+      const publishReplyResponse = await fetch(publishReplyUrl, { method: 'POST' });
+      const publishReplyData = await publishReplyResponse.json();
+      
+      addTestResult({
+        permission: 'threads_manage_replies',
+        endpoint: 'me/threads_publish (reply)',
+        success: publishReplyResponse.ok,
+        data: publishReplyResponse.ok ? publishReplyData : undefined,
+        error: !publishReplyResponse.ok ? publishReplyData.error?.message : undefined,
+        timestamp: new Date().toISOString()
+      });
+
+      // Wait a bit for the reply to be processed
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // Step 3: Read the replies using threads_read_replies permission
+      const readRepliesUrl = `https://graph.threads.net/v1.0/${mainPostId}/replies?fields=id,text,username,timestamp&access_token=${account.access_token}`;
+      console.log(`Reading replies for post ${mainPostId}`);
+      const readRepliesResponse = await fetch(readRepliesUrl);
+      const readRepliesData = await readRepliesResponse.json();
+      
+      addTestResult({
+        permission: 'threads_read_replies',
+        endpoint: `${mainPostId}/replies`,
+        success: readRepliesResponse.ok,
+        data: readRepliesResponse.ok ? readRepliesData : undefined,
+        error: !readRepliesResponse.ok ? readRepliesData.error?.message : undefined,
+        timestamp: new Date().toISOString()
+      });
+
+      // Also try alternative endpoint format
+      const altReadUrl = `https://graph.threads.net/v1.0/${mainPostId}?fields=replies{id,text,username}&access_token=${account.access_token}`;
+      const altReadResponse = await fetch(altReadUrl);
+      const altReadData = await altReadResponse.json();
+      
+      addTestResult({
+        permission: 'threads_read_replies',
+        endpoint: `${mainPostId}?fields=replies`,
+        success: altReadResponse.ok,
+        data: altReadResponse.ok ? altReadData : undefined,
+        error: !altReadResponse.ok ? altReadData.error?.message : undefined,
+        timestamp: new Date().toISOString()
+      });
+
+      return true;
+    } catch (error) {
+      addTestResult({
+        permission: 'threads_manage_replies/threads_read_replies',
+        endpoint: 'Comprehensive reply test',
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed',
+        timestamp: new Date().toISOString()
+      });
+      return false;
+    }
+  };
+
   // Run all tests - Only the 5 permissions we actually need
   const runAllTests = async () => {
     setLoading(true);
@@ -875,6 +1028,9 @@ export default function ThreadsAPITest() {
 
     // Test 5: threads_read_replies (Nice to have for engagement)
     await testReadReplies();
+
+    // Test 6: COMPREHENSIVE test for replies (ensures both permissions are tested)
+    await testComprehensiveReplies();
 
     setLoading(false);
     console.log('All required tests completed. Last post ID:', lastPostId);
@@ -1025,6 +1181,16 @@ export default function ThreadsAPITest() {
                   <h3 className="text-sm font-semibold text-gray-600 mt-2">5. threads_read_replies</h3>
                   <Button onClick={testReadReplies} disabled={loading} variant="outline" className="ml-4">
                     Test: Read Post Replies
+                  </Button>
+                  
+                  <h3 className="text-sm font-semibold text-gray-600 mt-2">6. COMPREHENSIVE Reply Test</h3>
+                  <Button 
+                    onClick={testComprehensiveReplies} 
+                    disabled={loading} 
+                    variant="outline" 
+                    className="ml-4 border-blue-500 text-blue-600 hover:bg-blue-50"
+                  >
+                    Test: Complete Reply Flow (Create Post → Create Reply → Read Replies)
                   </Button>
                 </div>
               </div>
