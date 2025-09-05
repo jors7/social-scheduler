@@ -315,6 +315,11 @@ function CreateNewPostPageContent() {
       instagramAsStory && 
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
     
+    // Check if Instagram Story is selected (even with other platforms)
+    const hasInstagramStory = selectedPlatforms.includes('instagram') && 
+      instagramAsStory && 
+      (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
+    
     // Debug logging for YouTube validation
     if (selectedPlatforms.includes('youtube')) {
       console.log('YouTube validation:', {
@@ -364,10 +369,24 @@ function CreateNewPostPageContent() {
         toast.error('Please select an image or video for your story')
         return
       }
-    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
-      // For other platforms or mixed platforms, require some content
-      toast.error('Please enter some content')
-      return
+    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isInstagramStoryOnly) {
+      // For mixed platforms with Instagram Story, allow if Instagram has media
+      if (hasInstagramStory) {
+        // Instagram Story has media, check if other platforms need content
+        const otherPlatforms = selectedPlatforms.filter(p => p !== 'instagram')
+        if (otherPlatforms.length > 0 && 
+            !otherPlatforms.some(p => p === 'pinterest' && hasPinterestContent) &&
+            !otherPlatforms.some(p => p === 'youtube' && hasYouTubeContent) &&
+            !otherPlatforms.some(p => p === 'tiktok' && hasTikTokContent)) {
+          toast.error('Please enter content for non-Instagram platforms')
+          return
+        }
+        // Instagram Story is OK, and either no other platforms or they have their content
+      } else {
+        // No Instagram Story, require content
+        toast.error('Please enter some content')
+        return
+      }
     }
     
     // YouTube-specific validation (only for mixed platforms, not YouTube-only)
@@ -767,6 +786,11 @@ function CreateNewPostPageContent() {
       instagramAsStory && 
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
     
+    // Check if Instagram Story is selected (even with other platforms)
+    const hasInstagramStory = selectedPlatforms.includes('instagram') && 
+      instagramAsStory && 
+      (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
+    
     // Debug logging for YouTube validation
     if (selectedPlatforms.includes('youtube')) {
       console.log('YouTube validation:', {
@@ -816,10 +840,24 @@ function CreateNewPostPageContent() {
         toast.error('Please select an image or video for your story')
         return
       }
-    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
-      // For other platforms or mixed platforms, require some content
-      toast.error('Please enter some content')
-      return
+    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isInstagramStoryOnly) {
+      // For mixed platforms with Instagram Story, allow if Instagram has media
+      if (hasInstagramStory) {
+        // Instagram Story has media, check if other platforms need content
+        const otherPlatforms = selectedPlatforms.filter(p => p !== 'instagram')
+        if (otherPlatforms.length > 0 && 
+            !otherPlatforms.some(p => p === 'pinterest' && hasPinterestContent) &&
+            !otherPlatforms.some(p => p === 'youtube' && hasYouTubeContent) &&
+            !otherPlatforms.some(p => p === 'tiktok' && hasTikTokContent)) {
+          toast.error('Please enter content for non-Instagram platforms')
+          return
+        }
+        // Instagram Story is OK, and either no other platforms or they have their content
+      } else {
+        // No Instagram Story, require content
+        toast.error('Please enter some content')
+        return
+      }
     }
     
     // YouTube-specific validation (only for mixed platforms, not YouTube-only)
