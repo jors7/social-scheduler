@@ -71,7 +71,8 @@ export default function PrivacyPolicyClient() {
                 <li><strong>Social Media Platform Data</strong>: 
                   <ul className="list-disc pl-6 mt-2 space-y-1">
                     <li><strong>Meta Platforms (Facebook, Instagram, Threads)</strong>: User ID, page/account names, page access tokens, content permissions</li>
-                    <li><strong>Other Platforms</strong>: Authentication tokens, usernames, profile information necessary for posting</li>
+                    <li><strong>Pinterest</strong>: User ID, board information, authentication tokens for pin creation</li>
+                    <li><strong>Other Platforms (X/Twitter, LinkedIn, YouTube, TikTok, Bluesky)</strong>: Authentication tokens, usernames, profile information necessary for posting</li>
                     <li><strong>Content Data</strong>: Posts, images, videos you create and schedule</li>
                     <li><strong>Analytics</strong>: Post performance metrics (with your consent)</li>
                   </ul>
@@ -182,7 +183,7 @@ export default function PrivacyPolicyClient() {
             <section className="mb-10">
               <h3 className="text-2xl font-bold text-gray-900 mb-4">9. API & Platform Compliance</h3>
               <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>We use APIs of Meta (Facebook, Instagram, Threads), X/Twitter, LinkedIn, YouTube, TikTok, Pinterest, and Bluesky only as necessary to provide the Service</li>
+                <li>We use APIs of Meta (Facebook, Instagram, Threads), Pinterest, X/Twitter, LinkedIn, YouTube, TikTok, and Bluesky only as necessary to provide the Service</li>
                 <li>We do not use social media data for advertising or analytics outside the Service</li>
                 <li>Users may disconnect accounts at any time via SocialCal or directly at the platform</li>
                 <li>We comply with each platform&apos;s developer policies</li>
@@ -269,7 +270,7 @@ export default function PrivacyPolicyClient() {
                 <li>IČO: 75463822</li>
                 <li>Not a VAT payer</li>
                 <li>Business Address: Marie Majerove 1633, Sokolov, 35601, Czech Republic</li>
-                <li>Email: support@socialorbit.app</li>
+                <li>Email: support@socialcal.app</li>
               </ul>
             </section>
 
@@ -279,8 +280,8 @@ export default function PrivacyPolicyClient() {
                 For privacy concerns or to exercise your rights:
               </p>
               <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>Email: support@socialcal.app or support@socialorbit.app</li>
-                <li>Data Deletion: <Link href="/data-deletion-status" className="text-blue-600 hover:underline">Request Data Deletion</Link></li>
+                <li>Email: support@socialcal.app</li>
+                <li>Data Deletion Requests: Email support@socialcal.app with subject "Data Deletion Request"</li>
                 <li>Support: <Link href="/contact" className="text-blue-600 hover:underline">Contact Form</Link></li>
               </ul>
             </section>

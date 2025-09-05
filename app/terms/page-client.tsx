@@ -233,7 +233,7 @@ export default function TermsOfServiceClient() {
                 <li>IČO: 75463822</li>
                 <li>Not a VAT payer</li>
                 <li>Business Address: Marie Majerove 1633, Sokolov, 35601, Czech Republic</li>
-                <li>Email: support@socialorbit.app</li>
+                <li>Email: support@socialcal.app</li>
               </ul>
             </section>
 
@@ -243,7 +243,7 @@ export default function TermsOfServiceClient() {
                 For questions about these Terms:
               </p>
               <ul className="list-disc pl-6 space-y-2 text-gray-600 mb-4">
-                <li>Email: support@socialcal.app or support@socialorbit.app</li>
+                <li>Email: support@socialcal.app</li>
                 <li>Support: <Link href="/contact" className="text-blue-600 hover:underline">Contact Form</Link></li>
                 <li>Privacy: <Link href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link></li>
               </ul>
