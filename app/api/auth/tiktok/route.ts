@@ -60,8 +60,9 @@ export async function GET(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // Generate state for CSRF protection
-    const state = crypto.randomBytes(16).toString('hex');
+    // Generate state for CSRF protection with timestamp to ensure uniqueness
+    const timestamp = Date.now();
+    const state = crypto.randomBytes(16).toString('hex') + '_' + timestamp;
 
     // Log for debugging
     console.log('TikTok OAuth Config:', {
@@ -80,6 +81,8 @@ export async function GET(request: NextRequest) {
       .digest('base64url');
 
     // Build TikTok v2 OAuth URL with PKCE
+    // Note: TikTok doesn't support prompt parameter to force re-authorization
+    // The user might be automatically re-authorized if they previously granted permission
     const params = new URLSearchParams({
       client_key: CLIENT_KEY,
       redirect_uri: redirectUri, // Use the validated redirect URI
@@ -138,6 +141,20 @@ async function revokeTikTokToken(accessToken: string): Promise<boolean> {
     }
 
     console.log('Revoking TikTok access token...');
+    console.log('Token to revoke:', accessToken.substring(0, 20) + '...');
+    
+    const revokeParams = new URLSearchParams({
+      client_key: clientKey,
+      client_secret: clientSecret,
+      token: accessToken
+    });
+    
+    console.log('Revoke request URL:', 'https://open.tiktokapis.com/v2/oauth/revoke/');
+    console.log('Revoke params (sanitized):', {
+      client_key: clientKey.substring(0, 5) + '...',
+      client_secret: '***',
+      token: accessToken.substring(0, 20) + '...'
+    });
     
     const response = await fetch('https://open.tiktokapis.com/v2/oauth/revoke/', {
       method: 'POST',
@@ -145,19 +162,20 @@ async function revokeTikTokToken(accessToken: string): Promise<boolean> {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Cache-Control': 'no-cache'
       },
-      body: new URLSearchParams({
-        client_key: clientKey,
-        client_secret: clientSecret,
-        token: accessToken
-      })
+      body: revokeParams
     });
+
+    const responseText = await response.text();
+    console.log('Revoke response status:', response.status);
+    console.log('Revoke response body:', responseText || '(empty - which is expected for success)');
 
     if (response.ok) {
       console.log('✅ TikTok token revoked successfully');
       return true;
     } else {
-      const errorText = await response.text();
-      console.error('Failed to revoke TikTok token:', response.status, errorText);
+      console.error('❌ Failed to revoke TikTok token');
+      console.error('Response status:', response.status);
+      console.error('Response body:', responseText);
       // Don't fail the disconnect even if revocation fails (token might be expired)
       return false;
     }

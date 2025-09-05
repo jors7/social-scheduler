@@ -537,6 +537,28 @@ export default function SettingsContent() {
           throw new Error(result.error || 'Failed to disconnect Facebook')
         }
         // Facebook disconnect endpoint handles database deletion, so we're done
+      } else if (platformName === 'TikTok') {
+        // For TikTok, call the disconnect endpoint to revoke the token
+        console.log('Calling TikTok disconnect endpoint...')
+        const response = await fetch('/api/auth/tiktok', { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'disconnect' })
+        })
+        const result = await response.json()
+        console.log('TikTok disconnect result:', result)
+        if (!response.ok) {
+          console.error('Failed to disconnect TikTok:', result)
+          throw new Error(result.error || 'Failed to disconnect TikTok')
+        }
+        if (result.revoked) {
+          console.log('✅ TikTok token successfully revoked')
+          toast.success('TikTok account disconnected and app access revoked')
+        } else {
+          console.log('⚠️ TikTok disconnected locally but token revocation may have failed')
+          toast.warning('TikTok account disconnected. You may need to manually revoke access in TikTok app settings.')
+        }
+        // TikTok disconnect endpoint handles database deletion, so we're done
       } else {
         // For other platforms, just delete the record
         // Delete the record entirely for better security
