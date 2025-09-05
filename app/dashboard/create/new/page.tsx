@@ -309,6 +309,12 @@ function CreateNewPostPageContent() {
       youtubeVideoFile !== null && 
       youtubeTitle && youtubeTitle.trim().length > 0
     
+    // Special handling for Instagram Stories - no caption required
+    const isInstagramStoryOnly = selectedPlatforms.length === 1 && 
+      selectedPlatforms[0] === 'instagram' && 
+      instagramAsStory && 
+      (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
+    
     // Debug logging for YouTube validation
     if (selectedPlatforms.includes('youtube')) {
       console.log('YouTube validation:', {
@@ -352,6 +358,12 @@ function CreateNewPostPageContent() {
       // Pinterest has its content (board + image)
     } else if (isTikTokOnly && hasTikTokContent) {
       // TikTok has its content (video)
+    } else if (isInstagramStoryOnly) {
+      // Instagram Stories don't need captions, just media
+      if (selectedFiles.length === 0 && uploadedMediaUrls.length === 0) {
+        toast.error('Please select an image or video for your story')
+        return
+      }
     } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
       // For other platforms or mixed platforms, require some content
       toast.error('Please enter some content')
@@ -749,6 +761,12 @@ function CreateNewPostPageContent() {
       youtubeVideoFile !== null && 
       youtubeTitle && youtubeTitle.trim().length > 0
     
+    // Special handling for Instagram Stories - no caption required
+    const isInstagramStoryOnly = selectedPlatforms.length === 1 && 
+      selectedPlatforms[0] === 'instagram' && 
+      instagramAsStory && 
+      (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
+    
     // Debug logging for YouTube validation
     if (selectedPlatforms.includes('youtube')) {
       console.log('YouTube validation:', {
@@ -792,6 +810,12 @@ function CreateNewPostPageContent() {
       // Pinterest has its content (board + image)
     } else if (isTikTokOnly && hasTikTokContent) {
       // TikTok has its content (video)
+    } else if (isInstagramStoryOnly) {
+      // Instagram Stories don't need captions, just media
+      if (selectedFiles.length === 0 && uploadedMediaUrls.length === 0) {
+        toast.error('Please select an image or video for your story')
+        return
+      }
     } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
       // For other platforms or mixed platforms, require some content
       toast.error('Please enter some content')
@@ -1760,7 +1784,8 @@ function CreateNewPostPageContent() {
                       (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) && 
                         !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()) &&
                         !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
-                        !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(url => url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')))))
+                        !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(url => url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')))) &&
+                        !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'instagram' && instagramAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)))
                     }
                     onClick={handleSchedulePost}
                   >
@@ -1789,7 +1814,8 @@ function CreateNewPostPageContent() {
                     (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) && 
                       !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()) &&
                       !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
-                      !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(url => url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')))))
+                      !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(url => url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')))) &&
+                      !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'instagram' && instagramAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)))
                   }
                   onClick={handlePostNow}
                 >
