@@ -347,8 +347,16 @@ function CreateNewPostPageContent() {
     const isPinterestOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'pinterest'
     const isTikTokOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'tiktok'
     
-    // For YouTube-only posts, validate YouTube requirements immediately
-    if (isYouTubeOnly) {
+    // Content validation with platform-specific rules
+    if (isInstagramStoryOnly) {
+      // Instagram Stories only need media, not captions
+      if (selectedFiles.length === 0 && uploadedMediaUrls.length === 0) {
+        toast.error('Please select an image or video for your story')
+        return
+      }
+      // Instagram Story validation passed - skip all other content checks
+    } else if (isYouTubeOnly) {
+      // YouTube-only posts need video and title
       if (!youtubeVideoFile) {
         console.log('YouTube-only: no video file detected')
         toast.error('YouTube requires a video file')
@@ -358,35 +366,29 @@ function CreateNewPostPageContent() {
         toast.error('YouTube requires a video title')
         return
       }
-      // YouTube validation passed, skip other content checks
+      // YouTube validation passed
     } else if (isPinterestOnly && hasPinterestContent) {
-      // Pinterest has its content (board + image)
+      // Pinterest has its content (board + image) - validation passed
     } else if (isTikTokOnly && hasTikTokContent) {
-      // TikTok has its content (video)
-    } else if (isInstagramStoryOnly) {
-      // Instagram Stories don't need captions, just media
-      if (selectedFiles.length === 0 && uploadedMediaUrls.length === 0) {
-        toast.error('Please select an image or video for your story')
+      // TikTok has its content (video) - validation passed
+    } else if (hasInstagramStory && selectedPlatforms.length > 1) {
+      // Mixed platforms including Instagram Story
+      const otherPlatforms = selectedPlatforms.filter(p => p !== 'instagram')
+      // Instagram Story only needs media (already checked in hasInstagramStory)
+      // Check if other platforms have content
+      const otherPlatformsHaveContent = hasMainContent || hasPlatformContent || 
+        otherPlatforms.some(p => p === 'pinterest' && hasPinterestContent) ||
+        otherPlatforms.some(p => p === 'youtube' && hasYouTubeContent) ||
+        otherPlatforms.some(p => p === 'tiktok' && hasTikTokContent)
+      
+      if (!otherPlatformsHaveContent) {
+        toast.error('Please enter content for non-Instagram platforms')
         return
       }
-    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isInstagramStoryOnly) {
-      // For mixed platforms with Instagram Story, allow if Instagram has media
-      if (hasInstagramStory) {
-        // Instagram Story has media, check if other platforms need content
-        const otherPlatforms = selectedPlatforms.filter(p => p !== 'instagram')
-        if (otherPlatforms.length > 0 && 
-            !otherPlatforms.some(p => p === 'pinterest' && hasPinterestContent) &&
-            !otherPlatforms.some(p => p === 'youtube' && hasYouTubeContent) &&
-            !otherPlatforms.some(p => p === 'tiktok' && hasTikTokContent)) {
-          toast.error('Please enter content for non-Instagram platforms')
-          return
-        }
-        // Instagram Story is OK, and either no other platforms or they have their content
-      } else {
-        // No Instagram Story, require content
-        toast.error('Please enter some content')
-        return
-      }
+    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
+      // No content at all for regular posts
+      toast.error('Please enter some content')
+      return
     }
     
     // YouTube-specific validation (only for mixed platforms, not YouTube-only)
@@ -818,8 +820,16 @@ function CreateNewPostPageContent() {
     const isPinterestOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'pinterest'
     const isTikTokOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'tiktok'
     
-    // For YouTube-only posts, validate YouTube requirements immediately
-    if (isYouTubeOnly) {
+    // Content validation with platform-specific rules
+    if (isInstagramStoryOnly) {
+      // Instagram Stories only need media, not captions
+      if (selectedFiles.length === 0 && uploadedMediaUrls.length === 0) {
+        toast.error('Please select an image or video for your story')
+        return
+      }
+      // Instagram Story validation passed - skip all other content checks
+    } else if (isYouTubeOnly) {
+      // YouTube-only posts need video and title
       if (!youtubeVideoFile) {
         console.log('YouTube-only: no video file detected')
         toast.error('YouTube requires a video file')
@@ -829,35 +839,29 @@ function CreateNewPostPageContent() {
         toast.error('YouTube requires a video title')
         return
       }
-      // YouTube validation passed, skip other content checks
+      // YouTube validation passed
     } else if (isPinterestOnly && hasPinterestContent) {
-      // Pinterest has its content (board + image)
+      // Pinterest has its content (board + image) - validation passed
     } else if (isTikTokOnly && hasTikTokContent) {
-      // TikTok has its content (video)
-    } else if (isInstagramStoryOnly) {
-      // Instagram Stories don't need captions, just media
-      if (selectedFiles.length === 0 && uploadedMediaUrls.length === 0) {
-        toast.error('Please select an image or video for your story')
+      // TikTok has its content (video) - validation passed
+    } else if (hasInstagramStory && selectedPlatforms.length > 1) {
+      // Mixed platforms including Instagram Story
+      const otherPlatforms = selectedPlatforms.filter(p => p !== 'instagram')
+      // Instagram Story only needs media (already checked in hasInstagramStory)
+      // Check if other platforms have content
+      const otherPlatformsHaveContent = hasMainContent || hasPlatformContent || 
+        otherPlatforms.some(p => p === 'pinterest' && hasPinterestContent) ||
+        otherPlatforms.some(p => p === 'youtube' && hasYouTubeContent) ||
+        otherPlatforms.some(p => p === 'tiktok' && hasTikTokContent)
+      
+      if (!otherPlatformsHaveContent) {
+        toast.error('Please enter content for non-Instagram platforms')
         return
       }
-    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isInstagramStoryOnly) {
-      // For mixed platforms with Instagram Story, allow if Instagram has media
-      if (hasInstagramStory) {
-        // Instagram Story has media, check if other platforms need content
-        const otherPlatforms = selectedPlatforms.filter(p => p !== 'instagram')
-        if (otherPlatforms.length > 0 && 
-            !otherPlatforms.some(p => p === 'pinterest' && hasPinterestContent) &&
-            !otherPlatforms.some(p => p === 'youtube' && hasYouTubeContent) &&
-            !otherPlatforms.some(p => p === 'tiktok' && hasTikTokContent)) {
-          toast.error('Please enter content for non-Instagram platforms')
-          return
-        }
-        // Instagram Story is OK, and either no other platforms or they have their content
-      } else {
-        // No Instagram Story, require content
-        toast.error('Please enter some content')
-        return
-      }
+    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
+      // No content at all for regular posts
+      toast.error('Please enter some content')
+      return
     }
     
     // YouTube-specific validation (only for mixed platforms, not YouTube-only)
