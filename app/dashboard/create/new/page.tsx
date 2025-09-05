@@ -704,25 +704,19 @@ function CreateNewPostPageContent() {
       
       // Check if we had any successful posts
       if (successful.length > 0) {
-        // Check if TikTok was posted and show status check info
-        const tiktokResult = results.find(r => r.platform === 'tiktok' || r.platform.startsWith('tiktok'))
-        if (tiktokResult?.success && tiktokResult.postId) {
-          toast.info(
-            '📱 TikTok Sandbox Mode: Your video is being processed (2-5 minutes). ' +
-            'Look for it in: TikTok App → Profile → Drafts folder. ' +
-            'If not there, check Profile → Private videos (lock icon).', 
-            {
-              duration: 15000 // Show for 15 seconds
-            }
-          )
-          
-          // Store the publishId for potential status checking
-          console.log('TikTok publish ID:', tiktokResult.postId)
-          console.log('IMPORTANT: Video will appear in DRAFTS folder in TikTok app after processing')
-          
-          // Optional: Start polling for status
-          // checkTikTokStatus(tiktokResult.postId)
-        }
+        // TikTok sandbox responses are marked as failed with a sandbox message
+        // We don't show the old misleading success message
+      }
+      
+      // Check if TikTok failed due to sandbox mode
+      const tiktokResult = results.find(r => r.platform === 'tiktok' || r.platform.startsWith('tiktok'))
+      if (tiktokResult && !tiktokResult.success && tiktokResult.error?.includes('sandbox')) {
+        toast.info(
+          '📱 TikTok Sandbox Mode: API test successful. Actual posting requires app approval from TikTok.', 
+          {
+            duration: 10000 // Show for 10 seconds
+          }
+        )
       }
 
       // Progress tracker already shows individual errors, so we don't duplicate them here
@@ -730,10 +724,8 @@ function CreateNewPostPageContent() {
       // Clear form if all successful
       if (failed.length === 0) {
         // Clean up uploaded images from storage
-        // IMPORTANT: Don't cleanup if TikTok was posted - TikTok needs time to download the video
-        const postedToTikTok = successful.some(r => r.platform === 'tiktok' || r.platform.startsWith('tiktok'))
-        
-        if (mediaUrls.length > 0 && !postedToTikTok) {
+        // No need to preserve for TikTok sandbox mode since actual posting doesn't happen
+        if (mediaUrls.length > 0) {
           try {
             await fetch('/api/upload/cleanup', {
               method: 'POST',
@@ -743,11 +735,6 @@ function CreateNewPostPageContent() {
           } catch (error) {
             console.error('Failed to cleanup uploaded files:', error)
           }
-        } else if (postedToTikTok) {
-          console.log('Skipping media cleanup - TikTok needs time to download the video')
-          toast.warning('Video will remain in storage for TikTok to process. You can delete it manually later from Supabase.', {
-            duration: 8000
-          })
         }
         
         // Delete draft if this was posted from a draft

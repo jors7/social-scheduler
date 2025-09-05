@@ -43,8 +43,10 @@ export async function POST(request: NextRequest) {
         options
       );
 
+      // Pass through the sandbox flag and message if present
       return NextResponse.json({
-        success: true,
+        success: result.success,
+        sandbox: result.sandbox,
         publishId: result.publishId,
         message: result.message || 'TikTok video upload initiated successfully',
       });

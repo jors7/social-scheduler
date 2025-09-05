@@ -10,7 +10,17 @@ const TIKTOK_AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize/';
 const CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY || '';
 
 // TikTok v2 scopes - basic + video publishing + upload
+// CURRENT PHASE 1 SCOPES (Approved/Working):
 const SCOPES = 'user.info.basic,video.publish,video.upload';
+
+// FUTURE PHASE 2 SCOPES (DO NOT ADD UNTIL APPROVED BY TIKTOK):
+// - user.info.profile: Extended profile info (bio, verification status)
+// - user.info.stats: Follower/following counts, likes, video statistics
+// - video.list: List user's videos for analytics and performance tracking
+// 
+// IMPORTANT: Adding unapproved scopes will break authentication!
+// Only update after TikTok approves additional scopes.
+// Future implementation: 'user.info.basic,user.info.profile,user.info.stats,video.publish,video.upload,video.list'
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,14 +49,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'TikTok not configured' }, { status: 500 });
     }
 
+    // Ensure redirect URI is properly configured
+    const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/tiktok/callback`;
+    
+    // For production, ensure we're using the correct domain
+    if (process.env.NODE_ENV === 'production' && !redirectUri.includes('https://')) {
+      console.error('TikTok OAuth requires HTTPS in production');
+      return NextResponse.json({ 
+        error: 'TikTok OAuth requires HTTPS. Please check NEXT_PUBLIC_APP_URL configuration.' 
+      }, { status: 500 });
+    }
+
     // Generate state for CSRF protection
     const state = crypto.randomBytes(16).toString('hex');
 
     // Log for debugging
     console.log('TikTok OAuth Config:', {
       clientKey: CLIENT_KEY ? `${CLIENT_KEY.substring(0, 5)}...` : 'NOT SET',
-      redirectUri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/tiktok/callback`,
+      redirectUri: redirectUri,
       scopes: SCOPES,
+      appUrl: process.env.NEXT_PUBLIC_APP_URL,
+      environment: process.env.NODE_ENV,
     });
 
     // Generate PKCE code challenge for v2
@@ -59,7 +82,7 @@ export async function GET(request: NextRequest) {
     // Build TikTok v2 OAuth URL with PKCE
     const params = new URLSearchParams({
       client_key: CLIENT_KEY,
-      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/tiktok/callback`,
+      redirect_uri: redirectUri, // Use the validated redirect URI
       response_type: 'code',
       scope: SCOPES,
       state: state,

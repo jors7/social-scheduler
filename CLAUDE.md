@@ -259,6 +259,39 @@ STRIPE_WEBHOOK_SECRET=whsec_xxxxx
 - ⏳ **Team Collaboration**: Multi-user support with roles and permissions
 - ⏳ **Production Deployment**: Custom domain and app store reviews
 
+## Platform API Requirements & Scopes
+
+### TikTok API v2 Scopes
+
+#### Currently Implemented (Phase 1)
+```
+user.info.basic,video.publish,video.upload
+```
+- ✅ **user.info.basic**: Basic profile information (name, avatar)
+- ✅ **video.publish**: Publish videos to user's profile
+- ✅ **video.upload**: Upload video content via PULL_FROM_URL
+
+#### Future Scopes for Analytics (Phase 2 - After App Approval)
+```
+user.info.profile,user.info.stats,video.list
+```
+- 📊 **user.info.profile**: Bio, verification status, profile links
+- 📊 **user.info.stats**: Follower/following counts, likes, video count
+- 📊 **video.list**: List user's videos for performance tracking
+
+**Important**: Do NOT add Phase 2 scopes until TikTok approves them. Adding unapproved scopes will break authentication.
+
+### Pinterest API Scopes
+```
+boards:read,boards:write,pins:read,pins:write,user_accounts:read
+```
+- ✅ All scopes requested, pending app review for production access
+- 🔄 Currently limited to sandbox mode
+
+### Meta Platforms (Facebook, Instagram, Threads)
+- Various platform-specific permissions handled through Meta Graph API
+- Threads requires special app review for posting capabilities
+
 ## Technical Implementation Details
 
 ### Database Schema

@@ -197,12 +197,11 @@ export class TikTokService {
       }
       
       return {
-        success: true,
+        success: false, // Mark as false since it's only sandbox testing
+        sandbox: true, // Indicate this is sandbox mode
         publishId: publishId,
         uploadUrl: null, // No upload URL with PULL_FROM_URL
-        message: isDraft 
-          ? 'Video sent to TikTok inbox. Check your TikTok app Drafts folder in 2-5 minutes.' 
-          : 'Video upload initiated. Processing takes 2-5 minutes. Check your TikTok app.'
+        message: 'TikTok Sandbox Mode: API test successful. Actual posting requires app approval from TikTok.'
       };
 
     } catch (error) {

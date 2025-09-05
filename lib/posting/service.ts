@@ -522,6 +522,15 @@ export class PostingService {
         throw new Error(data.error || 'TikTok posting failed');
       }
 
+      // Check if this is a sandbox response
+      if (data.sandbox) {
+        return {
+          platform: 'tiktok',
+          success: false,
+          error: data.message || 'TikTok is in sandbox mode. App approval required for actual posting.',
+        };
+      }
+
       return {
         platform: 'tiktok',
         success: true,
