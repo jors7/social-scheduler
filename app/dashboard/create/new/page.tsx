@@ -320,6 +320,16 @@ function CreateNewPostPageContent() {
       instagramAsStory && 
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
     
+    // Debug logging for Instagram Story
+    console.log('Instagram Story Debug:', {
+      selectedPlatforms,
+      instagramAsStory,
+      selectedFilesCount: selectedFiles.length,
+      uploadedMediaUrlsCount: uploadedMediaUrls.length,
+      isInstagramStoryOnly,
+      hasInstagramStory
+    })
+    
     // Debug logging for YouTube validation
     if (selectedPlatforms.includes('youtube')) {
       console.log('YouTube validation:', {
@@ -348,12 +358,16 @@ function CreateNewPostPageContent() {
     const isTikTokOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'tiktok'
     
     // Content validation with platform-specific rules
+    console.log('Validation check - isInstagramStoryOnly:', isInstagramStoryOnly)
+    
     if (isInstagramStoryOnly) {
+      console.log('Instagram Story Only path')
       // Instagram Stories only need media, not captions
       if (selectedFiles.length === 0 && uploadedMediaUrls.length === 0) {
         toast.error('Please select an image or video for your story')
         return
       }
+      console.log('Instagram Story validation passed')
       // Instagram Story validation passed - skip all other content checks
     } else if (isYouTubeOnly) {
       // YouTube-only posts need video and title
@@ -387,6 +401,16 @@ function CreateNewPostPageContent() {
       }
     } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
       // No content at all for regular posts
+      console.log('No content validation path - failing')
+      console.log('Validation state:', {
+        hasMainContent,
+        hasPlatformContent,
+        hasYouTubeContent,
+        hasPinterestContent,
+        hasTikTokContent,
+        hasInstagramStory,
+        isInstagramStoryOnly
+      })
       toast.error('Please enter some content')
       return
     }
@@ -793,6 +817,16 @@ function CreateNewPostPageContent() {
       instagramAsStory && 
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
     
+    // Debug logging for Instagram Story
+    console.log('Instagram Story Debug:', {
+      selectedPlatforms,
+      instagramAsStory,
+      selectedFilesCount: selectedFiles.length,
+      uploadedMediaUrlsCount: uploadedMediaUrls.length,
+      isInstagramStoryOnly,
+      hasInstagramStory
+    })
+    
     // Debug logging for YouTube validation
     if (selectedPlatforms.includes('youtube')) {
       console.log('YouTube validation:', {
@@ -821,12 +855,16 @@ function CreateNewPostPageContent() {
     const isTikTokOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === 'tiktok'
     
     // Content validation with platform-specific rules
+    console.log('Validation check - isInstagramStoryOnly:', isInstagramStoryOnly)
+    
     if (isInstagramStoryOnly) {
+      console.log('Instagram Story Only path')
       // Instagram Stories only need media, not captions
       if (selectedFiles.length === 0 && uploadedMediaUrls.length === 0) {
         toast.error('Please select an image or video for your story')
         return
       }
+      console.log('Instagram Story validation passed')
       // Instagram Story validation passed - skip all other content checks
     } else if (isYouTubeOnly) {
       // YouTube-only posts need video and title
@@ -860,6 +898,16 @@ function CreateNewPostPageContent() {
       }
     } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
       // No content at all for regular posts
+      console.log('No content validation path - failing')
+      console.log('Validation state:', {
+        hasMainContent,
+        hasPlatformContent,
+        hasYouTubeContent,
+        hasPinterestContent,
+        hasTikTokContent,
+        hasInstagramStory,
+        isInstagramStoryOnly
+      })
       toast.error('Please enter some content')
       return
     }
@@ -1953,7 +2001,10 @@ function CreateNewPostPageContent() {
                                   </Label>
                                   <button
                                     type="button"
-                                    onClick={() => setInstagramAsStory(!instagramAsStory)}
+                                    onClick={() => {
+                                      console.log('Toggle Instagram Story:', !instagramAsStory)
+                                      setInstagramAsStory(!instagramAsStory)
+                                    }}
                                     className={cn(
                                       "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
                                       instagramAsStory ? "bg-purple-600" : "bg-gray-300"
