@@ -442,8 +442,7 @@ export class PostingService {
           return {
             platform: 'pinterest',
             success: false,
-            error: 'Pinterest posting requires app review approval. Currently limited to sandbox mode.',
-            requiresApproval: true
+            error: 'Pinterest posting requires app review approval. Currently limited to sandbox mode.'
           };
         }
         throw new Error(data.error || 'Pinterest posting failed');
