@@ -562,6 +562,28 @@ export default function SettingsContent() {
           toast.warning('TikTok account disconnected. You may need to manually revoke access in TikTok app settings.')
         }
         // TikTok disconnect endpoint handles database deletion, so we're done
+      } else if (platformName === 'YouTube') {
+        // For YouTube, call the disconnect endpoint to revoke the Google OAuth token
+        console.log('Calling YouTube disconnect endpoint...')
+        const response = await fetch('/api/auth/youtube', { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'disconnect' })
+        })
+        const result = await response.json()
+        console.log('YouTube disconnect result:', result)
+        if (!response.ok) {
+          console.error('Failed to disconnect YouTube:', result)
+          throw new Error(result.error || 'Failed to disconnect YouTube')
+        }
+        if (result.revoked) {
+          console.log('✅ YouTube/Google token successfully revoked')
+          toast.success('YouTube account disconnected and app access revoked')
+        } else {
+          console.log('⚠️ YouTube disconnected locally but token revocation may have failed')
+          toast.warning('YouTube account disconnected. You may need to manually revoke access in Google account settings.')
+        }
+        // YouTube disconnect endpoint handles database deletion, so we're done
       } else {
         // For other platforms, just delete the record
         // Delete the record entirely for better security
@@ -578,9 +600,9 @@ export default function SettingsContent() {
       toast.success(`Account disconnected`)
       
       // Show additional guidance for platforms that maintain authorization
-      // For now, show for all OAuth platforms as revocation may not always work
-      // due to token expiration, API changes, or network issues
-      if (platformName && ['Threads', 'YouTube', 'LinkedIn', 'Pinterest', 'Instagram', 'Facebook'].includes(platformName)) {
+      // Note: We handle revocation for TikTok and YouTube properly
+      // Facebook/Instagram revocation often fails due to Meta's API limitations
+      if (platformName && ['Threads', 'LinkedIn', 'Pinterest', 'Instagram', 'Facebook'].includes(platformName)) {
         toast.info(
           `To fully revoke ${platformName} access, visit your ${platformName} account settings`, 
           { duration: 5000 }

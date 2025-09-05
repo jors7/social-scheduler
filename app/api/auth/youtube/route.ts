@@ -91,6 +91,49 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Helper function to revoke Google/YouTube OAuth token
+async function revokeYouTubeToken(accessToken: string): Promise<boolean> {
+  try {
+    console.log('Revoking YouTube/Google OAuth token...');
+    
+    // Google's OAuth2 revocation endpoint
+    const revokeUrl = 'https://oauth2.googleapis.com/revoke';
+    
+    const response = await fetch(revokeUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        token: accessToken
+      })
+    });
+
+    const responseText = await response.text();
+    console.log('YouTube revoke response status:', response.status);
+    
+    if (response.ok) {
+      console.log('✅ YouTube/Google token revoked successfully');
+      return true;
+    } else {
+      console.error('Failed to revoke YouTube token:', response.status, responseText);
+      // Check for specific errors
+      try {
+        const errorData = JSON.parse(responseText);
+        if (errorData.error === 'invalid_token') {
+          console.log('Token was already invalid or expired');
+        }
+      } catch (e) {
+        // Not JSON response
+      }
+      return false;
+    }
+  } catch (error) {
+    console.error('Error revoking YouTube token:', error);
+    return false;
+  }
+}
+
 // Disconnect YouTube account
 export async function POST(request: NextRequest) {
   try {
@@ -116,6 +159,28 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
+      // First, get the account details to retrieve the access token
+      const { data: account } = await supabase
+        .from('social_accounts')
+        .select('access_token, refresh_token, username')
+        .eq('user_id', user.id)
+        .eq('platform', 'youtube')
+        .single();
+
+      // Revoke the token if we have one
+      let revokeSuccess = false;
+      if (account?.access_token) {
+        revokeSuccess = await revokeYouTubeToken(account.access_token);
+        if (!revokeSuccess && account.refresh_token) {
+          // Try revoking refresh token if access token revocation failed
+          console.log('Trying to revoke refresh token instead...');
+          revokeSuccess = await revokeYouTubeToken(account.refresh_token);
+        }
+      } else {
+        console.log('No YouTube access token found, skipping revocation');
+      }
+
+      // Delete the account from our database
       const { error } = await supabase
         .from('social_accounts')
         .delete()
@@ -127,7 +192,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to disconnect' }, { status: 500 });
       }
 
-      return NextResponse.json({ success: true });
+      console.log(`YouTube account ${account?.username || 'unknown'} disconnected${revokeSuccess ? ' and revoked' : ''}`);
+      return NextResponse.json({ success: true, revoked: revokeSuccess });
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
