@@ -402,32 +402,70 @@ export default function ThreadsAPITest() {
       }
     }
 
-    const endpoint = `${lastPostId}/replies?fields=id,text,username,timestamp,like_count`;
-    try {
-      const url = `https://graph.threads.net/v1.0/${endpoint}&access_token=${account.access_token}`;
-      const response = await fetch(url);
-      const data = await response.json();
-      
-      addTestResult({
-        permission: 'threads_read_replies',
-        endpoint,
-        success: response.ok,
-        data: response.ok ? data : undefined,
-        error: !response.ok ? data.error?.message : undefined,
-        timestamp: new Date().toISOString()
-      });
-      
-      return response.ok;
-    } catch (error) {
-      addTestResult({
-        permission: 'threads_read_replies',
-        endpoint,
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed',
-        timestamp: new Date().toISOString()
-      });
-      return false;
+    // Try different endpoint formats to find the correct one
+    const endpointFormats = [
+      // Format 1: Get conversation/replies as part of the media object
+      {
+        endpoint: `${lastPostId}/conversation?fields=id,text,username,timestamp`,
+        description: 'conversation endpoint'
+      },
+      // Format 2: Get children (which might be replies)
+      {
+        endpoint: `${lastPostId}/children?fields=id,text,username,timestamp`,
+        description: 'children endpoint'
+      },
+      // Format 3: Get the post with replies field expanded
+      {
+        endpoint: `${lastPostId}?fields=id,text,replies`,
+        description: 'media with replies field'
+      },
+      // Format 4: Try replies as a connection
+      {
+        endpoint: `${lastPostId}/replies`,
+        description: 'replies connection'
+      },
+      // Format 5: Get threads that mention this post (might show replies)
+      {
+        endpoint: `me/threads?fields=id,text,reply_to_id&reply_to_id=${lastPostId}`,
+        description: 'threads filtered by reply_to_id'
+      }
+    ];
+
+    let anySuccess = false;
+    
+    for (const format of endpointFormats) {
+      try {
+        const url = `https://graph.threads.net/v1.0/${format.endpoint}&access_token=${account.access_token}`;
+        console.log(`Testing threads_read_replies with ${format.description}: ${format.endpoint}`);
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        addTestResult({
+          permission: 'threads_read_replies',
+          endpoint: `${format.description}: ${format.endpoint}`,
+          success: response.ok,
+          data: response.ok ? data : undefined,
+          error: !response.ok ? data.error?.message : undefined,
+          timestamp: new Date().toISOString()
+        });
+        
+        if (response.ok) {
+          anySuccess = true;
+          // If this format worked, also log what data structure we got
+          console.log(`Success with ${format.description}:`, data);
+        }
+      } catch (error) {
+        addTestResult({
+          permission: 'threads_read_replies',
+          endpoint: format.endpoint,
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed',
+          timestamp: new Date().toISOString()
+        });
+      }
     }
+    
+    return anySuccess;
   };
 
   // Test 7: threads_manage_insights - Get post insights
@@ -962,33 +1000,58 @@ export default function ThreadsAPITest() {
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Step 3: Read the replies using threads_read_replies permission
-      const readRepliesUrl = `https://graph.threads.net/v1.0/${mainPostId}/replies?fields=id,text,username,timestamp&access_token=${account.access_token}`;
-      console.log(`Reading replies for post ${mainPostId}`);
-      const readRepliesResponse = await fetch(readRepliesUrl);
-      const readRepliesData = await readRepliesResponse.json();
-      
-      addTestResult({
-        permission: 'threads_read_replies',
-        endpoint: `${mainPostId}/replies`,
-        success: readRepliesResponse.ok,
-        data: readRepliesResponse.ok ? readRepliesData : undefined,
-        error: !readRepliesResponse.ok ? readRepliesData.error?.message : undefined,
-        timestamp: new Date().toISOString()
-      });
+      // Try multiple formats since the exact endpoint is unclear
+      const replyEndpoints = [
+        {
+          url: `https://graph.threads.net/v1.0/${mainPostId}/conversation?fields=id,text,username,timestamp&access_token=${account.access_token}`,
+          description: 'conversation endpoint'
+        },
+        {
+          url: `https://graph.threads.net/v1.0/${mainPostId}/children?fields=id,text,username,timestamp&access_token=${account.access_token}`,
+          description: 'children endpoint'
+        },
+        {
+          url: `https://graph.threads.net/v1.0/${mainPostId}?fields=id,text,children,conversation&access_token=${account.access_token}`,
+          description: 'media with children/conversation'
+        },
+        {
+          url: `https://graph.threads.net/v1.0/me/threads?fields=id,text,username,timestamp&filter=replies_to_${mainPostId}&access_token=${account.access_token}`,
+          description: 'filtered threads'
+        }
+      ];
 
-      // Also try alternative endpoint format
-      const altReadUrl = `https://graph.threads.net/v1.0/${mainPostId}?fields=replies{id,text,username}&access_token=${account.access_token}`;
-      const altReadResponse = await fetch(altReadUrl);
-      const altReadData = await altReadResponse.json();
-      
-      addTestResult({
-        permission: 'threads_read_replies',
-        endpoint: `${mainPostId}?fields=replies`,
-        success: altReadResponse.ok,
-        data: altReadResponse.ok ? altReadData : undefined,
-        error: !altReadResponse.ok ? altReadData.error?.message : undefined,
-        timestamp: new Date().toISOString()
-      });
+      let readSuccess = false;
+      for (const endpoint of replyEndpoints) {
+        console.log(`Trying to read replies with ${endpoint.description}`);
+        const response = await fetch(endpoint.url);
+        const data = await response.json();
+        
+        addTestResult({
+          permission: 'threads_read_replies',
+          endpoint: endpoint.description,
+          success: response.ok,
+          data: response.ok ? data : undefined,
+          error: !response.ok ? data.error?.message : undefined,
+          timestamp: new Date().toISOString()
+        });
+
+        if (response.ok) {
+          readSuccess = true;
+          console.log(`Successfully read with ${endpoint.description}:`, data);
+        }
+      }
+
+      // If none of the read endpoints work, it might be that threads_read_replies 
+      // permission is not yet granted or the API doesn't expose replies directly
+      if (!readSuccess) {
+        addTestResult({
+          permission: 'threads_read_replies',
+          endpoint: 'API Call Attempted',
+          success: false,
+          error: 'The threads_read_replies permission may require app review approval. API calls have been made to count towards Meta dashboard.',
+          timestamp: new Date().toISOString()
+        });
+      }
 
       return true;
     } catch (error) {
