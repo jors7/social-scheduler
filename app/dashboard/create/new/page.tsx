@@ -80,6 +80,7 @@ function CreateNewPostPageContent() {
   const [postContent, setPostContent] = useState('')
   const [connectedAccounts, setConnectedAccounts] = useState<any[]>([])
   const [selectedAccounts, setSelectedAccounts] = useState<Record<string, string[]>>({})
+  const [instagramAsStory, setInstagramAsStory] = useState(false)
   const [platformContent, setPlatformContent] = useState<Record<string, string>>({})
   const [showPlatformCustomization, setShowPlatformCustomization] = useState(false)
   const [scheduledDate, setScheduledDate] = useState('')
@@ -610,6 +611,7 @@ function CreateNewPostPageContent() {
         pinterestDescription: pinterestDescription || undefined,
         pinterestLink: pinterestLink || undefined,
         tiktokPrivacyLevel: selectedPlatforms.includes('tiktok') ? (tiktokSaveAsDraft ? 'SELF_ONLY' : tiktokPrivacyLevel) : undefined,
+        instagramAsStory: selectedPlatforms.includes('instagram') ? instagramAsStory : undefined,
       }
       
       console.log('Posting with data:', {
@@ -1494,7 +1496,9 @@ function CreateNewPostPageContent() {
                 </p>
                 {selectedPlatforms.includes('instagram') && (
                   <p className="text-xs text-blue-600 font-medium mt-2">
-                    💡 Instagram: Select 2-10 files to create a carousel post
+                    💡 Instagram: {instagramAsStory 
+                      ? 'Stories require 9:16 aspect ratio (vertical) media' 
+                      : 'Select 2-10 files to create a carousel post'}
                   </p>
                 )}
               </div>
@@ -1871,6 +1875,37 @@ function CreateNewPostPageContent() {
                               }}
                               multiSelect={platformAccounts.length > 1}
                             />
+                            
+                            {/* Instagram Story Toggle */}
+                            {platform.id === 'instagram' && (
+                              <div className="mt-3 pt-3 border-t border-purple-200/50">
+                                <div className="flex items-center justify-between">
+                                  <Label className="text-xs font-medium text-purple-700">
+                                    Post as Story
+                                  </Label>
+                                  <button
+                                    type="button"
+                                    onClick={() => setInstagramAsStory(!instagramAsStory)}
+                                    className={cn(
+                                      "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                                      instagramAsStory ? "bg-purple-600" : "bg-gray-300"
+                                    )}
+                                  >
+                                    <span
+                                      className={cn(
+                                        "inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform",
+                                        instagramAsStory ? "translate-x-4" : "translate-x-1"
+                                      )}
+                                    />
+                                  </button>
+                                </div>
+                                {instagramAsStory && (
+                                  <p className="text-[10px] text-purple-600 mt-1.5">
+                                    📸 Stories disappear after 24 hours. Aspect ratio 9:16 recommended.
+                                  </p>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}

@@ -3,11 +3,19 @@ import { InstagramService } from '@/lib/instagram/service';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, accessToken, text, mediaUrl, mediaUrls } = await request.json();
+    const { userId, accessToken, text, mediaUrl, mediaUrls, isStory } = await request.json();
 
-    if (!userId || !accessToken || !text) {
+    if (!userId || !accessToken) {
       return NextResponse.json(
         { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+    
+    // Stories don't require captions, but feed posts do
+    if (!isStory && !text) {
+      return NextResponse.json(
+        { error: 'Caption is required for feed posts' },
         { status: 400 }
       );
     }
@@ -25,9 +33,10 @@ export async function POST(request: NextRequest) {
     console.log('Creating Instagram post:', {
       userId,
       hasToken: !!accessToken,
-      textLength: text.length,
+      textLength: text?.length || 0,
       mediaCount: allMediaUrls.length,
-      isCarousel: allMediaUrls.length > 1
+      isCarousel: allMediaUrls.length > 1,
+      isStory: !!isStory
     });
 
     // Get Instagram app secret from environment
@@ -46,14 +55,16 @@ export async function POST(request: NextRequest) {
 
     const result = await service.createPost({
       mediaUrls: allMediaUrls,
-      caption: text
+      caption: text || '',
+      isStory: isStory
     });
 
-    console.log('Instagram post created:', result);
+    console.log(`Instagram ${isStory ? 'story' : 'post'} created:`, result);
 
     return NextResponse.json({
       success: true,
       id: result.id,
+      type: isStory ? 'story' : 'post',
       ...result
     });
 

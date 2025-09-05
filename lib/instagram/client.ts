@@ -446,4 +446,239 @@ export class InstagramClient {
       throw new Error(`Verification failed: ${error.message}`);
     }
   }
+
+  async createStory(
+    mediaUrl: string,
+    isVideo: boolean = false,
+    onProgress?: (status: string, progress?: number) => void
+  ) {
+    try {
+      console.log('Creating Instagram story with:', {
+        userID: this.userID,
+        mediaUrl: mediaUrl,
+        isVideo: isVideo,
+      });
+
+      // Step 1: Create story media container
+      const containerParams = new URLSearchParams({
+        access_token: this.accessToken,
+      });
+
+      if (isVideo) {
+        // For video stories
+        containerParams.append('media_type', 'STORIES');
+        containerParams.append('video_url', mediaUrl);
+      } else {
+        // For image stories
+        containerParams.append('media_type', 'STORIES');
+        containerParams.append('image_url', mediaUrl);
+      }
+
+      console.log('Creating story container...');
+      
+      if (onProgress) {
+        onProgress(isVideo ? 'Uploading video story...' : 'Uploading image story...', 20);
+      }
+      
+      const containerResponse = await fetch(
+        `${this.baseURL}/${this.userID}/media`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: containerParams.toString(),
+        }
+      );
+
+      if (!containerResponse.ok) {
+        const error = await containerResponse.json();
+        console.error('Story container creation failed:', error);
+        throw new Error(`Failed to create story container: ${JSON.stringify(error)}`);
+      }
+
+      const { id: creationId } = await containerResponse.json();
+      console.log('Story container created with ID:', creationId);
+
+      // For video stories, wait for processing
+      if (isVideo) {
+        console.log('Video story detected, checking processing status...');
+        
+        if (onProgress) {
+          onProgress('Processing video story...', 50);
+        }
+        
+        await this.waitForMediaProcessing(creationId, onProgress);
+      }
+
+      // Step 2: Publish the story
+      const publishParams = new URLSearchParams({
+        creation_id: creationId,
+        access_token: this.accessToken,
+      });
+
+      console.log('Publishing story...');
+      
+      if (onProgress) {
+        onProgress('Publishing your story...', 90);
+      }
+      
+      const publishResponse = await fetch(
+        `${this.baseURL}/${this.userID}/media_publish`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: publishParams.toString(),
+        }
+      );
+
+      if (!publishResponse.ok) {
+        const error = await publishResponse.json();
+        console.error('Story publish failed:', error);
+        throw new Error(`Failed to publish story: ${JSON.stringify(error)}`);
+      }
+
+      const result = await publishResponse.json();
+      console.log('Instagram story published successfully:', result);
+      return result;
+    } catch (error: any) {
+      console.error('Error creating Instagram story:', error);
+      throw new Error(`Failed to create story: ${error.message}`);
+    }
+  }
+
+  async getMediaInsights(mediaId: string, metrics?: string[]) {
+    try {
+      // Default metrics if not specified
+      const defaultMetrics = [
+        'engagement',
+        'impressions',
+        'reach',
+        'saved',
+        'shares',
+        'likes',
+        'comments',
+        'total_interactions'
+      ];
+      
+      const metricsToFetch = metrics || defaultMetrics;
+      const metricsParam = metricsToFetch.join(',');
+      
+      console.log(`Fetching insights for media ${mediaId}:`, metricsToFetch);
+      
+      const response = await fetch(
+        `${this.baseURL}/${mediaId}/insights?metric=${metricsParam}&access_token=${this.accessToken}`
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Failed to fetch media insights:', error);
+        
+        // Handle case where insights might not be available yet
+        if (error.error?.code === 100) {
+          console.log('Insights not yet available for this media');
+          return {
+            data: metricsToFetch.map(metric => ({
+              name: metric,
+              period: 'lifetime',
+              values: [{ value: 0 }],
+              description: `${metric} count`,
+            })),
+          };
+        }
+        
+        throw new Error(`Failed to fetch insights: ${JSON.stringify(error)}`);
+      }
+
+      const data = await response.json();
+      console.log('Media insights fetched:', data);
+      return data;
+    } catch (error: any) {
+      console.error('Error fetching Instagram insights:', error);
+      throw new Error(`Failed to fetch insights: ${error.message}`);
+    }
+  }
+
+  async getUserInsights(period: 'day' | 'week' | 'days_28' = 'day', metrics?: string[]) {
+    try {
+      // User-level metrics
+      const defaultMetrics = [
+        'impressions',
+        'reach',
+        'follower_count',
+        'profile_views'
+      ];
+      
+      const metricsToFetch = metrics || defaultMetrics;
+      const metricsParam = metricsToFetch.join(',');
+      
+      console.log(`Fetching user insights for period ${period}:`, metricsToFetch);
+      
+      const response = await fetch(
+        `${this.baseURL}/${this.userID}/insights?metric=${metricsParam}&period=${period}&access_token=${this.accessToken}`
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Failed to fetch user insights:', error);
+        throw new Error(`Failed to fetch user insights: ${JSON.stringify(error)}`);
+      }
+
+      const data = await response.json();
+      console.log('User insights fetched:', data);
+      return data;
+    } catch (error: any) {
+      console.error('Error fetching Instagram user insights:', error);
+      throw new Error(`Failed to fetch user insights: ${error.message}`);
+    }
+  }
+
+  async getStoryInsights(storyId: string) {
+    try {
+      // Story-specific metrics
+      const storyMetrics = [
+        'exits',
+        'impressions',
+        'reach',
+        'replies',
+        'taps_forward',
+        'taps_back'
+      ];
+      
+      console.log(`Fetching insights for story ${storyId}`);
+      
+      const response = await fetch(
+        `${this.baseURL}/${storyId}/insights?metric=${storyMetrics.join(',')}&access_token=${this.accessToken}`
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Failed to fetch story insights:', error);
+        
+        // Stories insights might not be available immediately
+        if (error.error?.code === 100) {
+          console.log('Story insights not yet available');
+          return {
+            data: storyMetrics.map(metric => ({
+              name: metric,
+              period: 'lifetime',
+              values: [{ value: 0 }],
+              description: `${metric} count for story`,
+            })),
+          };
+        }
+        
+        throw new Error(`Failed to fetch story insights: ${JSON.stringify(error)}`);
+      }
+
+      const data = await response.json();
+      console.log('Story insights fetched:', data);
+      return data;
+    } catch (error: any) {
+      console.error('Error fetching Instagram story insights:', error);
+      throw new Error(`Failed to fetch story insights: ${error.message}`);
+    }
+  }
 }

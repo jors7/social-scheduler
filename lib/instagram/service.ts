@@ -26,8 +26,14 @@ export class InstagramService {
     mediaUrls?: string[]; // For carousel posts
     caption: string;
     isVideo?: boolean;
+    isStory?: boolean; // New parameter for story posts
     onProgress?: (status: string, progress?: number) => void;
   }) {
+    // Check if this is a story post
+    if (content.isStory) {
+      return this.createStory(content);
+    }
+    
     // Check if this is a carousel post (multiple media items)
     if (content.mediaUrls && content.mediaUrls.length > 1) {
       return this.createCarouselPost(content);
@@ -88,5 +94,48 @@ export class InstagramService {
 
   async getRecentMedia(limit = 10) {
     return this.client.getMedia(limit);
+  }
+
+  private async createStory(content: {
+    imageUrl?: string;
+    mediaUrl?: string;
+    mediaUrls?: string[];
+    caption: string;
+    isVideo?: boolean;
+    onProgress?: (status: string, progress?: number) => void;
+  }) {
+    const mediaUrl = content.mediaUrl || content.imageUrl || (content.mediaUrls?.[0]);
+    
+    if (!mediaUrl) {
+      throw new Error('Instagram stories require a media URL');
+    }
+
+    // Note: Stories don't support carousels
+    if (content.mediaUrls && content.mediaUrls.length > 1) {
+      console.warn('Instagram stories do not support multiple media items. Using first item only.');
+    }
+
+    // Detect if it's a video
+    const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
+    const isVideo = content.isVideo || videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
+    
+    console.log('InstagramService: Creating story with:', {
+      mediaUrl: mediaUrl.substring(0, 50) + '...',
+      isVideo: isVideo
+    });
+
+    return this.client.createStory(mediaUrl, isVideo, content.onProgress);
+  }
+
+  async getMediaInsights(mediaId: string, metrics?: string[]) {
+    return this.client.getMediaInsights(mediaId, metrics);
+  }
+
+  async getUserInsights(period: 'day' | 'week' | 'days_28' = 'day', metrics?: string[]) {
+    return this.client.getUserInsights(period, metrics);
+  }
+
+  async getStoryInsights(storyId: string) {
+    return this.client.getStoryInsights(storyId);
   }
 }

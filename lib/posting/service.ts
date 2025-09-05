@@ -16,6 +16,7 @@ export interface PostData {
   pinterestDescription?: string; // Pinterest specific - pin description
   pinterestLink?: string; // Pinterest specific - destination URL
   tiktokPrivacyLevel?: 'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY'; // TikTok specific - privacy/draft setting
+  instagramAsStory?: boolean; // Instagram specific - post as story instead of feed post
 }
 
 export interface PostResult {
@@ -122,7 +123,8 @@ export class PostingService {
             content, 
             account, 
             postData.mediaUrls,
-            onProgress
+            onProgress,
+            postData
           );
           
           // Update progress tracker - success or error
@@ -160,7 +162,8 @@ export class PostingService {
     content: string, 
     account: any, 
     mediaUrls?: string[],
-    onProgress?: (platform: string, status: string) => void
+    onProgress?: (platform: string, status: string) => void,
+    postData?: PostData
   ): Promise<PostResult> {
     // Clean content for text-only platforms
     const textContent = this.cleanHtmlContent(content);
@@ -180,7 +183,8 @@ export class PostingService {
           textContent, 
           account, 
           mediaUrls,
-          onProgress ? (status) => onProgress('instagram', status) : undefined
+          onProgress ? (status) => onProgress('instagram', status) : undefined,
+          postData?.instagramAsStory
         );
       
       case 'bluesky':
@@ -252,7 +256,8 @@ export class PostingService {
     content: string, 
     account: any, 
     mediaUrls?: string[],
-    onProgress?: (status: string) => void
+    onProgress?: (status: string) => void,
+    isStory?: boolean
   ): Promise<PostResult> {
     try {
       // Instagram requires media
@@ -280,6 +285,7 @@ export class PostingService {
             accessToken: account.access_token,
             text: content,
             mediaUrls: mediaUrls,
+            isStory: isStory,
           }),
         });
 
@@ -339,6 +345,7 @@ export class PostingService {
             accessToken: account.access_token,
             text: content,
             mediaUrls: mediaUrls, // Pass all media URLs for carousel support
+            isStory: isStory,
           }),
         });
 
