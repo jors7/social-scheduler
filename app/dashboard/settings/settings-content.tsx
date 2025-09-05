@@ -536,6 +536,9 @@ export default function SettingsContent() {
           console.error('Failed to disconnect Facebook:', result)
           throw new Error(result.error || 'Failed to disconnect Facebook')
         }
+        if (!result.revoked) {
+          console.warn('⚠️ Facebook local data cleared but revoke may have failed')
+        }
         // Facebook disconnect endpoint handles database deletion, so we're done
       } else if (platformName === 'TikTok') {
         // For TikTok, call the disconnect endpoint to revoke the token
@@ -575,7 +578,9 @@ export default function SettingsContent() {
       toast.success(`Account disconnected`)
       
       // Show additional guidance for platforms that maintain authorization
-      if (platformName && ['Threads', 'TikTok', 'Facebook', 'Instagram', 'YouTube', 'LinkedIn'].includes(platformName)) {
+      // For now, show for all OAuth platforms as revocation may not always work
+      // due to token expiration, API changes, or network issues
+      if (platformName && ['Threads', 'YouTube', 'LinkedIn', 'Pinterest', 'Instagram', 'Facebook'].includes(platformName)) {
         toast.info(
           `To fully revoke ${platformName} access, visit your ${platformName} account settings`, 
           { duration: 5000 }

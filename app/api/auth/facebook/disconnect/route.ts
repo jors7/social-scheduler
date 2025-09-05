@@ -81,24 +81,36 @@ export async function POST(request: NextRequest) {
 
     // Optional: Revoke permissions on Facebook's side
     // This is good practice but not required
+    let revokeSuccess = false;
     if (account.access_token) {
       try {
-        const revokeUrl = `https://graph.facebook.com/v18.0/${account.platform_user_id}/permissions`;
-        const revokeParams = new URLSearchParams({
-          access_token: account.access_token
-        });
+        // Use /me/permissions endpoint for revoking the app's permissions
+        const revokeUrl = `https://graph.facebook.com/v18.0/me/permissions?access_token=${account.access_token}`;
 
+        console.log('Attempting to revoke Facebook permissions...');
         const revokeResponse = await fetch(revokeUrl, {
           method: 'DELETE',
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: revokeParams.toString()
+            'Accept': 'application/json'
+          }
         });
 
+        const responseText = await revokeResponse.text();
+        console.log('Facebook revoke response:', revokeResponse.status, responseText);
+
         if (revokeResponse.ok) {
-          console.log('Facebook permissions revoked successfully');
+          console.log('✅ Facebook permissions revoked successfully');
+          revokeSuccess = true;
         } else {
+          // Parse error if possible
+          try {
+            const errorData = JSON.parse(responseText);
+            if (errorData.error?.code === 190) {
+              console.log('Token already expired or invalid');
+            }
+          } catch (e) {
+            // Ignore parse errors
+          }
           console.warn('Failed to revoke Facebook permissions (non-critical)');
         }
       } catch (revokeError) {
@@ -127,6 +139,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      revoked: revokeSuccess,
       message: 'Facebook account disconnected successfully'
     });
 
