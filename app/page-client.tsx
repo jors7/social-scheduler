@@ -174,20 +174,17 @@ function LandingPageContent() {
   const [signUpPlanId, setSignUpPlanId] = useState<string | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [isOAuthRedirecting, setIsOAuthRedirecting] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
 
   useEffect(() => {
-    console.log('Homepage mounted, checking for OAuth callback...')
-    console.log('Current hash:', window.location.hash)
-    console.log('Hash includes access_token?', window.location.hash.includes('access_token'))
-    
     // Check if this is an OAuth callback (Supabase returns to homepage with hash)
     if (window.location.hash && window.location.hash.includes('access_token')) {
-      console.log('OAuth callback detected on homepage, redirecting to loading page...')
-      // Redirect to loading page with the hash
-      window.location.href = '/auth/loading' + window.location.hash
+      // Show loading state and redirect
+      setIsOAuthRedirecting(true)
+      window.location.href = '/dashboard'
       return // Don't execute the rest
     }
     
@@ -237,20 +234,26 @@ function LandingPageContent() {
 
 
   const checkAuth = async () => {
-    const { data: { user }, error } = await supabase.auth.getUser()
-    console.log('Homepage checkAuth:', { user: user?.email, error })
+    const { data: { user } } = await supabase.auth.getUser()
     setIsAuthenticated(!!user)
     setUserEmail(user?.email || null)
-    
-    // Also check if user just signed in and redirect
-    if (user && !isAuthenticated) {
-      console.log('User just authenticated, redirecting to dashboard...')
-      window.location.href = '/dashboard'
-    }
   }
 
 
 
+
+  // Show loading screen immediately if OAuth redirect is happening
+  if (isOAuthRedirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Signing you in...</h2>
+          <p className="text-gray-600">Redirecting to dashboard</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>

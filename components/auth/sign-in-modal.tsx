@@ -64,21 +64,17 @@ export function SignInModal({ open, onOpenChange, onSwitchToSignUp, onSwitchToFo
     setError('')
     
     try {
-      // Redirect to loading page which will handle the dashboard redirect
+      // OAuth will return to homepage, which will handle the redirect
       const redirectTo = typeof window !== 'undefined' 
-        ? `${window.location.origin}/auth/loading`
-        : `${process.env.NEXT_PUBLIC_APP_URL}/auth/loading`
-      
-      console.log('OAuth redirect URL:', redirectTo)
+        ? `${window.location.origin}`
+        : `${process.env.NEXT_PUBLIC_APP_URL}`
         
-      const { error, data } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo,
         }
       })
-      
-      console.log('OAuth response:', { error, data })
       
       if (error) {
         setError(error.message)
