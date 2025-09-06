@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       scope: SCOPES,
       state: state,
       access_type: 'offline', // To get refresh token
-      prompt: 'consent', // Force consent to get refresh token
+      // Only prompt for consent on first authorization or when requesting new scopes
     });
 
     const authUrl = `${YOUTUBE_OAUTH_URL}?${params.toString()}`;
