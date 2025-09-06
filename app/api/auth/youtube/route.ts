@@ -43,6 +43,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'YouTube not configured' }, { status: 500 });
     }
 
+    // Check if user already has a YouTube account with a refresh token
+    const { data: existingAccount } = await supabase
+      .from('social_accounts')
+      .select('refresh_token')
+      .eq('user_id', user.id)
+      .eq('platform', 'youtube')
+      .single();
+
     // Generate state for CSRF protection
     const state = crypto.randomBytes(16).toString('hex');
     
@@ -61,8 +69,13 @@ export async function GET(request: NextRequest) {
       scope: SCOPES,
       state: state,
       access_type: 'offline', // To get refresh token
-      // Only prompt for consent on first authorization or when requesting new scopes
     });
+
+    // Only force consent if we don't have a refresh token
+    // This ensures we get a refresh token on first auth but don't prompt unnecessarily
+    if (!existingAccount?.refresh_token) {
+      params.append('prompt', 'consent');
+    }
 
     const authUrl = `${YOUTUBE_OAUTH_URL}?${params.toString()}`;
     

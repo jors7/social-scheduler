@@ -146,25 +146,33 @@ export async function GET(request: NextRequest) {
     // Check if this account already exists
     const { data: existingAccount } = await supabase
       .from('social_accounts')
-      .select('id')
+      .select('id, refresh_token')
       .eq('user_id', user.id)
       .eq('platform', 'youtube')
       .single();
 
     if (existingAccount) {
       // Update existing account
+      // Important: Keep existing refresh token if Google didn't provide a new one
+      // This happens when prompt=consent is not used
+      const updateData: any = {
+        platform_user_id: platformUserId,
+        account_name: accountName,
+        username: username,
+        profile_image_url: profileImageUrl,
+        access_token: accessToken,
+        expires_at: expiresAt,
+        updated_at: new Date().toISOString()
+      };
+      
+      // Only update refresh token if we got a new one
+      if (refreshToken) {
+        updateData.refresh_token = refreshToken;
+      }
+      
       const { error: dbError } = await supabase
         .from('social_accounts')
-        .update({
-          platform_user_id: platformUserId,
-          account_name: accountName,
-          username: username,
-          profile_image_url: profileImageUrl,
-          access_token: accessToken,
-          refresh_token: refreshToken,
-          expires_at: expiresAt,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', existingAccount.id);
         
       if (dbError) {
