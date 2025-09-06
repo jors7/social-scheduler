@@ -181,20 +181,6 @@ function LandingPageContent() {
   useEffect(() => {
     checkAuth()
     
-    // Check if we're coming back from OAuth callback
-    const isOAuthCallback = window.location.hash?.includes('access_token')
-    
-    // Set up auth state listener for OAuth redirects
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        // User just signed in, redirect to dashboard
-        window.location.href = '/dashboard'
-      } else if (event === 'INITIAL_SESSION' && session && isOAuthCallback) {
-        // Also handle initial session for OAuth callbacks
-        window.location.href = '/dashboard'
-      }
-    })
-    
     // Check URL parameters for modal triggers and scrolling
     const shouldOpenSignIn = searchParams.get('signin') === 'true'
     const shouldOpenSignUp = searchParams.get('signup') === 'true'
@@ -235,22 +221,13 @@ function LandingPageContent() {
         router.replace('/', { scroll: false })
       }, 500) // Delay to ensure lazy-loaded components are rendered
     }
-    
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [searchParams, router, supabase.auth])
+  }, [searchParams, router])
 
 
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     setIsAuthenticated(!!user)
     setUserEmail(user?.email || null)
-    
-    // If user is authenticated and we're on the homepage with OAuth hash, redirect immediately
-    if (user && window.location.hash?.includes('access_token')) {
-      window.location.href = '/dashboard'
-    }
   }
 
 
