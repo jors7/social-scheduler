@@ -76,9 +76,9 @@ export async function middleware(request: NextRequest) {
   const isAdminRoute = adminRoutes.some(route => request.nextUrl.pathname.startsWith(route))
   const isSubscriptionRoute = subscriptionRoutes.some(route => request.nextUrl.pathname.startsWith(route))
 
-  // If user is not signed in and the current path is on the dashboard, redirect to login
+  // If user is not signed in and the current path is on the dashboard, redirect to homepage with signin modal
   if (isProtectedRoute && !user) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    return NextResponse.redirect(new URL('/?signin=true', request.url))
   }
 
   // If user is signed in and the current path is login or signup, redirect to dashboard

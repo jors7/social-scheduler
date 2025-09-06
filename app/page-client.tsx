@@ -179,6 +179,14 @@ function LandingPageContent() {
   const supabase = createClient()
 
   useEffect(() => {
+    // Check if this is an OAuth callback (Supabase returns to homepage with hash)
+    if (window.location.hash && window.location.hash.includes('access_token')) {
+      console.log('OAuth callback detected on homepage, redirecting to loading page...')
+      // Redirect to loading page with the hash
+      window.location.href = '/auth/loading' + window.location.hash
+      return // Don't execute the rest
+    }
+    
     checkAuth()
     
     // Check URL parameters for modal triggers and scrolling
