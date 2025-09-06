@@ -27,6 +27,7 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
     confirmPassword: ''
   })
   const [loading, setLoading] = useState(false)
+  const [isRedirecting, setIsRedirecting] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const supabase = createClient()
@@ -74,8 +75,8 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
             }
             
             setMessage('Account created successfully! Redirecting to dashboard...')
+            setIsRedirecting(true)
             setTimeout(() => {
-              onOpenChange(false)
               window.location.href = '/dashboard'
             }, 1500)
           } else {
@@ -84,8 +85,8 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
         } else {
           if (data.user.email_confirmed_at) {
             setMessage('Account created successfully! Redirecting to dashboard...')
+            setIsRedirecting(true)
             setTimeout(() => {
-              onOpenChange(false)
               window.location.href = '/dashboard'
             }, 2000)
           } else {
@@ -121,6 +122,9 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
     setError('')
     
     try {
+      // Store OAuth attempt time to track redirect
+      localStorage.setItem('oauth_attempt_time', Date.now().toString())
+      
       // OAuth will return to homepage, which will handle the redirect
       const redirectTo = typeof window !== 'undefined' 
         ? `${window.location.origin}`
@@ -134,9 +138,12 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
       })
       
       if (error) {
+        localStorage.removeItem('oauth_attempt_time')
         setError(error.message)
       }
+      // The redirect will happen automatically
     } catch (err) {
+      localStorage.removeItem('oauth_attempt_time')
       setError('Failed to sign up with Google')
     } finally {
       setLoading(false)
@@ -144,9 +151,24 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      // Prevent closing while redirecting
+      if (!isRedirecting) {
+        onOpenChange(newOpen)
+      }
+    }}>
       <DialogContent className="sm:max-w-[390px] w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] p-0 overflow-hidden border-0 [&>button]:hidden">
         <div className="relative bg-white rounded-2xl max-h-[calc(100vh-2rem)] overflow-y-auto">
+          {/* Loading overlay when redirecting */}
+          {isRedirecting && (
+            <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center rounded-2xl">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600 mx-auto mb-3"></div>
+                <p className="text-sm font-medium text-gray-900">Creating your account...</p>
+                <p className="text-xs text-gray-600 mt-1">Redirecting to dashboard</p>
+              </div>
+            </div>
+          )}
           {/* Close button */}
           <button
             onClick={() => onOpenChange(false)}

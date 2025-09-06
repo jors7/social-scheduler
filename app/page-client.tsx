@@ -10,6 +10,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { AuthModals } from '@/components/auth/auth-modals'
 import { MobileMenu } from '@/components/layout/mobile-menu'
 import { Navbar } from '@/components/layout/navbar'
+import OAuthRedirectHandler from '@/components/landing/oauth-redirect-handler'
+import HomePageWrapper from '@/components/landing/home-page-wrapper'
 import Script from 'next/script'
 
 // Keep hero non-lazy for immediate display
@@ -180,19 +182,7 @@ function LandingPageContent() {
 
   useEffect(() => {
     checkAuth()
-    
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        // User just signed in, redirect to dashboard
-        router.push('/dashboard')
-      }
-    })
-    
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [router, supabase.auth])
+  }, [])
 
   useEffect(() => {
     
@@ -250,7 +240,9 @@ function LandingPageContent() {
 
   return (
     <>
-      {/* Structured Data for SEO */}
+      <OAuthRedirectHandler />
+      <HomePageWrapper>
+        {/* Structured Data for SEO */}
       <Script
         id="structured-data-application"
         type="application/ld+json"
@@ -381,6 +373,7 @@ function LandingPageContent() {
         signUpPlanId={signUpPlanId}
       />
     </div>
+      </HomePageWrapper>
     </>
   )
 }
