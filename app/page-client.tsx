@@ -174,21 +174,27 @@ function LandingPageContent() {
   const [signUpPlanId, setSignUpPlanId] = useState<string | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
-  const [isOAuthRedirecting, setIsOAuthRedirecting] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
 
   useEffect(() => {
-    // Check if this is an OAuth callback (Supabase returns to homepage with hash)
-    if (window.location.hash && window.location.hash.includes('access_token')) {
-      // Show loading state and redirect
-      setIsOAuthRedirecting(true)
-      window.location.href = '/dashboard'
-      return // Don't execute the rest
-    }
-    
     checkAuth()
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // User just signed in, redirect to dashboard
+        router.push('/dashboard')
+      }
+    })
+    
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [router, supabase.auth])
+
+  useEffect(() => {
     
     // Check URL parameters for modal triggers and scrolling
     const shouldOpenSignIn = searchParams.get('signin') === 'true'
@@ -230,7 +236,7 @@ function LandingPageContent() {
         router.replace('/', { scroll: false })
       }, 500) // Delay to ensure lazy-loaded components are rendered
     }
-  }, [searchParams, router])
+  }, [searchParams, router, signUpPlanId])
 
 
   const checkAuth = async () => {
@@ -241,19 +247,6 @@ function LandingPageContent() {
 
 
 
-
-  // Show loading screen immediately if OAuth redirect is happening
-  if (isOAuthRedirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Signing you in...</h2>
-          <p className="text-gray-600">Redirecting to dashboard</p>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <>
