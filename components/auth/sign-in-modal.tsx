@@ -73,10 +73,6 @@ export function SignInModal({ open, onOpenChange, onSwitchToSignUp, onSwitchToFo
         provider: 'google',
         options: {
           redirectTo,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          }
         }
       })
       

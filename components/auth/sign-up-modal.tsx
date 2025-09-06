@@ -130,10 +130,6 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
         provider: 'google',
         options: {
           redirectTo,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          }
         }
       })
       
