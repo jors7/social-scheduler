@@ -8,14 +8,26 @@ export default function AuthLoadingPage() {
   const supabase = createClient()
 
   useEffect(() => {
+    console.log('Auth loading page mounted')
+    console.log('Current URL hash:', window.location.hash)
+    
     // Check if we have an authenticated session
     const checkAndRedirect = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      console.log('Checking session...')
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      console.log('Session check result:', { 
+        hasSession: !!session, 
+        userEmail: session?.user?.email,
+        error 
+      })
       
       if (session) {
+        console.log('Session found, redirecting to dashboard...')
         // User is authenticated, redirect to dashboard
         window.location.href = '/dashboard'
       } else {
+        console.log('No session found, redirecting to homepage...')
         // No session, something went wrong - redirect to homepage
         window.location.href = '/'
       }
@@ -23,12 +35,23 @@ export default function AuthLoadingPage() {
 
     // Handle auth state changes (for OAuth callbacks)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state change in loading page:', event, 'Session:', !!session)
+      
       if (event === 'SIGNED_IN' && session) {
+        console.log('SIGNED_IN event, redirecting to dashboard...')
         window.location.href = '/dashboard'
       }
     })
 
-    checkAndRedirect()
+    // Give Supabase a moment to process the hash if it exists
+    if (window.location.hash && window.location.hash.includes('access_token')) {
+      console.log('Hash with access_token detected, waiting for Supabase to process...')
+      setTimeout(() => {
+        checkAndRedirect()
+      }, 500)
+    } else {
+      checkAndRedirect()
+    }
 
     return () => {
       subscription.unsubscribe()

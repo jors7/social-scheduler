@@ -179,6 +179,10 @@ function LandingPageContent() {
   const supabase = createClient()
 
   useEffect(() => {
+    console.log('Homepage mounted, checking for OAuth callback...')
+    console.log('Current hash:', window.location.hash)
+    console.log('Hash includes access_token?', window.location.hash.includes('access_token'))
+    
     // Check if this is an OAuth callback (Supabase returns to homepage with hash)
     if (window.location.hash && window.location.hash.includes('access_token')) {
       console.log('OAuth callback detected on homepage, redirecting to loading page...')
@@ -233,9 +237,16 @@ function LandingPageContent() {
 
 
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error } = await supabase.auth.getUser()
+    console.log('Homepage checkAuth:', { user: user?.email, error })
     setIsAuthenticated(!!user)
     setUserEmail(user?.email || null)
+    
+    // Also check if user just signed in and redirect
+    if (user && !isAuthenticated) {
+      console.log('User just authenticated, redirecting to dashboard...')
+      window.location.href = '/dashboard'
+    }
   }
 
 
