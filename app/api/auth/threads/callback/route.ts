@@ -148,7 +148,8 @@ export async function GET(request: NextRequest) {
     console.log('Got Threads access token for user:', userId);
 
     // Get Threads user info - use /me endpoint which works better than user_id
-    const profileUrl = `https://graph.threads.net/v1.0/me?fields=id,username,threads_profile_picture_url,threads_biography&access_token=${accessToken}`;
+    // Try with simpler fields first to avoid permission issues
+    const profileUrl = `https://graph.threads.net/v1.0/me?fields=id,username&access_token=${accessToken}`;
     console.log('Fetching profile from:', profileUrl.replace(accessToken, 'TOKEN_HIDDEN'));
     
     const meResponse = await fetch(profileUrl);
@@ -173,7 +174,7 @@ export async function GET(request: NextRequest) {
           // Use minimal data from the token response
           userData = {
             id: userId,
-            username: `threads_${userId}`, // Fallback username
+            username: null, // Will be handled in fallback logic
             threads_profile_picture_url: null,
             threads_biography: ''
           };
@@ -182,7 +183,7 @@ export async function GET(request: NextRequest) {
           console.warn('Unexpected error fetching profile, but continuing with minimal data');
           userData = {
             id: userId,
-            username: `threads_${userId}`,
+            username: null, // Will be handled in fallback logic
             threads_profile_picture_url: null,
             threads_biography: ''
           };
@@ -198,6 +199,7 @@ export async function GET(request: NextRequest) {
       // Profile fetch successful
       try {
         userData = JSON.parse(profileText);
+        console.log('Successfully parsed profile data:', userData);
       } catch (e) {
         console.error('Failed to parse profile response:', e);
         console.error('Profile text was:', profileText);
@@ -210,10 +212,31 @@ export async function GET(request: NextRequest) {
     
     console.log('Threads user data:', userData);
     
+    // Try to get additional profile data if the basic fetch was successful
+    let threadsProfilePic = null;
+    let threadsBio = '';
+    
+    if (userData?.username && userData?.id) {
+      // Try to fetch additional fields separately
+      try {
+        const extendedProfileUrl = `https://graph.threads.net/v1.0/me?fields=threads_profile_picture_url,threads_biography&access_token=${accessToken}`;
+        const extendedResponse = await fetch(extendedProfileUrl);
+        if (extendedResponse.ok) {
+          const extendedData = await extendedResponse.json();
+          threadsProfilePic = extendedData.threads_profile_picture_url || null;
+          threadsBio = extendedData.threads_biography || '';
+          console.log('Got extended profile data');
+        } else {
+          console.log('Could not fetch extended profile data, continuing without it');
+        }
+      } catch (e) {
+        console.log('Error fetching extended profile data, continuing without it:', e);
+      }
+    }
+    
     // For Threads API, use the ID from the /me response if available, otherwise fallback
     let threadsUserId = userData?.id || userId;
-    let threadsUsername = userData?.username || `threads_${userId}`;
-    let threadsProfilePic = userData?.threads_profile_picture_url || null;
+    let threadsUsername = userData?.username || `@threads_${userId}`; // Add @ prefix to make it clear it's a fallback
     let pageAccessToken = accessToken; // Use the Threads access token
     
     // IMPORTANT: Validate the username to prevent connecting wrong account
@@ -239,7 +262,7 @@ export async function GET(request: NextRequest) {
       id: threadsUserId,
       username: threadsUsername,
       threads_profile_picture_url: threadsProfilePic,
-      threads_biography: userData?.threads_biography || ''
+      threads_biography: threadsBio
     };
     
     console.log('Threads account data (validated):', threadsAccountData);
