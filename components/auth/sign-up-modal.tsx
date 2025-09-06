@@ -76,7 +76,7 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
             setMessage('Account created successfully! Redirecting to dashboard...')
             setTimeout(() => {
               onOpenChange(false)
-              router.push('/dashboard')
+              window.location.href = '/dashboard'
             }, 1500)
           } else {
             setMessage('Account created successfully! Please check your email to confirm your account before logging in.')
@@ -86,7 +86,7 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
             setMessage('Account created successfully! Redirecting to dashboard...')
             setTimeout(() => {
               onOpenChange(false)
-              router.push('/dashboard')
+              window.location.href = '/dashboard'
             }, 2000)
           } else {
             setMessage('Account created successfully! Please check your email to confirm your account before logging in.')

@@ -196,7 +196,7 @@ export function Sidebar() {
       
       if (response.ok) {
         toast.success('Logged out successfully')
-        router.push('/login')
+        router.push('/')
       } else {
         toast.error('Failed to logout')
       }

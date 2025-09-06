@@ -181,18 +181,6 @@ function LandingPageContent() {
   useEffect(() => {
     checkAuth()
     
-    // Check if we're coming back from OAuth callback
-    const isOAuthCallback = window.location.hash?.includes('access_token') || 
-                           searchParams.get('code') !== null
-    
-    // Set up auth state listener for OAuth redirects
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session && isOAuthCallback) {
-        // User just signed in via OAuth, redirect to dashboard
-        router.push('/dashboard')
-      }
-    })
-    
     // Check URL parameters for modal triggers and scrolling
     const shouldOpenSignIn = searchParams.get('signin') === 'true'
     const shouldOpenSignUp = searchParams.get('signup') === 'true'
@@ -232,10 +220,6 @@ function LandingPageContent() {
         // Clean up URL after scrolling
         router.replace('/', { scroll: false })
       }, 500) // Delay to ensure lazy-loaded components are rendered
-    }
-    
-    return () => {
-      subscription.unsubscribe()
     }
   }, [searchParams, router])
 

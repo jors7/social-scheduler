@@ -41,9 +41,9 @@ export function SignInModal({ open, onOpenChange, onSwitchToSignUp, onSwitchToFo
       if (error) {
         setError(error.message)
       } else {
+        // Close modal and immediately redirect
         onOpenChange(false)
-        router.push('/dashboard')
-        router.refresh()
+        window.location.href = '/dashboard'
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.')
