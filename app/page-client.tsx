@@ -183,23 +183,15 @@ function LandingPageContent() {
     
     // Check if we're coming back from OAuth callback
     const isOAuthCallback = window.location.hash?.includes('access_token')
-    console.log('OAuth callback detected:', isOAuthCallback, 'Hash:', window.location.hash)
     
     // Set up auth state listener for OAuth redirects
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state change:', event, 'Session:', !!session, 'Is OAuth:', isOAuthCallback)
-      
       if (event === 'SIGNED_IN' && session) {
-        console.log('User signed in, redirecting to dashboard...')
         // User just signed in, redirect to dashboard
         window.location.href = '/dashboard'
-      } else if (event === 'INITIAL_SESSION' && session) {
+      } else if (event === 'INITIAL_SESSION' && session && isOAuthCallback) {
         // Also handle initial session for OAuth callbacks
-        console.log('Initial session detected, user already signed in')
-        if (isOAuthCallback) {
-          console.log('OAuth callback with session, redirecting to dashboard...')
-          window.location.href = '/dashboard'
-        }
+        window.location.href = '/dashboard'
       }
     })
     
@@ -252,13 +244,11 @@ function LandingPageContent() {
 
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser()
-    console.log('Check auth - User:', user?.email)
     setIsAuthenticated(!!user)
     setUserEmail(user?.email || null)
     
-    // If user is authenticated and we're on the homepage with OAuth hash, redirect
+    // If user is authenticated and we're on the homepage with OAuth hash, redirect immediately
     if (user && window.location.hash?.includes('access_token')) {
-      console.log('User authenticated with OAuth hash, redirecting to dashboard...')
       window.location.href = '/dashboard'
     }
   }

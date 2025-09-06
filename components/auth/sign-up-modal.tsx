@@ -121,10 +121,10 @@ export function SignUpModal({ open, onOpenChange, onSwitchToSignIn, planId }: Si
     setError('')
     
     try {
-      // Use the current domain for redirects
+      // Use the current domain for redirects - go directly to dashboard
       const redirectTo = typeof window !== 'undefined' 
-        ? `${window.location.origin}/auth/callback`
-        : `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
+        ? `${window.location.origin}/auth/callback?next=/dashboard`
+        : `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/dashboard`
         
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
