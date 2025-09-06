@@ -9,20 +9,19 @@ export const dynamic = 'force-dynamic';
 const TIKTOK_AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize/';
 const CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY || '';
 
-// TikTok v2 scopes - Full set for app review submission
-// Including all scopes needed for complete functionality:
-// - Basic user info and posting capabilities
-// - Extended profile information for analytics
-// - Video list access for performance tracking
+// TikTok v2 scopes - Full set including analytics
+// These scopes should be configured in your TikTok app settings
 const SCOPES = 'user.info.basic,user.info.profile,user.info.stats,video.publish,video.upload,video.list';
 
-// Scope explanations for app review:
+// Scope descriptions:
 // - user.info.basic: Get basic user information (username, avatar)
 // - user.info.profile: Extended profile info (bio, verification status) for analytics display
 // - user.info.stats: Follower/following counts, likes, video statistics for growth tracking
 // - video.publish: Post videos to TikTok
 // - video.upload: Upload video content
 // - video.list: List user's videos for analytics and performance tracking
+//
+// NOTE: Make sure these scopes are added to your TikTok app configuration in the developer portal
 
 export async function GET(request: NextRequest) {
   try {
