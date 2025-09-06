@@ -600,9 +600,10 @@ export default function SettingsContent() {
       toast.success(`Account disconnected`)
       
       // Show additional guidance for platforms that maintain authorization
-      // Note: We handle revocation for TikTok and YouTube properly
-      // Facebook/Instagram revocation often fails due to Meta's API limitations
-      if (platformName && ['Threads', 'LinkedIn', 'Pinterest', 'Instagram', 'Facebook'].includes(platformName)) {
+      // Note: We handle revocation for TikTok, YouTube, and Threads properly
+      // Facebook/Instagram/LinkedIn/Pinterest revocation often fails due to API limitations
+      // Threads doesn't need manual revocation - deleting the token is sufficient
+      if (platformName && ['LinkedIn', 'Pinterest', 'Instagram', 'Facebook'].includes(platformName)) {
         toast.info(
           `To fully revoke ${platformName} access, visit your ${platformName} account settings`, 
           { duration: 5000 }
