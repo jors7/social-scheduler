@@ -131,21 +131,19 @@ export default function PostsPage() {
 
   const fetchAllPosts = async () => {
     try {
-      // Fetch drafts, scheduled posts, and YouTube uploads concurrently
-      const [draftsResponse, scheduledResponse, youtubeResponse] = await Promise.all([
+      // Fetch drafts and scheduled posts concurrently
+      const [draftsResponse, scheduledResponse] = await Promise.all([
         fetch('/api/drafts'),
-        fetch('/api/posts/schedule'),
-        fetch('/api/youtube/uploads')
+        fetch('/api/posts/schedule')
       ])
       
       if (!draftsResponse.ok || !scheduledResponse.ok) {
         throw new Error('Failed to fetch posts')
       }
       
-      const [draftsData, scheduledData, youtubeData] = await Promise.all([
+      const [draftsData, scheduledData] = await Promise.all([
         draftsResponse.json(),
-        scheduledResponse.json(),
-        youtubeResponse.ok ? youtubeResponse.json() : { uploads: [] }
+        scheduledResponse.json()
       ])
       
       // Transform and combine the data
@@ -160,36 +158,8 @@ export default function PostsPage() {
         source: 'scheduled' as const
       }))
       
-      // Transform YouTube uploads to UnifiedPost format
-      const youtubeUploads: UnifiedPost[] = (youtubeData.uploads || []).map((upload: any) => ({
-        id: upload.id,
-        title: upload.title,
-        content: upload.description || upload.title,
-        platforms: ['youtube'],
-        status: 'posted',
-        type: 'scheduled' as const,
-        source: 'scheduled' as const,
-        created_at: upload.created_at,
-        updated_at: upload.updated_at,
-        posted_at: upload.uploaded_at,
-        scheduled_for: upload.uploaded_at,
-        media_urls: [],
-        platform_content: { youtube: upload.description || upload.title },
-        post_results: [{
-          platform: 'youtube',
-          success: true,
-          postId: upload.video_id,
-          url: upload.url,
-          data: { 
-            title: upload.title, 
-            url: upload.url,
-            videoId: upload.video_id
-          }
-        }]
-      }))
-      
       // Combine and sort by most recent first
-      const combined = [...drafts, ...scheduled, ...youtubeUploads].sort((a, b) => {
+      const combined = [...drafts, ...scheduled].sort((a, b) => {
         const aDate = new Date(a.updated_at || a.created_at)
         const bDate = new Date(b.updated_at || b.created_at)
         return bDate.getTime() - aDate.getTime()

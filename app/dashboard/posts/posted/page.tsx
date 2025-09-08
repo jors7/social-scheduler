@@ -66,52 +66,22 @@ export default function PostedPostsPage() {
 
   const fetchPostedPosts = async () => {
     try {
-      // Fetch posts with 'posted' and 'failed' status, and YouTube uploads
-      const [postsResponse, youtubeResponse] = await Promise.all([
-        fetch('/api/posts/schedule?status=posted,failed'),
-        fetch('/api/youtube/uploads')
-      ])
+      // Fetch posts with 'posted' and 'failed' status
+      const response = await fetch('/api/posts/schedule?status=posted,failed')
       
-      if (!postsResponse.ok) throw new Error('Failed to fetch posts')
+      if (!response.ok) throw new Error('Failed to fetch posts')
       
-      const postsData = await postsResponse.json()
-      const youtubeData = youtubeResponse.ok ? await youtubeResponse.json() : { uploads: [] }
-      
-      // Convert YouTube uploads to the same format as posted posts
-      const youtubePostsFormatted = (youtubeData.uploads || []).map((upload: any) => ({
-        id: upload.id,
-        content: upload.description || upload.title,
-        platforms: ['youtube'],
-        platform_content: { youtube: upload.description || upload.title },
-        media_urls: [],
-        scheduled_for: upload.uploaded_at,
-        status: 'posted' as const,
-        created_at: upload.created_at,
-        posted_at: upload.uploaded_at,
-        post_results: [{
-          platform: 'youtube',
-          success: true,
-          postId: upload.video_id,
-          url: upload.url,
-          data: { 
-            title: upload.title, 
-            url: upload.url,
-            videoId: upload.video_id
-          }
-        }]
-      }))
-      
-      // Combine regular posts and YouTube uploads
-      const allPosts = [...(postsData.posts || []), ...youtubePostsFormatted]
+      const postsData = await response.json()
+      const posts = postsData.posts || []
       
       // Sort by posted date (most recent first)
-      allPosts.sort((a, b) => {
+      posts.sort((a: any, b: any) => {
         const dateA = new Date(a.posted_at || a.scheduled_for).getTime()
         const dateB = new Date(b.posted_at || b.scheduled_for).getTime()
         return dateB - dateA
       })
       
-      setPostedPosts(allPosts)
+      setPostedPosts(posts)
     } catch (error) {
       console.error('Error fetching posted posts:', error)
       toast.error('Failed to load posted posts')

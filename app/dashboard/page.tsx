@@ -120,7 +120,7 @@ export default function DashboardPage() {
       }
       
       // Fetch all data concurrently
-      const [draftsResult, scheduledResult, youtubeResult] = await Promise.all([
+      const [draftsResult, scheduledResult] = await Promise.all([
         supabase
           .from('drafts')
           .select('*')
@@ -130,12 +130,7 @@ export default function DashboardPage() {
           .from('scheduled_posts')
           .select('*')
           .eq('user_id', user.id)
-          .order('scheduled_for', { ascending: false }),
-        supabase
-          .from('youtube_uploads')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('uploaded_at', { ascending: false })
+          .order('scheduled_for', { ascending: false })
       ])
       
       if (draftsResult.error) {
@@ -144,21 +139,15 @@ export default function DashboardPage() {
       if (scheduledResult.error) {
         console.error('Error fetching scheduled posts:', scheduledResult.error)
       }
-      if (youtubeResult.error) {
-        console.error('Error fetching YouTube uploads:', youtubeResult.error)
-      }
       
       const drafts = draftsResult.data || []
       const scheduled = scheduledResult.data || []
-      const youtubeUploads = youtubeResult.data || []
       
-      // Include YouTube uploads in the total posts count
       const allPosts = [...drafts, ...scheduled]
-      const totalYouTubeCount = youtubeUploads.length
       
-      // Calculate stats
+      // Calculate stats (YouTube posts are already in scheduled_posts)
       const scheduledCount = scheduled.filter((p: PostData) => ['pending', 'posting'].includes(p.status)).length
-      const postedCount = scheduled.filter((p: PostData) => ['posted'].includes(p.status)).length + totalYouTubeCount
+      const postedCount = scheduled.filter((p: PostData) => ['posted'].includes(p.status)).length
       const draftCount = drafts.length
       
       // Calculate engagement from posted posts
@@ -180,10 +169,10 @@ export default function DashboardPage() {
       const avgEngagement = totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0
       
       setStats({
-        totalPosts: allPosts.length + totalYouTubeCount,  // Include YouTube in total
+        totalPosts: allPosts.length,  // YouTube posts are already in scheduled
         scheduledPosts: scheduledCount,
         draftPosts: draftCount,
-        postedPosts: postedCount,  // Already includes YouTube
+        postedPosts: postedCount,
         totalReach,
         avgEngagement
       })
