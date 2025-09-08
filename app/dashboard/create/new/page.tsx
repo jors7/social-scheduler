@@ -561,7 +561,38 @@ function CreateNewPostPageContent() {
           
           const result = await response.json()
           youtubeVideoUrl = result.video.url
-          progressTracker.updatePlatform('youtube', 'success', 'Video uploaded to YouTube successfully!')
+          progressTracker.updatePlatform('youtube', 'success', `Video uploaded to YouTube successfully! View at: ${result.video.url}`)
+          
+          // Store YouTube post in scheduled_posts table for analytics tracking
+          try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+              await supabase
+                .from('scheduled_posts')
+                .insert({
+                  user_id: user.id,
+                  content: youtubeDescription || postContent,
+                  platforms: ['youtube'],
+                  platform_content: { youtube: youtubeDescription || postContent },
+                  media_urls: uploadedMediaUrls.length > 0 ? uploadedMediaUrls : null,
+                  status: 'posted',
+                  posted_at: new Date().toISOString(),
+                  post_results: [{
+                    platform: 'youtube',
+                    success: true,
+                    postId: result.video.id,
+                    url: result.video.url,
+                    data: {
+                      title: youtubeTitle,
+                      videoId: result.video.id,
+                      url: result.video.url
+                    }
+                  }]
+                })
+            }
+          } catch (error) {
+            console.error('Failed to store YouTube post in scheduled_posts:', error)
+          }
           
           // Remove YouTube from platforms to post (since it's already posted)
           const platformsWithoutYouTube = supportedPlatforms.filter(p => p !== 'youtube')

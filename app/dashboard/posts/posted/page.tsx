@@ -66,12 +66,52 @@ export default function PostedPostsPage() {
 
   const fetchPostedPosts = async () => {
     try {
-      // Fetch posts with 'posted' and 'failed' status
-      const response = await fetch('/api/posts/schedule?status=posted,failed')
-      if (!response.ok) throw new Error('Failed to fetch')
+      // Fetch posts with 'posted' and 'failed' status, and YouTube uploads
+      const [postsResponse, youtubeResponse] = await Promise.all([
+        fetch('/api/posts/schedule?status=posted,failed'),
+        fetch('/api/youtube/uploads')
+      ])
       
-      const data = await response.json()
-      setPostedPosts(data.posts || [])
+      if (!postsResponse.ok) throw new Error('Failed to fetch posts')
+      
+      const postsData = await postsResponse.json()
+      const youtubeData = youtubeResponse.ok ? await youtubeResponse.json() : { uploads: [] }
+      
+      // Convert YouTube uploads to the same format as posted posts
+      const youtubePostsFormatted = (youtubeData.uploads || []).map((upload: any) => ({
+        id: upload.id,
+        content: upload.description || upload.title,
+        platforms: ['youtube'],
+        platform_content: { youtube: upload.description || upload.title },
+        media_urls: [],
+        scheduled_for: upload.uploaded_at,
+        status: 'posted' as const,
+        created_at: upload.created_at,
+        posted_at: upload.uploaded_at,
+        post_results: [{
+          platform: 'youtube',
+          success: true,
+          postId: upload.video_id,
+          url: upload.url,
+          data: { 
+            title: upload.title, 
+            url: upload.url,
+            videoId: upload.video_id
+          }
+        }]
+      }))
+      
+      // Combine regular posts and YouTube uploads
+      const allPosts = [...(postsData.posts || []), ...youtubePostsFormatted]
+      
+      // Sort by posted date (most recent first)
+      allPosts.sort((a, b) => {
+        const dateA = new Date(a.posted_at || a.scheduled_for).getTime()
+        const dateB = new Date(b.posted_at || b.scheduled_for).getTime()
+        return dateB - dateA
+      })
+      
+      setPostedPosts(allPosts)
     } catch (error) {
       console.error('Error fetching posted posts:', error)
       toast.error('Failed to load posted posts')
@@ -473,6 +513,29 @@ export default function PostedPostsPage() {
                             {post.error_message && (
                               <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-600">
                                 <strong>Error:</strong> {post.error_message}
+                              </div>
+                            )}
+                            
+                            {/* Show post URLs for platforms that provide them */}
+                            {post.post_results && post.post_results.length > 0 && (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {post.post_results.map((result: any, idx: number) => {
+                                  if (result.success && result.url) {
+                                    return (
+                                      <a
+                                        key={idx}
+                                        href={result.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md text-sm transition-colors"
+                                      >
+                                        <ExternalLink className="h-3 w-3" />
+                                        View on {result.platform === 'youtube' ? 'YouTube' : result.platform.charAt(0).toUpperCase() + result.platform.slice(1)}
+                                      </a>
+                                    )
+                                  }
+                                  return null
+                                })}
                               </div>
                             )}
                             

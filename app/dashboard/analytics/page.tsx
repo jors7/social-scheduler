@@ -37,25 +37,33 @@ export default function AnalyticsPage() {
 
   const fetchAnalyticsData = async () => {
     try {
-      // Fetch all posts data
-      const [draftsResponse, scheduledResponse] = await Promise.all([
+      // Fetch all posts data including YouTube uploads
+      const [draftsResponse, scheduledResponse, youtubeResponse] = await Promise.all([
         fetch('/api/drafts'),
-        fetch('/api/posts/schedule')
+        fetch('/api/posts/schedule'),
+        fetch('/api/youtube/uploads')
       ])
       
       if (!draftsResponse.ok || !scheduledResponse.ok) {
         throw new Error('Failed to fetch analytics data')
       }
       
-      const [draftsData, scheduledData] = await Promise.all([
+      const [draftsData, scheduledData, youtubeData] = await Promise.all([
         draftsResponse.json(),
-        scheduledResponse.json()
+        scheduledResponse.json(),
+        youtubeResponse.ok ? youtubeResponse.json() : { uploads: [] }
       ])
       
       const drafts = draftsData.drafts || []
       const scheduled = scheduledData.posts || []
+      const youtubeUploads = youtubeData.uploads || []
+      
+      // Include YouTube uploads in the total posts count
       const allPosts = [...drafts, ...scheduled]
       const postedPosts = scheduled.filter((post: any) => post.status === 'posted')
+      
+      // Add YouTube uploads to posted posts count
+      const totalYouTubePosts = youtubeUploads.length
       
       // Calculate analytics
       let totalEngagement = 0
@@ -63,6 +71,7 @@ export default function AnalyticsPage() {
       let totalImpressions = 0
       const platformStats: Record<string, any> = {}
       
+      // Process regular posted posts
       postedPosts.forEach((post: any) => {
         if (post.post_results && Array.isArray(post.post_results)) {
           post.post_results.forEach((result: any) => {
@@ -97,6 +106,22 @@ export default function AnalyticsPage() {
         }
       })
       
+      // Add YouTube uploads to platform stats
+      if (totalYouTubePosts > 0) {
+        if (!platformStats['youtube']) {
+          platformStats['youtube'] = {
+            posts: 0,
+            engagement: 0,
+            reach: 0,
+            impressions: 0
+          }
+        }
+        platformStats['youtube'].posts += totalYouTubePosts
+        
+        // For YouTube, we don't have engagement metrics yet, but we count the posts
+        // In a production app, you'd fetch these metrics from YouTube Analytics API
+      }
+      
       // Find top platform
       let topPlatform = 'N/A'
       let maxEngagement = 0
@@ -109,14 +134,28 @@ export default function AnalyticsPage() {
       
       const engagementRate = totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0
       
+      // Calculate total posted posts including YouTube
+      const totalPostedPosts = postedPosts.length + totalYouTubePosts
+      
       setAnalyticsData({
-        totalPosts: allPosts.length,
+        totalPosts: totalPostedPosts,  // Show total posted posts (including YouTube)
         totalEngagement,
         totalReach,
         totalImpressions,
         engagementRate,
         topPlatform,
-        postedPosts,
+        postedPosts: [...postedPosts, ...youtubeUploads.map((upload: any) => ({
+          ...upload,
+          platforms: ['youtube'],
+          status: 'posted',
+          post_results: [{
+            platform: 'youtube',
+            success: true,
+            postId: upload.video_id,
+            url: upload.url,
+            data: { title: upload.title, url: upload.url }
+          }]
+        }))],
         platformStats
       })
       
