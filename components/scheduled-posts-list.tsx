@@ -25,6 +25,7 @@ interface ScheduledPost {
   scheduled_for: string
   status: 'pending' | 'posting' | 'posted' | 'failed' | 'cancelled'
   created_at: string
+  post_results?: any[] // Contains YouTube scheduling info if present
 }
 
 interface ScheduledPostsListProps {
@@ -180,6 +181,12 @@ export function ScheduledPostsList({
         const StatusIcon = getStatusIcon(post.status)
         const timeUntil = formatTimeUntil(post.scheduled_for)
         
+        // Check if this is a YouTube scheduled post
+        const isYouTubeScheduled = post.platforms.includes('youtube') && 
+          post.post_results?.some((result: any) => 
+            result.platform === 'youtube' && result.scheduled === true
+          )
+        
         return (
           <Card key={post.id} className="overflow-hidden hover:shadow-md transition-shadow">
             <CardContent className="p-0">
@@ -205,9 +212,21 @@ export function ScheduledPostsList({
                           <StatusIcon className="mr-1 h-3 w-3" />
                           {post.status.charAt(0).toUpperCase() + post.status.slice(1)}
                         </span>
+                        {isYouTubeScheduled && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                            <span className="mr-1">▶</span>
+                            YouTube Scheduled
+                          </span>
+                        )}
                       </div>
                       
                       <p className="text-gray-600 mb-3 line-clamp-2">{stripHtml(post.content)}</p>
+                      
+                      {isYouTubeScheduled && (
+                        <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                          <span className="font-medium">📹 Video uploaded as private</span> • Will automatically publish at scheduled time
+                        </div>
+                      )}
                       
                       <div className="flex items-center gap-4 mb-3">
                         <div className="flex items-center gap-2">

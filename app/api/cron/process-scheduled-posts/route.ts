@@ -46,24 +46,33 @@ export async function GET(request: NextRequest) {
     const { data: youtubeScheduledPosts, error: youtubeError } = await supabase
       .from('scheduled_posts')
       .select('*')
-      .eq('status', 'scheduled')
+      .eq('status', 'pending')
       .contains('platforms', ['youtube'])
       .lte('scheduled_for', now);
     
     if (!youtubeError && youtubeScheduledPosts && youtubeScheduledPosts.length > 0) {
-      console.log(`Found ${youtubeScheduledPosts.length} YouTube scheduled posts to mark as posted`);
+      // Filter to only YouTube-scheduled posts (those with post_results indicating scheduled)
+      const youtubePostsToUpdate = youtubeScheduledPosts.filter(post => 
+        post.post_results?.some((result: any) => 
+          result.platform === 'youtube' && result.scheduled === true
+        )
+      );
       
-      for (const post of youtubeScheduledPosts) {
-        // Update status to posted since YouTube handles the actual publishing
-        await supabase
-          .from('scheduled_posts')
-          .update({ 
-            status: 'posted',
-            posted_at: post.scheduled_for // Use scheduled time as posted time
-          })
-          .eq('id', post.id);
+      if (youtubePostsToUpdate.length > 0) {
+        console.log(`Found ${youtubePostsToUpdate.length} YouTube scheduled posts to mark as posted`);
         
-        console.log(`Marked YouTube post ${post.id} as posted`);
+        for (const post of youtubePostsToUpdate) {
+          // Update status to posted since YouTube handles the actual publishing
+          await supabase
+            .from('scheduled_posts')
+            .update({ 
+              status: 'posted',
+              posted_at: post.scheduled_for // Use scheduled time as posted time
+            })
+            .eq('id', post.id);
+          
+          console.log(`Marked YouTube post ${post.id} as posted`);
+        }
       }
     }
     
@@ -99,6 +108,15 @@ export async function GET(request: NextRequest) {
 
     // Process each due post
     for (const post of duePosts) {
+      // Skip if this is a YouTube scheduled post (already handled above)
+      if (post.platforms.includes('youtube') && 
+          post.post_results?.some((result: any) => 
+            result.platform === 'youtube' && result.scheduled === true
+          )) {
+        console.log(`Skipping YouTube scheduled post ${post.id} - handled separately`);
+        continue;
+      }
+      
       try {
         // Mark as posting to prevent duplicate processing
         await supabase

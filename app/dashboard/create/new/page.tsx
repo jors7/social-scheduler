@@ -1015,7 +1015,7 @@ function CreateNewPostPageContent() {
                 platforms: ['youtube'],
                 platform_content: { youtube: youtubeDescription || postContent },
                 media_urls: uploadedMediaUrls.length > 0 ? uploadedMediaUrls : null,
-                status: 'scheduled', // Mark as scheduled since YouTube will auto-publish
+                status: 'pending', // Use pending so it shows in scheduled posts
                 scheduled_for: scheduledFor.toISOString(),
                 post_results: [{
                   platform: 'youtube',
@@ -1951,11 +1951,27 @@ function CreateNewPostPageContent() {
               )}
               
               {scheduledDate && scheduledTime && (
-                <div className="sm:col-span-2 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm font-medium text-blue-800">Scheduled for:</p>
-                  <p className="text-sm text-blue-700">
-                    {new Date(`${scheduledDate}T${scheduledTime}`).toLocaleString()}
-                  </p>
+                <div className="sm:col-span-2 space-y-3">
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm font-medium text-blue-800">Scheduled for:</p>
+                    <p className="text-sm text-blue-700">
+                      {new Date(`${scheduledDate}T${scheduledTime}`).toLocaleString()}
+                    </p>
+                  </div>
+                  
+                  {selectedPlatforms.includes('youtube') && youtubeVideoFile && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <span className="text-amber-600">📹</span>
+                        <div className="text-sm text-amber-700">
+                          <p className="font-medium mb-1">YouTube Scheduling Info:</p>
+                          <p className="text-xs">• Your video will be uploaded immediately as <strong>private</strong></p>
+                          <p className="text-xs">• YouTube will automatically publish it at the scheduled time</p>
+                          <p className="text-xs">• You can view and manage it in YouTube Studio before it goes live</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
