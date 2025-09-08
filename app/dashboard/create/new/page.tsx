@@ -747,9 +747,7 @@ function CreateNewPostPageContent() {
               platform: r.platform,
               success: r.success,
               postId: r.postId || null,
-              url: r.url || null,
-              error: r.error || null,
-              data: r.data || null
+              error: r.error || null
             }))
             
             // Store in scheduled_posts table
