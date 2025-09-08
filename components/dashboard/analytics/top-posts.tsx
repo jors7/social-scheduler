@@ -40,8 +40,9 @@ export function TopPosts({ analyticsData }: TopPostsProps) {
     )
   }
   
-  const stripHtml = (html: string) => {
-    return html
+  const stripHtml = (html: string | undefined | null) => {
+    if (!html) return ''
+    return String(html)
       .replace(/<[^>]*>/g, '')
       .replace(/&nbsp;/g, ' ')
       .replace(/&amp;/g, '&')
@@ -74,12 +75,12 @@ export function TopPosts({ analyticsData }: TopPostsProps) {
       
       return {
         id: post.id,
-        content: stripHtml(post.content),
-        platforms: platforms,
+        content: stripHtml(post.content || post.title || ''),
+        platforms: platforms.length > 0 ? platforms : (post.platforms || []),
         engagement: totalEngagement,
         reach: totalReach,
-        posted_at: post.posted_at,
-        hasMedia: post.media_urls && post.media_urls.length > 0
+        posted_at: post.posted_at || post.uploaded_at || post.scheduled_for,
+        hasMedia: (post.media_urls && post.media_urls.length > 0) || platforms.includes('youtube')
       }
     })
     .sort((a, b) => {
