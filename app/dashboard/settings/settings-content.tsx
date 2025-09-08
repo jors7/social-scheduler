@@ -536,10 +536,16 @@ export default function SettingsContent() {
           console.error('Failed to disconnect Facebook:', result)
           throw new Error(result.error || 'Failed to disconnect Facebook')
         }
-        if (!result.revoked) {
-          console.warn('⚠️ Facebook local data cleared but revoke may have failed')
+        if (result.revoked) {
+          console.log('✅ Facebook token successfully revoked')
+          toast.success('Facebook account disconnected and app access revoked')
+        } else {
+          console.log('⚠️ Facebook disconnected locally but token revocation may have failed')
+          toast.warning('Facebook account disconnected. You may need to manually revoke access in Facebook settings.')
         }
         // Facebook disconnect endpoint handles database deletion, so we're done
+        fetchConnectedAccounts()
+        return
       } else if (platformName === 'TikTok') {
         // For TikTok, call the disconnect endpoint to revoke the token
         console.log('Calling TikTok disconnect endpoint...')
