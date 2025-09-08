@@ -735,6 +735,44 @@ function CreateNewPostPageContent() {
       const successful = results.filter(r => r.success)
       const failed = results.filter(r => !r.success)
       
+      // Store successful posts in database for tracking and analytics
+      if (successful.length > 0 || failed.length > 0) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            const postedTime = new Date().toISOString()
+            
+            // Convert results to post_results format
+            const postResults = results.map(r => ({
+              platform: r.platform,
+              success: r.success,
+              postId: r.postId || null,
+              url: r.url || null,
+              error: r.error || null,
+              data: r.data || null
+            }))
+            
+            // Store in scheduled_posts table
+            await supabase
+              .from('scheduled_posts')
+              .insert({
+                user_id: user.id,
+                content: postContent,
+                platforms: supportedPlatforms,
+                platform_content: Object.keys(platformContent).length > 0 ? platformContent : {},
+                media_urls: mediaUrls.length > 0 ? mediaUrls : [],
+                status: successful.length > 0 && failed.length === 0 ? 'posted' : 
+                        successful.length > 0 && failed.length > 0 ? 'partial' : 'failed',
+                scheduled_for: postedTime, // Set this so posts appear in queries that order by scheduled_for
+                posted_at: postedTime,
+                post_results: postResults
+              })
+          }
+        } catch (error) {
+          console.error('Failed to store post results in database:', error)
+        }
+      }
+      
       // Check if we had any successful posts
       if (successful.length > 0) {
         // TikTok sandbox responses are marked as failed with a sandbox message
