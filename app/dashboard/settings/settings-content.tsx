@@ -506,7 +506,18 @@ export default function SettingsContent() {
       // Handle platform-specific disconnection
       if (platformName === 'Threads') {
         // For Threads, call the disconnect endpoint to clear cookies
-        await fetch('/api/auth/threads/disconnect', { method: 'POST' })
+        const response = await fetch('/api/auth/threads/disconnect', { method: 'POST' })
+        const result = await response.json()
+        console.log('Threads disconnect result:', result)
+        if (!response.ok) {
+          console.error('Failed to disconnect Threads:', result)
+          throw new Error(result.error || 'Failed to disconnect Threads')
+        }
+        console.log('✅ Threads account successfully disconnected')
+        toast.success('Threads account disconnected successfully')
+        // Threads disconnect endpoint handles database deletion, so we're done
+        fetchConnectedAccounts()
+        return
       } else if (platformName === 'Instagram') {
         // For Instagram, call the disconnect endpoint to revoke permissions
         console.log('Calling Instagram disconnect endpoint...')
@@ -518,10 +529,14 @@ export default function SettingsContent() {
           throw new Error(result.error || 'Failed to disconnect Instagram')
         } else if (result.revokeSuccess) {
           console.log('✅ Instagram permissions successfully revoked')
+          toast.success('Instagram account disconnected and app access revoked')
         } else {
           console.warn('⚠️ Instagram local data cleared but revoke may have failed:', result.note)
+          toast.warning('Instagram account disconnected. You may need to manually revoke access in Instagram settings.')
         }
         // Instagram disconnect endpoint handles database deletion, so we're done
+        fetchConnectedAccounts()
+        return
       } else if (platformName === 'Facebook') {
         // For Facebook, call the disconnect endpoint to revoke permissions
         console.log('Calling Facebook disconnect endpoint...')
