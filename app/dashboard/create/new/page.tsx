@@ -567,6 +567,7 @@ function CreateNewPostPageContent() {
           try {
             const { data: { user } } = await supabase.auth.getUser()
             if (user) {
+              const postedTime = new Date().toISOString()
               await supabase
                 .from('scheduled_posts')
                 .insert({
@@ -576,7 +577,8 @@ function CreateNewPostPageContent() {
                   platform_content: { youtube: youtubeDescription || postContent },
                   media_urls: uploadedMediaUrls.length > 0 ? uploadedMediaUrls : null,
                   status: 'posted',
-                  posted_at: new Date().toISOString(),
+                  scheduled_for: postedTime, // Add this so posts appear in queries that order by scheduled_for
+                  posted_at: postedTime,
                   post_results: [{
                     platform: 'youtube',
                     success: true,
