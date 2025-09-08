@@ -115,6 +115,7 @@ export class YouTubeService {
     tags?: string[];
     categoryId?: string;
     privacyStatus?: 'private' | 'public' | 'unlisted';
+    publishAt?: string; // ISO 8601 datetime for scheduled publishing
     videoPath?: string;
     videoBuffer?: Buffer;
     videoStream?: Readable;
@@ -129,6 +130,7 @@ export class YouTubeService {
         tags: params.tags,
         categoryId: params.categoryId,
         privacyStatus: params.privacyStatus,
+        publishAt: params.publishAt,
       });
 
       let videoStream: Readable;
@@ -218,6 +220,7 @@ export class YouTubeService {
     tags?: string[];
     categoryId?: string;
     privacyStatus?: 'private' | 'public' | 'unlisted';
+    publishAt?: string; // ISO 8601 datetime for scheduled publishing
     thumbnailUrl?: string;
   }) {
     try {

@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
     const tags = formData.get('tags') as string;
     const categoryId = formData.get('categoryId') as string | null;
     const privacyStatus = formData.get('privacyStatus') as 'private' | 'public' | 'unlisted';
+    const publishAt = formData.get('publishAt') as string | null; // ISO 8601 datetime for scheduled publishing
 
     // Validate required fields
     if (!videoFile || !title) {
@@ -130,6 +131,7 @@ export async function POST(request: NextRequest) {
       tags: tagArray,
       categoryId: validCategoryId, // Default to People & Blogs
       privacyStatus: privacyStatus || 'private',
+      publishAt: publishAt || undefined,
       videoBuffer,
       thumbnailBuffer,
     });

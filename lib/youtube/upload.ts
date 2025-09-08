@@ -12,6 +12,7 @@ export interface VideoUploadOptions {
   categoryId?: string;
   privacyStatus?: 'private' | 'public' | 'unlisted';
   notifySubscribers?: boolean;
+  publishAt?: string; // ISO 8601 datetime for scheduled publishing
 }
 
 export interface VideoMetadata extends VideoUploadOptions {
@@ -53,7 +54,7 @@ export async function blobToStream(blob: Blob): Promise<Readable> {
  * Create video resource for YouTube API
  */
 export function createVideoResource(metadata: VideoUploadOptions): youtube_v3.Schema$Video {
-  return {
+  const videoResource: youtube_v3.Schema$Video = {
     snippet: {
       title: metadata.title,
       description: metadata.description,
@@ -66,6 +67,14 @@ export function createVideoResource(metadata: VideoUploadOptions): youtube_v3.Sc
       embeddable: true,
     },
   };
+
+  // Add publishAt if scheduling the video
+  // Note: publishAt can only be set if privacyStatus is 'private'
+  if (metadata.publishAt && metadata.privacyStatus === 'private') {
+    videoResource.status!.publishAt = metadata.publishAt;
+  }
+
+  return videoResource;
 }
 
 /**

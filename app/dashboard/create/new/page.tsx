@@ -974,6 +974,93 @@ function CreateNewPostPageContent() {
       // Combine date and time
       const scheduledFor = new Date(`${scheduledDate}T${scheduledTime}`)
       
+      // Handle YouTube scheduling separately
+      if (selectedPlatforms.includes('youtube') && youtubeVideoFile) {
+        // For YouTube scheduling, upload the video immediately as private with publishAt
+        toast.info('Scheduling YouTube video...')
+        
+        const formData = new FormData()
+        formData.append('video', youtubeVideoFile)
+        if (youtubeThumbnailFile) {
+          formData.append('thumbnail', youtubeThumbnailFile)
+        }
+        formData.append('title', youtubeTitle || 'New Video')
+        formData.append('description', youtubeDescription || postContent)
+        formData.append('tags', youtubeTags.join(','))
+        formData.append('categoryId', youtubeCategoryId)
+        formData.append('privacyStatus', 'private') // Must be private for scheduling
+        formData.append('publishAt', scheduledFor.toISOString()) // Set publish time
+        
+        try {
+          const response = await fetch('/api/media/upload/youtube', {
+            method: 'POST',
+            body: formData,
+          })
+          
+          if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'YouTube scheduling failed')
+          }
+          
+          const result = await response.json()
+          
+          // Store the scheduled YouTube video in scheduled_posts
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            await supabase
+              .from('scheduled_posts')
+              .insert({
+                user_id: user.id,
+                content: youtubeDescription || postContent,
+                platforms: ['youtube'],
+                platform_content: { youtube: youtubeDescription || postContent },
+                media_urls: uploadedMediaUrls.length > 0 ? uploadedMediaUrls : null,
+                status: 'scheduled', // Mark as scheduled since YouTube will auto-publish
+                scheduled_for: scheduledFor.toISOString(),
+                post_results: [{
+                  platform: 'youtube',
+                  scheduled: true,
+                  videoId: result.video.id,
+                  url: result.video.url,
+                  publishAt: scheduledFor.toISOString()
+                }]
+              })
+          }
+          
+          toast.success(`YouTube video scheduled for ${scheduledFor.toLocaleString()}`)
+          
+          // Remove YouTube from platforms to schedule normally
+          const nonYouTubePlatforms = selectedPlatforms.filter(p => p !== 'youtube')
+          
+          // If YouTube was the only platform, we're done
+          if (nonYouTubePlatforms.length === 0) {
+            // Clear form
+            setPostContent('')
+            setPlatformContent({})
+            setSelectedPlatforms([])
+            setSelectedFiles([])
+            setUploadedMediaUrls([])
+            setScheduledDate('')
+            setScheduledTime('')
+            setYoutubeVideoFile(null)
+            setYoutubeThumbnailFile(null)
+            setYoutubeTitle('')
+            setYoutubeDescription('')
+            setYoutubeTags([])
+            setIsPosting(false)
+            return
+          }
+          
+          // Continue with other platforms (update selected platforms)
+          selectedPlatforms.splice(selectedPlatforms.indexOf('youtube'), 1)
+        } catch (error) {
+          console.error('YouTube scheduling error:', error)
+          toast.error(`Failed to schedule YouTube video: ${error instanceof Error ? error.message : 'Unknown error'}`)
+          setIsPosting(false)
+          return
+        }
+      }
+      
       // Only include platform-specific content if it's actually different from main content
       const filteredPlatformContent: Record<string, string> = {}
       Object.entries(platformContent).forEach(([platform, content]) => {

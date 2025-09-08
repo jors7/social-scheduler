@@ -41,6 +41,33 @@ export async function GET(request: NextRequest) {
     const now = new Date().toISOString();
     console.log('Querying for posts due before:', now);
     
+    // First, check for YouTube scheduled posts that have passed their publish time
+    // These are already uploaded to YouTube with publishAt, we just need to update their status
+    const { data: youtubeScheduledPosts, error: youtubeError } = await supabase
+      .from('scheduled_posts')
+      .select('*')
+      .eq('status', 'scheduled')
+      .contains('platforms', ['youtube'])
+      .lte('scheduled_for', now);
+    
+    if (!youtubeError && youtubeScheduledPosts && youtubeScheduledPosts.length > 0) {
+      console.log(`Found ${youtubeScheduledPosts.length} YouTube scheduled posts to mark as posted`);
+      
+      for (const post of youtubeScheduledPosts) {
+        // Update status to posted since YouTube handles the actual publishing
+        await supabase
+          .from('scheduled_posts')
+          .update({ 
+            status: 'posted',
+            posted_at: post.scheduled_for // Use scheduled time as posted time
+          })
+          .eq('id', post.id);
+        
+        console.log(`Marked YouTube post ${post.id} as posted`);
+      }
+    }
+    
+    // Now get regular posts that need to be posted
     const { data: duePosts, error } = await supabase
       .from('scheduled_posts')
       .select('*')
@@ -102,6 +129,12 @@ export async function GET(request: NextRequest) {
 
         // Post to each platform
         for (const platform of post.platforms) {
+          // Skip YouTube since it's handled separately with native scheduling
+          if (platform === 'youtube') {
+            console.log('Skipping YouTube platform - handled via native scheduling');
+            continue;
+          }
+          
           const account = accounts.find(acc => acc.platform === platform);
           
           if (!account) {

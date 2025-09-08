@@ -14,7 +14,8 @@ export async function POST(request: NextRequest) {
       thumbnailUrl,
       tags,
       privacyStatus = 'private',
-      categoryId 
+      categoryId,
+      publishAt // ISO 8601 datetime for scheduled publishing
     } = body;
 
     // Get current user
@@ -77,6 +78,7 @@ export async function POST(request: NextRequest) {
       tags: tags || formattedContent.tags,
       categoryId: categoryId,
       privacyStatus: privacyStatus as 'private' | 'public' | 'unlisted',
+      publishAt: publishAt,
       thumbnailUrl: thumbnailUrl,
     });
 
