@@ -169,7 +169,7 @@ export function TopPosts({ analyticsData }: TopPostsProps) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2 mb-1 flex-wrap gap-1">
-                {post.platforms.map((platform, idx) => (
+                {post.platforms.map((platform: string, idx: number) => (
                   <Badge 
                     key={idx}
                     variant="secondary" 
