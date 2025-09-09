@@ -5,15 +5,14 @@
 /* Basic styles only */
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
-  max-width: 100vw;
-  /* Note: overflow-x on html can affect sticky positioning in some cases */
+  /* Removed overflow-x: hidden from html to fix sticky positioning */
 }
 
 body {
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
+  /* Using clip instead of overflow-x to prevent horizontal scroll while preserving sticky */
+  overflow-x: clip;
   max-width: 100vw;
   position: relative;
 }
