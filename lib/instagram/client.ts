@@ -413,9 +413,9 @@ export class InstagramClient {
 
   async getMedia(limit = 10) {
     try {
-      // Use Instagram Graph API endpoint
+      // Use Instagram Graph API endpoint - include like_count and comments_count
       const response = await fetch(
-        `https://graph.instagram.com/${this.userID}/media?fields=id,media_type,media_url,permalink,caption,timestamp&limit=${limit}&access_token=${this.accessToken}`
+        `https://graph.instagram.com/${this.userID}/media?fields=id,media_type,media_url,permalink,caption,timestamp,like_count,comments_count&limit=${limit}&access_token=${this.accessToken}`
       );
 
       if (!response.ok) {
@@ -551,15 +551,13 @@ export class InstagramClient {
 
   async getMediaInsights(mediaId: string, metrics?: string[]) {
     try {
-      // Default metrics if not specified
+      // Default metrics if not specified - only use metrics available through insights API
+      // Note: likes and comments are fetched directly from media object, not insights
       const defaultMetrics = [
-        'engagement',
         'impressions',
         'reach',
         'saved',
         'shares',
-        'likes',
-        'comments',
         'total_interactions'
       ];
       

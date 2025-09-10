@@ -332,6 +332,17 @@ export class PostingService {
           platform: 'instagram',
           success: true,
           postId: result.id,
+          data: {
+            id: result.id,
+            metrics: result.metrics || {
+              likes: 0,
+              comments: 0,
+              saves: 0,
+              shares: 0,
+              impressions: 0,
+              reach: 0
+            }
+          }
         };
       } else {
         // Regular posting without progress for images or carousels
@@ -359,6 +370,17 @@ export class PostingService {
           platform: 'instagram',
           success: true,
           postId: data.id,
+          data: {
+            id: data.id,
+            metrics: data.metrics || {
+              likes: 0,
+              comments: 0,
+              saves: 0,
+              shares: 0,
+              impressions: 0,
+              reach: 0
+            }
+          }
         };
       }
     } catch (error) {

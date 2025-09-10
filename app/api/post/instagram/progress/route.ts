@@ -51,12 +51,43 @@ export async function POST(request: NextRequest) {
         }
       });
 
-      // Send final result
+      // Fetch initial metrics for the post
+      let metrics = {
+        likes: 0,
+        comments: 0,
+        saves: 0,
+        shares: 0,
+        impressions: 0,
+        reach: 0
+      };
+
+      if (result.id) {
+        try {
+          // Get the media object which includes like_count and comments_count
+          const mediaResponse = await fetch(
+            `https://graph.instagram.com/${result.id}?fields=like_count,comments_count&access_token=${accessToken}`
+          );
+          
+          if (mediaResponse.ok) {
+            const mediaData = await mediaResponse.json();
+            metrics.likes = mediaData.like_count || 0;
+            metrics.comments = mediaData.comments_count || 0;
+            console.log('Fetched Instagram post metrics:', metrics);
+          }
+        } catch (metricsError) {
+          console.error('Error fetching Instagram metrics:', metricsError);
+        }
+      }
+
+      // Send final result with metrics in the correct structure
       await writer.write(encoder.encode(`data: ${JSON.stringify({ 
         type: 'complete',
         success: true,
-        id: result.id,
-        ...result
+        postId: result.id,
+        data: {
+          id: result.id,
+          metrics
+        }
       })}\n\n`));
       
     } catch (error: any) {

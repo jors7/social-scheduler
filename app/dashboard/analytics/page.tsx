@@ -28,6 +28,7 @@ export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState('30d')
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [updatingMetrics, setUpdatingMetrics] = useState(false)
 
   const dateRangeOptions = [
     { value: '7d', label: 'Last 7 days' },
@@ -282,6 +283,45 @@ export default function AnalyticsPage() {
 
           {/* Instagram Insights Section */}
           <InstagramInsights className="mt-8" />
+          
+          {/* Update Metrics Button */}
+          <div className="mt-4 flex justify-end">
+            <Button 
+              variant="outline" 
+              size="sm"
+              disabled={updatingMetrics}
+              onClick={async () => {
+                setUpdatingMetrics(true)
+                try {
+                  const response = await fetch('/api/instagram/update-metrics', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                  })
+                  
+                  if (response.ok) {
+                    const result = await response.json()
+                    if (result.updatedCount > 0) {
+                      toast.success(`Updated metrics for ${result.updatedCount} posts`)
+                      // Refresh the analytics data
+                      await fetchAnalyticsData()
+                    } else {
+                      toast.info(result.message || 'No posts to update')
+                    }
+                  } else {
+                    const error = await response.json()
+                    toast.error(error.error || 'Failed to update metrics')
+                  }
+                } catch (error) {
+                  console.error('Error updating metrics:', error)
+                  toast.error('Failed to update metrics')
+                } finally {
+                  setUpdatingMetrics(false)
+                }
+              }}
+            >
+              {updatingMetrics ? 'Updating...' : 'Update Instagram Metrics'}
+            </Button>
+          </div>
         </div>
       </SubscriptionGate>
     </div>

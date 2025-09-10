@@ -100,50 +100,61 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
         setUserInsights(data.insights)
       }
 
-      // Fetch recent posts with insights
-      const postsResponse = await fetch('/api/posts/schedule')
-      if (postsResponse.ok) {
-        const { posts } = await postsResponse.json()
-        const instagramPosts = posts
-          .filter((post: any) => 
-            post.status === 'posted' && 
-            post.post_results?.some((r: any) => r.platform === 'instagram' && r.success)
-          )
-          .slice(0, 5) // Get last 5 Instagram posts
-
-        // Fetch insights for each post
+      // Fetch recent posts directly from Instagram
+      const mediaQueryParams = new URLSearchParams({
+        limit: '5',
+        ...(selectedAccount?.id && { accountId: selectedAccount.id })
+      })
+      const mediaResponse = await fetch(`/api/instagram/media?${mediaQueryParams}`)
+      if (mediaResponse.ok) {
+        const { media } = await mediaResponse.json()
+        
+        // Fetch insights for each Instagram post
         const postsWithInsights = await Promise.all(
-          instagramPosts.map(async (post: any) => {
-            const instagramResult = post.post_results.find((r: any) => r.platform === 'instagram')
-            if (instagramResult?.data?.id) {
-              try {
-                const insightsResponse = await fetch(`/api/instagram/insights?mediaId=${instagramResult.data.id}&type=media`)
-                if (insightsResponse.ok) {
-                  const { insights } = await insightsResponse.json()
-                  return {
-                    id: post.id,
-                    media_id: instagramResult.data.id,
-                    caption: post.content,
-                    media_type: 'IMAGE',
-                    timestamp: post.posted_at,
-                    metrics: {
-                      impressions: insights.impressions?.value || 0,
-                      reach: insights.reach?.value || 0,
-                      saves: insights.saved?.value || 0,
-                      likes: insights.likes?.value || 0,
-                      comments: insights.comments?.value || 0,
-                      shares: insights.shares?.value || 0,
-                      engagement: insights.engagement?.value || 0,
-                      profile_views: 0,
-                      follower_count: 0
-                    }
-                  }
-                }
-              } catch (error) {
-                console.error('Error fetching post insights:', error)
-              }
+          media.map(async (post: any) => {
+            // Start with basic engagement metrics from the media object
+            let metrics = {
+              impressions: 0,
+              reach: 0,
+              saves: 0,
+              likes: post.like_count || 0,  // Use like_count from media object
+              comments: post.comments_count || 0,  // Use comments_count from media object
+              shares: 0,
+              engagement: 0,
+              profile_views: 0,
+              follower_count: 0
             }
-            return null
+            
+            try {
+              // Fetch additional insights that aren't available on media object
+              const insightsResponse = await fetch(`/api/instagram/insights?mediaId=${post.id}&type=media&accountId=${selectedAccount?.id || ''}`)
+              if (insightsResponse.ok) {
+                const { insights } = await insightsResponse.json()
+                // Merge insights with existing metrics
+                metrics = {
+                  ...metrics,
+                  impressions: insights.impressions?.value || 0,
+                  reach: insights.reach?.value || 0,
+                  saves: insights.saved?.value || 0,
+                  shares: insights.shares?.value || 0,
+                  engagement: insights.total_interactions?.value || 0
+                }
+              }
+            } catch (error) {
+              console.error('Error fetching post insights:', error)
+              // Continue with basic metrics even if insights fail
+            }
+            
+            return {
+              id: post.id,
+              media_id: post.id,
+              caption: post.caption || '',
+              media_type: post.media_type,
+              media_url: post.media_url,
+              permalink: post.permalink,
+              timestamp: post.timestamp,
+              metrics
+            }
           })
         )
 
@@ -162,8 +173,30 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
     fetchInstagramInsights()
   }, [selectedPeriod])
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true)
+    
+    // First update all Instagram post metrics in the database
+    try {
+      const updateResponse = await fetch('/api/instagram/update-metrics', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (updateResponse.ok) {
+        const result = await updateResponse.json()
+        console.log('Updated Instagram metrics:', result)
+        if (result.updatedCount > 0) {
+          toast.success(`Updated metrics for ${result.updatedCount} posts`)
+        }
+      }
+    } catch (error) {
+      console.error('Error updating metrics:', error)
+    }
+    
+    // Then fetch the insights
     fetchInstagramInsights()
   }
 
@@ -402,7 +435,7 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
                       </p>
                     </div>
                     <Badge variant="secondary" className="ml-2">
-                      {post.media_type}
+                      {post.media_type === 'CAROUSEL_ALBUM' ? 'CAROUSEL' : post.media_type}
                     </Badge>
                   </div>
                   

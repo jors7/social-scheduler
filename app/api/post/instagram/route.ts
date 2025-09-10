@@ -61,10 +61,42 @@ export async function POST(request: NextRequest) {
 
     console.log(`Instagram ${isStory ? 'story' : 'post'} created:`, result);
 
+    // Fetch initial metrics for the post (likes and comments)
+    let metrics = {
+      likes: 0,
+      comments: 0,
+      saves: 0,
+      shares: 0,
+      impressions: 0,
+      reach: 0
+    };
+
+    // Only fetch metrics for feed posts (not stories)
+    if (!isStory && result.id) {
+      try {
+        // First get the media object which includes like_count and comments_count
+        const mediaResponse = await fetch(
+          `https://graph.instagram.com/${result.id}?fields=like_count,comments_count&access_token=${accessToken}`
+        );
+        
+        if (mediaResponse.ok) {
+          const mediaData = await mediaResponse.json();
+          metrics.likes = mediaData.like_count || 0;
+          metrics.comments = mediaData.comments_count || 0;
+          
+          console.log('Fetched Instagram post metrics:', metrics);
+        }
+      } catch (metricsError) {
+        console.error('Error fetching Instagram metrics:', metricsError);
+        // Continue without metrics if fetch fails
+      }
+    }
+
     return NextResponse.json({
       success: true,
       id: result.id,
       type: isStory ? 'story' : 'post',
+      metrics,
       ...result
     });
 
