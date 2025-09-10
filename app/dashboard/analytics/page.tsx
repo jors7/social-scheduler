@@ -8,7 +8,8 @@ import { EngagementChart } from '@/components/dashboard/analytics/engagement-cha
 import { PlatformBreakdown } from '@/components/dashboard/analytics/platform-breakdown'
 import { TopPosts } from '@/components/dashboard/analytics/top-posts'
 import { ReachChart } from '@/components/dashboard/analytics/reach-chart'
-import { InstagramInsights } from '@/components/dashboard/analytics/instagram-insights'
+import { PlatformInsightsTabs } from '@/components/dashboard/analytics/platform-insights-tabs'
+import { MetricsUpdater } from '@/components/dashboard/analytics/metrics-updater'
 import { CalendarDays, Download, Filter, BarChart3 } from 'lucide-react'
 import { toast } from 'sonner'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
@@ -28,7 +29,6 @@ export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState('30d')
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [updatingMetrics, setUpdatingMetrics] = useState(false)
 
   const dateRangeOptions = [
     { value: '7d', label: 'Last 7 days' },
@@ -281,46 +281,12 @@ export default function AnalyticsPage() {
             </Card>
           </div>
 
-          {/* Instagram Insights Section */}
-          <InstagramInsights className="mt-8" />
+          {/* Platform Insights with Tabs */}
+          <PlatformInsightsTabs className="mt-8" />
           
-          {/* Update Metrics Button */}
+          {/* Unified Metrics Updater */}
           <div className="mt-4 flex justify-end">
-            <Button 
-              variant="outline" 
-              size="sm"
-              disabled={updatingMetrics}
-              onClick={async () => {
-                setUpdatingMetrics(true)
-                try {
-                  const response = await fetch('/api/instagram/update-metrics', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                  })
-                  
-                  if (response.ok) {
-                    const result = await response.json()
-                    if (result.updatedCount > 0) {
-                      toast.success(`Updated metrics for ${result.updatedCount} posts`)
-                      // Refresh the analytics data
-                      await fetchAnalyticsData()
-                    } else {
-                      toast.info(result.message || 'No posts to update')
-                    }
-                  } else {
-                    const error = await response.json()
-                    toast.error(error.error || 'Failed to update metrics')
-                  }
-                } catch (error) {
-                  console.error('Error updating metrics:', error)
-                  toast.error('Failed to update metrics')
-                } finally {
-                  setUpdatingMetrics(false)
-                }
-              }}
-            >
-              {updatingMetrics ? 'Updating...' : 'Update Instagram Metrics'}
-            </Button>
+            <MetricsUpdater onUpdate={fetchAnalyticsData} />
           </div>
         </div>
       </SubscriptionGate>

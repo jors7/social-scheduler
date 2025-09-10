@@ -22,34 +22,67 @@ export function EngagementChart({ analyticsData }: EngagementChartProps) {
     return <div className="h-[250px] sm:h-[300px] animate-pulse bg-gray-200 rounded"></div>
   }
   
-  // Generate chart data from posted posts
-  const data = analyticsData.postedPosts
-    .map(post => {
-      let likes = 0
-      let comments = 0
-      let shares = 0
-      
-      if (post.post_results && Array.isArray(post.post_results)) {
-        post.post_results.forEach((result: any) => {
-          if (result.success && result.data?.metrics) {
-            likes += result.data.metrics.likes || 0
-            comments += result.data.metrics.comments || 0
-            shares += result.data.metrics.shares || 0
-          }
-        })
-      }
-      
-      return {
-        date: new Date(post.posted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+  // Generate chart data from posted posts - group by date
+  const dataMap = new Map<string, any>()
+  
+  analyticsData.postedPosts.forEach(post => {
+    if (!post.posted_at) return // Skip posts without posted_at
+    
+    let likes = 0
+    let comments = 0
+    let shares = 0
+    
+    if (post.post_results && Array.isArray(post.post_results)) {
+      post.post_results.forEach((result: any) => {
+        if (result.success && result.data?.metrics) {
+          likes += result.data.metrics.likes || 0
+          comments += result.data.metrics.comments || 0
+          shares += result.data.metrics.shares || 0
+        }
+      })
+    }
+    
+    const date = new Date(post.posted_at)
+    const dateKey = date.toISOString().split('T')[0] // Use YYYY-MM-DD as key
+    
+    // Format date consistently
+    const month = date.toLocaleDateString('en-US', { month: 'short' })
+    const day = date.getDate()
+    const dateLabel = `${month} ${day}`
+    
+    if (dataMap.has(dateKey)) {
+      const existing = dataMap.get(dateKey)
+      existing.likes += likes
+      existing.comments += comments
+      existing.shares += shares
+      existing.total += likes + comments + shares
+    } else {
+      dataMap.set(dateKey, {
+        date: dateLabel,
+        dateKey, // Keep the key for debugging
         likes,
         comments,
         shares,
         total: likes + comments + shares,
-        timestamp: new Date(post.posted_at).getTime()
-      }
-    })
+        timestamp: date.getTime()
+      })
+    }
+  })
+  
+  // Convert map to array and sort
+  let data = Array.from(dataMap.values())
     .sort((a, b) => a.timestamp - b.timestamp)
     .slice(-30) // Last 30 data points
+  
+  // Remove any remaining duplicates by date label (shouldn't happen but just in case)
+  const seenDates = new Set<string>()
+  data = data.filter(item => {
+    if (seenDates.has(item.date)) {
+      return false
+    }
+    seenDates.add(item.date)
+    return true
+  })
   
   if (data.length === 0) {
     return (
@@ -74,7 +107,9 @@ export function EngagementChart({ analyticsData }: EngagementChartProps) {
             tickLine={false}
             axisLine={false}
             tick={{ fontSize: 10 }}
-            interval="preserveStartEnd"
+            interval={data.length <= 6 ? 0 : Math.floor(data.length / 4)}
+            angle={0}
+            textAnchor="middle"
           />
           <YAxis
             stroke="#888888"

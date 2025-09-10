@@ -8,7 +8,8 @@ import {
   Heart, 
   MessageCircle, 
   Share2, 
-  Bookmark, 
+  Repeat2, 
+  Quote, 
   Eye, 
   Users, 
   TrendingUp,
@@ -17,152 +18,133 @@ import {
   Activity,
   RefreshCw,
   Info,
-  Camera
+  AtSign
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
-interface InstagramMetrics {
-  impressions: number
-  reach: number
-  saves: number
-  profile_views: number
-  follower_count: number
-  engagement: number
+interface ThreadsMetrics {
+  views: number
   likes: number
-  comments: number
+  replies: number
+  reposts: number
+  quotes: number
   shares: number
 }
 
-interface InstagramPost {
+interface ThreadsPost {
   id: string
-  media_id: string
-  caption: string
-  media_type: 'IMAGE' | 'VIDEO' | 'CAROUSEL_ALBUM'
-  media_url?: string
-  permalink: string
+  text: string
+  permalink?: string
   timestamp: string
-  metrics?: InstagramMetrics
+  media_type?: string
+  media_url?: string
+  metrics?: ThreadsMetrics
 }
 
-interface InstagramInsightsProps {
+interface ThreadsInsightsProps {
   className?: string
 }
 
-export function InstagramInsights({ className }: InstagramInsightsProps) {
+export function ThreadsInsights({ className }: ThreadsInsightsProps) {
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [userInsights, setUserInsights] = useState<any>(null)
-  const [recentPosts, setRecentPosts] = useState<InstagramPost[]>([])
+  const [recentPosts, setRecentPosts] = useState<ThreadsPost[]>([])
   const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'days_28'>('week')
-  const [hasInstagramAccount, setHasInstagramAccount] = useState(false)
-  const [instagramAccounts, setInstagramAccounts] = useState<any[]>([])
+  const [hasThreadsAccount, setHasThreadsAccount] = useState(false)
+  const [threadsAccounts, setThreadsAccounts] = useState<any[]>([])
   const [selectedAccount, setSelectedAccount] = useState<any>(null)
 
-  const fetchInstagramInsights = async (accountId?: string) => {
+  const fetchThreadsInsights = async (accountId?: string) => {
     try {
       setLoading(true)
       
-      // Check if Instagram account is connected
+      // Check if Threads account is connected
       const accountResponse = await fetch('/api/social-accounts')
       if (accountResponse.ok) {
         const accounts = await accountResponse.json()
-        const instagramAccountsList = accounts.filter((acc: any) => acc.platform === 'instagram' && acc.is_active)
+        const threadsAccountsList = accounts.filter((acc: any) => acc.platform === 'threads' && acc.is_active)
         
-        if (instagramAccountsList.length === 0) {
-          setHasInstagramAccount(false)
+        if (threadsAccountsList.length === 0) {
+          setHasThreadsAccount(false)
           return
         }
         
-        setHasInstagramAccount(true)
-        setInstagramAccounts(instagramAccountsList)
+        setHasThreadsAccount(true)
+        setThreadsAccounts(threadsAccountsList)
         
         // Select account to use
         const accountToUse = accountId 
-          ? instagramAccountsList.find((acc: any) => acc.id === accountId) 
+          ? threadsAccountsList.find((acc: any) => acc.id === accountId) 
           : selectedAccount 
-          || instagramAccountsList[0]
+          || threadsAccountsList[0]
         
         setSelectedAccount(accountToUse)
       } else {
         return
       }
 
-      // Fetch user-level insights for the selected account
-      const queryParams = new URLSearchParams({
-        type: 'user',
-        period: selectedPeriod,
-        ...(selectedAccount?.id && { accountId: selectedAccount.id })
-      })
-      const userInsightsResponse = await fetch(`/api/instagram/insights?${queryParams}`)
-      if (userInsightsResponse.ok) {
-        const data = await userInsightsResponse.json()
-        setUserInsights(data.insights)
-      }
-
-      // Fetch recent posts directly from Instagram
-      const mediaQueryParams = new URLSearchParams({
-        limit: '5',
-        ...(selectedAccount?.id && { accountId: selectedAccount.id })
-      })
-      const mediaResponse = await fetch(`/api/instagram/media?${mediaQueryParams}`)
-      if (mediaResponse.ok) {
-        const { media } = await mediaResponse.json()
+      // Fetch recent Threads posts from scheduled_posts
+      const postsResponse = await fetch('/api/posts/schedule')
+      if (postsResponse.ok) {
+        const { posts } = await postsResponse.json()
         
-        // Fetch insights for each Instagram post
-        const postsWithInsights = await Promise.all(
-          media.map(async (post: any) => {
-            // Start with basic engagement metrics from the media object
-            let metrics = {
-              impressions: 0,
-              reach: 0,
-              saves: 0,
-              likes: post.like_count || 0,  // Use like_count from media object
-              comments: post.comments_count || 0,  // Use comments_count from media object
-              shares: 0,
-              engagement: 0,
-              profile_views: 0,
-              follower_count: 0
-            }
-            
-            try {
-              // Fetch additional insights that aren't available on media object
-              const insightsResponse = await fetch(`/api/instagram/insights?mediaId=${post.id}&type=media&accountId=${selectedAccount?.id || ''}`)
-              if (insightsResponse.ok) {
-                const { insights } = await insightsResponse.json()
-                // Merge insights with existing metrics
-                metrics = {
-                  ...metrics,
-                  impressions: insights.impressions?.value || 0,
-                  reach: insights.reach?.value || 0,
-                  saves: insights.saved?.value || 0,
-                  shares: insights.shares?.value || 0,
-                  engagement: insights.total_interactions?.value || 0
-                }
-              }
-            } catch (error) {
-              console.error('Error fetching post insights:', error)
-              // Continue with basic metrics even if insights fail
-            }
-            
-            return {
-              id: post.id,
-              media_id: post.id,
-              caption: post.caption || '',
-              media_type: post.media_type,
-              media_url: post.media_url,
-              permalink: post.permalink,
-              timestamp: post.timestamp,
-              metrics
-            }
-          })
+        // Filter for Threads posts that are posted
+        const threadsPosts = posts.filter((post: any) => 
+          post.status === 'posted' && 
+          post.platforms?.includes('threads') &&
+          post.post_results?.some((r: any) => r.platform === 'threads' && r.success)
         )
-
-        setRecentPosts(postsWithInsights.filter(Boolean))
+        
+        // Extract Threads-specific data
+        const threadsPostsData: ThreadsPost[] = []
+        threadsPosts.forEach((post: any) => {
+          const threadsResult = post.post_results?.find((r: any) => r.platform === 'threads' && r.success)
+          if (threadsResult) {
+            threadsPostsData.push({
+              id: threadsResult.postId || post.id,
+              text: post.content || '',
+              permalink: threadsResult.data?.permalink,
+              timestamp: post.posted_at || post.scheduled_for,
+              metrics: threadsResult.data?.metrics || {
+                views: 0,
+                likes: 0,
+                replies: 0,
+                reposts: 0,
+                quotes: 0,
+                shares: 0
+              }
+            })
+          }
+        })
+        
+        // Sort by date and limit to 5 most recent
+        threadsPostsData.sort((a, b) => 
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        )
+        setRecentPosts(threadsPostsData.slice(0, 5))
       }
+      
+      // Try to fetch user-level insights (may fail without permissions)
+      try {
+        const insightsResponse = await fetch(`/api/threads/insights?period=${selectedPeriod}`, {
+          headers: {
+            'Authorization': `Bearer ${selectedAccount?.access_token || ''}`
+          }
+        })
+        
+        if (insightsResponse.ok) {
+          const data = await insightsResponse.json()
+          setUserInsights(data.insights)
+        }
+      } catch (error) {
+        console.log('Could not fetch Threads user insights (permission may be missing)')
+      }
+      
     } catch (error) {
-      console.error('Error fetching Instagram insights:', error)
-      toast.error('Failed to load Instagram insights')
+      console.error('Error fetching Threads insights:', error)
+      toast.error('Failed to load Threads insights')
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -172,7 +154,7 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
   useEffect(() => {
     // Add a small delay to prevent rapid re-renders
     const timer = setTimeout(() => {
-      fetchInstagramInsights()
+      fetchThreadsInsights()
     }, 100)
     
     return () => clearTimeout(timer)
@@ -181,9 +163,9 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
   const handleRefresh = async () => {
     setRefreshing(true)
     
-    // First update all Instagram post metrics in the database
+    // First update all Threads post metrics in the database
     try {
-      const updateResponse = await fetch('/api/instagram/update-metrics', {
+      const updateResponse = await fetch('/api/threads/update-metrics', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -192,39 +174,39 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
       
       if (updateResponse.ok) {
         const result = await updateResponse.json()
-        console.log('Updated Instagram metrics:', result)
+        console.log('Updated Threads metrics:', result)
         if (result.updatedCount > 0) {
-          toast.success(`Updated metrics for ${result.updatedCount} posts`)
+          toast.success(`Updated metrics for ${result.updatedCount} Threads posts`)
         }
       }
     } catch (error) {
-      console.error('Error updating metrics:', error)
+      console.error('Error updating Threads metrics:', error)
     }
     
     // Then fetch the insights
-    fetchInstagramInsights()
+    fetchThreadsInsights()
   }
 
-  if (!hasInstagramAccount) {
+  if (!hasThreadsAccount) {
     return (
       <Card className={cn("", className)}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Camera className="h-5 w-5" />
-            Instagram Insights
+            <AtSign className="h-5 w-5" />
+            Threads Insights
           </CardTitle>
           <CardDescription>
-            Connect your Instagram Business account to view insights
+            Connect your Threads account to view insights
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <Camera className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+            <AtSign className="mx-auto h-12 w-12 text-gray-300 mb-4" />
             <p className="text-sm text-gray-500 mb-4">
-              No Instagram Business account connected
+              No Threads account connected
             </p>
             <Button variant="outline" size="sm" onClick={() => window.location.href = '/dashboard/settings'}>
-              Connect Instagram
+              Connect Threads
             </Button>
           </div>
         </CardContent>
@@ -232,13 +214,13 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
     )
   }
 
-  if (loading && !userInsights) {
+  if (loading && !userInsights && recentPosts.length === 0) {
     return (
       <Card className={cn("", className)}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Camera className="h-5 w-5" />
-            Instagram Insights
+            <AtSign className="h-5 w-5" />
+            Threads Insights
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -259,6 +241,18 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
     return num.toString()
+  }
+
+  const stripHtml = (html: string) => {
+    return html
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .trim()
   }
 
   const getChangeIndicator = (current: number, previous: number) => {
@@ -283,6 +277,16 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
     return null
   }
 
+  // Calculate total metrics from recent posts
+  const totalMetrics = recentPosts.reduce((acc, post) => ({
+    views: acc.views + (post.metrics?.views || 0),
+    likes: acc.likes + (post.metrics?.likes || 0),
+    replies: acc.replies + (post.metrics?.replies || 0),
+    reposts: acc.reposts + (post.metrics?.reposts || 0),
+    quotes: acc.quotes + (post.metrics?.quotes || 0),
+    shares: acc.shares + (post.metrics?.shares || 0)
+  }), { views: 0, likes: 0, replies: 0, reposts: 0, quotes: 0, shares: 0 })
+
   return (
     <div className={cn("space-y-6", className)}>
       {/* Account Overview */}
@@ -291,8 +295,8 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <CardTitle className="flex items-center gap-2">
-                <Camera className="h-5 w-5" />
-                Instagram Insights
+                <AtSign className="h-5 w-5" />
+                Threads Insights
                 {selectedAccount && (
                   <Badge variant="secondary" className="ml-2">
                     @{selectedAccount.username || selectedAccount.platform_user_id}
@@ -302,29 +306,29 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
               <CardDescription>
                 {selectedAccount 
                   ? `Analytics for @${selectedAccount.username || selectedAccount.platform_user_id}`
-                  : 'Performance metrics for your Instagram Business account'}
+                  : 'Performance metrics for your Threads account'}
               </CardDescription>
-              {instagramAccounts.length > 1 && (
+              {threadsAccounts.length > 1 && (
                 <div className="mt-2">
                   <select
                     className="text-sm border rounded-lg px-3 py-1.5 bg-white"
                     value={selectedAccount?.id || ''}
                     onChange={(e) => {
-                      const account = instagramAccounts.find(acc => acc.id === e.target.value)
+                      const account = threadsAccounts.find(acc => acc.id === e.target.value)
                       if (account) {
                         setSelectedAccount(account)
-                        fetchInstagramInsights(account.id)
+                        fetchThreadsInsights(account.id)
                       }
                     }}
                   >
-                    {instagramAccounts.map(account => (
+                    {threadsAccounts.map(account => (
                       <option key={account.id} value={account.id}>
                         @{account.username || account.platform_user_id}
                       </option>
                     ))}
                   </select>
                   <span className="ml-2 text-xs text-gray-500">
-                    Switch between {instagramAccounts.length} connected accounts
+                    Switch between {threadsAccounts.length} connected accounts
                   </span>
                 </div>
               )}
@@ -351,53 +355,71 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Reach */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Users className="h-4 w-4" />
-                <span>Reach</span>
-              </div>
-              <p className="text-2xl font-bold">
-                {formatNumber(userInsights?.reach?.value || 0)}
-              </p>
-              {getChangeIndicator(userInsights?.reach?.value || 0, userInsights?.reach?.previous || 0)}
-            </div>
-
-            {/* Profile Views */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {/* Total Views */}
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Eye className="h-4 w-4" />
-                <span>Profile Views</span>
+                <span>Views</span>
               </div>
               <p className="text-2xl font-bold">
-                {formatNumber(userInsights?.profile_views?.value || 0)}
+                {formatNumber(totalMetrics.views)}
               </p>
-              {getChangeIndicator(userInsights?.profile_views?.value || 0, userInsights?.profile_views?.previous || 0)}
             </div>
 
-            {/* Website Clicks */}
+            {/* Likes */}
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Activity className="h-4 w-4" />
-                <span>Website Clicks</span>
+                <Heart className="h-4 w-4" />
+                <span>Likes</span>
               </div>
               <p className="text-2xl font-bold">
-                {formatNumber(userInsights?.website_clicks?.value || 0)}
+                {formatNumber(totalMetrics.likes)}
               </p>
-              {getChangeIndicator(userInsights?.website_clicks?.value || 0, userInsights?.website_clicks?.previous || 0)}
             </div>
 
-            {/* Follower Count */}
+            {/* Replies */}
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Users className="h-4 w-4" />
-                <span>Followers</span>
+                <MessageCircle className="h-4 w-4" />
+                <span>Replies</span>
               </div>
               <p className="text-2xl font-bold">
-                {formatNumber(userInsights?.follower_count?.value || 0)}
+                {formatNumber(totalMetrics.replies)}
               </p>
-              {getChangeIndicator(userInsights?.follower_count?.value || 0, userInsights?.follower_count?.previous || 0)}
+            </div>
+
+            {/* Reposts */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Repeat2 className="h-4 w-4" />
+                <span>Reposts</span>
+              </div>
+              <p className="text-2xl font-bold">
+                {formatNumber(totalMetrics.reposts)}
+              </p>
+            </div>
+
+            {/* Quotes */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Quote className="h-4 w-4" />
+                <span>Quotes</span>
+              </div>
+              <p className="text-2xl font-bold">
+                {formatNumber(totalMetrics.quotes)}
+              </p>
+            </div>
+
+            {/* Shares */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Share2 className="h-4 w-4" />
+                <span>Shares</span>
+              </div>
+              <p className="text-2xl font-bold">
+                {formatNumber(totalMetrics.shares)}
+              </p>
             </div>
           </div>
         </CardContent>
@@ -408,7 +430,7 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Recent Posts Performance
+            Recent Threads Performance
             {selectedAccount && (
               <Badge variant="outline" className="ml-2 text-xs">
                 @{selectedAccount.username || selectedAccount.platform_user_id}
@@ -416,14 +438,14 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
             )}
           </CardTitle>
           <CardDescription>
-            Engagement metrics for your latest Instagram posts
+            Engagement metrics for your latest Threads posts
           </CardDescription>
         </CardHeader>
         <CardContent>
           {recentPosts.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Info className="mx-auto h-8 w-8 mb-2 text-gray-300" />
-              <p className="text-sm">No recent posts with insights available</p>
+              <p className="text-sm">No recent Threads posts available</p>
               <p className="text-xs mt-1">Post content to see performance metrics</p>
             </div>
           ) : (
@@ -433,27 +455,24 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <p className="text-sm text-gray-600 line-clamp-2">
-                        {post.caption.replace(/<[^>]*>/g, '').slice(0, 100)}...
+                        {stripHtml(post.text).slice(0, 100)}...
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
                         {new Date(post.timestamp).toLocaleDateString()}
                       </p>
                     </div>
-                    <Badge variant="secondary" className="ml-2">
-                      {post.media_type === 'CAROUSEL_ALBUM' ? 'CAROUSEL' : post.media_type}
-                    </Badge>
+                    {post.media_type && (
+                      <Badge variant="secondary" className="ml-2">
+                        {post.media_type}
+                      </Badge>
+                    )}
                   </div>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-sm">
                     <div className="flex items-center gap-1">
                       <Eye className="h-3 w-3 text-gray-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.impressions || 0)}</span>
-                      <span className="text-xs text-gray-500">impressions</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Users className="h-3 w-3 text-gray-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.reach || 0)}</span>
-                      <span className="text-xs text-gray-500">reach</span>
+                      <span className="font-medium">{formatNumber(post.metrics?.views || 0)}</span>
+                      <span className="text-xs text-gray-500">views</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Heart className="h-3 w-3 text-red-500" />
@@ -462,13 +481,23 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
                     </div>
                     <div className="flex items-center gap-1">
                       <MessageCircle className="h-3 w-3 text-blue-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.comments || 0)}</span>
-                      <span className="text-xs text-gray-500">comments</span>
+                      <span className="font-medium">{formatNumber(post.metrics?.replies || 0)}</span>
+                      <span className="text-xs text-gray-500">replies</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Bookmark className="h-3 w-3 text-purple-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.saves || 0)}</span>
-                      <span className="text-xs text-gray-500">saves</span>
+                      <Repeat2 className="h-3 w-3 text-green-500" />
+                      <span className="font-medium">{formatNumber(post.metrics?.reposts || 0)}</span>
+                      <span className="text-xs text-gray-500">reposts</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Quote className="h-3 w-3 text-purple-500" />
+                      <span className="font-medium">{formatNumber(post.metrics?.quotes || 0)}</span>
+                      <span className="text-xs text-gray-500">quotes</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Share2 className="h-3 w-3 text-orange-500" />
+                      <span className="font-medium">{formatNumber(post.metrics?.shares || 0)}</span>
+                      <span className="text-xs text-gray-500">shares</span>
                     </div>
                   </div>
                 </div>

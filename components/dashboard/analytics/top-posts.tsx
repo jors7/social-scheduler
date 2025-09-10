@@ -65,9 +65,15 @@ export function TopPosts({ analyticsData }: TopPostsProps) {
           if (result.success && result.data) {
             platforms.push(result.platform)
             if (result.data.metrics) {
-              const engagement = (result.data.metrics.likes || 0) + (result.data.metrics.comments || 0) + (result.data.metrics.shares || 0)
+              // Handle both Instagram and Threads metrics
+              const engagement = (result.data.metrics.likes || 0) + 
+                                (result.data.metrics.comments || 0) + 
+                                (result.data.metrics.shares || 0) +
+                                (result.data.metrics.replies || 0) +  // Threads
+                                (result.data.metrics.reposts || 0) +  // Threads
+                                (result.data.metrics.quotes || 0)      // Threads
               totalEngagement += engagement
-              totalReach += result.data.metrics.views || result.data.metrics.impressions || 0
+              totalReach += result.data.metrics.views || result.data.metrics.impressions || result.data.metrics.reach || 0
             }
           }
         })

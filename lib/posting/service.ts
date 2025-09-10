@@ -27,12 +27,17 @@ export interface PostResult {
   data?: {
     id?: string;
     metrics?: {
-      likes: number;
-      comments: number;
+      likes?: number;
+      comments?: number;
       saves?: number;
       shares?: number;
       impressions?: number;
       reach?: number;
+      // Threads-specific metrics
+      views?: number;
+      replies?: number;
+      reposts?: number;
+      quotes?: number;
     };
   };
 }
@@ -735,6 +740,17 @@ export class PostingService {
         platform: 'threads',
         success: true,
         postId: data.id,
+        data: {
+          id: data.id,
+          metrics: {
+            views: 0,
+            likes: 0,
+            replies: 0,
+            reposts: 0,
+            quotes: 0,
+            shares: 0
+          }
+        }
       };
     } catch (error) {
       console.error('Threads posting error:', error);

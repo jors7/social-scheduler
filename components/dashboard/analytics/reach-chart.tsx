@@ -1,6 +1,8 @@
 'use client'
 
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { useState } from 'react'
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts'
+import { TrendingUp, TrendingDown, Calendar, Eye, Activity } from 'lucide-react'
 
 interface AnalyticsData {
   totalPosts: number
@@ -18,38 +20,93 @@ interface ReachChartProps {
 }
 
 export function ReachChart({ analyticsData }: ReachChartProps) {
+  const [timePeriod, setTimePeriod] = useState<7 | 30 | 90>(30)
+  
   if (!analyticsData) {
-    return <div className="h-[250px] sm:h-[300px] animate-pulse bg-gray-200 rounded"></div>
+    return <div className="h-[500px] sm:h-[550px] animate-pulse bg-gray-200 rounded"></div>
   }
   
-  // Generate chart data from posted posts
-  const chartData = analyticsData.postedPosts
-    .map(post => {
-      let reach = 0
-      let impressions = 0
-      
-      if (post.post_results && Array.isArray(post.post_results)) {
-        post.post_results.forEach((result: any) => {
-          if (result.success && result.data?.metrics) {
-            reach += result.data.metrics.views || result.data.metrics.impressions || 0
-            impressions += result.data.metrics.views || result.data.metrics.impressions || 0
-          }
-        })
-      }
-      
-      return {
-        date: new Date(post.posted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+  // Generate chart data from posted posts - group by date
+  const dataMap = new Map<string, any>()
+  
+  analyticsData.postedPosts.forEach(post => {
+    if (!post.posted_at) return // Skip posts without posted_at
+    
+    let reach = 0
+    let impressions = 0
+    
+    if (post.post_results && Array.isArray(post.post_results)) {
+      post.post_results.forEach((result: any) => {
+        if (result.success && result.data?.metrics) {
+          reach += result.data.metrics.views || result.data.metrics.impressions || 0
+          impressions += result.data.metrics.views || result.data.metrics.impressions || 0
+        }
+      })
+    }
+    
+    const date = new Date(post.posted_at)
+    const dateKey = date.toISOString().split('T')[0] // Use YYYY-MM-DD as key
+    
+    // Format date consistently
+    const month = date.toLocaleDateString('en-US', { month: 'short' })
+    const day = date.getDate()
+    const dateLabel = `${month} ${day}`
+    
+    if (dataMap.has(dateKey)) {
+      const existing = dataMap.get(dateKey)
+      existing.reach += reach
+      existing.impressions += impressions
+    } else {
+      dataMap.set(dateKey, {
+        date: dateLabel,
         reach,
         impressions,
-        timestamp: new Date(post.posted_at).getTime()
-      }
-    })
+        timestamp: date.getTime()
+      })
+    }
+  })
+  
+  // Convert map to array and sort
+  const allChartData = Array.from(dataMap.values())
     .sort((a, b) => a.timestamp - b.timestamp)
-    .slice(-30) // Last 30 data points
+  
+  // Filter data based on time period
+  const cutoffDate = new Date()
+  cutoffDate.setDate(cutoffDate.getDate() - timePeriod)
+  let chartData = allChartData.filter(d => d.timestamp >= cutoffDate.getTime())
+  
+  // Remove any remaining duplicates by date label (shouldn't happen but just in case)
+  const seenDates = new Set<string>()
+  chartData = chartData.filter(item => {
+    if (seenDates.has(item.date)) {
+      return false
+    }
+    seenDates.add(item.date)
+    return true
+  })
+  
+  // Calculate statistics
+  const totalReach = chartData.reduce((sum, d) => sum + d.reach, 0)
+  const totalImpressions = chartData.reduce((sum, d) => sum + d.impressions, 0)
+  const avgReach = chartData.length > 0 ? Math.round(totalReach / chartData.length) : 0
+  const avgImpressions = chartData.length > 0 ? Math.round(totalImpressions / chartData.length) : 0
+  
+  // Calculate growth (compare first half vs second half)
+  const midPoint = Math.floor(chartData.length / 2)
+  const firstHalf = chartData.slice(0, midPoint)
+  const secondHalf = chartData.slice(midPoint)
+  const firstHalfReach = firstHalf.reduce((sum, d) => sum + d.reach, 0)
+  const secondHalfReach = secondHalf.reduce((sum, d) => sum + d.reach, 0)
+  const growthPercent = firstHalfReach > 0 
+    ? Math.round(((secondHalfReach - firstHalfReach) / firstHalfReach) * 100)
+    : 0
+  
+  // Find peak day
+  const peakDay = chartData.reduce((max, d) => d.reach > max.reach ? d : max, chartData[0] || { date: 'N/A', reach: 0 })
   
   if (chartData.length === 0) {
     return (
-      <div className="h-[250px] sm:h-[300px] flex items-center justify-center text-gray-500">
+      <div className="h-[500px] sm:h-[550px] flex items-center justify-center text-gray-500">
         <div className="text-center">
           <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">📈</div>
           <p className="text-xs sm:text-sm">No reach data available</p>
@@ -60,8 +117,30 @@ export function ReachChart({ analyticsData }: ReachChartProps) {
   }
 
   return (
-    <div>
-      <div className="h-[250px] sm:h-[300px] w-full flex items-center justify-center">
+    <div className="space-y-4">
+      {/* Time Period Selector */}
+      <div className="flex justify-end space-x-2">
+        {[
+          { value: 7, label: '7 days' },
+          { value: 30, label: '30 days' },
+          { value: 90, label: '90 days' }
+        ].map((period) => (
+          <button
+            key={period.value}
+            onClick={() => setTimePeriod(period.value as 7 | 30 | 90)}
+            className={`px-3 py-1 text-xs rounded-md transition-colors ${
+              timePeriod === period.value
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {period.label}
+          </button>
+        ))}
+      </div>
+      
+      {/* Chart */}
+      <div className="h-[380px] sm:h-[420px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
             <defs>
@@ -74,6 +153,7 @@ export function ReachChart({ analyticsData }: ReachChartProps) {
                 <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
               </linearGradient>
             </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
             <XAxis 
               dataKey="date" 
               stroke="#888888"
@@ -81,7 +161,9 @@ export function ReachChart({ analyticsData }: ReachChartProps) {
               tickLine={false}
               axisLine={false}
               tick={{ fontSize: 10 }}
-              interval="preserveStartEnd"
+              interval={chartData.length <= 8 ? 0 : Math.floor(chartData.length / 6)}
+              angle={0}
+              textAnchor="middle"
             />
             <YAxis
               stroke="#888888"
@@ -135,7 +217,7 @@ export function ReachChart({ analyticsData }: ReachChartProps) {
       </div>
       
       {/* Legend */}
-      <div className="flex items-center justify-center space-x-6 mt-4 text-sm">
+      <div className="flex items-center justify-center space-x-6 text-sm">
         <div className="flex items-center space-x-2">
           <div className="h-3 w-3 rounded-full bg-blue-500" />
           <span>Reach</span>
@@ -143,6 +225,52 @@ export function ReachChart({ analyticsData }: ReachChartProps) {
         <div className="flex items-center space-x-2">
           <div className="h-3 w-3 rounded-full bg-green-500" />
           <span>Impressions</span>
+        </div>
+      </div>
+      
+      {/* Statistics Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t">
+        <div className="space-y-1">
+          <div className="flex items-center gap-1 text-xs text-gray-500">
+            <Eye className="h-3 w-3" />
+            <span>Total Reach</span>
+          </div>
+          <p className="text-lg font-semibold">
+            {totalReach >= 1000 ? `${(totalReach / 1000).toFixed(1)}k` : totalReach.toLocaleString()}
+          </p>
+        </div>
+        
+        <div className="space-y-1">
+          <div className="flex items-center gap-1 text-xs text-gray-500">
+            <Activity className="h-3 w-3" />
+            <span>Avg Daily</span>
+          </div>
+          <p className="text-lg font-semibold">
+            {avgReach >= 1000 ? `${(avgReach / 1000).toFixed(1)}k` : avgReach.toLocaleString()}
+          </p>
+        </div>
+        
+        <div className="space-y-1">
+          <div className="flex items-center gap-1 text-xs text-gray-500">
+            {growthPercent >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+            <span>Growth</span>
+          </div>
+          <p className={`text-lg font-semibold ${growthPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {growthPercent >= 0 ? '+' : ''}{growthPercent}%
+          </p>
+        </div>
+        
+        <div className="space-y-1">
+          <div className="flex items-center gap-1 text-xs text-gray-500">
+            <Calendar className="h-3 w-3" />
+            <span>Peak Day</span>
+          </div>
+          <p className="text-sm font-medium">
+            {peakDay.date}
+            <span className="text-xs text-gray-500 ml-1">
+              ({peakDay.reach >= 1000 ? `${(peakDay.reach / 1000).toFixed(1)}k` : peakDay.reach})
+            </span>
+          </p>
         </div>
       </div>
     </div>
