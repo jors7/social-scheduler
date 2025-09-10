@@ -56,10 +56,11 @@ export function MetricsUpdater({ onUpdate, className }: MetricsUpdaterProps) {
       const response = await fetch('/api/social-accounts')
       if (response.ok) {
         const accounts = await response.json()
-        const platforms = [...new Set(accounts
+        const platformSet = new Set(accounts
           .filter((acc: any) => acc.is_active)
           .map((acc: any) => acc.platform.toLowerCase())
-        )]
+        )
+        const platforms = Array.from(platformSet)
         setAvailablePlatforms(platforms)
         // By default, select all available platforms
         setSelectedPlatforms(new Set(platforms))
