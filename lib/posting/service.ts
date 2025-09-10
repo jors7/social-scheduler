@@ -24,6 +24,17 @@ export interface PostResult {
   success: boolean;
   postId?: string;
   error?: string;
+  data?: {
+    id?: string;
+    metrics?: {
+      likes: number;
+      comments: number;
+      saves?: number;
+      shares?: number;
+      impressions?: number;
+      reach?: number;
+    };
+  };
 }
 
 export class PostingService {
