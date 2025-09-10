@@ -56,8 +56,10 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
   const [recentPosts, setRecentPosts] = useState<InstagramPost[]>([])
   const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'days_28'>('week')
   const [hasInstagramAccount, setHasInstagramAccount] = useState(false)
+  const [instagramAccounts, setInstagramAccounts] = useState<any[]>([])
+  const [selectedAccount, setSelectedAccount] = useState<any>(null)
 
-  const fetchInstagramInsights = async () => {
+  const fetchInstagramInsights = async (accountId?: string) => {
     try {
       setLoading(true)
       
@@ -65,18 +67,34 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
       const accountResponse = await fetch('/api/social-accounts')
       if (accountResponse.ok) {
         const accounts = await accountResponse.json()
-        const instagramAccount = accounts.find((acc: any) => acc.platform === 'instagram' && acc.is_active)
+        const instagramAccountsList = accounts.filter((acc: any) => acc.platform === 'instagram' && acc.is_active)
         
-        if (!instagramAccount) {
+        if (instagramAccountsList.length === 0) {
           setHasInstagramAccount(false)
           return
         }
         
         setHasInstagramAccount(true)
+        setInstagramAccounts(instagramAccountsList)
+        
+        // Select account to use
+        const accountToUse = accountId 
+          ? instagramAccountsList.find((acc: any) => acc.id === accountId) 
+          : selectedAccount 
+          || instagramAccountsList[0]
+        
+        setSelectedAccount(accountToUse)
+      } else {
+        return
       }
 
-      // Fetch user-level insights
-      const userInsightsResponse = await fetch(`/api/instagram/insights?type=user&period=${selectedPeriod}`)
+      // Fetch user-level insights for the selected account
+      const queryParams = new URLSearchParams({
+        type: 'user',
+        period: selectedPeriod,
+        ...(selectedAccount?.id && { accountId: selectedAccount.id })
+      })
+      const userInsightsResponse = await fetch(`/api/instagram/insights?${queryParams}`)
       if (userInsightsResponse.ok) {
         const data = await userInsightsResponse.json()
         setUserInsights(data.insights)
@@ -233,14 +251,45 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1">
               <CardTitle className="flex items-center gap-2">
                 <Camera className="h-5 w-5" />
                 Instagram Insights
+                {selectedAccount && (
+                  <Badge variant="secondary" className="ml-2">
+                    @{selectedAccount.username || selectedAccount.platform_user_id}
+                  </Badge>
+                )}
               </CardTitle>
               <CardDescription>
-                Performance metrics for your Instagram Business account
+                {selectedAccount 
+                  ? `Analytics for @${selectedAccount.username || selectedAccount.platform_user_id}`
+                  : 'Performance metrics for your Instagram Business account'}
               </CardDescription>
+              {instagramAccounts.length > 1 && (
+                <div className="mt-2">
+                  <select
+                    className="text-sm border rounded-lg px-3 py-1.5 bg-white"
+                    value={selectedAccount?.id || ''}
+                    onChange={(e) => {
+                      const account = instagramAccounts.find(acc => acc.id === e.target.value)
+                      if (account) {
+                        setSelectedAccount(account)
+                        fetchInstagramInsights(account.id)
+                      }
+                    }}
+                  >
+                    {instagramAccounts.map(account => (
+                      <option key={account.id} value={account.id}>
+                        @{account.username || account.platform_user_id}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="ml-2 text-xs text-gray-500">
+                    Switch between {instagramAccounts.length} connected accounts
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <select
@@ -265,18 +314,6 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Impressions */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Eye className="h-4 w-4" />
-                <span>Impressions</span>
-              </div>
-              <p className="text-2xl font-bold">
-                {formatNumber(userInsights?.impressions?.value || 0)}
-              </p>
-              {getChangeIndicator(userInsights?.impressions?.value || 0, userInsights?.impressions?.previous || 0)}
-            </div>
-
             {/* Reach */}
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -292,13 +329,25 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
             {/* Profile Views */}
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Activity className="h-4 w-4" />
+                <Eye className="h-4 w-4" />
                 <span>Profile Views</span>
               </div>
               <p className="text-2xl font-bold">
                 {formatNumber(userInsights?.profile_views?.value || 0)}
               </p>
               {getChangeIndicator(userInsights?.profile_views?.value || 0, userInsights?.profile_views?.previous || 0)}
+            </div>
+
+            {/* Website Clicks */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Activity className="h-4 w-4" />
+                <span>Website Clicks</span>
+              </div>
+              <p className="text-2xl font-bold">
+                {formatNumber(userInsights?.website_clicks?.value || 0)}
+              </p>
+              {getChangeIndicator(userInsights?.website_clicks?.value || 0, userInsights?.website_clicks?.previous || 0)}
             </div>
 
             {/* Follower Count */}
@@ -322,6 +371,11 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
             Recent Posts Performance
+            {selectedAccount && (
+              <Badge variant="outline" className="ml-2 text-xs">
+                @{selectedAccount.username || selectedAccount.platform_user_id}
+              </Badge>
+            )}
           </CardTitle>
           <CardDescription>
             Engagement metrics for your latest Instagram posts

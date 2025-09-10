@@ -603,12 +603,12 @@ export class InstagramClient {
 
   async getUserInsights(period: 'day' | 'week' | 'days_28' = 'day', metrics?: string[]) {
     try {
-      // User-level metrics
+      // User-level metrics - only use metrics that are valid for user insights
       const defaultMetrics = [
-        'impressions',
         'reach',
         'follower_count',
-        'profile_views'
+        'profile_views',
+        'website_clicks'
       ];
       
       const metricsToFetch = metrics || defaultMetrics;

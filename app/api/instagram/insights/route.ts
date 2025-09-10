@@ -18,22 +18,32 @@ export async function GET(request: NextRequest) {
     const storyId = searchParams.get('storyId');
     const period = searchParams.get('period') as 'day' | 'week' | 'days_28' || 'day';
     const type = searchParams.get('type') || 'media'; // 'media', 'user', or 'story'
+    const accountId = searchParams.get('accountId');
 
     // Get Instagram account
-    const { data: account, error: accountError } = await supabase
+    let query = supabase
       .from('social_accounts')
       .select('*')
       .eq('user_id', user.id)
       .eq('platform', 'instagram')
-      .eq('is_active', true)
-      .single();
-
-    if (accountError || !account) {
+      .eq('is_active', true);
+    
+    // If specific account requested, get that one
+    if (accountId) {
+      query = query.eq('id', accountId);
+    }
+    
+    const { data: accounts, error: accountError } = await query;
+    
+    if (accountError || !accounts || accounts.length === 0) {
       return NextResponse.json(
         { error: 'Instagram account not connected' },
         { status: 404 }
       );
     }
+    
+    // Use specified account or first available
+    const account = accounts[0];
 
     // Initialize Instagram client
     const client = new InstagramClient({
@@ -92,6 +102,11 @@ export async function GET(request: NextRequest) {
       type,
       id: mediaId || storyId,
       period: type === 'user' ? period : undefined,
+      account: {
+        id: account.id,
+        username: account.username,
+        platform_user_id: account.platform_user_id
+      }
     });
 
   } catch (error) {
