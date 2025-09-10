@@ -201,8 +201,53 @@ Many of our users manage multiple business accounts and need centralized managem
 ### instagram_content_publish
 **Use Case**: Publish photos, videos, and carousel posts to Instagram business accounts
 
-### instagram_manage_insights
-**Use Case**: Show post performance and account analytics
+### instagram_business_manage_insights
+**Permission Scope**: `instagram_business_manage_insights`  
+**Access Level**: Advanced Access
+
+**Use Case**: 
+We display comprehensive Instagram analytics to help content creators and businesses understand their content performance and audience growth.
+
+**User Flow**:
+1. User publishes content to Instagram through SocialCal
+2. User navigates to Analytics Dashboard
+3. User sees dedicated Instagram Insights section with:
+   - Account-level metrics (impressions, reach, profile views, follower count)
+   - Time period selection (24 hours, 7 days, 28 days)
+4. User navigates to Posted Posts page
+5. User clicks "View Instagram Insights" button on Instagram posts
+6. System fetches and displays post-specific metrics:
+   - Impressions (number of times the post was seen)
+   - Reach (unique accounts that saw the post)
+   - Saves (number of users who saved the post)
+   - Engagement metrics (likes, comments, shares)
+7. User uses this data to optimize future content strategy
+
+**Specific Metrics We Display**:
+- **Post Insights**: impressions, reach, saved, likes, comments, shares, engagement rate
+- **User Insights**: profile_views, follower_count, reach, impressions
+- **Story Insights**: exits, impressions, reach, replies, taps_forward, taps_back
+- **Growth Metrics**: Follower growth trends with percentage changes
+
+**Why This Is Essential**:
+- Users need to track content performance to improve engagement
+- Businesses require ROI metrics for their social media efforts
+- Saves metric is particularly important for Instagram algorithm optimization
+- Profile views from posts help users understand content-to-profile conversion
+- Follower growth tracking is critical for influencer marketing
+
+**Implementation Details**:
+- Real-time insights fetching when users request them
+- Visual charts and graphs for trend analysis
+- Comparison metrics showing growth/decline percentages
+- Individual post performance cards with all metrics displayed
+- Refresh functionality to get latest metrics
+
+**Data Handling**:
+- Insights are fetched on-demand, not stored permanently
+- Temporary caching for performance optimization
+- Users can refresh to get latest metrics
+- All data is encrypted in transit
 
 ## Threads Permissions (If Applicable)
 
@@ -282,8 +327,62 @@ Our use case is similar to established social media management platforms:
 - Accurate analytics display
 - Clean disconnection with data removal
 
-## Video Demonstration
-[Link to screencast showing the complete user flow]
+## Video Demonstration Requirements for Instagram Insights
+
+### What the Screencast Must Show:
+
+1. **Complete Meta Login Flow**
+   - User clicking "Connect Instagram" 
+   - OAuth permission dialog appearing
+   - User granting instagram_business_manage_insights permission
+   - Successful connection confirmation
+
+2. **Analytics Dashboard - Instagram Insights Section**
+   - Navigate to Analytics page
+   - Show Instagram Insights component loading
+   - Display account-level metrics:
+     - Impressions count with trend indicator
+     - Reach count with trend indicator  
+     - Profile Views count
+     - Follower Count with growth percentage
+   - Demonstrate period selection (24 hours, 7 days, 28 days)
+   - Show data refreshing when period changes
+
+3. **Posted Posts Page - Individual Post Insights**
+   - Navigate to Posted Posts page
+   - Locate an Instagram post
+   - Click "View Instagram Insights" button
+   - Show insights loading and displaying:
+     - Impressions for that specific post
+     - Reach for that specific post
+     - Saves count (critical metric to demonstrate)
+     - Engagement metrics (likes, comments)
+   - Show multiple posts with varying performance levels
+
+4. **Recent Posts Performance Section**
+   - Return to Analytics Dashboard
+   - Scroll to "Recent Posts Performance" section
+   - Show list of recent Instagram posts with:
+     - Post caption preview
+     - Post date
+     - Individual metrics for each post
+     - Saves count prominently displayed
+   - Demonstrate that saves data is being fetched and displayed
+
+5. **Follower Growth Demonstration**
+   - Show follower count at beginning of video
+   - Navigate through the app
+   - Return to show updated follower count
+   - Highlight growth percentage indicator
+
+### Key Points to Emphasize in Screencast:
+- Saves metric is clearly visible and functional
+- All metrics update in real-time
+- Performance data helps users optimize content strategy
+- The app successfully retrieves and displays Instagram insights
+- User has full visibility into their Instagram performance
+
+[Updated screencast link to be added after recording]
 
 ## Additional Notes
 

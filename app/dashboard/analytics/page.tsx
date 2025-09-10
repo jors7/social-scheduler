@@ -8,6 +8,7 @@ import { EngagementChart } from '@/components/dashboard/analytics/engagement-cha
 import { PlatformBreakdown } from '@/components/dashboard/analytics/platform-breakdown'
 import { TopPosts } from '@/components/dashboard/analytics/top-posts'
 import { ReachChart } from '@/components/dashboard/analytics/reach-chart'
+import { InstagramInsights } from '@/components/dashboard/analytics/instagram-insights'
 import { CalendarDays, Download, Filter, BarChart3 } from 'lucide-react'
 import { toast } from 'sonner'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
@@ -278,6 +279,9 @@ export default function AnalyticsPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Instagram Insights Section */}
+          <InstagramInsights className="mt-8" />
         </div>
       </SubscriptionGate>
     </div>

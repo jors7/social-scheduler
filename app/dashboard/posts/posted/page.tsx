@@ -19,7 +19,11 @@ import {
   Clock,
   X,
   Heart,
-  MessageCircle
+  MessageCircle,
+  BarChart3,
+  Eye,
+  Bookmark,
+  Users
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -44,6 +48,20 @@ interface PostStats {
   comments: number
   shares: number
   views: number
+  saves?: number
+  reach?: number
+  profileViews?: number
+}
+
+interface InstagramInsights {
+  impressions: number
+  reach: number
+  saved: number
+  likes: number
+  comments: number
+  shares: number
+  engagement: number
+  profile_views?: number
 }
 
 const platformIcons: Record<string, string> = {
@@ -63,6 +81,9 @@ export default function PostedPostsPage() {
   const [selectedPosts, setSelectedPosts] = useState<string[]>([])
   const [postedPosts, setPostedPosts] = useState<PostedPost[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingInsights, setLoadingInsights] = useState<Record<string, boolean>>({})
+  const [postInsights, setPostInsights] = useState<Record<string, InstagramInsights>>({})
+  const [showInsightsModal, setShowInsightsModal] = useState<string | null>(null)
 
   const fetchPostedPosts = async () => {
     try {
@@ -137,6 +158,37 @@ export default function PostedPostsPage() {
       minute: '2-digit',
       hour12: true
     })
+  }
+
+  const fetchInstagramInsights = async (postId: string, mediaId: string) => {
+    setLoadingInsights(prev => ({ ...prev, [postId]: true }))
+    try {
+      const response = await fetch(`/api/instagram/insights?mediaId=${mediaId}&type=media`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.insights) {
+          const insights: InstagramInsights = {
+            impressions: data.insights.impressions?.value || 0,
+            reach: data.insights.reach?.value || 0,
+            saved: data.insights.saved?.value || 0,
+            likes: data.insights.likes?.value || 0,
+            comments: data.insights.comments?.value || 0,
+            shares: data.insights.shares?.value || 0,
+            engagement: data.insights.engagement?.value || 0,
+            profile_views: data.insights.profile_views?.value || 0
+          }
+          setPostInsights(prev => ({ ...prev, [postId]: insights }))
+          toast.success('Instagram insights loaded')
+        }
+      } else {
+        toast.error('Failed to load Instagram insights')
+      }
+    } catch (error) {
+      console.error('Error fetching Instagram insights:', error)
+      toast.error('Failed to load insights')
+    } finally {
+      setLoadingInsights(prev => ({ ...prev, [postId]: false }))
+    }
   }
 
   // Extract real stats from post_results or return zeros
@@ -512,34 +564,107 @@ export default function PostedPostsPage() {
                             {/* Performance Stats - show for all posts, but note when no data available */}
                             <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
                               {post.status === 'posted' ? (
-                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                  <div className="text-center">
-                                    <p className="text-sm font-medium text-gray-600">Views</p>
-                                    <p className="text-lg font-bold">{stats.views.toLocaleString()}</p>
+                                <>
+                                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                    <div className="text-center">
+                                      <p className="text-sm font-medium text-gray-600">Views</p>
+                                      <p className="text-lg font-bold">{stats.views.toLocaleString()}</p>
+                                    </div>
+                                    <div className="text-center">
+                                      <p className="text-sm font-medium text-gray-600">Likes</p>
+                                      <p className="text-lg font-bold">{stats.likes}</p>
+                                    </div>
+                                    <div className="text-center">
+                                      <p className="text-sm font-medium text-gray-600">Comments</p>
+                                      <p className="text-lg font-bold">{stats.comments}</p>
+                                    </div>
+                                    <div className="text-center">
+                                      <p className="text-sm font-medium text-gray-600">Shares</p>
+                                      <p className="text-lg font-bold">{stats.shares}</p>
+                                    </div>
+                                    <div className="text-center">
+                                      <p className="text-sm font-medium text-gray-600">Engagement</p>
+                                      <p className="text-lg font-bold">{getEngagementRate(stats)}%</p>
+                                    </div>
                                   </div>
-                                  <div className="text-center">
-                                    <p className="text-sm font-medium text-gray-600">Likes</p>
-                                    <p className="text-lg font-bold">{stats.likes}</p>
-                                  </div>
-                                  <div className="text-center">
-                                    <p className="text-sm font-medium text-gray-600">Comments</p>
-                                    <p className="text-lg font-bold">{stats.comments}</p>
-                                  </div>
-                                  <div className="text-center">
-                                    <p className="text-sm font-medium text-gray-600">Shares</p>
-                                    <p className="text-lg font-bold">{stats.shares}</p>
-                                  </div>
-                                  <div className="text-center">
-                                    <p className="text-sm font-medium text-gray-600">Engagement</p>
-                                    <p className="text-lg font-bold">{getEngagementRate(stats)}%</p>
-                                  </div>
-                                </div>
+                                  
+                                  {/* Instagram-specific insights button */}
+                                  {post.post_results?.some((r: any) => r.platform === 'instagram' && r.success && r.data?.id) && (
+                                    <div className="mt-4 pt-4 border-t border-blue-100">
+                                      {postInsights[post.id] ? (
+                                        <div className="space-y-3">
+                                          <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                                              <Eye className="h-4 w-4" />
+                                              Instagram Insights
+                                            </span>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => {
+                                                const instagramResult = post.post_results?.find((r: any) => r.platform === 'instagram')
+                                                if (instagramResult?.data?.id) {
+                                                  fetchInstagramInsights(post.id, instagramResult.data.id)
+                                                }
+                                              }}
+                                              disabled={loadingInsights[post.id]}
+                                            >
+                                              Refresh
+                                            </Button>
+                                          </div>
+                                          <div className="grid grid-cols-3 gap-3">
+                                            <div className="text-center p-2 bg-white rounded-lg">
+                                              <Eye className="h-4 w-4 mx-auto mb-1 text-purple-600" />
+                                              <p className="text-xs text-gray-600">Impressions</p>
+                                              <p className="text-sm font-bold">{postInsights[post.id].impressions}</p>
+                                            </div>
+                                            <div className="text-center p-2 bg-white rounded-lg">
+                                              <Users className="h-4 w-4 mx-auto mb-1 text-blue-600" />
+                                              <p className="text-xs text-gray-600">Reach</p>
+                                              <p className="text-sm font-bold">{postInsights[post.id].reach}</p>
+                                            </div>
+                                            <div className="text-center p-2 bg-white rounded-lg">
+                                              <Bookmark className="h-4 w-4 mx-auto mb-1 text-pink-600" />
+                                              <p className="text-xs text-gray-600">Saves</p>
+                                              <p className="text-sm font-bold">{postInsights[post.id].saved}</p>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="w-full"
+                                          onClick={() => {
+                                            const instagramResult = post.post_results?.find((r: any) => r.platform === 'instagram')
+                                            if (instagramResult?.data?.id) {
+                                              fetchInstagramInsights(post.id, instagramResult.data.id)
+                                            }
+                                          }}
+                                          disabled={loadingInsights[post.id]}
+                                        >
+                                          {loadingInsights[post.id] ? (
+                                            <>
+                                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2" />
+                                              Loading Instagram Insights...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <BarChart3 className="h-4 w-4 mr-2" />
+                                              View Instagram Insights
+                                            </>
+                                          )}
+                                        </Button>
+                                      )}
+                                    </div>
+                                  )}
+                                </>
                               ) : (
                                 <div className="text-center text-sm text-gray-500">
                                   No analytics available for failed posts
                                 </div>
                               )}
-                              {post.status === 'posted' && stats.views === 0 && stats.likes === 0 && (
+                              {post.status === 'posted' && stats.views === 0 && stats.likes === 0 && !postInsights[post.id] && (
                                 <div className="text-center text-xs text-gray-400 mt-2">
                                   Analytics data will be available when platforms provide engagement metrics
                                 </div>
