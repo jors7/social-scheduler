@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
                     depth: 0
                   });
                   
-                  if (threadResponse.success && threadResponse.data.thread.post) {
+                  if (threadResponse.success && threadResponse.data.thread && 'post' in threadResponse.data.thread) {
                     const postData = threadResponse.data.thread.post;
                     
                     const metrics = {
