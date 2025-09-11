@@ -45,10 +45,10 @@ export function PlatformInsightsTabs({ className, connectedPlatforms = [] }: Pla
         const response = await fetch('/api/social-accounts')
         if (response.ok) {
           const accounts = await response.json()
-          const platforms = [...new Set(accounts
+          const platforms = Array.from(new Set(accounts
             .filter((acc: any) => acc.is_active)
             .map((acc: any) => acc.platform.toLowerCase())
-          )]
+          )) as string[]
           setAvailablePlatforms(platforms)
         }
       } catch (error) {

@@ -56,7 +56,7 @@ export function MetricsUpdater({ onUpdate, className }: MetricsUpdaterProps) {
       const response = await fetch('/api/social-accounts')
       if (response.ok) {
         const accounts = await response.json()
-        const platformSet = new Set(accounts
+        const platformSet = new Set<string>(accounts
           .filter((acc: any) => acc.is_active)
           .map((acc: any) => acc.platform.toLowerCase())
         )
@@ -139,7 +139,7 @@ export function MetricsUpdater({ onUpdate, className }: MetricsUpdaterProps) {
     setUpdateStatus(newStatus)
 
     // Update each selected platform
-    for (const platform of selectedPlatforms) {
+    for (const platform of Array.from(selectedPlatforms)) {
       try {
         let endpoint = ''
         switch (platform) {
@@ -148,6 +148,13 @@ export function MetricsUpdater({ onUpdate, className }: MetricsUpdaterProps) {
             break
           case 'threads':
             endpoint = '/api/threads/update-metrics'
+            break
+          case 'linkedin':
+            endpoint = '/api/linkedin/update-metrics'
+            break
+          case 'twitter':
+          case 'x':
+            endpoint = '/api/twitter/update-metrics'
             break
           // Add more platforms as they become available
           default:
