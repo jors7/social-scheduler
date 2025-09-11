@@ -680,7 +680,7 @@ function CreateNewPostPageContent() {
         
         // If real thread fails (likely permission issue), fallback to numbered
         if (!response.ok) {
-          const errorMessage = data.error?.toLowerCase() || ''
+          const errorMessage = (data.error?.toLowerCase() || data.message?.toLowerCase() || '')
           if (errorMessage.includes('permission') || 
               errorMessage.includes('reply_to_id') || 
               errorMessage.includes('not authorized') ||
@@ -708,7 +708,8 @@ function CreateNewPostPageContent() {
         
         if (!response.ok) {
           toast.error(data.error || 'Failed to post thread')
-        } else if (data.partial) {
+        } else if (data.partial && !usedNumberedFallback) {
+          // This shouldn't happen anymore as partial responses trigger fallback
           toast.warning(data.message)
         } else {
           const successMessage = usedNumberedFallback 

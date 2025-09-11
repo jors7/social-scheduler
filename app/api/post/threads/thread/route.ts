@@ -112,7 +112,13 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.error(`Error processing post ${i + 1}:`, error);
         
-        // Return partial success if some posts were published
+        // If this is a permission error, throw it immediately to trigger fallback
+        if (error instanceof Error && 
+            error.message.includes('threads_manage_replies permission required')) {
+          throw error; // Re-throw permission error to trigger client-side fallback
+        }
+        
+        // Return partial success if some posts were published (for other errors)
         if (publishedPosts.length > 0) {
           return NextResponse.json({
             success: false,
