@@ -41,11 +41,11 @@ export async function checkThreadsTokenExpiry(accountId?: string): Promise<{
   // Check when the token was last updated
   const lastUpdated = account.updated_at ? new Date(account.updated_at) : null;
   const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const canRefresh = lastUpdated && lastUpdated < oneDayAgo;
+  const canRefresh = lastUpdated ? lastUpdated < oneDayAgo : true;
   
   if (!account.expires_at) {
-    // No expiration set, needs refresh if we can
-    return { needsRefresh: canRefresh || true, isExpired: false, account };
+    // No expiration set, needs refresh
+    return { needsRefresh: true, isExpired: false, account };
   }
 
   const expiryDate = new Date(account.expires_at);
