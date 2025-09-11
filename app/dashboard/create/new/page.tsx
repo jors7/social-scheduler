@@ -682,19 +682,14 @@ function CreateNewPostPageContent() {
           return
         }
 
-        // Check if this is a test account (can use real threads)
-        const isTestAccount = threadsAccount.username === 'thejanorsula' || 
-                             threadsAccount.is_test_account === true
-        
-        console.log(`Posting thread for ${threadsAccount.username} (test account: ${isTestAccount})`)
+        console.log(`Posting thread for ${threadsAccount.username}`)
         console.log('Account details:', {
           username: threadsAccount.username,
           platform_user_id: threadsAccount.platform_user_id,
-          is_test_account: threadsAccount.is_test_account,
           token_preview: threadsAccount.access_token ? `${threadsAccount.access_token.substring(0, 20)}...` : 'null'
         })
         
-        // Try real connected thread first (works for test accounts)
+        // Try real connected thread first
         let response = await fetch('/api/post/threads/thread', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -709,16 +704,18 @@ function CreateNewPostPageContent() {
         let data = await response.json()
         let usedNumberedFallback = false
         
-        // If real thread fails (likely permission issue), fallback to numbered - BUT NOT FOR TEST ACCOUNTS
-        if (!response.ok && !isTestAccount) {
+        // If real thread fails with permission issue, fallback to numbered
+        if (!response.ok) {
           const errorMessage = (data.error?.toLowerCase() || data.message?.toLowerCase() || '')
+          console.log('Thread creation failed:', data)
+          
           if (errorMessage.includes('permission') || 
               errorMessage.includes('reply_to_id') || 
               errorMessage.includes('not authorized') ||
               errorMessage.includes('threads_manage_replies')) {
             
-            console.log('Real thread failed for non-test account, falling back to numbered approach')
-            toast.info('Creating numbered thread series (connected threads require additional permissions)')
+            console.log('Permission issue detected, falling back to numbered approach')
+            toast.info('Creating numbered thread series')
             
             // Fallback to numbered approach
             response = await fetch('/api/post/threads/thread-numbered', {
@@ -735,20 +732,15 @@ function CreateNewPostPageContent() {
             data = await response.json()
             usedNumberedFallback = true
           }
-        } else if (!response.ok && isTestAccount) {
-          // For test accounts, log the error but don't fallback
-          console.error('Thread creation failed for test account:', data)
-          console.log('Not falling back to numbered posts for test account')
         }
         
         if (!response.ok) {
           toast.error(data.error || 'Failed to post thread')
-        } else if (data.partial && !usedNumberedFallback) {
-          // This shouldn't happen anymore as partial responses trigger fallback
+        } else if (data.partial) {
           toast.warning(data.message)
         } else {
           const successMessage = usedNumberedFallback 
-            ? `Thread posted as ${data.posts.length} numbered posts [1/${data.posts.length}]...`
+            ? `Thread posted as ${data.posts.length} numbered posts`
             : `Connected thread created with ${data.posts.length} posts!`
           toast.success(successMessage)
           

@@ -113,7 +113,7 @@ export default function AnalyticsPage() {
       const engagementRate = totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0
       
       setAnalyticsData({
-        totalPosts: allPosts.length,  // Show total posts
+        totalPosts: postedPosts.length,  // Show only posted posts for consistency
         totalEngagement,
         totalReach,
         totalImpressions,

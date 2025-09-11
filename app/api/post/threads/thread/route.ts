@@ -42,8 +42,10 @@ export async function POST(request: NextRequest) {
         if (previousPostId) {
           createParams.reply_to_id = previousPostId;
           console.log(`Adding reply_to_id to post ${i + 1}: reply_to_id=${previousPostId}`);
+          console.log('Full createParams with reply_to_id:', createParams);
         } else {
           console.log(`Post ${i + 1} is the first post, no reply_to_id needed`);
+          console.log('Full createParams without reply_to_id:', createParams);
         }
 
         const createUrlParams = new URLSearchParams(createParams);
@@ -51,7 +53,8 @@ export async function POST(request: NextRequest) {
         
         console.log(`Creating container for post ${i + 1}/${posts.length}`);
         if (i > 0) {
-          console.log(`Request params include reply_to_id: ${createParams.reply_to_id}`);
+          console.log(`Full URL for reply: ${createUrl}`);
+          console.log(`URL params string: ${createUrlParams.toString()}`);
         }
         const createResponse = await fetch(createUrl, {
           method: 'POST'
