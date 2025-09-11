@@ -64,9 +64,9 @@ export default function SettingsContent() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
   
-  const fetchAccountLimits = async (userId: string) => {
+  const fetchAccountLimits = async (userId: string, forceRefresh: boolean = false) => {
     try {
-      console.log('Fetching account limits for user:', userId)
+      console.log('Fetching account limits for user:', userId, 'Force refresh:', forceRefresh)
       
       // Get current count
       const { data: accounts, error: accountsError } = await supabase
@@ -82,7 +82,7 @@ export default function SettingsContent() {
       const currentCount = accounts?.length || 0
       console.log('Current account count:', currentCount)
       
-      // Get subscription with proper join
+      // Get subscription with proper join - use .maybeSingle() to handle no subscription case
       const { data: subscription, error: subError } = await supabase
         .from('user_subscriptions')
         .select(`
@@ -96,9 +96,9 @@ export default function SettingsContent() {
         `)
         .eq('user_id', userId)
         .in('status', ['active', 'trialing'])
-        .single()
+        .maybeSingle()
       
-      if (subError) {
+      if (subError && subError.code !== 'PGRST116') { // PGRST116 is "no rows found"
         console.error('Error fetching subscription:', subError)
       }
       
@@ -106,6 +106,7 @@ export default function SettingsContent() {
       
       let maxAccounts = 1 // Free plan default
       let planName = 'Free'
+      let isUnlimited = false
       
       if (subscription && subscription.subscription_plans) {
         const plan = subscription.subscription_plans as any
@@ -115,31 +116,33 @@ export default function SettingsContent() {
         // Check for unlimited (-1) or get the actual limit
         if (limits?.connected_accounts === -1) {
           maxAccounts = -1 // Keep as -1 for unlimited
+          isUnlimited = true
         } else {
           maxAccounts = limits?.connected_accounts || 1
         }
         
-        console.log(`Plan: ${planName}, Connected accounts limit:`, limits?.connected_accounts)
+        console.log(`Plan: ${planName}, Connected accounts limit:`, limits?.connected_accounts, 'Is unlimited:', isUnlimited)
       } else {
         // Get free plan limits as fallback
         const { data: freePlan } = await supabase
           .from('subscription_plans')
           .select('limits')
           .eq('id', 'free')
-          .single()
+          .maybeSingle()
         
         if (freePlan) {
           const limits = freePlan.limits as any
           maxAccounts = limits?.connected_accounts || 1
         }
+        console.log('No active subscription, using free plan limits:', maxAccounts)
       }
       
-      const isUnlimited = maxAccounts === -1
-      
       console.log('Setting account limits:', {
+        planName,
         maxAccounts: isUnlimited ? 'Unlimited' : maxAccounts,
         currentCount,
-        canAddMore: isUnlimited || currentCount < maxAccounts
+        canAddMore: isUnlimited || currentCount < maxAccounts,
+        isUnlimited
       })
       
       setAccountLimits({
@@ -149,6 +152,12 @@ export default function SettingsContent() {
       })
     } catch (error) {
       console.error('Error fetching account limits:', error)
+      // Set a safe default
+      setAccountLimits({
+        maxAccounts: 1,
+        currentCount: 0,
+        canAddMore: false
+      })
     }
   }
 
@@ -182,12 +191,13 @@ export default function SettingsContent() {
     } finally {
       setRefreshing(false)
     }
-  }, [supabase])
+  }, [supabase, fetchAccountLimits])
 
   useEffect(() => {
     // Check for error messages in URL
     const urlParams = new URLSearchParams(window.location.search)
     const error = urlParams.get('error')
+    const success = urlParams.get('success')
     
     if (error === 'threads_wrong_account') {
       toast.error('Wrong Threads account detected. Please log out of Threads in your browser and try again.')
@@ -200,11 +210,19 @@ export default function SettingsContent() {
     
     // Fetch accounts on mount and set up real-time subscription
     const initialize = async () => {
-      await fetchConnectedAccounts()
+      // Force refresh if coming from a successful OAuth callback
+      const isFromOAuth = success && success.includes('_connected')
+      await fetchConnectedAccounts(false)
       
       // Get user for subscription setup
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+      
+      // If coming from OAuth, force refresh the limits to ensure we have the latest data
+      if (isFromOAuth) {
+        console.log('Coming from OAuth callback, forcing account limits refresh')
+        await fetchAccountLimits(user.id, true)
+      }
       
       // Subscribe to subscription changes to update limits in real-time
       const channel = supabase
@@ -225,14 +243,34 @@ export default function SettingsContent() {
         )
         .subscribe()
       
-      // Cleanup subscription on unmount
+      // Also subscribe to social_accounts changes to update counts immediately
+      const accountsChannel = supabase
+        .channel('settings-accounts-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'social_accounts',
+            filter: `user_id=eq.${user.id}`
+          },
+          async (payload) => {
+            console.log('Social accounts changed:', payload)
+            // Refetch both accounts and limits
+            await fetchConnectedAccounts()
+          }
+        )
+        .subscribe()
+      
+      // Cleanup subscriptions on unmount
       return () => {
         channel.unsubscribe()
+        accountsChannel.unsubscribe()
       }
     }
     
     initialize()
-  }, [fetchConnectedAccounts])
+  }, [fetchConnectedAccounts, fetchAccountLimits, supabase])
 
   const handleConnect = async (platformId: string) => {
     console.log('Connect button clicked for:', platformId)
