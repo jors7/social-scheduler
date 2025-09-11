@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getValidThreadsToken } from '@/lib/threads/token-manager';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, accessToken, text, mediaUrl } = await request.json();
+    const { userId, accessToken, text, mediaUrl, accountId } = await request.json();
 
     if (!userId || !accessToken || !text) {
       return NextResponse.json(
@@ -11,6 +12,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check and refresh token if needed
+    const { token: validToken, error: tokenError } = await getValidThreadsToken(accountId);
+    
+    if (tokenError || !validToken) {
+      console.error('Token validation failed:', tokenError);
+      return NextResponse.json(
+        { 
+          error: tokenError || 'Failed to get valid token',
+          requiresReconnect: true 
+        },
+        { status: 401 }
+      );
+    }
+
+    // Use the valid (possibly refreshed) token
+    const activeToken = validToken;
+    console.log('Using token for Threads post (possibly refreshed)');
+
     // Threads posting is a two-step process:
     // 1. Create a media container
     // 2. Publish the container
@@ -18,7 +37,7 @@ export async function POST(request: NextRequest) {
     let createParams: any = {
       media_type: 'TEXT',
       text: text,
-      access_token: accessToken
+      access_token: activeToken
     };
 
     // If there's a media URL, we need to handle it differently
@@ -79,7 +98,7 @@ export async function POST(request: NextRequest) {
     // Step 2: Publish the container
     const publishParams = {
       creation_id: containerId,
-      access_token: accessToken
+      access_token: activeToken
     };
 
     console.log('Publishing Threads post:', publishParams);

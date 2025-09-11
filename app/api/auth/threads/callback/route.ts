@@ -146,6 +146,8 @@ export async function GET(request: NextRequest) {
     const userId = tokenData.user_id; // Threads returns user_id in token response
     
     console.log('Got Threads access token for user:', userId);
+    console.log('Token expires_in (seconds):', expiresIn);
+    console.log('Token will expire at:', new Date(Date.now() + (expiresIn || 5184000) * 1000).toISOString());
 
     // Get Threads user info - use /me endpoint which works better than user_id
     // Try with simpler fields first to avoid permission issues
@@ -287,8 +289,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Threads tokens expire after 60 days, not the value from expiresIn
-    const expiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000); // 60 days from now
+    // Use the actual expiration time from the token response
+    // Threads returns expires_in in seconds (typically 5184000 for 60 days, but can be less)
+    const expiresAt = expiresIn 
+      ? new Date(Date.now() + expiresIn * 1000) 
+      : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000); // Default to 60 days if not provided
     
     // Check if this account already exists
     const { data: existingAccount } = await supabase
