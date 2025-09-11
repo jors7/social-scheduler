@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
 
 /**
- * Check if a Threads token needs refresh (within 7 days of expiry)
+ * Check if a Threads token needs refresh
+ * Threads tokens can be refreshed after 1 day but before 60 days
+ * We'll refresh if token is older than 1 day or expires within 7 days
  */
 export async function checkThreadsTokenExpiry(accountId?: string): Promise<{
   needsRefresh: boolean;
@@ -34,23 +36,32 @@ export async function checkThreadsTokenExpiry(accountId?: string): Promise<{
 
   const account = accounts[0];
   
+  const now = new Date();
+  
+  // Check when the token was last updated
+  const lastUpdated = account.updated_at ? new Date(account.updated_at) : null;
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const canRefresh = lastUpdated && lastUpdated < oneDayAgo;
+  
   if (!account.expires_at) {
-    // No expiration set, assume it needs refresh
-    return { needsRefresh: true, isExpired: false, account };
+    // No expiration set, needs refresh if we can
+    return { needsRefresh: canRefresh || true, isExpired: false, account };
   }
 
-  const now = new Date();
   const expiryDate = new Date(account.expires_at);
   const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   
   const isExpired = expiryDate <= now;
-  const needsRefresh = expiryDate <= sevenDaysFromNow;
+  // Refresh if: expired, expires within 7 days, or token is older than 1 day
+  const needsRefresh = isExpired || expiryDate <= sevenDaysFromNow || canRefresh;
   
   console.log('Token expiry check:', {
     accountId: account.id,
     expiresAt: account.expires_at,
+    lastUpdated: account.updated_at,
     isExpired,
     needsRefresh,
+    canRefresh,
     daysUntilExpiry: Math.floor((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
   });
   
@@ -59,6 +70,7 @@ export async function checkThreadsTokenExpiry(accountId?: string): Promise<{
 
 /**
  * Refresh a Threads token
+ * Uses th_refresh_token grant type for long-lived tokens
  */
 export async function refreshThreadsToken(account: any): Promise<{
   success: boolean;
@@ -68,29 +80,72 @@ export async function refreshThreadsToken(account: any): Promise<{
   try {
     console.log('Attempting to refresh Threads token for account:', account.id);
     
+    // Check if token is at least 1 day old (Threads requirement)
+    const lastUpdated = account.updated_at ? new Date(account.updated_at) : null;
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
+    if (lastUpdated && lastUpdated > oneDayAgo) {
+      console.log('Token is less than 24 hours old, cannot refresh yet');
+      return { 
+        success: false, 
+        error: 'Token must be at least 24 hours old to refresh' 
+      };
+    }
+    
     // Threads API token refresh endpoint
+    // Use th_refresh_token for refreshing long-lived tokens
     const refreshUrl = 'https://graph.threads.net/refresh_access_token';
     const params = new URLSearchParams({
-      grant_type: 'th_exchange_token',
+      grant_type: 'th_refresh_token',
       access_token: account.access_token
     });
 
+    console.log('Refreshing token with grant_type: th_refresh_token');
     const response = await fetch(`${refreshUrl}?${params}`, {
       method: 'GET'
     });
 
+    const responseText = await response.text();
+    console.log('Refresh response status:', response.status);
+    
     if (!response.ok) {
-      const error = await response.text();
-      console.error('Failed to refresh token:', error);
+      console.error('Failed to refresh token:', responseText);
+      
+      // Parse error if possible
+      try {
+        const errorData = JSON.parse(responseText);
+        console.error('Error details:', errorData);
+        
+        // If error indicates invalid token, we need to reconnect
+        if (errorData.error?.code === 190 || 
+            errorData.error?.message?.includes('Invalid OAuth') ||
+            errorData.error?.message?.includes('Error validating access token')) {
+          return { 
+            success: false, 
+            error: 'Token is invalid. Please reconnect your Threads account.' 
+          };
+        }
+      } catch (e) {
+        // Not JSON, use raw text
+      }
+      
       return { 
         success: false, 
         error: 'Token refresh failed. Please reconnect your account.' 
       };
     }
 
-    const data = await response.json();
+    const data = JSON.parse(responseText);
     const newToken = data.access_token;
-    const expiresIn = data.expires_in || 5184000; // Default to 60 days
+    const expiresIn = data.expires_in || 5183944; // Default to ~60 days (exact: 5183944 seconds)
+
+    if (!newToken) {
+      console.error('No access token in refresh response:', data);
+      return { 
+        success: false, 
+        error: 'No new token received from refresh' 
+      };
+    }
 
     // Update the token in the database
     const supabase = await createClient();
@@ -111,7 +166,7 @@ export async function refreshThreadsToken(account: any): Promise<{
       };
     }
 
-    console.log('Successfully refreshed Threads token');
+    console.log('Successfully refreshed Threads token, expires in', Math.floor(expiresIn / 86400), 'days');
     return { success: true, newToken };
   } catch (error) {
     console.error('Error refreshing Threads token:', error);

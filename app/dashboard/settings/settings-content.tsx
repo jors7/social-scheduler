@@ -12,7 +12,8 @@ import {
   Bell,
   AlertCircle,
   Clock,
-  BarChart
+  BarChart,
+  RefreshCw
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
@@ -937,6 +938,51 @@ export default function SettingsContent() {
                                         className="text-xs"
                                       >
                                         Set as Primary
+                                      </Button>
+                                    )}
+                                    {/* Refresh Token button for Threads accounts */}
+                                    {platform.id === 'threads' && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={async () => {
+                                          try {
+                                            setLoading(true)
+                                            const response = await fetch('/api/cron/refresh-threads-tokens', {
+                                              method: 'POST',
+                                              headers: {
+                                                'Content-Type': 'application/json'
+                                              }
+                                            })
+                                            
+                                            const data = await response.json()
+                                            
+                                            if (!response.ok) {
+                                              throw new Error(data.error || 'Failed to refresh token')
+                                            }
+                                            
+                                            if (data.results?.refreshed > 0) {
+                                              toast.success(`Token refreshed successfully! Valid for 60 more days.`)
+                                              fetchConnectedAccounts()
+                                            } else if (data.results?.skipped > 0) {
+                                              toast.info('Token was updated recently. Try again in 24 hours.')
+                                            } else if (data.results?.failed > 0) {
+                                              toast.error('Failed to refresh token. You may need to reconnect.')
+                                            } else {
+                                              toast.info('Token is already up to date')
+                                            }
+                                          } catch (error) {
+                                            console.error('Error refreshing token:', error)
+                                            toast.error(error instanceof Error ? error.message : 'Failed to refresh token')
+                                          } finally {
+                                            setLoading(false)
+                                          }
+                                        }}
+                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-300"
+                                        disabled={loading}
+                                      >
+                                        <RefreshCw className="mr-1 h-3 w-3" />
+                                        Refresh Token
                                       </Button>
                                     )}
                                     <Button
