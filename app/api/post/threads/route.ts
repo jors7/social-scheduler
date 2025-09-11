@@ -43,12 +43,11 @@ export async function POST(request: NextRequest) {
     // If there's a media URL, we need to handle it differently
     if (mediaUrl) {
       // For images, we need to upload to Threads first
-      // For now, we'll just do text posts
       // Image posting requires the image to be publicly accessible
       createParams.media_type = 'IMAGE';
       createParams.image_url = mediaUrl;
-      createParams.caption = text; // When posting images, text becomes caption
-      delete createParams.text;
+      // Keep the text field for image posts - Threads uses 'text' for both text-only and image posts
+      // The 'text' field serves as the caption for image posts
     }
 
     // Step 1: Create media container

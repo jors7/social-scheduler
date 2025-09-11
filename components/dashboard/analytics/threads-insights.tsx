@@ -85,45 +85,33 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
         return
       }
 
-      // Fetch recent Threads posts from scheduled_posts
-      const postsResponse = await fetch('/api/posts/schedule')
-      if (postsResponse.ok) {
-        const { posts } = await postsResponse.json()
+      // Fetch recent posts directly from Threads API (like Instagram does)
+      // This ensures deleted posts don't show up
+      const mediaQueryParams = new URLSearchParams({
+        limit: '5',
+        ...(selectedAccount?.id && { accountId: selectedAccount.id })
+      })
+      const mediaResponse = await fetch(`/api/threads/media?${mediaQueryParams}`)
+      if (mediaResponse.ok) {
+        const { media } = await mediaResponse.json()
         
-        // Filter for Threads posts that are posted
-        const threadsPosts = posts.filter((post: any) => 
-          post.status === 'posted' && 
-          post.platforms?.includes('threads') &&
-          post.post_results?.some((r: any) => r.platform === 'threads' && r.success)
-        )
-        
-        // Extract Threads-specific data
-        const threadsPostsData: ThreadsPost[] = []
-        threadsPosts.forEach((post: any) => {
-          const threadsResult = post.post_results?.find((r: any) => r.platform === 'threads' && r.success)
-          if (threadsResult) {
-            threadsPostsData.push({
-              id: threadsResult.postId || post.id,
-              text: post.content || '',
-              permalink: threadsResult.data?.permalink,
-              timestamp: post.posted_at || post.scheduled_for,
-              metrics: threadsResult.data?.metrics || {
-                views: 0,
-                likes: 0,
-                replies: 0,
-                reposts: 0,
-                quotes: 0,
-                shares: 0
-              }
-            })
+        // Convert API response to ThreadsPost format
+        const threadsPostsData: ThreadsPost[] = media.map((post: any) => ({
+          id: post.id,
+          text: post.text || '',
+          permalink: post.permalink,
+          timestamp: post.timestamp,
+          metrics: post.metrics || {
+            views: 0,
+            likes: 0,
+            replies: 0,
+            reposts: 0,
+            quotes: 0,
+            shares: 0
           }
-        })
+        }))
         
-        // Sort by date and limit to 5 most recent
-        threadsPostsData.sort((a, b) => 
-          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-        )
-        setRecentPosts(threadsPostsData.slice(0, 5))
+        setRecentPosts(threadsPostsData)
       }
       
       // Try to fetch user-level insights (may fail without permissions)
