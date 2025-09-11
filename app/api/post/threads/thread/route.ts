@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`Creating connected thread with ${posts.length} posts for user ${userId}`);
     console.log('Posts to create:', posts.map((p, i) => `Post ${i + 1}: ${p.substring(0, 30)}...`));
+    console.log('Access token preview:', accessToken ? `${accessToken.substring(0, 20)}...` : 'null');
 
     const publishedPosts = [];
     let previousPostId = null;
@@ -49,6 +50,9 @@ export async function POST(request: NextRequest) {
         const createUrl = `https://graph.threads.net/v1.0/me/threads?${createUrlParams.toString()}`;
         
         console.log(`Creating container for post ${i + 1}/${posts.length}`);
+        if (i > 0) {
+          console.log(`Request params include reply_to_id: ${createParams.reply_to_id}`);
+        }
         const createResponse = await fetch(createUrl, {
           method: 'POST'
         });
@@ -61,6 +65,9 @@ export async function POST(request: NextRequest) {
             statusText: createResponse.statusText,
             data: createData,
             error: createData.error,
+            errorCode: createData.error?.code,
+            errorType: createData.error?.type,
+            errorMessage: createData.error?.message,
             postIndex: i,
             isReply: i > 0,
             previousPostId: previousPostId

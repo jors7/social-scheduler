@@ -671,6 +671,7 @@ function CreateNewPostPageContent() {
           .select('*')
           .eq('user_id', user.id)
           .eq('platform', 'threads')
+          .eq('is_active', true)
           .single()
 
         if (!threadsAccount) {
@@ -686,6 +687,12 @@ function CreateNewPostPageContent() {
                              threadsAccount.is_test_account === true
         
         console.log(`Posting thread for ${threadsAccount.username} (test account: ${isTestAccount})`)
+        console.log('Account details:', {
+          username: threadsAccount.username,
+          platform_user_id: threadsAccount.platform_user_id,
+          is_test_account: threadsAccount.is_test_account,
+          token_preview: threadsAccount.access_token ? `${threadsAccount.access_token.substring(0, 20)}...` : 'null'
+        })
         
         // Try real connected thread first (works for test accounts)
         let response = await fetch('/api/post/threads/thread', {
@@ -702,15 +709,15 @@ function CreateNewPostPageContent() {
         let data = await response.json()
         let usedNumberedFallback = false
         
-        // If real thread fails (likely permission issue), fallback to numbered
-        if (!response.ok) {
+        // If real thread fails (likely permission issue), fallback to numbered - BUT NOT FOR TEST ACCOUNTS
+        if (!response.ok && !isTestAccount) {
           const errorMessage = (data.error?.toLowerCase() || data.message?.toLowerCase() || '')
           if (errorMessage.includes('permission') || 
               errorMessage.includes('reply_to_id') || 
               errorMessage.includes('not authorized') ||
               errorMessage.includes('threads_manage_replies')) {
             
-            console.log('Real thread failed, falling back to numbered approach')
+            console.log('Real thread failed for non-test account, falling back to numbered approach')
             toast.info('Creating numbered thread series (connected threads require additional permissions)')
             
             // Fallback to numbered approach
@@ -728,6 +735,10 @@ function CreateNewPostPageContent() {
             data = await response.json()
             usedNumberedFallback = true
           }
+        } else if (!response.ok && isTestAccount) {
+          // For test accounts, log the error but don't fallback
+          console.error('Thread creation failed for test account:', data)
+          console.log('Not falling back to numbered posts for test account')
         }
         
         if (!response.ok) {
