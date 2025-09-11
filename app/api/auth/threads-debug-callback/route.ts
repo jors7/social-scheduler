@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
     const endpoints = [
       `https://graph.threads.net/v1.0/me?fields=id,username,threads_profile_picture_url&access_token=${accessToken}`,
       `https://graph.threads.net/v1.0/${userId}?fields=id,username,threads_profile_picture_url&access_token=${accessToken}`,
-      `https://graph.facebook.com/v18.0/me?access_token=${accessToken}`,
+      `https://graph.facebook.com/v21.0/me?access_token=${accessToken}`,
     ];
     
     const results: Record<string, any> = {};

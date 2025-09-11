@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
     const redirectUri = `${baseUrl}/api/auth/facebook/callback`;
 
     // Exchange code for access token
-    const tokenUrl = new URL('https://graph.facebook.com/v18.0/oauth/access_token');
+    const tokenUrl = new URL('https://graph.facebook.com/v21.0/oauth/access_token');
     tokenUrl.searchParams.append('client_id', process.env.FACEBOOK_APP_ID!);
     tokenUrl.searchParams.append('client_secret', process.env.FACEBOOK_APP_SECRET!);
     tokenUrl.searchParams.append('code', code);
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
     console.log('Access token obtained successfully');
 
     // Exchange short-lived token for long-lived token (60+ days)
-    const longLivedTokenUrl = new URL('https://graph.facebook.com/v18.0/oauth/access_token');
+    const longLivedTokenUrl = new URL('https://graph.facebook.com/v21.0/oauth/access_token');
     longLivedTokenUrl.searchParams.append('grant_type', 'fb_exchange_token');
     longLivedTokenUrl.searchParams.append('client_id', process.env.FACEBOOK_APP_ID!);
     longLivedTokenUrl.searchParams.append('client_secret', process.env.FACEBOOK_APP_SECRET!);
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
     console.log('Using token type:', longLivedData.access_token ? 'long-lived' : 'short-lived');
 
     // Get user info
-    const userUrl = `https://graph.facebook.com/v18.0/me?fields=id,name,email&access_token=${finalAccessToken}`;
+    const userUrl = `https://graph.facebook.com/v21.0/me?fields=id,name,email&access_token=${finalAccessToken}`;
     const userResponse = await fetch(userUrl);
     const userData: FacebookUserResponse = await userResponse.json();
 
@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get user's Facebook Pages
-    const pagesUrl = `https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token,category,tasks&access_token=${finalAccessToken}`;
+    const pagesUrl = `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,category,tasks&access_token=${finalAccessToken}`;
     const pagesResponse = await fetch(pagesUrl);
     const pagesData: FacebookPageResponse = await pagesResponse.json();
 
@@ -215,7 +215,7 @@ export async function GET(request: NextRequest) {
         console.log(`Processing page ${index + 1}/${pagesData.data.length}: ${page.name} (ID: ${page.id})`);
         
         // Exchange page access token for long-lived page access token
-        const pageLongLivedUrl = new URL('https://graph.facebook.com/v18.0/oauth/access_token');
+        const pageLongLivedUrl = new URL('https://graph.facebook.com/v21.0/oauth/access_token');
         pageLongLivedUrl.searchParams.append('grant_type', 'fb_exchange_token');
         pageLongLivedUrl.searchParams.append('client_id', process.env.FACEBOOK_APP_ID!);
         pageLongLivedUrl.searchParams.append('client_secret', process.env.FACEBOOK_APP_SECRET!);

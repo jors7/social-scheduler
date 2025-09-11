@@ -1,5 +1,5 @@
 export class FacebookService {
-  private baseUrl = 'https://graph.facebook.com/v18.0';
+  private baseUrl = 'https://graph.facebook.com/v21.0';
 
   /**
    * Create a text post on a Facebook page

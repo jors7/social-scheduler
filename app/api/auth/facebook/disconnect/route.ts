@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     if (account.access_token) {
       try {
         // Use /me/permissions endpoint for revoking the app's permissions
-        const revokeUrl = `https://graph.facebook.com/v18.0/me/permissions?access_token=${account.access_token}`;
+        const revokeUrl = `https://graph.facebook.com/v21.0/me/permissions?access_token=${account.access_token}`;
 
         console.log('Attempting to revoke Facebook permissions...');
         const revokeResponse = await fetch(revokeUrl, {

@@ -6,7 +6,7 @@ export async function GET() {
   const redirectUri = encodeURIComponent('http://localhost:3001/api/auth/threads/callback');
   
   // Try with just basic scope first
-  const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=instagram_basic&response_type=code`;
+  const authUrl = `https://www.facebook.com/v21.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=instagram_basic&response_type=code`;
   
   console.log('Simple OAuth URL:', authUrl);
   

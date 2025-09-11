@@ -31,7 +31,7 @@ export async function GET() {
     });
 
     // Use Facebook OAuth endpoint
-    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
+    const authUrl = `https://www.facebook.com/v21.0/dialog/oauth?${params.toString()}`;
     
     return NextResponse.json({ 
       authUrl,

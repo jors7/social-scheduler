@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Use Facebook OAuth endpoint
-    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?${authParams.toString()}`;
+    const authUrl = `https://www.facebook.com/v21.0/dialog/oauth?${authParams.toString()}`;
 
     console.log('Facebook OAuth URL generated');
     console.log('Client ID:', process.env.FACEBOOK_APP_ID);

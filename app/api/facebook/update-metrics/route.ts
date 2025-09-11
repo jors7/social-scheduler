@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
                 console.log('Fetching metrics for Facebook post:', result.postId);
                 
                 // Fetch current metrics from Facebook API
-                const insightsUrl = `https://graph.facebook.com/v18.0/${result.postId}/insights?metric=post_impressions,post_engaged_users,post_clicks,post_reactions_by_type_total&access_token=${account.access_token}`;
+                const insightsUrl = `https://graph.facebook.com/v21.0/${result.postId}/insights?metric=post_impressions,post_engaged_users,post_clicks,post_reactions_by_type_total&access_token=${account.access_token}`;
                 const insightsResponse = await fetch(insightsUrl);
                 
                 if (insightsResponse.ok) {
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
                   }
                   
                   // Also fetch comments and shares count
-                  const engagementUrl = `https://graph.facebook.com/v18.0/${result.postId}?fields=comments.summary(true),shares,permalink_url&access_token=${account.access_token}`;
+                  const engagementUrl = `https://graph.facebook.com/v21.0/${result.postId}?fields=comments.summary(true),shares,permalink_url&access_token=${account.access_token}`;
                   const engagementResponse = await fetch(engagementUrl);
                   
                   if (engagementResponse.ok) {

@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   // Test token exchange endpoint
   let tokenEndpointStatus = 'unknown';
   try {
-    const testUrl = 'https://graph.facebook.com/v18.0/oauth/access_token';
+    const testUrl = 'https://graph.facebook.com/v21.0/oauth/access_token';
     const response = await fetch(testUrl, { method: 'HEAD' });
     tokenEndpointStatus = response.ok ? 'reachable' : `status ${response.status}`;
   } catch (error) {
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     },
     params: params,
     endpoints: {
-      tokenExchange: 'https://graph.facebook.com/v18.0/oauth/access_token',
+      tokenExchange: 'https://graph.facebook.com/v21.0/oauth/access_token',
       tokenEndpointStatus
     },
     requiredDashboardSettings: {

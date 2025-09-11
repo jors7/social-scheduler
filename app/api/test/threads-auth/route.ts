@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       state: 'test_state_123',
     });
 
-    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
+    const authUrl = `https://www.facebook.com/v21.0/dialog/oauth?${params.toString()}`;
     
     return NextResponse.json({
       success: true,

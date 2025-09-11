@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       state: state,
     });
 
-    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
+    const authUrl = `https://www.facebook.com/v21.0/dialog/oauth?${params.toString()}`;
     
     console.log('Test Threads OAuth URL:', authUrl);
     console.log('Redirect URI:', redirectUri);

@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     // Try multiple endpoints
     const endpoints = [
       'https://graph.threads.net/oauth/access_token',
-      'https://graph.facebook.com/v18.0/oauth/access_token',
+      'https://graph.facebook.com/v21.0/oauth/access_token',
       'https://api.threads.net/oauth/access_token'
     ];
 

@@ -39,7 +39,7 @@ export async function GET() {
       })
     });
 
-    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
+    const authUrl = `https://www.facebook.com/v21.0/dialog/oauth?${params.toString()}`;
     
     console.log('Final Threads OAuth URL:', authUrl);
     

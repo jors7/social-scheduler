@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
         'page_actions_post_reactions_total'
       ].join(',');
 
-      const insightsUrl = `https://graph.facebook.com/v18.0/${account.platform_user_id}/insights?metric=${metrics}&period=${period}&access_token=${account.access_token}`;
+      const insightsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/insights?metric=${metrics}&period=${period}&access_token=${account.access_token}`;
       
       const response = await fetch(insightsUrl);
       
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Also fetch current page info
-      const pageInfoUrl = `https://graph.facebook.com/v18.0/${account.platform_user_id}?fields=fan_count,name&access_token=${account.access_token}`;
+      const pageInfoUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}?fields=fan_count,name&access_token=${account.access_token}`;
       const pageInfoResponse = await fetch(pageInfoUrl);
       
       if (pageInfoResponse.ok) {

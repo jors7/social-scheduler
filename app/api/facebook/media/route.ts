@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch recent Facebook posts from the API
     // Facebook uses page posts endpoint
-    const facebookUrl = `https://graph.facebook.com/v18.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url,full_picture,attachments{media_type,media,url}&limit=${limit}&access_token=${account.access_token}`;
+    const facebookUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url,full_picture,attachments{media_type,media,url}&limit=${limit}&access_token=${account.access_token}`;
     
     console.log('Fetching Facebook media from API');
     
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
       media.map(async (post: any) => {
         try {
           // Fetch insights for the post
-          const insightsUrl = `https://graph.facebook.com/v18.0/${post.id}/insights?metric=post_impressions,post_engaged_users,post_clicks,post_reactions_by_type_total&access_token=${account.access_token}`;
+          const insightsUrl = `https://graph.facebook.com/v21.0/${post.id}/insights?metric=post_impressions,post_engaged_users,post_clicks,post_reactions_by_type_total&access_token=${account.access_token}`;
           const insightsResponse = await fetch(insightsUrl);
           
           if (insightsResponse.ok) {
@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
             }
             
             // Also fetch comments and shares count
-            const engagementUrl = `https://graph.facebook.com/v18.0/${post.id}?fields=comments.summary(true),shares&access_token=${account.access_token}`;
+            const engagementUrl = `https://graph.facebook.com/v21.0/${post.id}?fields=comments.summary(true),shares&access_token=${account.access_token}`;
             const engagementResponse = await fetch(engagementUrl);
             
             if (engagementResponse.ok) {

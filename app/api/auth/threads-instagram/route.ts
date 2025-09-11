@@ -36,7 +36,7 @@ export async function GET() {
       })
     });
 
-    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
+    const authUrl = `https://www.facebook.com/v21.0/dialog/oauth?${params.toString()}`;
     
     console.log('Instagram Business OAuth URL:', authUrl);
     
