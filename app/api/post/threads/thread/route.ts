@@ -69,14 +69,19 @@ export async function POST(request: NextRequest) {
           // Check if this is a permission error related to reply_to_id
           const errorMessage = createData.error?.message || '';
           const errorCode = createData.error?.code;
+          const errorType = createData.error?.type;
           
-          // Only treat it as a permission error if it explicitly mentions reply_to_id or permission
-          // and we're trying to create a reply (i > 0)
+          // Treat it as a permission error if:
+          // 1. We're trying to create a reply (i > 0 and previousPostId exists)
+          // 2. The error mentions permission OR has code 10 (permission error)
+          // This catches "Application does not have permission for this action" errors
           if (i > 0 && previousPostId && 
-              (errorMessage.includes('reply_to_id') || 
+              (errorMessage.toLowerCase().includes('permission') || 
+               errorMessage.includes('reply_to_id') || 
                errorMessage.includes('threads_manage_replies') ||
-               (errorMessage.includes('permission') && errorMessage.includes('reply')))) {
-            console.log('Permission error detected for reply_to_id, throwing specific error');
+               errorCode === 10 || // Permission error code
+               errorType === 'THApiException')) {
+            console.log('Permission error detected for reply (likely reply_to_id issue), throwing specific error');
             throw new Error('threads_manage_replies permission required for connected threads. Please use numbered threads instead.');
           }
           
