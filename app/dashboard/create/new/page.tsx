@@ -310,9 +310,9 @@ function CreateNewPostPageContent() {
         toast.error('Please add content to at least one thread post')
         return
       }
-      // If we have thread content, proceed with posting
-      // The actual posting logic will handle this case later
-    }
+      // If we have thread content, skip all other content validation
+      // and proceed directly with posting logic
+    } else {
 
     // Check if we have content either in main area or platform-specific
     const hasMainContent = postContent.trim().length > 0
@@ -458,6 +458,8 @@ function CreateNewPostPageContent() {
         return
       }
     }
+
+    } // End of else block for non-Threads-thread-mode validation
 
     // Filter to only supported platforms for now
     const supportedPlatforms = selectedPlatforms.filter(p => ['instagram', 'facebook', 'bluesky', 'pinterest', 'tiktok', 'youtube', 'linkedin', 'threads'].includes(p))
@@ -920,9 +922,9 @@ function CreateNewPostPageContent() {
         toast.error('Please add content to at least one thread post')
         return
       }
-      // If we have thread content, proceed with scheduling
-      // The actual scheduling logic will handle this case later
-    }
+      // If we have thread content, skip all other content validation
+      // and proceed directly with scheduling logic
+    } else {
 
     // Check if we have content either in main area or platform-specific
     const hasMainContent = postContent.trim().length > 0
@@ -1068,6 +1070,8 @@ function CreateNewPostPageContent() {
         return
       }
     }
+
+    } // End of else block for non-Threads-thread-mode validation
 
     setIsPosting(true)
 
