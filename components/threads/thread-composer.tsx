@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, X, Loader2, Link2 } from 'lucide-react';
+import { Plus, X, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ThreadPost {
@@ -28,7 +28,6 @@ export function ThreadComposer({
   const [posts, setPosts] = useState<ThreadPost[]>([
     { id: '1', text: '' }
   ]);
-  const [isPosting, setIsPosting] = useState(false);
 
   const addPost = () => {
     if (posts.length >= maxPosts) {
@@ -57,7 +56,7 @@ export function ThreadComposer({
     ));
   };
 
-  const handlePost = async () => {
+  const handlePost = () => {
     // Validate posts
     const nonEmptyPosts = posts.filter(p => p.text.trim().length > 0);
     
@@ -71,41 +70,13 @@ export function ThreadComposer({
       return;
     }
 
-    setIsPosting(true);
-
-    try {
-      if (onPost) {
-        await onPost(nonEmptyPosts.map(p => p.text));
-      } else {
-        // Default behavior - call the API directly
-        const response = await fetch('/api/post/threads/thread', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            posts: nonEmptyPosts.map(p => p.text)
-          })
-        });
-
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to post thread');
-        }
-
-        if (data.partial) {
-          toast.warning(data.message);
-        } else {
-          toast.success(`Thread posted with ${data.posts.length} posts!`);
-        }
-
-        // Clear the composer
-        setPosts([{ id: '1', text: '' }]);
-      }
-    } catch (error) {
-      console.error('Thread posting error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to post thread');
-    } finally {
-      setIsPosting(false);
+    // Always call the onPost callback if provided
+    // This allows the parent component to handle the actual posting
+    if (onPost) {
+      onPost(nonEmptyPosts.map(p => p.text));
+      toast.info('Thread ready to post. Click "Post Now" to publish.');
+    } else {
+      toast.error('Thread posting not configured');
     }
   };
 
@@ -181,19 +152,10 @@ export function ThreadComposer({
         className="w-full"
         size="lg"
         onClick={handlePost}
-        disabled={isPosting || nonEmptyCount === 0}
+        disabled={nonEmptyCount === 0}
       >
-        {isPosting ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Posting Thread...
-          </>
-        ) : (
-          <>
-            <Link2 className="mr-2 h-4 w-4" />
-            Post Thread ({nonEmptyCount} post{nonEmptyCount !== 1 ? 's' : ''})
-          </>
-        )}
+        <Link2 className="mr-2 h-4 w-4" />
+        Prepare Thread ({nonEmptyCount} post{nonEmptyCount !== 1 ? 's' : ''})
       </Button>
     </div>
   );

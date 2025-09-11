@@ -298,6 +298,22 @@ function CreateNewPostPageContent() {
       return
     }
 
+    // Special handling for Threads thread mode
+    const isThreadsThreadMode = selectedPlatforms.length === 1 && 
+      selectedPlatforms[0] === 'threads' && 
+      threadsMode === 'thread'
+    
+    if (isThreadsThreadMode) {
+      // For Threads thread mode, check threadPosts instead of main content
+      const hasThreadContent = threadPosts.some(p => p.trim().length > 0)
+      if (!hasThreadContent) {
+        toast.error('Please add content to at least one thread post')
+        return
+      }
+      // If we have thread content, proceed with posting
+      // The actual posting logic will handle this case later
+    }
+
     // Check if we have content either in main area or platform-specific
     const hasMainContent = postContent.trim().length > 0
     const hasPlatformContent = selectedPlatforms.some(platform => 
@@ -399,8 +415,8 @@ function CreateNewPostPageContent() {
         toast.error('Please enter content for non-Instagram platforms')
         return
       }
-    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
-      // No content at all for regular posts
+    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode) {
+      // No content at all for regular posts (skip this check for Threads thread mode)
       console.log('No content validation path - failing')
       console.log('Validation state:', {
         hasMainContent,
@@ -409,7 +425,8 @@ function CreateNewPostPageContent() {
         hasPinterestContent,
         hasTikTokContent,
         hasInstagramStory,
-        isInstagramStoryOnly
+        isInstagramStoryOnly,
+        isThreadsThreadMode
       })
       toast.error('Please enter some content')
       return
@@ -891,6 +908,22 @@ function CreateNewPostPageContent() {
       return
     }
 
+    // Special handling for Threads thread mode
+    const isThreadsThreadMode = selectedPlatforms.length === 1 && 
+      selectedPlatforms[0] === 'threads' && 
+      threadsMode === 'thread'
+    
+    if (isThreadsThreadMode) {
+      // For Threads thread mode, check threadPosts instead of main content
+      const hasThreadContent = threadPosts.some(p => p.trim().length > 0)
+      if (!hasThreadContent) {
+        toast.error('Please add content to at least one thread post')
+        return
+      }
+      // If we have thread content, proceed with scheduling
+      // The actual scheduling logic will handle this case later
+    }
+
     // Check if we have content either in main area or platform-specific
     const hasMainContent = postContent.trim().length > 0
     const hasPlatformContent = selectedPlatforms.some(platform => 
@@ -992,8 +1025,8 @@ function CreateNewPostPageContent() {
         toast.error('Please enter content for non-Instagram platforms')
         return
       }
-    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent) {
-      // No content at all for regular posts
+    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode) {
+      // No content at all for regular posts (skip this check for Threads thread mode)
       console.log('No content validation path - failing')
       console.log('Validation state:', {
         hasMainContent,
@@ -1002,7 +1035,8 @@ function CreateNewPostPageContent() {
         hasPinterestContent,
         hasTikTokContent,
         hasInstagramStory,
-        isInstagramStoryOnly
+        isInstagramStoryOnly,
+        isThreadsThreadMode
       })
       toast.error('Please enter some content')
       return
@@ -2112,7 +2146,8 @@ function CreateNewPostPageContent() {
                       !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()) &&
                       !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
                       !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(url => url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')))) &&
-                      !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'instagram' && instagramAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)))
+                      !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'instagram' && instagramAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
+                      !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'threads' && threadsMode === 'thread' && threadPosts.some(p => p.trim())))
                   }
                   onClick={handlePostNow}
                 >
