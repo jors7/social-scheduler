@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`Creating connected thread with ${posts.length} posts for user ${userId}`);
+    console.log('Posts to create:', posts.map((p, i) => `Post ${i + 1}: ${p.substring(0, 30)}...`));
 
     const publishedPosts = [];
     let previousPostId = null;
@@ -39,7 +40,9 @@ export async function POST(request: NextRequest) {
         // This requires the threads_manage_replies permission
         if (previousPostId) {
           createParams.reply_to_id = previousPostId;
-          console.log(`Creating reply to post ${previousPostId}`);
+          console.log(`Adding reply_to_id to post ${i + 1}: reply_to_id=${previousPostId}`);
+        } else {
+          console.log(`Post ${i + 1} is the first post, no reply_to_id needed`);
         }
 
         const createUrlParams = new URLSearchParams(createParams);
@@ -53,16 +56,32 @@ export async function POST(request: NextRequest) {
         const createData = await createResponse.json();
         
         if (!createResponse.ok || !createData.id) {
-          console.error(`Failed to create container for post ${i + 1}:`, createData);
+          console.error(`Failed to create container for post ${i + 1}:`, {
+            status: createResponse.status,
+            statusText: createResponse.statusText,
+            data: createData,
+            error: createData.error,
+            postIndex: i,
+            isReply: i > 0,
+            previousPostId: previousPostId
+          });
           
           // Check if this is a permission error related to reply_to_id
           const errorMessage = createData.error?.message || '';
-          if (i > 0 && (errorMessage.includes('reply_to_id') || 
-                        errorMessage.includes('permission') || 
-                        errorMessage.includes('threads_manage_replies'))) {
+          const errorCode = createData.error?.code;
+          
+          // Only treat it as a permission error if it explicitly mentions reply_to_id or permission
+          // and we're trying to create a reply (i > 0)
+          if (i > 0 && previousPostId && 
+              (errorMessage.includes('reply_to_id') || 
+               errorMessage.includes('threads_manage_replies') ||
+               (errorMessage.includes('permission') && errorMessage.includes('reply')))) {
+            console.log('Permission error detected for reply_to_id, throwing specific error');
             throw new Error('threads_manage_replies permission required for connected threads. Please use numbered threads instead.');
           }
           
+          // For other errors, just throw them as is
+          console.log('Non-permission error, throwing generic error');
           throw new Error(createData.error?.message || 'Failed to create post container');
         }
 
@@ -91,7 +110,13 @@ export async function POST(request: NextRequest) {
         }
 
         const postId = publishData.id;
-        console.log(`Post published: ${postId}`);
+        console.log(`Post ${i + 1} published successfully:`, {
+          postId: postId,
+          containerId: containerId,
+          isReply: previousPostId !== null,
+          replyToId: previousPostId,
+          text: postText.substring(0, 50) + '...'
+        });
         
         publishedPosts.push({
           index: i,
@@ -103,10 +128,14 @@ export async function POST(request: NextRequest) {
 
         // Update previousPostId for the next iteration
         previousPostId = postId;
+        console.log(`Setting previousPostId for next post: ${previousPostId}`);
 
-        // Add a small delay between posts to avoid rate limiting
+        // Add a longer delay between posts to avoid rate limiting
+        // Especially important when creating connected threads
         if (i < posts.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+          const delay = 2000; // 2 seconds delay
+          console.log(`Waiting ${delay}ms before creating next post...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
 
       } catch (error) {
