@@ -89,7 +89,7 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
       const queryParams = new URLSearchParams({
         type: 'page',
         period: selectedPeriod,
-        ...(selectedAccount?.id && { accountId: selectedAccount.id })
+        ...(accountToUse?.id && { accountId: accountToUse.id })
       })
       const pageInsightsResponse = await fetch(`/api/facebook/insights?${queryParams}`)
       if (pageInsightsResponse.ok) {
@@ -100,7 +100,7 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
       // Fetch recent posts directly from Facebook
       const mediaQueryParams = new URLSearchParams({
         limit: '5',
-        ...(selectedAccount?.id && { accountId: selectedAccount.id })
+        ...(accountToUse?.id && { accountId: accountToUse.id })
       })
       const mediaResponse = await fetch(`/api/facebook/media?${mediaQueryParams}`)
       if (mediaResponse.ok) {
