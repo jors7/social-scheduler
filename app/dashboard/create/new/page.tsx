@@ -657,26 +657,65 @@ function CreateNewPostPageContent() {
           return
         }
 
-        // Post thread
-        const response = await fetch('/api/post/threads/thread-numbered', {
+        // Check if this is a test account (can use real threads)
+        const isTestAccount = threadsAccount.username === 'thejanorsula' || 
+                             threadsAccount.is_test_account === true
+        
+        console.log(`Posting thread for ${threadsAccount.username} (test account: ${isTestAccount})`)
+        
+        // Try real connected thread first (works for test accounts)
+        let response = await fetch('/api/post/threads/thread', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId: threadsAccount.platform_user_id,
             accessToken: threadsAccount.access_token,
             posts: threadPosts.filter(p => p.trim().length > 0),
-            addNumbers: true
+            mediaUrls: []
           })
         })
 
-        const data = await response.json()
+        let data = await response.json()
+        let usedNumberedFallback = false
+        
+        // If real thread fails (likely permission issue), fallback to numbered
+        if (!response.ok) {
+          const errorMessage = data.error?.toLowerCase() || ''
+          if (errorMessage.includes('permission') || 
+              errorMessage.includes('reply_to_id') || 
+              errorMessage.includes('not authorized') ||
+              errorMessage.includes('threads_manage_replies')) {
+            
+            console.log('Real thread failed, falling back to numbered approach')
+            toast.info('Creating numbered thread series (connected threads require additional permissions)')
+            
+            // Fallback to numbered approach
+            response = await fetch('/api/post/threads/thread-numbered', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: threadsAccount.platform_user_id,
+                accessToken: threadsAccount.access_token,
+                posts: threadPosts.filter(p => p.trim().length > 0),
+                addNumbers: true
+              })
+            })
+            
+            data = await response.json()
+            usedNumberedFallback = true
+          }
+        }
         
         if (!response.ok) {
           toast.error(data.error || 'Failed to post thread')
         } else if (data.partial) {
           toast.warning(data.message)
         } else {
-          toast.success(`Thread posted with ${data.posts.length} posts!`)
+          const successMessage = usedNumberedFallback 
+            ? `Thread posted as ${data.posts.length} numbered posts [1/${data.posts.length}]...`
+            : `Connected thread created with ${data.posts.length} posts!`
+          toast.success(successMessage)
+          
           // Clear form
           setPostContent('')
           setThreadPosts([''])
@@ -1702,10 +1741,18 @@ function CreateNewPostPageContent() {
                 
                 {threadsMode === 'thread' && (
                   <div className="space-y-4">
-                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                      <p className="text-sm text-amber-800 dark:text-amber-200">
-                        <strong>Note:</strong> Thread posts will be numbered [1/n], [2/n], etc. 
-                        Connected threads require additional app permissions from Meta.
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <p className="text-sm text-blue-800 dark:text-blue-200">
+                        <strong>Multi-Post Thread:</strong> Creates multiple connected posts.
+                        {connectedAccounts.some((acc: any) => acc.platform === 'threads' && acc.username === 'thejanorsula') ? (
+                          <span className="block mt-1 text-xs">
+                            ✅ Test account detected - will create connected thread replies
+                          </span>
+                        ) : (
+                          <span className="block mt-1 text-xs">
+                            ⚡ Will attempt connected threads, fallback to numbered [1/n] format if needed
+                          </span>
+                        )}
                       </p>
                     </div>
                     <ThreadComposer

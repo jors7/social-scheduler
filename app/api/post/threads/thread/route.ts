@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`Creating thread with ${posts.length} posts`);
+    console.log(`Creating connected thread with ${posts.length} posts for user ${userId}`);
 
     const publishedPosts = [];
     let previousPostId = null;
@@ -54,6 +54,15 @@ export async function POST(request: NextRequest) {
         
         if (!createResponse.ok || !createData.id) {
           console.error(`Failed to create container for post ${i + 1}:`, createData);
+          
+          // Check if this is a permission error related to reply_to_id
+          const errorMessage = createData.error?.message || '';
+          if (i > 0 && (errorMessage.includes('reply_to_id') || 
+                        errorMessage.includes('permission') || 
+                        errorMessage.includes('threads_manage_replies'))) {
+            throw new Error('threads_manage_replies permission required for connected threads. Please use numbered threads instead.');
+          }
+          
           throw new Error(createData.error?.message || 'Failed to create post container');
         }
 
@@ -123,10 +132,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Thread created with ${publishedPosts.length} posts`,
+      message: `Connected thread created with ${publishedPosts.length} posts`,
       threadId: publishedPosts[0]?.postId, // First post ID can be considered the thread ID
       posts: publishedPosts,
-      totalPosts: posts.length
+      totalPosts: posts.length,
+      isConnectedThread: true, // Indicates this created real connected replies
+      note: 'Successfully created connected thread using reply_to_id'
     });
 
   } catch (error) {

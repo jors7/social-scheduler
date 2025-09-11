@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { 
   Heart, 
   MessageCircle, 
@@ -15,7 +16,8 @@ import {
   AtSign,
   Facebook,
   Linkedin,
-  Twitter
+  Twitter,
+  RefreshCw
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -40,6 +42,7 @@ interface PlatformMetrics {
 
 export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatformsOverviewProps) {
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [platformMetrics, setPlatformMetrics] = useState<PlatformMetrics[]>([])
   const [totalMetrics, setTotalMetrics] = useState({
     posts: 0,
@@ -52,16 +55,26 @@ export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatf
 
   useEffect(() => {
     fetchAllPlatformMetrics()
+    // Set up an interval to refresh data every 30 seconds
+    const interval = setInterval(() => {
+      fetchAllPlatformMetrics()
+    }, 30000)
+    
+    return () => clearInterval(interval)
   }, [connectedPlatforms.join(',')])
 
-  const fetchAllPlatformMetrics = async () => {
+  const fetchAllPlatformMetrics = async (isRefresh = false) => {
     try {
-      setLoading(true)
+      if (isRefresh) {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
+      }
       
-      // Fetch all posts
+      // Fetch all posts - add cache busting to ensure fresh data
       const [draftsResponse, scheduledResponse] = await Promise.all([
-        fetch('/api/drafts'),
-        fetch('/api/posts/schedule')
+        fetch('/api/drafts?t=' + Date.now()),
+        fetch('/api/posts/schedule?t=' + Date.now())
       ])
       
       if (!draftsResponse.ok || !scheduledResponse.ok) {
@@ -77,6 +90,13 @@ export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatf
       const scheduled = scheduledData.posts || []
       const allPosts = [...drafts, ...scheduled]
       const postedPosts = scheduled.filter((post: any) => post.status === 'posted')
+      
+      console.log('All Platforms Overview - Posts count:', {
+        drafts: drafts.length,
+        scheduled: scheduled.length,
+        posted: postedPosts.length,
+        total: allPosts.length
+      })
       
       // Calculate metrics by platform
       const metricsMap = new Map<string, PlatformMetrics>()
@@ -134,14 +154,17 @@ export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatf
       setPlatformMetrics(platformMetricsArray)
       
       // Calculate totals
+      // For posts, count the actual number of posted posts, not the number of successful results
+      const totalPostsCount = postedPosts.length
+      
       const totals = platformMetricsArray.reduce((acc, pm) => ({
-        posts: acc.posts + pm.posts,
+        posts: totalPostsCount, // Use actual posted posts count
         engagement: acc.engagement + pm.totalEngagement,
         reach: acc.reach + pm.totalReach,
         likes: acc.likes + pm.likes,
         comments: acc.comments + pm.comments + (pm.replies || 0),
         shares: acc.shares + pm.shares + (pm.reposts || 0)
-      }), { posts: 0, engagement: 0, reach: 0, likes: 0, comments: 0, shares: 0 })
+      }), { posts: totalPostsCount, engagement: 0, reach: 0, likes: 0, comments: 0, shares: 0 })
       
       setTotalMetrics(totals)
       
@@ -149,6 +172,7 @@ export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatf
       console.error('Error fetching platform metrics:', error)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
@@ -216,13 +240,25 @@ export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatf
       {/* Combined Metrics Overview */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            All Platforms Combined
-          </CardTitle>
-          <CardDescription>
-            Aggregated metrics across all your connected platforms
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                All Platforms Combined
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Aggregated metrics across all your connected platforms
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fetchAllPlatformMetrics(true)}
+              disabled={refreshing}
+            >
+              <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
