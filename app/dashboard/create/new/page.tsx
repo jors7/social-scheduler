@@ -305,7 +305,12 @@ function CreateNewPostPageContent() {
     
     if (isThreadsThreadMode) {
       // For Threads thread mode, check threadPosts instead of main content
-      const hasThreadContent = threadPosts.some(p => p.trim().length > 0)
+      console.log('Threads thread mode validation:', {
+        threadPosts,
+        threadPostsLength: threadPosts.length,
+        hasContent: threadPosts.some(p => p && p.trim().length > 0)
+      })
+      const hasThreadContent = threadPosts.some(p => p && p.trim().length > 0)
       if (!hasThreadContent) {
         toast.error('Please add content to at least one thread post')
         return
@@ -897,7 +902,7 @@ function CreateNewPostPageContent() {
   }, [selectedPlatforms, postContent, platformContent, selectedFiles, uploadedMediaUrls, currentDraftId, 
       youtubeVideoFile, youtubeTitle, youtubeDescription, youtubeTags, youtubeCategoryId, youtubePrivacyStatus, youtubeThumbnailFile,
       selectedPinterestBoard, pinterestTitle, pinterestDescription, pinterestLink,
-      tiktokPrivacyLevel, tiktokSaveAsDraft, instagramAsStory])
+      tiktokPrivacyLevel, tiktokSaveAsDraft, instagramAsStory, threadPosts, threadsMode])
 
   const handleSchedulePost = async () => {
     if (!scheduledDate || !scheduledTime) {
