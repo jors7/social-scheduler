@@ -6,6 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { InstagramInsights } from './instagram-insights'
 import { ThreadsInsights } from './threads-insights'
+import { FacebookInsights } from './facebook-insights'
+import { LinkedInInsights } from './linkedin-insights'
+import { TwitterInsights } from './twitter-insights'
+import { BlueskyInsights } from './bluesky-insights'
 import { AllPlatformsOverview } from './all-platforms-overview'
 import { 
   LayoutGrid,
@@ -14,6 +18,7 @@ import {
   Facebook, 
   Linkedin, 
   Twitter,
+  Cloud,
   Lock
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -23,7 +28,7 @@ interface PlatformInsightsTabsProps {
   connectedPlatforms?: string[]
 }
 
-type TabType = 'all' | 'instagram' | 'threads' | 'facebook' | 'linkedin' | 'twitter'
+type TabType = 'all' | 'instagram' | 'threads' | 'facebook' | 'linkedin' | 'twitter' | 'bluesky'
 
 interface TabConfig {
   id: TabType
@@ -108,6 +113,13 @@ export function PlatformInsightsTabs({ className, connectedPlatforms = [] }: Pla
       icon: <Twitter className="h-4 w-4" />,
       color: 'bg-black',
       available: availablePlatforms.includes('twitter')
+    },
+    {
+      id: 'bluesky',
+      label: 'Bluesky',
+      icon: <Cloud className="h-4 w-4" />,
+      color: 'bg-sky-500',
+      available: availablePlatforms.includes('bluesky')
     }
   ]
 
@@ -120,65 +132,13 @@ export function PlatformInsightsTabs({ className, connectedPlatforms = [] }: Pla
       case 'threads':
         return availablePlatforms.includes('threads') ? <ThreadsInsights key="threads-insights" /> : null
       case 'facebook':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Facebook className="h-5 w-5" />
-                Facebook Insights
-              </CardTitle>
-              <CardDescription>
-                Facebook analytics coming soon
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-gray-500">
-                <Facebook className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                <p className="text-sm">Facebook insights will be available in a future update</p>
-              </div>
-            </CardContent>
-          </Card>
-        )
+        return availablePlatforms.includes('facebook') ? <FacebookInsights key="facebook-insights" /> : null
       case 'linkedin':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Linkedin className="h-5 w-5" />
-                LinkedIn Insights
-              </CardTitle>
-              <CardDescription>
-                LinkedIn analytics coming soon
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-gray-500">
-                <Linkedin className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                <p className="text-sm">LinkedIn insights will be available in a future update</p>
-              </div>
-            </CardContent>
-          </Card>
-        )
+        return availablePlatforms.includes('linkedin') ? <LinkedInInsights key="linkedin-insights" /> : null
       case 'twitter':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Twitter className="h-5 w-5" />
-                X (Twitter) Insights
-              </CardTitle>
-              <CardDescription>
-                X analytics coming soon
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-gray-500">
-                <Twitter className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                <p className="text-sm">X insights will be available in a future update</p>
-              </div>
-            </CardContent>
-          </Card>
-        )
+        return availablePlatforms.includes('twitter') ? <TwitterInsights key="twitter-insights" /> : null
+      case 'bluesky':
+        return availablePlatforms.includes('bluesky') ? <BlueskyInsights key="bluesky-insights" /> : null
       default:
         return null
     }
