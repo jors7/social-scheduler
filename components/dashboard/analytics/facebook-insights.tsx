@@ -62,28 +62,28 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
       
       // Check if Facebook account is connected
       const accountResponse = await fetch('/api/social-accounts')
-      if (accountResponse.ok) {
-        const accounts = await accountResponse.json()
-        const facebookAccountsList = accounts.filter((acc: any) => acc.platform === 'facebook' && acc.is_active)
-        
-        if (facebookAccountsList.length === 0) {
-          setHasFacebookAccount(false)
-          return
-        }
-        
-        setHasFacebookAccount(true)
-        setFacebookAccounts(facebookAccountsList)
-        
-        // Select account to use
-        const accountToUse = accountId 
-          ? facebookAccountsList.find((acc: any) => acc.id === accountId) 
-          : selectedAccount 
-          || facebookAccountsList[0]
-        
-        setSelectedAccount(accountToUse)
-      } else {
+      if (!accountResponse.ok) {
         return
       }
+      
+      const accounts = await accountResponse.json()
+      const facebookAccountsList = accounts.filter((acc: any) => acc.platform === 'facebook' && acc.is_active)
+      
+      if (facebookAccountsList.length === 0) {
+        setHasFacebookAccount(false)
+        return
+      }
+      
+      setHasFacebookAccount(true)
+      setFacebookAccounts(facebookAccountsList)
+      
+      // Select account to use
+      const accountToUse = accountId 
+        ? facebookAccountsList.find((acc: any) => acc.id === accountId) 
+        : selectedAccount 
+        || facebookAccountsList[0]
+      
+      setSelectedAccount(accountToUse)
 
       // Fetch page-level insights for the selected account
       const queryParams = new URLSearchParams({
