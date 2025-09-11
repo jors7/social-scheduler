@@ -176,8 +176,8 @@ export function LinkedInInsights({ className }: LinkedInInsightsProps) {
               <Linkedin className="mx-auto h-16 w-16 text-blue-700 mb-4" />
               <h3 className="text-lg font-semibold mb-2">LinkedIn Analytics Coming Soon!</h3>
               <p className="text-sm text-gray-600 mb-4 max-w-md mx-auto">
-                We're working on bringing you comprehensive LinkedIn analytics. 
-                This feature requires approval for LinkedIn's Community Management API.
+                We&apos;re working on bringing you comprehensive LinkedIn analytics. 
+                This feature requires approval for LinkedIn&apos;s Community Management API.
               </p>
               <Badge variant="outline" className="mb-4">
                 API Access Pending Approval
@@ -196,7 +196,7 @@ export function LinkedInInsights({ className }: LinkedInInsightsProps) {
                     <Eye className="h-4 w-4 text-gray-500 mt-1" />
                     <div>
                       <p className="font-medium text-sm">Profile Views</p>
-                      <p className="text-xs text-gray-500">Track who's viewing your profile</p>
+                      <p className="text-xs text-gray-500">Track who&apos;s viewing your profile</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -248,7 +248,7 @@ export function LinkedInInsights({ className }: LinkedInInsightsProps) {
                   <p className="font-medium text-blue-900 mb-1">Why is this feature pending?</p>
                   <p className="text-blue-700">
                     LinkedIn requires approval for their Community Management API to access analytics data. 
-                    We've applied for access and will enable this feature as soon as we receive approval.
+                    We&apos;ve applied for access and will enable this feature as soon as we receive approval.
                   </p>
                 </div>
               </div>
