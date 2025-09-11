@@ -398,7 +398,7 @@ export function TwitterInsights({ className }: TwitterInsightsProps) {
         </CardContent>
       </Card>
 
-      {/* Recent Posts Performance */}
+      {/* Recent Posts Performance - Coming Soon */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -409,75 +409,93 @@ export function TwitterInsights({ className }: TwitterInsightsProps) {
                 @{selectedAccount.username}
               </Badge>
             )}
+            <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
           </CardTitle>
           <CardDescription>
-            Engagement metrics for your latest tweets
-            <Badge variant="secondary" className="ml-2 text-xs">
-              Simulated data - Twitter API read-only
-            </Badge>
+            Advanced analytics for your Twitter posts
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {recentPosts.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Info className="mx-auto h-8 w-8 mb-2 text-gray-300" />
-              <p className="text-sm">No recent tweets with insights available</p>
-              <p className="text-xs mt-1">Post content to see performance metrics</p>
+          <div className="space-y-6">
+            {/* Coming Soon Message */}
+            <div className="text-center py-8 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
+              <Twitter className="mx-auto h-16 w-16 text-blue-700 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Twitter Analytics Coming Soon!</h3>
+              <p className="text-sm text-gray-600 mb-4 max-w-md mx-auto">
+                We&apos;re working on bringing you comprehensive Twitter analytics.
+              </p>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {recentPosts.map((post) => (
-                <div key={post.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-600 line-clamp-2">
-                        {post.text?.slice(0, 100)}...
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {new Date(post.created_at).toLocaleDateString()}
-                      </p>
+
+            {/* What to Expect */}
+            <div className="border rounded-lg p-6">
+              <h4 className="font-semibold mb-4 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-blue-600" />
+                What Analytics Will Be Available
+              </h4>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <Eye className="h-4 w-4 text-gray-500 mt-1" />
+                    <div>
+                      <p className="font-medium text-sm">Tweet Impressions</p>
+                      <p className="text-xs text-gray-500">Track your tweet reach</p>
                     </div>
-                    <Badge variant="secondary" className="ml-2">
-                      {post.media_type?.toUpperCase() || 'TWEET'}
-                    </Badge>
                   </div>
-                  
-                  <div className="grid grid-cols-3 md:grid-cols-6 gap-3 text-sm">
-                    <div className="flex items-center gap-1">
-                      <Eye className="h-3 w-3 text-gray-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.views || 0)}</span>
-                      <span className="text-xs text-gray-500">views</span>
+                  <div className="flex items-start gap-3">
+                    <Heart className="h-4 w-4 text-gray-500 mt-1" />
+                    <div>
+                      <p className="font-medium text-sm">Engagement Metrics</p>
+                      <p className="text-xs text-gray-500">Likes, retweets, replies</p>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Heart className="h-3 w-3 text-red-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.likes || 0)}</span>
-                      <span className="text-xs text-gray-500">likes</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Repeat2 className="h-3 w-3 text-green-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.retweets || 0)}</span>
-                      <span className="text-xs text-gray-500">retweets</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <MessageCircle className="h-3 w-3 text-blue-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.replies || 0)}</span>
-                      <span className="text-xs text-gray-500">replies</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Quote className="h-3 w-3 text-purple-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.quotes || 0)}</span>
-                      <span className="text-xs text-gray-500">quotes</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Bookmark className="h-3 w-3 text-orange-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.bookmarks || 0)}</span>
-                      <span className="text-xs text-gray-500">bookmarks</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Users className="h-4 w-4 text-gray-500 mt-1" />
+                    <div>
+                      <p className="font-medium text-sm">Follower Analytics</p>
+                      <p className="text-xs text-gray-500">Growth and demographics</p>
                     </div>
                   </div>
                 </div>
-              ))}
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <Activity className="h-4 w-4 text-gray-500 mt-1" />
+                    <div>
+                      <p className="font-medium text-sm">Profile Performance</p>
+                      <p className="text-xs text-gray-500">Profile visits and clicks</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <MessageCircle className="h-4 w-4 text-gray-500 mt-1" />
+                    <div>
+                      <p className="font-medium text-sm">Conversation Insights</p>
+                      <p className="text-xs text-gray-500">Mentions and replies analysis</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Bookmark className="h-4 w-4 text-gray-500 mt-1" />
+                    <div>
+                      <p className="font-medium text-sm">Bookmark Analytics</p>
+                      <p className="text-xs text-gray-500">Save rates and trends</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
+
+            {/* Info Box */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex gap-3">
+                <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-medium text-blue-900 mb-1">Why is this feature pending?</p>
+                  <p className="text-blue-700">
+                    Twitter&apos;s API pricing model makes real-time analytics cost-prohibitive for most applications. 
+                    We&apos;re exploring alternative solutions to bring you Twitter insights at an affordable price.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

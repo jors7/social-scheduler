@@ -176,12 +176,8 @@ export function LinkedInInsights({ className }: LinkedInInsightsProps) {
               <Linkedin className="mx-auto h-16 w-16 text-blue-700 mb-4" />
               <h3 className="text-lg font-semibold mb-2">LinkedIn Analytics Coming Soon!</h3>
               <p className="text-sm text-gray-600 mb-4 max-w-md mx-auto">
-                We&apos;re working on bringing you comprehensive LinkedIn analytics. 
-                This feature requires approval for LinkedIn&apos;s Community Management API.
+                We&apos;re working on bringing you comprehensive LinkedIn analytics.
               </p>
-              <Badge variant="outline" className="mb-4">
-                API Access Pending Approval
-              </Badge>
             </div>
 
             {/* What to Expect */}
