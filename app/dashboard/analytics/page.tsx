@@ -253,29 +253,29 @@ export default function AnalyticsPage() {
             </Card>
           </div>
 
-          <div className="grid gap-4 sm:gap-8 grid-cols-1 md:grid-cols-3 items-start">
+          <div className="grid gap-4 sm:gap-8 grid-cols-1 md:grid-cols-3 items-stretch">
             {/* Reach Chart */}
-            <Card variant="glass" className="col-span-1 md:col-span-2 overflow-hidden h-fit">
+            <Card variant="glass" className="col-span-1 md:col-span-2 overflow-hidden flex flex-col h-full">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4">
                 <CardTitle variant="gradient" className="text-base sm:text-xl">Reach & Impressions</CardTitle>
                 <CardDescription className="text-gray-600 text-xs sm:text-sm">
                   Monitor your content reach and impressions
                 </CardDescription>
               </CardHeader>
-              <CardContent className="bg-white/50 backdrop-blur-sm p-3 sm:p-4 pb-4">
+              <CardContent className="bg-white/50 backdrop-blur-sm p-3 sm:p-4 pb-4 flex-1 flex flex-col">
                 <ReachChart analyticsData={analyticsData} />
               </CardContent>
             </Card>
 
             {/* Top Posts */}
-            <Card variant="glass" className="col-span-1 overflow-hidden h-fit">
+            <Card variant="glass" className="col-span-1 overflow-hidden flex flex-col h-full">
               <CardHeader className="bg-gradient-to-r from-orange-50 to-yellow-50 border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4">
                 <CardTitle variant="gradient" className="text-base sm:text-xl">Top Performing Posts</CardTitle>
                 <CardDescription className="text-gray-600 text-xs sm:text-sm">
                   Your best content from the last 30 days
                 </CardDescription>
               </CardHeader>
-              <CardContent className="bg-white/50 backdrop-blur-sm p-3 sm:p-6">
+              <CardContent className="bg-white/50 backdrop-blur-sm p-3 sm:p-6 flex-1 flex flex-col">
                 <TopPosts analyticsData={analyticsData} />
               </CardContent>
             </Card>
