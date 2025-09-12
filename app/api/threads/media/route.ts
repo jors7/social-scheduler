@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getValidThreadsToken } from '@/lib/threads/token-manager';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,34 +17,23 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const accountId = searchParams.get('accountId');
 
-    // Get Threads account
-    let query = supabase
-      .from('social_accounts')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('platform', 'threads')
-      .eq('is_active', true);
+    // Get Threads account with automatic token refresh
+    const { token: accessToken, account, error: tokenError } = await getValidThreadsToken(accountId || undefined);
     
-    // If specific account requested, get that one
-    if (accountId) {
-      query = query.eq('id', accountId);
-    }
-    
-    const { data: accounts, error: accountError } = await query;
-    
-    if (accountError || !accounts || accounts.length === 0) {
+    if (tokenError || !accessToken) {
+      console.error('Failed to get valid token:', tokenError);
       return NextResponse.json(
-        { error: 'Threads account not connected' },
+        { 
+          error: tokenError || 'Threads account not connected',
+          needsReconnect: tokenError?.includes('reconnect') || false
+        },
         { status: 404 }
       );
     }
-    
-    // Use specified account or first available
-    const account = accounts[0];
 
     // Fetch recent Threads posts from the API
     // Threads API endpoint to get user's posts
-    const threadsUrl = `https://graph.threads.net/v1.0/me/threads?fields=id,text,username,permalink,timestamp,media_type,media_url,shortcode,thumbnail_url&limit=${limit}&access_token=${account.access_token}`;
+    const threadsUrl = `https://graph.threads.net/v1.0/me/threads?fields=id,text,username,permalink,timestamp,media_type,media_url,shortcode,thumbnail_url&limit=${limit}&access_token=${accessToken}`;
     
     console.log('Fetching Threads media from API');
     
@@ -93,7 +83,7 @@ export async function GET(request: NextRequest) {
       media.map(async (post: any) => {
         try {
           // Try to get insights (may fail without permission)
-          const insightsUrl = `https://graph.threads.net/v1.0/${post.id}/insights?metric=views,likes,replies,reposts,quotes,shares&access_token=${account.access_token}`;
+          const insightsUrl = `https://graph.threads.net/v1.0/${post.id}/insights?metric=views,likes,replies,reposts,quotes,shares&access_token=${accessToken}`;
           const insightsResponse = await fetch(insightsUrl);
           
           if (insightsResponse.ok) {

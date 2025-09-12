@@ -13,18 +13,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Threads API uses long-lived tokens (60 days)
-    // We can exchange them for new ones before they expire
+    // We can refresh them using th_refresh_token grant type
+    // Note: Tokens must be at least 24 hours old to be refreshed
     const refreshUrl = 'https://graph.threads.net/refresh_access_token';
     const params = new URLSearchParams({
-      grant_type: 'th_exchange_token',
+      grant_type: 'th_refresh_token',
       access_token: currentToken
     });
 
-    const response = await fetch(refreshUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      }
+    const response = await fetch(`${refreshUrl}?${params}`, {
+      method: 'GET'
     });
 
     if (!response.ok) {

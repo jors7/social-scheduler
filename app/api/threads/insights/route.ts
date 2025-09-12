@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/server';
+import { getValidThreadsToken } from '@/lib/threads/token-manager';
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,39 +8,26 @@ export async function GET(request: NextRequest) {
     const postId = searchParams.get('postId');
     const metric = searchParams.get('metric') || 'views,likes,replies,reposts,quotes,shares';
     const period = searchParams.get('period') || 'lifetime';
+    const accountId = searchParams.get('accountId');
     
-    // Get user's Threads account from database
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Missing authorization' }, { status: 401 });
-    }
-
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    // Get user from token
-    const token = authHeader.substring(7);
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    // Get user from supabase
+    const supabase = await createClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get Threads account
-    const { data: account, error: accountError } = await supabase
-      .from('social_accounts')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('platform', 'threads')
-      .single();
+    // Get Threads account with automatic token refresh
+    const { token: accessToken, account, error: tokenError } = await getValidThreadsToken(accountId || undefined);
 
-    if (accountError || !account) {
-      return NextResponse.json({ error: 'No Threads account connected' }, { status: 404 });
+    if (tokenError || !accessToken) {
+      console.error('Failed to get valid token:', tokenError);
+      return NextResponse.json({ 
+        error: tokenError || 'No Threads account connected',
+        needsReconnect: tokenError?.includes('reconnect') || false
+      }, { status: 404 });
     }
-
-    const accessToken = account.access_token;
 
     // Fetch insights based on whether it's for a specific post or user
     let insightsUrl: string;

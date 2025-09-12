@@ -286,24 +286,29 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
   return (
     <div className={cn("space-y-6", className)}>
       {/* Account Overview */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <CardTitle className="flex items-center gap-2">
-                <Camera className="h-5 w-5" />
-                Instagram Insights
-                {selectedAccount && (
-                  <Badge variant="secondary" className="ml-2">
-                    @{selectedAccount.username || selectedAccount.platform_user_id}
-                  </Badge>
-                )}
-              </CardTitle>
-              <CardDescription>
-                {selectedAccount 
-                  ? `Analytics for @${selectedAccount.username || selectedAccount.platform_user_id}`
-                  : 'Performance metrics for your Instagram Business account'}
-              </CardDescription>
+      <Card className="overflow-hidden">
+        <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 p-0.5">
+          <CardHeader className="bg-white">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <CardTitle className="flex items-center gap-2">
+                  <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg text-white">
+                    <Camera className="h-5 w-5" />
+                  </div>
+                  <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-bold">
+                    Instagram Insights
+                  </span>
+                  {selectedAccount && (
+                    <Badge className="ml-2 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-200">
+                      @{selectedAccount.username || selectedAccount.platform_user_id}
+                    </Badge>
+                  )}
+                </CardTitle>
+                <CardDescription className="text-gray-600 mt-1">
+                  {selectedAccount 
+                    ? `Analytics for @${selectedAccount.username || selectedAccount.platform_user_id}`
+                    : 'Performance metrics for your Instagram Business account'}
+                </CardDescription>
               {instagramAccounts.length > 1 && (
                 <div className="mt-2">
                   <select
@@ -349,73 +354,86 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
               </Button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+          </CardHeader>
+        </div>
+        <CardContent className="pt-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Reach */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Users className="h-4 w-4" />
-                <span>Reach</span>
+            <div className="group relative bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100 hover:shadow-lg transition-all duration-200 hover:scale-105">
+              <div className="absolute top-2 right-2 p-1.5 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg text-white opacity-20 group-hover:opacity-30 transition-opacity">
+                <Users className="h-6 w-6" />
               </div>
-              <p className="text-2xl font-bold">
-                {formatNumber(userInsights?.reach?.value || 0)}
-              </p>
-              {getChangeIndicator(userInsights?.reach?.value || 0, userInsights?.reach?.previous || 0)}
+              <div className="relative z-10">
+                <p className="text-xs font-medium text-purple-600 uppercase tracking-wider mb-1">Reach</p>
+                <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  {formatNumber(userInsights?.reach?.value || 0)}
+                </p>
+                {getChangeIndicator(userInsights?.reach?.value || 0, userInsights?.reach?.previous || 0)}
+              </div>
             </div>
 
             {/* Profile Views */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Eye className="h-4 w-4" />
-                <span>Profile Views</span>
+            <div className="group relative bg-gradient-to-br from-pink-50 to-orange-50 rounded-xl p-4 border border-pink-100 hover:shadow-lg transition-all duration-200 hover:scale-105">
+              <div className="absolute top-2 right-2 p-1.5 bg-gradient-to-br from-pink-400 to-orange-400 rounded-lg text-white opacity-20 group-hover:opacity-30 transition-opacity">
+                <Eye className="h-6 w-6" />
               </div>
-              <p className="text-2xl font-bold">
-                {formatNumber(userInsights?.profile_views?.value || 0)}
-              </p>
-              {getChangeIndicator(userInsights?.profile_views?.value || 0, userInsights?.profile_views?.previous || 0)}
+              <div className="relative z-10">
+                <p className="text-xs font-medium text-pink-600 uppercase tracking-wider mb-1">Profile Views</p>
+                <p className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 bg-clip-text text-transparent">
+                  {formatNumber(userInsights?.profile_views?.value || 0)}
+                </p>
+                {getChangeIndicator(userInsights?.profile_views?.value || 0, userInsights?.profile_views?.previous || 0)}
+              </div>
             </div>
 
             {/* Website Clicks */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Activity className="h-4 w-4" />
-                <span>Website Clicks</span>
+            <div className="group relative bg-gradient-to-br from-orange-50 to-yellow-50 rounded-xl p-4 border border-orange-100 hover:shadow-lg transition-all duration-200 hover:scale-105">
+              <div className="absolute top-2 right-2 p-1.5 bg-gradient-to-br from-orange-400 to-yellow-400 rounded-lg text-white opacity-20 group-hover:opacity-30 transition-opacity">
+                <Activity className="h-6 w-6" />
               </div>
-              <p className="text-2xl font-bold">
-                {formatNumber(userInsights?.website_clicks?.value || 0)}
-              </p>
-              {getChangeIndicator(userInsights?.website_clicks?.value || 0, userInsights?.website_clicks?.previous || 0)}
+              <div className="relative z-10">
+                <p className="text-xs font-medium text-orange-600 uppercase tracking-wider mb-1">Website Clicks</p>
+                <p className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-yellow-600 bg-clip-text text-transparent">
+                  {formatNumber(userInsights?.website_clicks?.value || 0)}
+                </p>
+                {getChangeIndicator(userInsights?.website_clicks?.value || 0, userInsights?.website_clicks?.previous || 0)}
+              </div>
             </div>
 
             {/* Follower Count */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Users className="h-4 w-4" />
-                <span>Followers</span>
+            <div className="group relative bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 rounded-xl p-4 border border-purple-100 hover:shadow-lg transition-all duration-200 hover:scale-105">
+              <div className="absolute top-2 right-2 p-1.5 bg-gradient-to-br from-purple-400 via-pink-400 to-orange-400 rounded-lg text-white opacity-20 group-hover:opacity-30 transition-opacity">
+                <Users className="h-6 w-6" />
               </div>
-              <p className="text-2xl font-bold">
-                {formatNumber(userInsights?.follower_count?.value || 0)}
-              </p>
-              {getChangeIndicator(userInsights?.follower_count?.value || 0, userInsights?.follower_count?.previous || 0)}
+              <div className="relative z-10">
+                <p className="text-xs font-medium text-purple-600 uppercase tracking-wider mb-1">Followers</p>
+                <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 bg-clip-text text-transparent">
+                  {formatNumber(userInsights?.follower_count?.value || 0)}
+                </p>
+                {getChangeIndicator(userInsights?.follower_count?.value || 0, userInsights?.follower_count?.previous || 0)}
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Recent Posts Performance */}
-      <Card>
-        <CardHeader>
+      <Card className="overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-purple-50 via-pink-50 to-orange-50 border-b border-purple-100">
           <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            Recent Posts Performance
+            <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg text-white">
+              <BarChart3 className="h-5 w-5" />
+            </div>
+            <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-bold">
+              Recent Posts Performance
+            </span>
             {selectedAccount && (
-              <Badge variant="outline" className="ml-2 text-xs">
+              <Badge className="ml-2 text-xs bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-200">
                 @{selectedAccount.username || selectedAccount.platform_user_id}
               </Badge>
             )}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-gray-600 mt-1">
             Engagement metrics for your latest Instagram posts
           </CardDescription>
         </CardHeader>
@@ -429,46 +447,59 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
           ) : (
             <div className="space-y-4">
               {recentPosts.map((post) => (
-                <div key={post.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between mb-3">
+                <div key={post.id} className="group border border-purple-100 rounded-xl p-4 hover:shadow-lg hover:border-purple-200 transition-all duration-200 bg-gradient-to-br from-white to-purple-50/30">
+                  <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <p className="text-sm text-gray-600 line-clamp-2">
+                      <p className="text-sm text-gray-700 line-clamp-2 font-medium">
                         {post.caption.replace(/<[^>]*>/g, '').slice(0, 100)}...
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
                         {new Date(post.timestamp).toLocaleDateString()}
                       </p>
                     </div>
-                    <Badge variant="secondary" className="ml-2">
+                    <Badge className="ml-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0">
                       {post.media_type === 'CAROUSEL_ALBUM' ? 'CAROUSEL' : post.media_type}
                     </Badge>
                   </div>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
-                    <div className="flex items-center gap-1">
-                      <Eye className="h-3 w-3 text-gray-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.impressions || 0)}</span>
-                      <span className="text-xs text-gray-500">impressions</span>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-2 border border-purple-100">
+                      <div className="flex items-center gap-1 mb-1">
+                        <Eye className="h-3 w-3 text-purple-500" />
+                        <span className="text-xs text-purple-600 font-medium">Impressions</span>
+                      </div>
+                      <p className="text-lg font-bold text-purple-700">{formatNumber(post.metrics?.impressions || 0)}</p>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Users className="h-3 w-3 text-gray-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.reach || 0)}</span>
-                      <span className="text-xs text-gray-500">reach</span>
+                    <div className="bg-gradient-to-br from-pink-50 to-orange-50 rounded-lg p-2 border border-pink-100">
+                      <div className="flex items-center gap-1 mb-1">
+                        <Users className="h-3 w-3 text-pink-500" />
+                        <span className="text-xs text-pink-600 font-medium">Reach</span>
+                      </div>
+                      <p className="text-lg font-bold text-pink-700">{formatNumber(post.metrics?.reach || 0)}</p>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Heart className="h-3 w-3 text-red-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.likes || 0)}</span>
-                      <span className="text-xs text-gray-500">likes</span>
+                    <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-lg p-2 border border-red-100">
+                      <div className="flex items-center gap-1 mb-1">
+                        <Heart className="h-3 w-3 text-red-500" />
+                        <span className="text-xs text-red-600 font-medium">Likes</span>
+                      </div>
+                      <p className="text-lg font-bold text-red-700">{formatNumber(post.metrics?.likes || 0)}</p>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <MessageCircle className="h-3 w-3 text-blue-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.comments || 0)}</span>
-                      <span className="text-xs text-gray-500">comments</span>
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-2 border border-blue-100">
+                      <div className="flex items-center gap-1 mb-1">
+                        <MessageCircle className="h-3 w-3 text-blue-500" />
+                        <span className="text-xs text-blue-600 font-medium">Comments</span>
+                      </div>
+                      <p className="text-lg font-bold text-blue-700">{formatNumber(post.metrics?.comments || 0)}</p>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Bookmark className="h-3 w-3 text-purple-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.saves || 0)}</span>
-                      <span className="text-xs text-gray-500">saves</span>
+                    <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg p-2 border border-purple-100">
+                      <div className="flex items-center gap-1 mb-1">
+                        <Bookmark className="h-3 w-3 text-purple-500" />
+                        <span className="text-xs text-purple-600 font-medium">Saves</span>
+                      </div>
+                      <p className="text-lg font-bold text-purple-700">{formatNumber(post.metrics?.saves || 0)}</p>
                     </div>
                   </div>
                 </div>

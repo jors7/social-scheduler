@@ -140,14 +140,42 @@ export async function GET(request: NextRequest) {
     }
     console.log('Token received, getting user info...');
 
-    // For Threads, we use the token directly
-    const accessToken = tokenData.access_token;
-    const expiresIn = tokenData.expires_in;
+    // For Threads, we get a short-lived token first
+    const shortLivedToken = tokenData.access_token;
+    const shortLivedExpiresIn = tokenData.expires_in;
     const userId = tokenData.user_id; // Threads returns user_id in token response
     
-    console.log('Got Threads access token for user:', userId);
-    console.log('Token expires_in (seconds):', expiresIn);
-    console.log('Token will expire at:', new Date(Date.now() + (expiresIn || 5184000) * 1000).toISOString());
+    console.log('Got Threads SHORT-LIVED access token for user:', userId);
+    console.log('Short-lived token expires_in (seconds):', shortLivedExpiresIn);
+    
+    // IMPORTANT: Exchange short-lived token for long-lived token
+    console.log('Exchanging short-lived token for long-lived token...');
+    const exchangeUrl = 'https://graph.threads.net/access_token';
+    const exchangeParams = new URLSearchParams({
+      grant_type: 'th_exchange_token',
+      client_secret: appSecret!,
+      access_token: shortLivedToken
+    });
+    
+    const exchangeResponse = await fetch(`${exchangeUrl}?${exchangeParams}`, {
+      method: 'GET'
+    });
+    
+    if (!exchangeResponse.ok) {
+      const exchangeError = await exchangeResponse.text();
+      console.error('Failed to exchange for long-lived token:', exchangeError);
+      console.error('Will use short-lived token as fallback');
+      // Fall back to short-lived token if exchange fails
+      var accessToken = shortLivedToken;
+      var expiresIn = shortLivedExpiresIn;
+    } else {
+      const exchangeData = await exchangeResponse.json();
+      console.log('Successfully exchanged for long-lived token');
+      var accessToken = exchangeData.access_token;
+      var expiresIn = exchangeData.expires_in || 5184000; // Should be ~60 days
+      console.log('Long-lived token expires_in (seconds):', expiresIn);
+      console.log('Long-lived token will expire at:', new Date(Date.now() + expiresIn * 1000).toISOString());
+    }
 
     // Get Threads user info - use /me endpoint which works better than user_id
     // Try with simpler fields first to avoid permission issues
@@ -239,7 +267,6 @@ export async function GET(request: NextRequest) {
     // For Threads API, use the ID from the /me response if available, otherwise fallback
     let threadsUserId = userData?.id || userId;
     let threadsUsername = userData?.username || `@threads_${userId}`; // Add @ prefix to make it clear it's a fallback
-    let pageAccessToken = accessToken; // Use the Threads access token
     
     // IMPORTANT: Validate the username to prevent connecting wrong account
     // The non-existent account "janorsula" should be rejected
@@ -290,10 +317,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Use the actual expiration time from the token response
-    // Threads returns expires_in in seconds (typically 5184000 for 60 days, but can be less)
+    // Long-lived tokens expire in 60 days (5184000 seconds)
+    // Short-lived tokens expire in 1 hour (3600 seconds) - only used as fallback
     const expiresAt = expiresIn 
       ? new Date(Date.now() + expiresIn * 1000) 
       : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000); // Default to 60 days if not provided
+    
+    console.log('Token will be stored with expiry:', expiresAt.toISOString());
     
     // Check if this account already exists
     const { data: existingAccount } = await supabase
@@ -310,7 +340,7 @@ export async function GET(request: NextRequest) {
         .update({
           platform_user_id: threadsAccountData.id,
           username: threadsAccountData.username,
-          access_token: pageAccessToken,
+          access_token: accessToken,
           access_secret: '', // Threads doesn't use access secret
           profile_image_url: threadsAccountData.threads_profile_picture_url,
           expires_at: expiresAt.toISOString(),
@@ -333,7 +363,7 @@ export async function GET(request: NextRequest) {
           platform: 'threads',
           platform_user_id: threadsAccountData.id,
           username: threadsAccountData.username,
-          access_token: pageAccessToken,
+          access_token: accessToken,
           access_secret: '', // Threads doesn't use access secret
           profile_image_url: threadsAccountData.threads_profile_picture_url,
           is_active: true,

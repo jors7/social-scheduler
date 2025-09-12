@@ -233,24 +233,29 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
   return (
     <div className={cn("space-y-6", className)}>
       {/* Page Overview */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <CardTitle className="flex items-center gap-2">
-                <Facebook className="h-5 w-5" />
-                Facebook Page Insights
-                {selectedAccount && (
-                  <Badge variant="secondary" className="ml-2">
-                    {selectedAccount.display_name || selectedAccount.username}
-                  </Badge>
-                )}
-              </CardTitle>
-              <CardDescription>
-                {selectedAccount 
-                  ? `Analytics for ${selectedAccount.display_name || selectedAccount.username}`
-                  : 'Performance metrics for your Facebook Page'}
-              </CardDescription>
+      <Card className="overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 p-0.5">
+          <CardHeader className="bg-white">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <CardTitle className="flex items-center gap-2">
+                  <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg text-white">
+                    <Facebook className="h-5 w-5" />
+                  </div>
+                  <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent font-bold">
+                    Facebook Page Insights
+                  </span>
+                  {selectedAccount && (
+                    <Badge className="ml-2 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 border-blue-300">
+                      {selectedAccount.display_name || selectedAccount.username}
+                    </Badge>
+                  )}
+                </CardTitle>
+                <CardDescription className="text-gray-600 mt-1">
+                  {selectedAccount 
+                    ? `Analytics for ${selectedAccount.display_name || selectedAccount.username}`
+                    : 'Performance metrics for your Facebook Page'}
+                </CardDescription>
               {facebookAccounts.length > 1 && (
                 <div className="mt-2">
                   <select
@@ -296,73 +301,86 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
               </Button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+          </CardHeader>
+        </div>
+        <CardContent className="pt-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Page Impressions */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Eye className="h-4 w-4" />
-                <span>Impressions</span>
+            <div className="group relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100 hover:shadow-lg transition-all duration-200 hover:scale-105">
+              <div className="absolute top-2 right-2 p-1.5 bg-gradient-to-br from-blue-400 to-indigo-400 rounded-lg text-white opacity-20 group-hover:opacity-30 transition-opacity">
+                <Eye className="h-6 w-6" />
               </div>
-              <p className="text-2xl font-bold">
-                {formatNumber(pageInsights?.impressions?.value || 0)}
-              </p>
-              {getChangeIndicator(pageInsights?.impressions?.value || 0, pageInsights?.impressions?.previous || 0)}
+              <div className="relative z-10">
+                <p className="text-xs font-medium text-blue-600 uppercase tracking-wider mb-1">Impressions</p>
+                <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  {formatNumber(pageInsights?.impressions?.value || 0)}
+                </p>
+                {getChangeIndicator(pageInsights?.impressions?.value || 0, pageInsights?.impressions?.previous || 0)}
+              </div>
             </div>
 
             {/* Engagement */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Activity className="h-4 w-4" />
-                <span>Engagement</span>
+            <div className="group relative bg-gradient-to-br from-sky-50 to-cyan-50 rounded-xl p-4 border border-sky-100 hover:shadow-lg transition-all duration-200 hover:scale-105">
+              <div className="absolute top-2 right-2 p-1.5 bg-gradient-to-br from-sky-400 to-cyan-400 rounded-lg text-white opacity-20 group-hover:opacity-30 transition-opacity">
+                <Activity className="h-6 w-6" />
               </div>
-              <p className="text-2xl font-bold">
-                {formatNumber(pageInsights?.engagement?.value || 0)}
-              </p>
-              {getChangeIndicator(pageInsights?.engagement?.value || 0, pageInsights?.engagement?.previous || 0)}
+              <div className="relative z-10">
+                <p className="text-xs font-medium text-sky-600 uppercase tracking-wider mb-1">Engagement</p>
+                <p className="text-2xl font-bold bg-gradient-to-r from-sky-600 to-cyan-600 bg-clip-text text-transparent">
+                  {formatNumber(pageInsights?.engagement?.value || 0)}
+                </p>
+                {getChangeIndicator(pageInsights?.engagement?.value || 0, pageInsights?.engagement?.previous || 0)}
+              </div>
             </div>
 
             {/* Page Views */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <MousePointer className="h-4 w-4" />
-                <span>Page Views</span>
+            <div className="group relative bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-100 hover:shadow-lg transition-all duration-200 hover:scale-105">
+              <div className="absolute top-2 right-2 p-1.5 bg-gradient-to-br from-indigo-400 to-purple-400 rounded-lg text-white opacity-20 group-hover:opacity-30 transition-opacity">
+                <MousePointer className="h-6 w-6" />
               </div>
-              <p className="text-2xl font-bold">
-                {formatNumber(pageInsights?.page_views?.value || 0)}
-              </p>
-              {getChangeIndicator(pageInsights?.page_views?.value || 0, pageInsights?.page_views?.previous || 0)}
+              <div className="relative z-10">
+                <p className="text-xs font-medium text-indigo-600 uppercase tracking-wider mb-1">Page Views</p>
+                <p className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                  {formatNumber(pageInsights?.page_views?.value || 0)}
+                </p>
+                {getChangeIndicator(pageInsights?.page_views?.value || 0, pageInsights?.page_views?.previous || 0)}
+              </div>
             </div>
 
             {/* Followers */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Users className="h-4 w-4" />
-                <span>Followers</span>
+            <div className="group relative bg-gradient-to-br from-blue-50 via-sky-50 to-cyan-50 rounded-xl p-4 border border-blue-100 hover:shadow-lg transition-all duration-200 hover:scale-105">
+              <div className="absolute top-2 right-2 p-1.5 bg-gradient-to-br from-blue-400 via-sky-400 to-cyan-400 rounded-lg text-white opacity-20 group-hover:opacity-30 transition-opacity">
+                <Users className="h-6 w-6" />
               </div>
-              <p className="text-2xl font-bold">
-                {formatNumber(pageInsights?.fan_count?.value || 0)}
-              </p>
-              {getChangeIndicator(pageInsights?.fan_count?.value || 0, pageInsights?.fan_count?.previous || 0)}
+              <div className="relative z-10">
+                <p className="text-xs font-medium text-blue-600 uppercase tracking-wider mb-1">Followers</p>
+                <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-sky-600 to-cyan-600 bg-clip-text text-transparent">
+                  {formatNumber(pageInsights?.fan_count?.value || 0)}
+                </p>
+                {getChangeIndicator(pageInsights?.fan_count?.value || 0, pageInsights?.fan_count?.previous || 0)}
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Recent Posts Performance */}
-      <Card>
-        <CardHeader>
+      <Card className="overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
           <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            Recent Posts Performance
+            <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg text-white">
+              <BarChart3 className="h-5 w-5" />
+            </div>
+            <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent font-bold">
+              Recent Posts Performance
+            </span>
             {selectedAccount && (
-              <Badge variant="outline" className="ml-2 text-xs">
+              <Badge className="ml-2 text-xs bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 border-blue-300">
                 {selectedAccount.display_name || selectedAccount.username}
               </Badge>
             )}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-gray-600 mt-1">
             Engagement metrics for your latest Facebook posts
           </CardDescription>
         </CardHeader>

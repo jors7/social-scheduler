@@ -52,8 +52,9 @@ export async function checkThreadsTokenExpiry(accountId?: string): Promise<{
   const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   
   const isExpired = expiryDate <= now;
-  // Refresh if: expired, expires within 7 days, or token is older than 1 day
-  const needsRefresh = isExpired || expiryDate <= sevenDaysFromNow || canRefresh;
+  // Refresh if: expired, expires within 7 days AND token is older than 1 day
+  // We need both conditions to avoid refreshing too frequently
+  const needsRefresh = isExpired || (expiryDate <= sevenDaysFromNow && canRefresh);
   
   console.log('Token expiry check:', {
     accountId: account.id,
