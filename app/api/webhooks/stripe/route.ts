@@ -259,16 +259,6 @@ export async function POST(request: NextRequest) {
         }
         break
       }
-      
-      case 'customer.credit_balance.updated': {
-        // Track when credits are added to customer balance
-        const creditBalance = event!.data.object as any
-        console.log('Customer credit balance updated:', creditBalance)
-        
-        // Log this for debugging but don't necessarily store it
-        // Credits are automatically applied to next invoice
-        break
-      }
     }
 
     return NextResponse.json({ received: true })
