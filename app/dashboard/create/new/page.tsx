@@ -757,6 +757,14 @@ function CreateNewPostPageContent() {
         return
       }
 
+      // If we're in threads mode with thread posts, we've already handled it above
+      // This prevents duplicate posting
+      if (selectedPlatforms.length === 1 && selectedPlatforms[0] === 'threads' && threadsMode === 'thread') {
+        clearTimeout(timeoutId)
+        setIsPosting(false)
+        return
+      }
+
       const postData: PostData = {
         content: postContent,
         platforms: supportedPlatforms,
