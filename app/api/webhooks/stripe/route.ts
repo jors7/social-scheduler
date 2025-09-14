@@ -83,22 +83,36 @@ export async function POST(request: NextRequest) {
             status: (subscription as any).status
           })
           
+          // Mark any existing active subscriptions as inactive first
+          await supabaseAdmin
+            .from('user_subscriptions')
+            .update({
+              is_active: false,
+              replaced_by_subscription_id: (subscription as any).id,
+              replacement_reason: 'Replaced by new subscription from checkout',
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', user_id)
+            .eq('is_active', true)
+            .neq('stripe_subscription_id', (subscription as any).id)
+          
           // Create or update subscription in database
           const { data, error } = await supabaseAdmin
             .from('user_subscriptions')
             .upsert({
               user_id,
               plan_id,
-              subscription_status: (subscription as any).status, // Use the actual Stripe status
+              status: (subscription as any).status, // Changed from subscription_status to status
               billing_cycle,
               stripe_subscription_id: (subscription as any).id,
               stripe_customer_id: session.customer as string,
               current_period_start: currentPeriodStart.toISOString(),
               current_period_end: currentPeriodEnd.toISOString(),
               trial_end: trialEnd?.toISOString(),
+              is_active: true,
               updated_at: new Date().toISOString()
             }, {
-              onConflict: 'user_id'
+              onConflict: 'stripe_subscription_id' // Changed from user_id to stripe_subscription_id
             })
             .select()
             .single()
@@ -164,7 +178,8 @@ export async function POST(request: NextRequest) {
         const { error } = await supabaseAdmin
           .from('user_subscriptions')
           .update({
-            subscription_status: 'canceled', // Use subscription_status field
+            status: 'canceled', // Changed from subscription_status to status
+            is_active: false,
             canceled_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
@@ -188,7 +203,9 @@ export async function POST(request: NextRequest) {
           
           console.log('Processing invoice.payment_succeeded:', { 
             user_id: subscription.metadata?.user_id,
-            amount: invoice.amount_paid 
+            amount: invoice.amount_paid,
+            total: invoice.total,
+            starting_balance: invoice.starting_balance
           })
           
           // Get or create subscription ID for linking
@@ -196,7 +213,17 @@ export async function POST(request: NextRequest) {
             .from('user_subscriptions')
             .select('id')
             .eq('user_id', subscription.metadata?.user_id)
+            .eq('is_active', true)
             .single()
+          
+          // Check if there was a credit applied (negative starting balance indicates credit)
+          const creditApplied = invoice.starting_balance < 0 ? Math.abs(invoice.starting_balance) : 0
+          
+          // Build description including proration info
+          let description = `Payment for ${subscription.metadata?.plan_id || 'subscription'} plan (${subscription.metadata?.billing_cycle || 'recurring'})`
+          if (creditApplied > 0) {
+            description += ` - Credit applied: $${(creditApplied / 100).toFixed(2)}`
+          }
           
           // Record payment in database
           const { error } = await supabaseAdmin
@@ -209,12 +236,16 @@ export async function POST(request: NextRequest) {
               status: 'succeeded',
               stripe_payment_intent_id: invoice.payment_intent as string,
               stripe_invoice_id: invoice.id,
-              description: `Payment for ${subscription.metadata?.plan_id || 'subscription'} plan (${subscription.metadata?.billing_cycle || 'recurring'})`,
+              description,
               metadata: {
                 invoice_number: invoice.number,
                 billing_reason: invoice.billing_reason,
                 plan_id: subscription.metadata?.plan_id,
-                billing_cycle: subscription.metadata?.billing_cycle
+                billing_cycle: subscription.metadata?.billing_cycle,
+                credit_applied: creditApplied,
+                subtotal: invoice.subtotal,
+                total: invoice.total,
+                starting_balance: invoice.starting_balance
               },
               created_at: new Date().toISOString()
             })
@@ -222,8 +253,20 @@ export async function POST(request: NextRequest) {
           if (error) {
             console.error('Error recording payment:', error)
             // Don't throw here, payment already succeeded
+          } else {
+            console.log('Payment recorded with proration details')
           }
         }
+        break
+      }
+      
+      case 'customer.credit_balance.updated': {
+        // Track when credits are added to customer balance
+        const creditBalance = event!.data.object as any
+        console.log('Customer credit balance updated:', creditBalance)
+        
+        // Log this for debugging but don't necessarily store it
+        // Credits are automatically applied to next invoice
         break
       }
     }

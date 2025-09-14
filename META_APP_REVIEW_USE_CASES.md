@@ -130,23 +130,21 @@ This is our core functionality - allowing users to create, schedule, and publish
 - Posted content metadata retained for analytics
 - Failed posts are retried with user notification
 
-### 5. pages_read_user_content
+### 5. pages_read_user_content (FUTURE FEATURE - NOT CURRENTLY IMPLEMENTED)
 **Permission Scope**: `pages_read_user_content`  
 **Access Level**: Advanced Access
+**Status**: NOT REQUESTED - This permission was initially included but is not currently used in the application
 
-**Use Case**:
-This permission allows us to show users their published content history and manage their content library effectively.
+**Planned Use Case (Future)**:
+This permission would allow us to show users their published content history and manage their content library effectively.
 
-**User Flow**:
-1. User navigates to Content Library
-2. We fetch previously posted content from Facebook
-3. User can view, analyze, and repurpose successful content
-4. User can identify content gaps and opportunities
+**Planned User Flow**:
+1. User would navigate to Content Library
+2. We would fetch previously posted content from Facebook
+3. User could view, analyze, and repurpose successful content
+4. User could identify content gaps and opportunities
 
-**Features This Enables**:
-- Content history and archives
-- Repost successful content
-- Content performance comparison
+**Note**: This feature is not currently implemented in SocialCal. The permission has been removed from our OAuth scope request as we focus on core posting and analytics functionality.
 - Competitor analysis features
 - Content audit capabilities
 

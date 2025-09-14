@@ -34,6 +34,7 @@ export async function getClientSubscription(autoSync: boolean = true): Promise<C
         .from('user_subscriptions')
         .select('updated_at, stripe_subscription_id')
         .eq('user_id', user.id)
+        .eq('is_active', true)
         .single()
       
       if (existingSub?.stripe_subscription_id) {
@@ -56,11 +57,12 @@ export async function getClientSubscription(autoSync: boolean = true): Promise<C
       }
     }
     
-    // Get user's subscription (potentially updated)
+    // Get user's ACTIVE subscription (potentially updated)
     const { data: subscription, error } = await supabase
       .from('user_subscriptions')
       .select('*')
       .eq('user_id', user.id)
+      .eq('is_active', true)
       .single()
     
     if (error || !subscription) {

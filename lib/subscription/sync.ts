@@ -114,11 +114,61 @@ export async function syncStripeSubscriptionToDatabase(
       updated_at: new Date().toISOString()
     }
     
-    // Upsert subscription in database
+    // Check for existing active subscriptions and handle conflicts
+    const { data: existingActive } = await supabaseAdmin
+      .from('user_subscriptions')
+      .select('id, stripe_subscription_id, plan_id, status')
+      .eq('user_id', userIdToUse)
+      .eq('is_active', true)
+      .neq('stripe_subscription_id', subscription.id)
+      .single()
+    
+    if (existingActive) {
+      console.log(`Found existing active subscription ${existingActive.stripe_subscription_id}, will be replaced by ${subscription.id}`)
+      
+      // Log the subscription change
+      await supabaseAdmin
+        .from('subscription_change_log')
+        .insert({
+          user_id: userIdToUse,
+          old_subscription_id: existingActive.stripe_subscription_id,
+          new_subscription_id: subscription.id,
+          old_plan_id: existingActive.plan_id,
+          new_plan_id: planId,
+          change_type: planId === existingActive.plan_id ? 'billing_change' : 
+                       (planId > existingActive.plan_id ? 'upgrade' : 'downgrade'),
+          change_reason: 'Webhook sync detected subscription change',
+          metadata: {
+            old_status: existingActive.status,
+            new_status: subscription.status,
+            billing_cycle: billingCycle
+          }
+        })
+      
+      // Mark old subscription as inactive
+      await supabaseAdmin
+        .from('user_subscriptions')
+        .update({
+          is_active: false,
+          replaced_by_subscription_id: subscription.id,
+          replacement_reason: `Replaced by ${planId} subscription`,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingActive.id)
+    }
+    
+    // Add is_active flag to subscription data
+    const subscriptionDataWithActive = {
+      ...subscriptionData,
+      is_active: true,
+      stripe_price_id: price.id
+    }
+    
+    // Upsert subscription in database (now using stripe_subscription_id as conflict key)
     const { data, error } = await supabaseAdmin
       .from('user_subscriptions')
-      .upsert(subscriptionData, {
-        onConflict: 'user_id'
+      .upsert(subscriptionDataWithActive, {
+        onConflict: 'stripe_subscription_id'
       })
       .select()
       .single()
@@ -142,11 +192,12 @@ export async function syncUserSubscription(userId: string): Promise<{ success: b
   try {
     console.log(`Syncing subscription for user ${userId}`)
     
-    // First, get the user's subscription from database
+    // First, get the user's ACTIVE subscription from database
     const { data: dbSub, error: dbError } = await supabaseAdmin
       .from('user_subscriptions')
       .select('stripe_subscription_id, stripe_customer_id')
       .eq('user_id', userId)
+      .eq('is_active', true)
       .single()
     
     if (dbError || !dbSub?.stripe_subscription_id) {

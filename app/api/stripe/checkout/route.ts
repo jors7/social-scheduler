@@ -46,12 +46,41 @@ export async function POST(request: NextRequest) {
     // Check if user already has a Stripe customer ID
     const { data: subscription } = await supabase
       .from('user_subscriptions')
-      .select('stripe_customer_id')
+      .select('stripe_customer_id, stripe_subscription_id, status')
       .eq('user_id', user.id)
       .single()
 
     if (subscription?.stripe_customer_id) {
       customerId = subscription.stripe_customer_id
+      
+      // CRITICAL: Cancel any existing active subscriptions with proration
+      if (subscription.stripe_subscription_id && 
+          ['active', 'trialing'].includes(subscription.status)) {
+        console.log(`Canceling existing subscription ${subscription.stripe_subscription_id} with proration`)
+        try {
+          // Cancel immediately with proration
+          // This will create a credit for unused time that automatically applies to the new subscription
+          const canceledSubscription = await stripe.subscriptions.cancel(
+            subscription.stripe_subscription_id,
+            {
+              prorate: true,
+              invoice_now: true, // Generate credit invoice immediately
+              expand: ['latest_invoice']
+            }
+          )
+          
+          // Log the proration details
+          const latestInvoice = canceledSubscription.latest_invoice as any
+          if (latestInvoice && latestInvoice.total < 0) {
+            console.log(`Proration credit generated: ${Math.abs(latestInvoice.total / 100)} ${latestInvoice.currency.toUpperCase()}`)
+          }
+          
+          console.log(`Successfully canceled subscription ${subscription.stripe_subscription_id} with proration`)
+        } catch (cancelError) {
+          console.error('Error canceling existing subscription:', cancelError)
+          // Continue anyway - better to allow upgrade than block it
+        }
+      }
     } else {
       // Create new Stripe customer
       const customer = await stripe.customers.create({
@@ -98,10 +127,16 @@ export async function POST(request: NextRequest) {
         mode: 'subscription',
         success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?subscription=success`,
         cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/#pricing`,
+        // Allow promotion codes and apply any credit balance automatically
+        allow_promotion_codes: true,
+        customer_update: {
+          address: 'auto',
+        },
         metadata: {
           user_id: user.id,
           plan_id: planId,
           billing_cycle: billingCycle,
+          upgrade_with_proration: subscription?.stripe_subscription_id ? 'true' : 'false',
         },
         subscription_data: {
           trial_period_days: plan.features.trial_days,
@@ -129,10 +164,16 @@ export async function POST(request: NextRequest) {
       mode: 'subscription',
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?subscription=success`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/#pricing`,
+      // Allow promotion codes and apply any credit balance automatically
+      allow_promotion_codes: true,
+      customer_update: {
+        address: 'auto',
+      },
       metadata: {
         user_id: user.id,
         plan_id: planId,
         billing_cycle: billingCycle,
+        upgrade_with_proration: subscription?.stripe_subscription_id ? 'true' : 'false',
       },
       subscription_data: {
         trial_period_days: plan.features.trial_days,
