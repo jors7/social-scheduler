@@ -47,15 +47,17 @@ async function getStripeSubscriptionsForCustomer(customerId: string): Promise<Su
   })
   
   return subscriptions.data.map(sub => {
-    const price = sub.items.data[0]?.price as any
+    // Cast to any to handle Stripe SDK type issues
+    const subscription = sub as any
+    const price = subscription.items.data[0]?.price as any
     return {
-      id: sub.id,
-      status: sub.status,
+      id: subscription.id,
+      status: subscription.status,
       plan: price?.metadata?.plan_id || 'unknown',
       amount: (price?.unit_amount || 0) / 100,
       interval: price?.recurring?.interval || 'unknown',
-      created: new Date(sub.created * 1000),
-      current_period_end: new Date(sub.current_period_end * 1000)
+      created: new Date(subscription.created * 1000),
+      current_period_end: new Date(subscription.current_period_end * 1000)
     }
   })
 }
@@ -109,7 +111,7 @@ async function fixUserSubscriptions(email?: string) {
   }
   
   // Check each customer for multiple active subscriptions
-  for (const [customerId, userSubs] of customerMap.entries()) {
+  for (const [customerId, userSubs] of Array.from(customerMap.entries())) {
     console.log(`\n📊 Checking customer: ${customerId}`)
     console.log(`   Database records: ${userSubs.length}`)
     
