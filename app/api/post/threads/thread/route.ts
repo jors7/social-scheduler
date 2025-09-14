@@ -15,6 +15,14 @@ export async function POST(request: NextRequest) {
     console.log('Posts to create:', posts.map((p, i) => `Post ${i + 1}: ${p.substring(0, 30)}...`));
     console.log('Access token preview:', accessToken ? `${accessToken.substring(0, 20)}...` : 'null');
 
+    // IMPORTANT: If we have more than 1 post, we need the threads_manage_replies permission
+    // We should fail fast rather than posting the first post and then failing
+    if (posts.length > 1) {
+      console.log('Multiple posts detected - will need threads_manage_replies permission for replies');
+      // We could do a permission check here, but for now we'll just note it
+      // The actual permission check will happen when we try to use reply_to_id
+    }
+
     const publishedPosts = [];
     let previousPostId = null;
 
