@@ -72,12 +72,15 @@ export async function POST(request: NextRequest) {
 
     try {
       // Get the current subscription from Stripe
-      const stripeSubscription = await stripe.subscriptions.retrieve(
+      const stripeSubscriptionResponse = await stripe.subscriptions.retrieve(
         subscription.stripe_subscription_id,
         {
           expand: ['items.data.price']
         }
       )
+      
+      // Cast to any to handle the Response wrapper
+      const stripeSubscription = stripeSubscriptionResponse as any
 
       // Calculate proration for immediate cancellation
       const now = Math.floor(Date.now() / 1000)
