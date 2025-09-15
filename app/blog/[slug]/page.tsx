@@ -164,7 +164,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
                 {/* Main Content */}
                 <div className="lg:col-span-9">
-                  <BlogPostContent content={post.content} />
+                  <BlogPostContent content={post.content} headings={headings} />
                 </div>
               </div>
 
@@ -193,10 +193,11 @@ function extractHeadings(content: string) {
   let match
 
   while ((match = headingRegex.exec(content)) !== null) {
+    const text = match[2].replace(/<[^>]*>/g, '') // Strip HTML tags
     headings.push({
       level: parseInt(match[1]),
-      text: match[2].replace(/<[^>]*>/g, ''), // Strip HTML tags
-      id: match[2].toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      text: text,
+      id: text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
     })
   }
 

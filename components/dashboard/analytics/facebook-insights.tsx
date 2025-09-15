@@ -17,7 +17,9 @@ import {
   Activity,
   RefreshCw,
   Info,
-  Facebook
+  Facebook,
+  FileText,
+  ChevronDown
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -55,6 +57,9 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
   const [hasFacebookAccount, setHasFacebookAccount] = useState(false)
   const [facebookAccounts, setFacebookAccounts] = useState<any[]>([])
   const [selectedAccount, setSelectedAccount] = useState<any>(null)
+  const [postsLimit, setPostsLimit] = useState(5)
+  const [hasMorePosts, setHasMorePosts] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   const fetchFacebookInsights = async (accountId?: string) => {
     try {
@@ -99,13 +104,16 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
 
       // Fetch recent posts directly from Facebook
       const mediaQueryParams = new URLSearchParams({
-        limit: '5',
+        limit: postsLimit.toString(),
         ...(accountToUse?.id && { accountId: accountToUse.id })
       })
       const mediaResponse = await fetch(`/api/facebook/media?${mediaQueryParams}`)
       if (mediaResponse.ok) {
         const { media } = await mediaResponse.json()
         setRecentPosts(media || [])
+        
+        // Check if there might be more posts available
+        setHasMorePosts(media && media.length === postsLimit)
       }
     } catch (error) {
       console.error('Error fetching Facebook insights:', error)
@@ -123,7 +131,7 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
     }, 100)
     
     return () => clearTimeout(timer)
-  }, [selectedPeriod])
+  }, [selectedPeriod, postsLimit])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -233,20 +241,19 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
   return (
     <div className={cn("space-y-6", className)}>
       {/* Page Overview */}
-      <Card className="overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 p-0.5">
-          <CardHeader className="bg-white">
+      <Card className="overflow-hidden border border-gray-200">
+        <CardHeader className="bg-white border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <CardTitle className="flex items-center gap-2">
-                  <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg text-white">
-                    <Facebook className="h-5 w-5" />
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Facebook className="h-5 w-5 text-blue-600" />
                   </div>
-                  <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent font-bold">
+                  <span className="text-gray-900 font-bold">
                     Facebook Page Insights
                   </span>
                   {selectedAccount && (
-                    <Badge className="ml-2 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 border-blue-300">
+                    <Badge className="ml-2 bg-gray-100 text-gray-700 border-gray-300">
                       {selectedAccount.display_name || selectedAccount.username}
                     </Badge>
                   )}
@@ -302,80 +309,71 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
             </div>
           </div>
           </CardHeader>
-        </div>
         <CardContent className="pt-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Page Impressions */}
-            <div className="group relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100 hover:shadow-lg transition-all duration-200 hover:scale-105">
-              <div className="absolute top-2 right-2 p-1.5 bg-gradient-to-br from-blue-400 to-indigo-400 rounded-lg text-white opacity-20 group-hover:opacity-30 transition-opacity">
-                <Eye className="h-6 w-6" />
+            <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Eye className="h-4 w-4 text-gray-500" />
+                <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Impressions</p>
               </div>
-              <div className="relative z-10">
-                <p className="text-xs font-medium text-blue-600 uppercase tracking-wider mb-1">Impressions</p>
-                <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  {formatNumber(pageInsights?.impressions?.value || 0)}
-                </p>
-                {getChangeIndicator(pageInsights?.impressions?.value || 0, pageInsights?.impressions?.previous || 0)}
-              </div>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatNumber(pageInsights?.impressions?.value || 0)}
+              </p>
+              {getChangeIndicator(pageInsights?.impressions?.value || 0, pageInsights?.impressions?.previous || 0)}
             </div>
 
             {/* Engagement */}
-            <div className="group relative bg-gradient-to-br from-sky-50 to-cyan-50 rounded-xl p-4 border border-sky-100 hover:shadow-lg transition-all duration-200 hover:scale-105">
-              <div className="absolute top-2 right-2 p-1.5 bg-gradient-to-br from-sky-400 to-cyan-400 rounded-lg text-white opacity-20 group-hover:opacity-30 transition-opacity">
-                <Activity className="h-6 w-6" />
+            <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Activity className="h-4 w-4 text-gray-500" />
+                <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Engagement</p>
               </div>
-              <div className="relative z-10">
-                <p className="text-xs font-medium text-sky-600 uppercase tracking-wider mb-1">Engagement</p>
-                <p className="text-2xl font-bold bg-gradient-to-r from-sky-600 to-cyan-600 bg-clip-text text-transparent">
-                  {formatNumber(pageInsights?.engagement?.value || 0)}
-                </p>
-                {getChangeIndicator(pageInsights?.engagement?.value || 0, pageInsights?.engagement?.previous || 0)}
-              </div>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatNumber(pageInsights?.engagement?.value || 0)}
+              </p>
+              {getChangeIndicator(pageInsights?.engagement?.value || 0, pageInsights?.engagement?.previous || 0)}
             </div>
 
             {/* Page Views */}
-            <div className="group relative bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-100 hover:shadow-lg transition-all duration-200 hover:scale-105">
-              <div className="absolute top-2 right-2 p-1.5 bg-gradient-to-br from-indigo-400 to-purple-400 rounded-lg text-white opacity-20 group-hover:opacity-30 transition-opacity">
-                <MousePointer className="h-6 w-6" />
+            <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <MousePointer className="h-4 w-4 text-gray-500" />
+                <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Page Views</p>
               </div>
-              <div className="relative z-10">
-                <p className="text-xs font-medium text-indigo-600 uppercase tracking-wider mb-1">Page Views</p>
-                <p className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  {formatNumber(pageInsights?.page_views?.value || 0)}
-                </p>
-                {getChangeIndicator(pageInsights?.page_views?.value || 0, pageInsights?.page_views?.previous || 0)}
-              </div>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatNumber(pageInsights?.page_views?.value || 0)}
+              </p>
+              {getChangeIndicator(pageInsights?.page_views?.value || 0, pageInsights?.page_views?.previous || 0)}
             </div>
 
             {/* Followers */}
-            <div className="group relative bg-gradient-to-br from-blue-50 via-sky-50 to-cyan-50 rounded-xl p-4 border border-blue-100 hover:shadow-lg transition-all duration-200 hover:scale-105">
-              <div className="absolute top-2 right-2 p-1.5 bg-gradient-to-br from-blue-400 via-sky-400 to-cyan-400 rounded-lg text-white opacity-20 group-hover:opacity-30 transition-opacity">
-                <Users className="h-6 w-6" />
+            <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="h-4 w-4 text-gray-500" />
+                <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Followers</p>
               </div>
-              <div className="relative z-10">
-                <p className="text-xs font-medium text-blue-600 uppercase tracking-wider mb-1">Followers</p>
-                <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-sky-600 to-cyan-600 bg-clip-text text-transparent">
-                  {formatNumber(pageInsights?.fan_count?.value || 0)}
-                </p>
-                {getChangeIndicator(pageInsights?.fan_count?.value || 0, pageInsights?.fan_count?.previous || 0)}
-              </div>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatNumber(pageInsights?.fan_count?.value || 0)}
+              </p>
+              {getChangeIndicator(pageInsights?.fan_count?.value || 0, pageInsights?.fan_count?.previous || 0)}
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Recent Posts Performance */}
-      <Card className="overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
+      <Card className="overflow-hidden border border-gray-200">
+        <CardHeader className="bg-gray-50 border-b border-gray-200">
           <CardTitle className="flex items-center gap-2">
-            <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg text-white">
-              <BarChart3 className="h-5 w-5" />
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <BarChart3 className="h-5 w-5 text-blue-600" />
             </div>
-            <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent font-bold">
+            <span className="text-gray-900 font-bold">
               Recent Posts Performance
             </span>
             {selectedAccount && (
-              <Badge className="ml-2 text-xs bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 border-blue-300">
+              <Badge className="ml-2 text-xs bg-gray-100 text-gray-700 border-gray-300">
                 {selectedAccount.display_name || selectedAccount.username}
               </Badge>
             )}
@@ -384,7 +382,7 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
             Engagement metrics for your latest Facebook posts
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {recentPosts.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Info className="mx-auto h-8 w-8 mb-2 text-gray-300" />
@@ -394,50 +392,101 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
           ) : (
             <div className="space-y-4">
               {recentPosts.map((post) => (
-                <div key={post.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between mb-3">
+                <div key={post.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-all duration-200 bg-white">
+                  <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <p className="text-sm text-gray-600 line-clamp-2">
+                      <p className="text-sm text-gray-700 line-clamp-2">
                         {post.message?.slice(0, 100)}...
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-gray-500 mt-1.5">
                         {new Date(post.created_time).toLocaleDateString()}
                       </p>
                     </div>
-                    <Badge variant="secondary" className="ml-2">
-                      {post.media_type?.toUpperCase() || 'STATUS'}
-                    </Badge>
+                    {post.media_url ? (
+                      <div className="ml-3 flex-shrink-0">
+                        <img
+                          src={post.media_url}
+                          alt="Post media"
+                          className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                        />
+                      </div>
+                    ) : (
+                      <div className="ml-3 flex-shrink-0">
+                        <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
+                          <FileText className="h-8 w-8 text-gray-400" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
-                    <div className="flex items-center gap-1">
-                      <Eye className="h-3 w-3 text-gray-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.impressions || 0)}</span>
-                      <span className="text-xs text-gray-500">reach</span>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-3 w-3 text-gray-400" />
+                      <div>
+                        <p className="text-xs text-gray-500">Reach</p>
+                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.impressions || 0)}</p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <ThumbsUp className="h-3 w-3 text-blue-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.likes || 0)}</span>
-                      <span className="text-xs text-gray-500">likes</span>
+                    <div className="flex items-center gap-2">
+                      <ThumbsUp className="h-3 w-3 text-gray-400" />
+                      <div>
+                        <p className="text-xs text-gray-500">Likes</p>
+                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.likes || 0)}</p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <MessageCircle className="h-3 w-3 text-green-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.comments || 0)}</span>
-                      <span className="text-xs text-gray-500">comments</span>
+                    <div className="flex items-center gap-2">
+                      <MessageCircle className="h-3 w-3 text-gray-400" />
+                      <div>
+                        <p className="text-xs text-gray-500">Comments</p>
+                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.comments || 0)}</p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Share2 className="h-3 w-3 text-purple-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.shares || 0)}</span>
-                      <span className="text-xs text-gray-500">shares</span>
+                    <div className="flex items-center gap-2">
+                      <Share2 className="h-3 w-3 text-gray-400" />
+                      <div>
+                        <p className="text-xs text-gray-500">Shares</p>
+                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.shares || 0)}</p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <MousePointer className="h-3 w-3 text-orange-500" />
-                      <span className="font-medium">{formatNumber(post.metrics?.clicks || 0)}</span>
-                      <span className="text-xs text-gray-500">clicks</span>
+                    <div className="flex items-center gap-2">
+                      <MousePointer className="h-3 w-3 text-gray-400" />
+                      <div>
+                        <p className="text-xs text-gray-500">Clicks</p>
+                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.clicks || 0)}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+          {hasMorePosts && (
+            <div className="mt-4 text-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  setLoadingMore(true)
+                  const newLimit = postsLimit + 5
+                  setPostsLimit(newLimit)
+                  // Wait for next useEffect to fetch with new limit
+                  setTimeout(() => setLoadingMore(false), 100)
+                }}
+                disabled={loadingMore}
+                className="text-gray-600 hover:text-gray-900"
+              >
+                {loadingMore ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4 mr-2" />
+                    Load More Posts
+                  </>
+                )}
+              </Button>
             </div>
           )}
         </CardContent>

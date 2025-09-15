@@ -41,17 +41,26 @@ export async function GET(request: NextRequest) {
     // Use specified account or first available
     const account = accounts[0];
 
-    // Fetch recent Facebook posts from the API
-    // Facebook uses page posts endpoint
-    const facebookUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url,full_picture,attachments{media_type,media,url}&limit=${limit}&access_token=${account.access_token}`;
-    
+    // Fetch both posts and videos (including reels) from Facebook
     console.log('Fetching Facebook media from API');
     
-    const response = await fetch(facebookUrl);
+    // Prepare URLs for parallel fetching
+    const postsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url,full_picture,attachments{media_type,media,url}&limit=${limit}&access_token=${account.access_token}`;
+    const videosUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/videos?fields=id,title,description,created_time,permalink_url,source,thumbnails,length,from&limit=${limit}&access_token=${account.access_token}`;
     
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Failed to fetch Facebook media:', errorData);
+    // Fetch both endpoints in parallel
+    const [postsResponse, videosResponse] = await Promise.all([
+      fetch(postsUrl),
+      fetch(videosUrl).catch(err => {
+        console.log('Videos endpoint failed (might not have permission):', err);
+        return null;
+      })
+    ]);
+    
+    // Handle posts response
+    if (!postsResponse.ok) {
+      const errorData = await postsResponse.json();
+      console.error('Failed to fetch Facebook posts:', errorData);
       
       // Check if it's a token expiration error
       if (errorData.error?.code === 190 || errorData.error?.message?.includes('expired')) {
@@ -73,18 +82,60 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await response.json();
+    const postsData = await postsResponse.json();
     
-    // Process the posts to match expected format
-    const media = data.data?.map((post: any) => ({
+    // Process posts
+    const posts = postsData.data?.map((post: any) => ({
       id: post.id,
       message: post.message || '',
       created_time: post.created_time,
       permalink_url: post.permalink_url,
       full_picture: post.full_picture,
       media_type: post.attachments?.data?.[0]?.media_type || 'status',
-      media_url: post.attachments?.data?.[0]?.media?.image?.src || post.full_picture
+      media_url: post.attachments?.data?.[0]?.media?.image?.src || post.full_picture,
+      source_type: 'post'
     })) || [];
+    
+    // Process videos if available
+    let videos: any[] = [];
+    if (videosResponse && videosResponse.ok) {
+      try {
+        const videosData = await videosResponse.json();
+        videos = videosData.data?.map((video: any) => ({
+          id: video.id,
+          message: video.title || video.description || '',
+          created_time: video.created_time,
+          permalink_url: video.permalink_url,
+          full_picture: video.thumbnails?.data?.[0]?.uri || null,
+          media_type: 'video',
+          media_url: video.thumbnails?.data?.[0]?.uri || null,
+          video_source: video.source,
+          source_type: 'video',
+          is_reel: video.description?.includes('#reels') || video.title?.includes('#reels') || false
+        })) || [];
+        console.log(`Fetched ${videos.length} videos including reels`);
+      } catch (err) {
+        console.error('Error processing videos:', err);
+      }
+    }
+    
+    // Merge and deduplicate
+    const allMedia = [...posts, ...videos];
+    const uniqueMedia = new Map();
+    
+    // Deduplicate by ID, keeping the version with more data
+    allMedia.forEach(item => {
+      const existing = uniqueMedia.get(item.id);
+      if (!existing || (item.source_type === 'video' && existing.source_type === 'post')) {
+        // Prefer video data as it has more details
+        uniqueMedia.set(item.id, item);
+      }
+    });
+    
+    // Convert back to array and sort by created_time
+    const media = Array.from(uniqueMedia.values())
+      .sort((a, b) => new Date(b.created_time).getTime() - new Date(a.created_time).getTime())
+      .slice(0, parseInt(limit));
 
     // Try to fetch insights for each post
     const mediaWithMetrics = await Promise.all(

@@ -35,6 +35,7 @@ interface PostData {
   posted_at?: string
   created_at: string
   post_results?: any[]
+  media_urls?: any[]
 }
 
 interface DashboardStats {
@@ -71,7 +72,7 @@ const platformIcons: Record<string, string> = {
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentPosts, setRecentPosts] = useState<PostData[]>([])
-  const [upcomingSchedule, setUpcomingSchedule] = useState<{date: string, posts: number, platforms: string[], dateObj: Date}[]>([])
+  const [upcomingSchedule, setUpcomingSchedule] = useState<{date: string, posts: number, platforms: string[], dateObj: Date, media_urls: string[], postGroups: string[][]}[]>([])
   const [loading, setLoading] = useState(true)
   const [subscription, setSubscription] = useState<any>(null)
   const [usage, setUsage] = useState<UsageData | null>(null)
@@ -197,7 +198,7 @@ export default function DashboardPage() {
         new Date(p.scheduled_for) > now  // Only show future posts
       )
       
-      const scheduleMap = new Map<string, { count: number, platforms: Set<string>, dateObj: Date }>()
+      const scheduleMap = new Map<string, { count: number, platforms: Set<string>, dateObj: Date, media_urls: string[], postGroups: string[][] }>()
       const today = new Date()
       const tomorrow = new Date(today)
       tomorrow.setDate(tomorrow.getDate() + 1)
@@ -215,9 +216,27 @@ export default function DashboardPage() {
           dateKey = postDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         }
         
-        const existing = scheduleMap.get(dateKey) || { count: 0, platforms: new Set<string>(), dateObj: postDate }
+        const existing = scheduleMap.get(dateKey) || { count: 0, platforms: new Set<string>(), dateObj: postDate, media_urls: [], postGroups: [] }
         existing.count += 1
         post.platforms.forEach(platform => existing.platforms.add(platform))
+        
+        // Add this post's platforms as a group
+        existing.postGroups.push(post.platforms)
+        
+        // Collect media URLs (up to 3 per day)
+        if (existing.media_urls.length < 3 && post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
+          const firstMedia = post.media_urls[0]
+          let mediaUrl: string | null = null
+          if (typeof firstMedia === 'string') {
+            mediaUrl = firstMedia
+          } else if (firstMedia && typeof firstMedia === 'object' && firstMedia.url) {
+            mediaUrl = firstMedia.url
+          }
+          if (mediaUrl && !existing.media_urls.includes(mediaUrl)) {
+            existing.media_urls.push(mediaUrl)
+          }
+        }
+        
         scheduleMap.set(dateKey, existing)
       })
       
@@ -227,7 +246,9 @@ export default function DashboardPage() {
           date, 
           posts: data.count, 
           platforms: Array.from(data.platforms),
-          dateObj: data.dateObj 
+          dateObj: data.dateObj,
+          media_urls: data.media_urls,
+          postGroups: data.postGroups 
         }))
         .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime())
         .slice(0, 4)
@@ -599,43 +620,92 @@ export default function DashboardPage() {
                   </Link>
                 </div>
               ) : (
-                recentPosts.map((post) => (
-                  <div key={post.id} className="flex items-center justify-between p-5 border border-gray-100 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-gradient-to-r from-gray-50 to-white">
-                    <div className="flex-1">
-                      <p className="font-medium line-clamp-1">{stripHtml(post.content).slice(0, 60)}...</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={cn(
-                          "text-xs px-2 py-1 rounded-full font-medium",
-                          getDisplayStatus(post) === 'scheduled' 
-                            ? 'bg-blue-100 text-blue-600' 
-                            : getDisplayStatus(post) === 'posted'
-                            ? 'bg-green-100 text-green-600'
-                            : 'bg-gray-100 text-gray-600'
-                        )}>
-                          {getDisplayStatus(post)}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {post.scheduled_for 
-                            ? formatDate(post.scheduled_for)
-                            : post.posted_at 
-                            ? formatDate(post.posted_at)
-                            : formatDate(post.created_at)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      {post.platforms.map((platform) => (
-                        <div
-                          key={platform}
-                          className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-xs"
-                          title={platform}
-                        >
-                          {platformIcons[platform] || platform[0].toUpperCase()}
+                recentPosts.map((post) => {
+                  // Helper function to extract media URL from various sources
+                  const getMediaUrl = () => {
+                    // First check media_urls field (for new posts)
+                    if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
+                      // media_urls might be an array of URLs or an array with nested structure
+                      const firstMedia = post.media_urls[0]
+                      if (typeof firstMedia === 'string') {
+                        return firstMedia
+                      } else if (firstMedia && typeof firstMedia === 'object' && firstMedia.url) {
+                        return firstMedia.url
+                      }
+                    }
+                    
+                    // For older posts, we unfortunately don't have the media URLs stored
+                    // The post_results only contain post IDs and success status, not the actual media
+                    
+                    return null
+                  }
+                  
+                  const firstMediaUrl = getMediaUrl()
+                  // Simple check if URL is likely a video based on extension
+                  const isVideo = firstMediaUrl && (firstMediaUrl.includes('.mp4') || firstMediaUrl.includes('.mov') || firstMediaUrl.includes('.webm'))
+                  
+                  
+                  return (
+                    <div key={post.id} className="flex items-center justify-between p-5 border border-gray-100 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-gradient-to-r from-gray-50 to-white">
+                      <div className="flex-1">
+                        <p className="font-medium line-clamp-1">{stripHtml(post.content).slice(0, 60)}...</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          {post.platforms.map((platform) => (
+                            <span
+                              key={platform}
+                              className={cn(
+                                "text-xs px-2 py-1 rounded-full font-medium text-white",
+                                platform === 'facebook' && 'bg-[#1877F2]',
+                                platform === 'instagram' && 'bg-gradient-to-r from-purple-500 to-pink-500',
+                                platform === 'twitter' && 'bg-black',
+                                platform === 'linkedin' && 'bg-[#0A66C2]',
+                                platform === 'threads' && 'bg-black',
+                                platform === 'bluesky' && 'bg-[#00A8E8]',
+                                platform === 'youtube' && 'bg-[#FF0000]',
+                                platform === 'tiktok' && 'bg-black',
+                                platform === 'pinterest' && 'bg-[#E60023]',
+                                !['facebook', 'instagram', 'twitter', 'linkedin', 'threads', 'bluesky', 'youtube', 'tiktok', 'pinterest'].includes(platform) && 'bg-gray-500'
+                              )}
+                            >
+                              {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                            </span>
+                          ))}
+                          <span className="text-xs text-gray-500">
+                            {post.scheduled_for 
+                              ? formatDate(post.scheduled_for)
+                              : post.posted_at 
+                              ? formatDate(post.posted_at)
+                              : formatDate(post.created_at)}
+                          </span>
                         </div>
-                      ))}
+                      </div>
+                      {firstMediaUrl ? (
+                        <div className="ml-3 flex-shrink-0">
+                          {isVideo ? (
+                            <video
+                              src={firstMediaUrl}
+                              className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                              muted
+                              preload="metadata"
+                            />
+                          ) : (
+                            <img
+                              src={firstMediaUrl}
+                              alt="Post media"
+                              className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <div className="ml-3 flex-shrink-0">
+                          <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
+                            <FileText className="h-8 w-8 text-gray-400" />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))
+                  )
+                })
               )}
             </div>
           </CardContent>
@@ -676,16 +746,51 @@ export default function DashboardPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-1">
-                      {day.platforms.map((platform) => (
-                        <div
-                          key={platform}
-                          className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-xs"
-                          title={platform}
-                        >
-                          {platformIcons[platform] || platform[0].toUpperCase()}
+                    <div className="flex items-center gap-3">
+                      {/* Media thumbnails */}
+                      {day.media_urls.length > 0 && (
+                        <div className="flex gap-1">
+                          {day.media_urls.map((url, index) => (
+                            <div key={index} className="flex-shrink-0">
+                              <img
+                                src={url}
+                                alt="Scheduled post media"
+                                className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                              />
+                            </div>
+                          ))}
+                          {day.posts > day.media_urls.length && (
+                            <div className="flex-shrink-0">
+                              <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
+                                <FileText className="h-8 w-8 text-gray-400" />
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      ))}
+                      )}
+                      {day.media_urls.length === 0 && (
+                        <div className="flex-shrink-0">
+                          <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
+                            <FileText className="h-8 w-8 text-gray-400" />
+                          </div>
+                        </div>
+                      )}
+                      {/* Platform icons grouped by post */}
+                      <div className="flex gap-2">
+                        {day.postGroups.map((postPlatforms, groupIndex) => (
+                          <div key={groupIndex} className="flex gap-0.5 bg-indigo-100 rounded-md p-1">
+                            {postPlatforms.map((platform) => (
+                              <div
+                                key={`${groupIndex}-${platform}`}
+                                className="w-6 h-6 bg-white rounded flex items-center justify-center text-xs border border-indigo-200"
+                                title={platform}
+                              >
+                                {platformIcons[platform] || platform[0].toUpperCase()}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ))

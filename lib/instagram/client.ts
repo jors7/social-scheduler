@@ -413,9 +413,9 @@ export class InstagramClient {
 
   async getMedia(limit = 10) {
     try {
-      // Use Instagram Graph API endpoint - include like_count and comments_count
+      // Use Instagram Graph API endpoint - include like_count, comments_count, and thumbnail_url for videos
       const response = await fetch(
-        `https://graph.instagram.com/${this.userID}/media?fields=id,media_type,media_url,permalink,caption,timestamp,like_count,comments_count&limit=${limit}&access_token=${this.accessToken}`
+        `https://graph.instagram.com/${this.userID}/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption,timestamp,like_count,comments_count&limit=${limit}&access_token=${this.accessToken}`
       );
 
       if (!response.ok) {

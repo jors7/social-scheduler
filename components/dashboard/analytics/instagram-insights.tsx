@@ -17,7 +17,9 @@ import {
   Activity,
   RefreshCw,
   Info,
-  Camera
+  Camera,
+  FileText,
+  ChevronDown
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -40,6 +42,7 @@ interface InstagramPost {
   caption: string
   media_type: 'IMAGE' | 'VIDEO' | 'CAROUSEL_ALBUM'
   media_url?: string
+  thumbnail_url?: string
   permalink: string
   timestamp: string
   metrics?: InstagramMetrics
@@ -58,6 +61,9 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
   const [hasInstagramAccount, setHasInstagramAccount] = useState(false)
   const [instagramAccounts, setInstagramAccounts] = useState<any[]>([])
   const [selectedAccount, setSelectedAccount] = useState<any>(null)
+  const [postsLimit, setPostsLimit] = useState(5)
+  const [hasMorePosts, setHasMorePosts] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   const fetchInstagramInsights = async (accountId?: string) => {
     try {
@@ -102,12 +108,15 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
 
       // Fetch recent posts directly from Instagram
       const mediaQueryParams = new URLSearchParams({
-        limit: '5',
+        limit: postsLimit.toString(),
         ...(selectedAccount?.id && { accountId: selectedAccount.id })
       })
       const mediaResponse = await fetch(`/api/instagram/media?${mediaQueryParams}`)
       if (mediaResponse.ok) {
         const { media } = await mediaResponse.json()
+        
+        // Check if there might be more posts available
+        setHasMorePosts(media.length === postsLimit)
         
         // Fetch insights for each Instagram post
         const postsWithInsights = await Promise.all(
@@ -151,6 +160,7 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
               caption: post.caption || '',
               media_type: post.media_type,
               media_url: post.media_url,
+              thumbnail_url: post.thumbnail_url,
               permalink: post.permalink,
               timestamp: post.timestamp,
               metrics
@@ -176,7 +186,7 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
     }, 100)
     
     return () => clearTimeout(timer)
-  }, [selectedPeriod])
+  }, [selectedPeriod, postsLimit])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -286,20 +296,19 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
   return (
     <div className={cn("space-y-6", className)}>
       {/* Account Overview */}
-      <Card className="overflow-hidden">
-        <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 p-0.5">
-          <CardHeader className="bg-white">
+      <Card className="overflow-hidden border border-gray-200">
+        <CardHeader className="bg-white border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <CardTitle className="flex items-center gap-2">
-                  <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg text-white">
-                    <Camera className="h-5 w-5" />
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Camera className="h-5 w-5 text-purple-600" />
                   </div>
-                  <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-bold">
+                  <span className="text-gray-900 font-bold">
                     Instagram Insights
                   </span>
                   {selectedAccount && (
-                    <Badge className="ml-2 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-200">
+                    <Badge className="ml-2 bg-gray-100 text-gray-700 border-gray-300">
                       @{selectedAccount.username || selectedAccount.platform_user_id}
                     </Badge>
                   )}
@@ -355,80 +364,71 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
             </div>
           </div>
           </CardHeader>
-        </div>
         <CardContent className="pt-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Reach */}
-            <div className="group relative bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100 hover:shadow-lg transition-all duration-200 hover:scale-105">
-              <div className="absolute top-2 right-2 p-1.5 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg text-white opacity-20 group-hover:opacity-30 transition-opacity">
-                <Users className="h-6 w-6" />
+            <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="h-4 w-4 text-gray-500" />
+                <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Reach</p>
               </div>
-              <div className="relative z-10">
-                <p className="text-xs font-medium text-purple-600 uppercase tracking-wider mb-1">Reach</p>
-                <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  {formatNumber(userInsights?.reach?.value || 0)}
-                </p>
-                {getChangeIndicator(userInsights?.reach?.value || 0, userInsights?.reach?.previous || 0)}
-              </div>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatNumber(userInsights?.reach?.value || 0)}
+              </p>
+              {getChangeIndicator(userInsights?.reach?.value || 0, userInsights?.reach?.previous || 0)}
             </div>
 
             {/* Profile Views */}
-            <div className="group relative bg-gradient-to-br from-pink-50 to-orange-50 rounded-xl p-4 border border-pink-100 hover:shadow-lg transition-all duration-200 hover:scale-105">
-              <div className="absolute top-2 right-2 p-1.5 bg-gradient-to-br from-pink-400 to-orange-400 rounded-lg text-white opacity-20 group-hover:opacity-30 transition-opacity">
-                <Eye className="h-6 w-6" />
+            <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Eye className="h-4 w-4 text-gray-500" />
+                <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Profile Views</p>
               </div>
-              <div className="relative z-10">
-                <p className="text-xs font-medium text-pink-600 uppercase tracking-wider mb-1">Profile Views</p>
-                <p className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 bg-clip-text text-transparent">
-                  {formatNumber(userInsights?.profile_views?.value || 0)}
-                </p>
-                {getChangeIndicator(userInsights?.profile_views?.value || 0, userInsights?.profile_views?.previous || 0)}
-              </div>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatNumber(userInsights?.profile_views?.value || 0)}
+              </p>
+              {getChangeIndicator(userInsights?.profile_views?.value || 0, userInsights?.profile_views?.previous || 0)}
             </div>
 
             {/* Website Clicks */}
-            <div className="group relative bg-gradient-to-br from-orange-50 to-yellow-50 rounded-xl p-4 border border-orange-100 hover:shadow-lg transition-all duration-200 hover:scale-105">
-              <div className="absolute top-2 right-2 p-1.5 bg-gradient-to-br from-orange-400 to-yellow-400 rounded-lg text-white opacity-20 group-hover:opacity-30 transition-opacity">
-                <Activity className="h-6 w-6" />
+            <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Activity className="h-4 w-4 text-gray-500" />
+                <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Website Clicks</p>
               </div>
-              <div className="relative z-10">
-                <p className="text-xs font-medium text-orange-600 uppercase tracking-wider mb-1">Website Clicks</p>
-                <p className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-yellow-600 bg-clip-text text-transparent">
-                  {formatNumber(userInsights?.website_clicks?.value || 0)}
-                </p>
-                {getChangeIndicator(userInsights?.website_clicks?.value || 0, userInsights?.website_clicks?.previous || 0)}
-              </div>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatNumber(userInsights?.website_clicks?.value || 0)}
+              </p>
+              {getChangeIndicator(userInsights?.website_clicks?.value || 0, userInsights?.website_clicks?.previous || 0)}
             </div>
 
             {/* Follower Count */}
-            <div className="group relative bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 rounded-xl p-4 border border-purple-100 hover:shadow-lg transition-all duration-200 hover:scale-105">
-              <div className="absolute top-2 right-2 p-1.5 bg-gradient-to-br from-purple-400 via-pink-400 to-orange-400 rounded-lg text-white opacity-20 group-hover:opacity-30 transition-opacity">
-                <Users className="h-6 w-6" />
+            <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="h-4 w-4 text-gray-500" />
+                <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Followers</p>
               </div>
-              <div className="relative z-10">
-                <p className="text-xs font-medium text-purple-600 uppercase tracking-wider mb-1">Followers</p>
-                <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 bg-clip-text text-transparent">
-                  {formatNumber(userInsights?.follower_count?.value || 0)}
-                </p>
-                {getChangeIndicator(userInsights?.follower_count?.value || 0, userInsights?.follower_count?.previous || 0)}
-              </div>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatNumber(userInsights?.follower_count?.value || 0)}
+              </p>
+              {getChangeIndicator(userInsights?.follower_count?.value || 0, userInsights?.follower_count?.previous || 0)}
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Recent Posts Performance */}
-      <Card className="overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-purple-50 via-pink-50 to-orange-50 border-b border-purple-100">
+      <Card className="overflow-hidden border border-gray-200">
+        <CardHeader className="bg-gray-50 border-b border-gray-200">
           <CardTitle className="flex items-center gap-2">
-            <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg text-white">
-              <BarChart3 className="h-5 w-5" />
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <BarChart3 className="h-5 w-5 text-purple-600" />
             </div>
-            <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-bold">
+            <span className="text-gray-900 font-bold">
               Recent Posts Performance
             </span>
             {selectedAccount && (
-              <Badge className="ml-2 text-xs bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-200">
+              <Badge className="ml-2 text-xs bg-gray-100 text-gray-700 border-gray-300">
                 @{selectedAccount.username || selectedAccount.platform_user_id}
               </Badge>
             )}
@@ -437,7 +437,7 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
             Engagement metrics for your latest Instagram posts
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {recentPosts.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Info className="mx-auto h-8 w-8 mb-2 text-gray-300" />
@@ -447,10 +447,10 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
           ) : (
             <div className="space-y-4">
               {recentPosts.map((post) => (
-                <div key={post.id} className="group border border-purple-100 rounded-xl p-4 hover:shadow-lg hover:border-purple-200 transition-all duration-200 bg-gradient-to-br from-white to-purple-50/30">
+                <div key={post.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-all duration-200 bg-white">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <p className="text-sm text-gray-700 line-clamp-2 font-medium">
+                      <p className="text-sm text-gray-700 line-clamp-2">
                         {post.caption.replace(/<[^>]*>/g, '').slice(0, 100)}...
                       </p>
                       <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
@@ -460,50 +460,108 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
                         {new Date(post.timestamp).toLocaleDateString()}
                       </p>
                     </div>
-                    <Badge className="ml-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0">
-                      {post.media_type === 'CAROUSEL_ALBUM' ? 'CAROUSEL' : post.media_type}
-                    </Badge>
+                    {post.media_url ? (
+                      <div className="ml-3 flex-shrink-0">
+                        {post.media_type === 'VIDEO' ? (
+                          post.thumbnail_url ? (
+                            <img
+                              src={post.thumbnail_url}
+                              alt="Video thumbnail"
+                              className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                            />
+                          ) : (
+                            <video
+                              src={post.media_url}
+                              className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                              muted
+                              preload="metadata"
+                            />
+                          )
+                        ) : (
+                          <img
+                            src={post.media_url}
+                            alt="Post media"
+                            className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <div className="ml-3 flex-shrink-0">
+                        <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
+                          <FileText className="h-8 w-8 text-gray-400" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-2 border border-purple-100">
-                      <div className="flex items-center gap-1 mb-1">
-                        <Eye className="h-3 w-3 text-purple-500" />
-                        <span className="text-xs text-purple-600 font-medium">Impressions</span>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-3 w-3 text-gray-400" />
+                      <div>
+                        <p className="text-xs text-gray-500">Impressions</p>
+                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.impressions || 0)}</p>
                       </div>
-                      <p className="text-lg font-bold text-purple-700">{formatNumber(post.metrics?.impressions || 0)}</p>
                     </div>
-                    <div className="bg-gradient-to-br from-pink-50 to-orange-50 rounded-lg p-2 border border-pink-100">
-                      <div className="flex items-center gap-1 mb-1">
-                        <Users className="h-3 w-3 text-pink-500" />
-                        <span className="text-xs text-pink-600 font-medium">Reach</span>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-3 w-3 text-gray-400" />
+                      <div>
+                        <p className="text-xs text-gray-500">Reach</p>
+                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.reach || 0)}</p>
                       </div>
-                      <p className="text-lg font-bold text-pink-700">{formatNumber(post.metrics?.reach || 0)}</p>
                     </div>
-                    <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-lg p-2 border border-red-100">
-                      <div className="flex items-center gap-1 mb-1">
-                        <Heart className="h-3 w-3 text-red-500" />
-                        <span className="text-xs text-red-600 font-medium">Likes</span>
+                    <div className="flex items-center gap-2">
+                      <Heart className="h-3 w-3 text-gray-400" />
+                      <div>
+                        <p className="text-xs text-gray-500">Likes</p>
+                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.likes || 0)}</p>
                       </div>
-                      <p className="text-lg font-bold text-red-700">{formatNumber(post.metrics?.likes || 0)}</p>
                     </div>
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-2 border border-blue-100">
-                      <div className="flex items-center gap-1 mb-1">
-                        <MessageCircle className="h-3 w-3 text-blue-500" />
-                        <span className="text-xs text-blue-600 font-medium">Comments</span>
+                    <div className="flex items-center gap-2">
+                      <MessageCircle className="h-3 w-3 text-gray-400" />
+                      <div>
+                        <p className="text-xs text-gray-500">Comments</p>
+                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.comments || 0)}</p>
                       </div>
-                      <p className="text-lg font-bold text-blue-700">{formatNumber(post.metrics?.comments || 0)}</p>
                     </div>
-                    <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg p-2 border border-purple-100">
-                      <div className="flex items-center gap-1 mb-1">
-                        <Bookmark className="h-3 w-3 text-purple-500" />
-                        <span className="text-xs text-purple-600 font-medium">Saves</span>
+                    <div className="flex items-center gap-2">
+                      <Bookmark className="h-3 w-3 text-gray-400" />
+                      <div>
+                        <p className="text-xs text-gray-500">Saves</p>
+                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.saves || 0)}</p>
                       </div>
-                      <p className="text-lg font-bold text-purple-700">{formatNumber(post.metrics?.saves || 0)}</p>
                     </div>
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+          {hasMorePosts && (
+            <div className="mt-4 text-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  setLoadingMore(true)
+                  const newLimit = postsLimit + 5
+                  setPostsLimit(newLimit)
+                  // Wait for next useEffect to fetch with new limit
+                  setTimeout(() => setLoadingMore(false), 100)
+                }}
+                disabled={loadingMore}
+                className="text-gray-600 hover:text-gray-900"
+              >
+                {loadingMore ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4 mr-2" />
+                    Load More Posts
+                  </>
+                )}
+              </Button>
             </div>
           )}
         </CardContent>
