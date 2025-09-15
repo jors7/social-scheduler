@@ -41,6 +41,7 @@ interface ThreadsPost {
   timestamp: string
   media_type?: string
   media_url?: string
+  thumbnail_url?: string
   metrics?: ThreadsMetrics
 }
 
