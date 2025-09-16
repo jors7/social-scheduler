@@ -67,6 +67,8 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
     
+    console.log('Raw Threads API response:', JSON.stringify(data, null, 2));
+    
     // Process the posts to match expected format
     const media = data.data?.map((post: any) => {
       // For carousel posts, try to get the first child's media
@@ -78,7 +80,7 @@ export async function GET(request: NextRequest) {
         thumbnailUrl = post.children.data[0].thumbnail_url;
       }
       
-      return {
+      const processedPost = {
         id: post.id,
         text: post.text || '',
         username: post.username,
@@ -98,6 +100,20 @@ export async function GET(request: NextRequest) {
           shares: 0 // Threads doesn't provide shares metric directly
         }
       };
+      
+      console.log('Processed post metrics:', {
+        id: post.id,
+        raw_metrics: {
+          views: post.views,
+          likes: post.likes,
+          replies: post.replies,
+          reposts: post.reposts,
+          quotes: post.quotes
+        },
+        processed_metrics: processedPost.metrics
+      });
+      
+      return processedPost;
     }) || [];
 
     // For ALL posts, fetch individual post data to ensure we have media URLs
