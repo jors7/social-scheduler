@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       console.log('Cleared existing Threads accounts for user');
     }
     
-    const appId = process.env.THREADS_APP_ID || '2288572204931387';
+    const appId = process.env.THREADS_APP_ID || '760612513547331'; // Test app for development
     
     if (!appId) {
       console.error('Missing Threads App ID');
@@ -65,18 +65,18 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
-    // Use Threads OAuth endpoint (not Instagram!)
+    // Use the correct Threads OAuth endpoint with all required scopes
     const authParams = new URLSearchParams({
       client_id: appId,
       redirect_uri: redirectUri,
-      scope: 'threads_basic,threads_content_publish',
+      scope: 'threads_basic,threads_content_publish,threads_manage_replies,threads_manage_insights',
       response_type: 'code',
       state: state,
     });
     
     // Add a cache buster to the URL
     const cacheBuster = `cb=${timestamp}`;
-    const authUrl = `https://www.threads.net/oauth/authorize?${authParams.toString()}&${cacheBuster}`;
+    const authUrl = `https://threads.net/oauth/authorize?${authParams.toString()}&${cacheBuster}`;
     
     console.log('Clean auth URL generated:', authUrl);
     console.log('State:', state);
