@@ -75,8 +75,8 @@ export async function GET(request: NextRequest) {
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
     // MUST use THREADS_APP_ID, not the main Meta App ID!
-    const appId = process.env.THREADS_APP_ID || '1074593118154653';
-    const appSecret = process.env.THREADS_APP_SECRET || '775901361bf3c2853b0396d973d7c428';
+    const appId = process.env.THREADS_APP_ID || '760612513547331';
+    const appSecret = process.env.THREADS_APP_SECRET || '750a8d07e0625cf53eb52dde952dabc7';
     
     const tokenParams = new URLSearchParams({
       client_id: appId!,

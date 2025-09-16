@@ -15,8 +15,8 @@ export async function GET(request: NextRequest) {
     });
     
     // MUST use THREADS_APP_ID, not the main Meta App ID!
-    const appId = process.env.THREADS_APP_ID || '1074593118154653'; // Your actual Threads App ID
-    const appSecret = process.env.THREADS_APP_SECRET || '775901361bf3c2853b0396d973d7c428'; // Your Threads App Secret
+    const appId = process.env.THREADS_APP_ID || '760612513547331'; // Test app for development
+    const appSecret = process.env.THREADS_APP_SECRET || '750a8d07e0625cf53eb52dde952dabc7'; // Test app secret
     
     if (!appId) {
       console.error('Missing Threads App ID');
@@ -46,34 +46,24 @@ export async function GET(request: NextRequest) {
     
     const redirectUri = `${baseUrl}/api/auth/threads/callback`;
 
-    // Threads uses a privacy consent flow, not standard OAuth
-    // Generate a logger ID (UUID-like)
-    const loggerId = `${Math.random().toString(36).substring(2)}-${Math.random().toString(36).substring(2)}-${Math.random().toString(36).substring(2)}`;
-    
-    // Build the consent URL with nested parameters - matching exact format from working example
-    const consentParams = new URLSearchParams({
-      flow: 'gdp',
-      'params[redirect_uri]': `"${redirectUri}"`, // Note the quotes around the URI
-      'params[app_id]': appId!,
-      'params[display]': '"page"',
-      'params[logger_id]': `"${loggerId}"`,
-      'params[response_type]': '"code"',
-      'params[scope]': '["threads_basic","threads_content_publish","threads_manage_replies","threads_manage_insights","threads_manage_mentions","threads_read_replies","threads_profile_discovery"]', // Request ALL available Threads scopes
-      'params[state]': state,
-      'params[next]': '"read"',
-      'params[steps]': '{"read":["threads_basic","threads_content_publish","threads_manage_replies","threads_manage_insights","threads_manage_mentions","threads_read_replies","threads_profile_discovery"]}', // Request ALL available Threads scopes
-      'params[south_korea_ux]': 'false',
-      source: 'gdp_delegated'
+    // Use the standard Threads OAuth flow as recommended
+    // Build OAuth parameters
+    const oauthParams = new URLSearchParams({
+      client_id: appId!,
+      redirect_uri: redirectUri,
+      scope: 'threads_basic,threads_content_publish,threads_manage_replies,threads_manage_insights',
+      response_type: 'code',
+      state: state
     });
 
-    // Use Threads privacy consent endpoint
-    const authUrl = `https://www.threads.com/privacy/consent/?${consentParams.toString()}`;
+    // Use the correct Threads OAuth endpoint
+    const authUrl = `https://threads.net/oauth/authorize?${oauthParams.toString()}`;
     
-    console.log('Threads OAuth URL (Instagram direct):', authUrl);
+    console.log('Threads OAuth URL:', authUrl);
     console.log('Parameters:', {
       client_id: appId,
       redirect_uri: redirectUri,
-      scope: 'instagram_basic,instagram_content_publish',
+      scope: 'threads_basic,threads_content_publish,threads_manage_replies,threads_manage_insights',
       response_type: 'code',
       state: state,
     });
