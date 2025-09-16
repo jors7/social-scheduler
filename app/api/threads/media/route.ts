@@ -32,8 +32,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch recent Threads posts from the API
-    // Threads API endpoint to get user's posts
-    const threadsUrl = `https://graph.threads.net/v1.0/me/threads?fields=id,text,username,permalink,timestamp,media_type,media_url,shortcode,thumbnail_url&limit=${limit}&access_token=${accessToken}`;
+    // Threads API endpoint to get user's posts with all media fields
+    // Note: media_url might not be returned for all posts in batch requests
+    const threadsUrl = `https://graph.threads.net/v1.0/me/threads?fields=id,text,username,permalink,timestamp,media_type,media_url,shortcode,thumbnail_url,children&limit=${limit}&access_token=${accessToken}`;
     
     console.log('Fetching Threads media from API');
     
@@ -66,21 +67,71 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
     
     // Process the posts to match expected format
-    const media = data.data?.map((post: any) => ({
-      id: post.id,
-      text: post.text || '',
-      username: post.username,
-      permalink: post.permalink,
-      timestamp: post.timestamp,
-      media_type: post.media_type || 'TEXT',
-      media_url: post.media_url,
-      thumbnail_url: post.thumbnail_url,
-      shortcode: post.shortcode
-    })) || [];
+    const media = data.data?.map((post: any) => {
+      // For carousel posts, try to get the first child's media
+      let mediaUrl = post.media_url;
+      let thumbnailUrl = post.thumbnail_url;
+      
+      if (!mediaUrl && post.children?.data?.length > 0) {
+        mediaUrl = post.children.data[0].media_url;
+        thumbnailUrl = post.children.data[0].thumbnail_url;
+      }
+      
+      return {
+        id: post.id,
+        text: post.text || '',
+        username: post.username,
+        permalink: post.permalink,
+        timestamp: post.timestamp,
+        media_type: post.media_type || 'TEXT',
+        media_url: mediaUrl,
+        thumbnail_url: thumbnailUrl,
+        shortcode: post.shortcode
+      };
+    }) || [];
 
+    // For ALL posts, fetch individual post data to ensure we have media URLs
+    // The batch API often doesn't return media_url even when media exists
+    const mediaWithUrls = await Promise.all(
+      media.map(async (post: any) => {
+        // Always try to fetch individual post for media types to ensure we get URLs
+        if (post.media_type && post.media_type !== 'TEXT' && post.media_type !== 'STATUS') {
+          try {
+            const postUrl = `https://graph.threads.net/v1.0/${post.id}?fields=id,text,username,permalink,timestamp,media_type,media_url,thumbnail_url,shortcode,children&access_token=${accessToken}`;
+            const postResponse = await fetch(postUrl);
+            
+            if (postResponse.ok) {
+              const postData = await postResponse.json();
+              
+              // Get media URL from the individual post response
+              let finalMediaUrl = postData.media_url;
+              let finalThumbnailUrl = postData.thumbnail_url;
+              
+              // If still no media URL and has children, get from first child
+              if (!finalMediaUrl && postData.children?.data?.length > 0) {
+                finalMediaUrl = postData.children.data[0].media_url;
+                finalThumbnailUrl = postData.children.data[0].thumbnail_url;
+              }
+              
+              // Update with media URLs from individual fetch
+              return {
+                ...post,
+                media_url: finalMediaUrl || post.media_url,
+                thumbnail_url: finalThumbnailUrl || post.thumbnail_url
+              };
+            }
+          } catch (error) {
+            console.error(`Error fetching individual post ${post.id}:`, error);
+          }
+        }
+        
+        return post;
+      })
+    );
+    
     // Try to fetch metrics for each post (if threads_manage_insights permission is available)
     const mediaWithMetrics = await Promise.all(
-      media.map(async (post: any) => {
+      mediaWithUrls.map(async (post: any) => {
         try {
           // Try to get insights (may fail without permission)
           const insightsUrl = `https://graph.threads.net/v1.0/${post.id}/insights?metric=views,likes,replies,reposts,quotes,shares&access_token=${accessToken}`;

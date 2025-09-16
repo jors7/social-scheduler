@@ -131,6 +131,9 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
           text: post.text || '',
           permalink: post.permalink,
           timestamp: post.timestamp,
+          media_type: post.media_type,
+          media_url: post.media_url,
+          thumbnail_url: post.thumbnail_url,
           metrics: post.metrics || {
             views: 0,
             likes: 0,
@@ -568,10 +571,6 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
                           />
                         ) : null}
                       </div>
-                    ) : post.media_type ? (
-                      <Badge variant="secondary" className="ml-2">
-                        {post.media_type}
-                      </Badge>
                     ) : (
                       <div className="ml-3 flex-shrink-0">
                         <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
