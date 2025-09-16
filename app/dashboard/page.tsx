@@ -54,7 +54,7 @@ interface PostData {
   posted_at?: string
   created_at: string
   post_results?: any[]
-  media_urls?: any[]
+  media_urls?: any[] | string
   platform_media_url?: string
 }
 
