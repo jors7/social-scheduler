@@ -55,6 +55,7 @@ interface PostData {
   created_at: string
   post_results?: any[]
   media_urls?: any[]
+  platform_media_url?: string
 }
 
 interface DashboardStats {
