@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
 
     if (metricType === 'profile') {
       // Fetch profile insights
-      // Get user profile with follower count and other metrics
-      const profileUrl = `https://graph.threads.net/v1.0/me?fields=id,username,threads_profile_picture_url,threads_biography,follower_count,following_count&access_token=${accessToken}`;
+      // Get user profile - Note: follower_count and following_count are not available via API
+      const profileUrl = `https://graph.threads.net/v1.0/me?fields=id,username,threads_profile_picture_url,threads_biography&access_token=${accessToken}`;
       
       console.log('Fetching Threads profile insights');
       
@@ -56,7 +56,8 @@ export async function GET(request: NextRequest) {
       const profileData = await profileResponse.json();
       
       // Get recent posts to calculate engagement rates
-      const postsUrl = `https://graph.threads.net/v1.0/me/threads?fields=views,likes,replies,reposts,quotes&limit=25&access_token=${accessToken}`;
+      // Note: We need to fetch posts first, then get insights separately
+      const postsUrl = `https://graph.threads.net/v1.0/me/threads?fields=id&limit=25&access_token=${accessToken}`;
       const postsResponse = await fetch(postsUrl);
       
       let totalEngagement = 0;
@@ -66,11 +67,38 @@ export async function GET(request: NextRequest) {
       if (postsResponse.ok) {
         const postsData = await postsResponse.json();
         if (postsData.data && Array.isArray(postsData.data)) {
-          postsData.data.forEach((post: any) => {
-            totalViews += post.views || 0;
-            totalEngagement += (post.likes || 0) + (post.replies || 0) + (post.reposts || 0) + (post.quotes || 0);
-            postCount++;
-          });
+          // For each post, fetch insights separately
+          for (const post of postsData.data) {
+            try {
+              const insightsUrl = `https://graph.threads.net/v1.0/${post.id}/insights?metric=views,likes,replies,reposts,quotes&access_token=${accessToken}`;
+              const insightsResponse = await fetch(insightsUrl);
+              
+              if (insightsResponse.ok) {
+                const insightsData = await insightsResponse.json();
+                
+                // Parse metrics from insights response
+                if (insightsData.data && Array.isArray(insightsData.data)) {
+                  let postViews = 0;
+                  let postEngagement = 0;
+                  
+                  insightsData.data.forEach((metric: any) => {
+                    const value = metric.values?.[0]?.value || 0;
+                    if (metric.name === 'views') {
+                      postViews = value;
+                    } else if (['likes', 'replies', 'reposts', 'quotes'].includes(metric.name)) {
+                      postEngagement += value;
+                    }
+                  });
+                  
+                  totalViews += postViews;
+                  totalEngagement += postEngagement;
+                  postCount++;
+                }
+              }
+            } catch (error) {
+              console.error(`Error fetching insights for post ${post.id}:`, error);
+            }
+          }
         }
       }
       
@@ -86,8 +114,8 @@ export async function GET(request: NextRequest) {
           username: profileData.username,
           profilePicture: profileData.threads_profile_picture_url,
           biography: profileData.threads_biography,
-          followerCount: profileData.follower_count || 0,
-          followingCount: profileData.following_count || 0,
+          followerCount: 0, // Not available via API
+          followingCount: 0, // Not available via API
           metrics: {
             totalViews,
             totalEngagement,
@@ -106,7 +134,7 @@ export async function GET(request: NextRequest) {
     } else if (metricType === 'posts') {
       // Fetch detailed post insights
       const limit = searchParams.get('limit') || '10';
-      const postsUrl = `https://graph.threads.net/v1.0/me/threads?fields=id,text,permalink,timestamp,media_type,views,likes,replies,reposts,quotes&limit=${limit}&access_token=${accessToken}`;
+      const postsUrl = `https://graph.threads.net/v1.0/me/threads?fields=id,text,permalink,timestamp,media_type&limit=${limit}&access_token=${accessToken}`;
       
       const postsResponse = await fetch(postsUrl);
       
@@ -123,24 +151,63 @@ export async function GET(request: NextRequest) {
       
       const postsData = await postsResponse.json();
       
-      // Calculate metrics for each post
-      const postsWithMetrics = postsData.data?.map((post: any) => {
-        const engagement = (post.likes || 0) + (post.replies || 0) + (post.reposts || 0) + (post.quotes || 0);
-        const engagementRate = post.views > 0 ? (engagement / post.views) * 100 : 0;
-        
-        return {
-          ...post,
-          metrics: {
-            views: post.views || 0,
-            likes: post.likes || 0,
-            replies: post.replies || 0,
-            reposts: post.reposts || 0,
-            quotes: post.quotes || 0,
-            engagement,
-            engagementRate: engagementRate.toFixed(2)
+      // Fetch metrics for each post separately
+      const postsWithMetrics = await Promise.all(
+        (postsData.data || []).map(async (post: any) => {
+          try {
+            const insightsUrl = `https://graph.threads.net/v1.0/${post.id}/insights?metric=views,likes,replies,reposts,quotes&access_token=${accessToken}`;
+            const insightsResponse = await fetch(insightsUrl);
+            
+            let metrics = {
+              views: 0,
+              likes: 0,
+              replies: 0,
+              reposts: 0,
+              quotes: 0,
+              engagement: 0,
+              engagementRate: '0.00'
+            };
+            
+            if (insightsResponse.ok) {
+              const insightsData = await insightsResponse.json();
+              
+              // Parse metrics from insights response
+              if (insightsData.data && Array.isArray(insightsData.data)) {
+                insightsData.data.forEach((metric: any) => {
+                  const value = metric.values?.[0]?.value || 0;
+                  if (metric.name in metrics) {
+                    metrics[metric.name as keyof typeof metrics] = value;
+                  }
+                });
+                
+                // Calculate engagement
+                metrics.engagement = metrics.likes + metrics.replies + metrics.reposts + metrics.quotes;
+                const engagementRate = metrics.views > 0 ? (metrics.engagement / metrics.views) * 100 : 0;
+                metrics.engagementRate = engagementRate.toFixed(2);
+              }
+            }
+            
+            return {
+              ...post,
+              metrics
+            };
+          } catch (error) {
+            console.error(`Error fetching insights for post ${post.id}:`, error);
+            return {
+              ...post,
+              metrics: {
+                views: 0,
+                likes: 0,
+                replies: 0,
+                reposts: 0,
+                quotes: 0,
+                engagement: 0,
+                engagementRate: '0.00'
+              }
+            };
           }
-        };
-      }) || [];
+        })
+      );
       
       return NextResponse.json({
         success: true,

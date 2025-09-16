@@ -31,11 +31,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch recent Threads posts from the API with insights
-    // Threads API endpoint to get user's posts with all media fields and metrics
-    // Note: media_url might not be returned for all posts in batch requests
-    // With threads_manage_insights scope, we can now get real engagement metrics
-    const threadsUrl = `https://graph.threads.net/v1.0/me/threads?fields=id,text,username,permalink,timestamp,media_type,media_url,shortcode,thumbnail_url,children,views,likes,replies,reposts,quotes&limit=${limit}&access_token=${accessToken}`;
+    // Fetch recent Threads posts from the API
+    // Note: Metrics fields (views, likes, etc.) are NOT available on the /me/threads endpoint
+    // They must be fetched separately via the insights endpoint for each post
+    const threadsUrl = `https://graph.threads.net/v1.0/me/threads?fields=id,text,username,permalink,timestamp,media_type,media_url,shortcode,thumbnail_url,children&limit=${limit}&access_token=${accessToken}`;
     
     console.log('Fetching Threads media from API');
     
@@ -90,28 +89,16 @@ export async function GET(request: NextRequest) {
         media_url: mediaUrl,
         thumbnail_url: thumbnailUrl,
         shortcode: post.shortcode,
-        // Include real metrics if available (requires threads_manage_insights scope)
+        // Metrics will be fetched separately via insights API
         metrics: {
-          views: post.views || 0,
-          likes: post.likes || 0,
-          replies: post.replies || 0,
-          reposts: post.reposts || 0,
-          quotes: post.quotes || 0,
-          shares: 0 // Threads doesn't provide shares metric directly
+          views: 0,
+          likes: 0,
+          replies: 0,
+          reposts: 0,
+          quotes: 0,
+          shares: 0
         }
       };
-      
-      console.log('Processed post metrics:', {
-        id: post.id,
-        raw_metrics: {
-          views: post.views,
-          likes: post.likes,
-          replies: post.replies,
-          reposts: post.reposts,
-          quotes: post.quotes
-        },
-        processed_metrics: processedPost.metrics
-      });
       
       return processedPost;
     }) || [];
@@ -123,7 +110,7 @@ export async function GET(request: NextRequest) {
         // Always try to fetch individual post for media types to ensure we get URLs
         if (post.media_type && post.media_type !== 'TEXT' && post.media_type !== 'STATUS') {
           try {
-            const postUrl = `https://graph.threads.net/v1.0/${post.id}?fields=id,text,username,permalink,timestamp,media_type,media_url,thumbnail_url,shortcode,children,views,likes,replies,reposts,quotes&access_token=${accessToken}`;
+            const postUrl = `https://graph.threads.net/v1.0/${post.id}?fields=id,text,username,permalink,timestamp,media_type,media_url,thumbnail_url,shortcode,children&access_token=${accessToken}`;
             const postResponse = await fetch(postUrl);
             
             if (postResponse.ok) {
@@ -139,19 +126,11 @@ export async function GET(request: NextRequest) {
                 finalThumbnailUrl = postData.children.data[0].thumbnail_url;
               }
               
-              // Update with media URLs and metrics from individual fetch
+              // Update with media URLs from individual fetch
               return {
                 ...post,
                 media_url: finalMediaUrl || post.media_url,
-                thumbnail_url: finalThumbnailUrl || post.thumbnail_url,
-                metrics: {
-                  views: postData.views || post.metrics?.views || 0,
-                  likes: postData.likes || post.metrics?.likes || 0,
-                  replies: postData.replies || post.metrics?.replies || 0,
-                  reposts: postData.reposts || post.metrics?.reposts || 0,
-                  quotes: postData.quotes || post.metrics?.quotes || 0,
-                  shares: 0
-                }
+                thumbnail_url: finalThumbnailUrl || post.thumbnail_url
               };
             }
           } catch (error) {
@@ -163,12 +142,59 @@ export async function GET(request: NextRequest) {
       })
     );
     
-    // Metrics are now included directly in the mediaWithUrls from the fields parameter
-    // No need for separate insights API calls since we have threads_manage_insights scope
+    // Now fetch metrics for each post using the Insights API
+    // The Threads API requires using a separate insights endpoint for metrics
+    const mediaWithMetrics = await Promise.all(
+      mediaWithUrls.map(async (post: any) => {
+        try {
+          // Threads Insights API endpoint for individual post metrics
+          const insightsUrl = `https://graph.threads.net/v1.0/${post.id}/insights?metric=views,likes,replies,reposts,quotes&access_token=${accessToken}`;
+          
+          console.log(`Fetching insights for post ${post.id}`);
+          const insightsResponse = await fetch(insightsUrl);
+          
+          if (insightsResponse.ok) {
+            const insightsData = await insightsResponse.json();
+            console.log(`Insights response for ${post.id}:`, JSON.stringify(insightsData, null, 2));
+            
+            // Parse the insights response
+            const metrics: any = {
+              views: 0,
+              likes: 0,
+              replies: 0,
+              reposts: 0,
+              quotes: 0,
+              shares: 0
+            };
+            
+            if (insightsData.data && Array.isArray(insightsData.data)) {
+              insightsData.data.forEach((metric: any) => {
+                if (metric.name && metric.values && metric.values[0]) {
+                  metrics[metric.name] = metric.values[0].value || 0;
+                }
+              });
+            }
+            
+            return {
+              ...post,
+              metrics
+            };
+          } else {
+            const errorText = await insightsResponse.text();
+            console.log(`Failed to get insights for post ${post.id}:`, errorText);
+            // Return post with zero metrics if insights fail
+            return post;
+          }
+        } catch (error) {
+          console.error(`Error fetching insights for post ${post.id}:`, error);
+          return post;
+        }
+      })
+    );
 
     return NextResponse.json({
       success: true,
-      media: mediaWithUrls,
+      media: mediaWithMetrics,
       account: {
         id: account.id,
         username: account.username || account.platform_user_id
