@@ -232,17 +232,39 @@ export default function DashboardPage() {
         avgEngagement
       })
       
-      // Get recent posts (last 5 posted only)
-      const recentPostedPosts = scheduled
-        .filter((p: PostData) => p.status === 'posted')
-        .sort((a: PostData, b: PostData) => {
-          const aDate = new Date(a.posted_at || a.scheduled_for || a.created_at)
-          const bDate = new Date(b.posted_at || b.scheduled_for || b.created_at)
-          return bDate.getTime() - aDate.getTime()
-        })
-        .slice(0, 5)
-      
-      setRecentPosts(recentPostedPosts)
+      // Get recent posts with media URLs from platforms
+      try {
+        const recentResponse = await fetch('/api/posts/recent-with-media')
+        if (recentResponse.ok) {
+          const { posts } = await recentResponse.json()
+          setRecentPosts(posts || [])
+        } else {
+          // Fallback to local data if API fails
+          const recentPostedPosts = scheduled
+            .filter((p: PostData) => p.status === 'posted')
+            .sort((a: PostData, b: PostData) => {
+              const aDate = new Date(a.posted_at || a.scheduled_for || a.created_at)
+              const bDate = new Date(b.posted_at || b.scheduled_for || b.created_at)
+              return bDate.getTime() - aDate.getTime()
+            })
+            .slice(0, 5)
+          
+          setRecentPosts(recentPostedPosts)
+        }
+      } catch (error) {
+        console.error('Error fetching recent posts with media:', error)
+        // Fallback to local data
+        const recentPostedPosts = scheduled
+          .filter((p: PostData) => p.status === 'posted')
+          .sort((a: PostData, b: PostData) => {
+            const aDate = new Date(a.posted_at || a.scheduled_for || a.created_at)
+            const bDate = new Date(b.posted_at || b.scheduled_for || b.created_at)
+            return bDate.getTime() - aDate.getTime()
+          })
+          .slice(0, 5)
+        
+        setRecentPosts(recentPostedPosts)
+      }
       
       // Calculate upcoming schedule with platforms
       const now = new Date()
@@ -839,24 +861,60 @@ export default function DashboardPage() {
                 recentPosts.map((post) => {
                   // Helper function to extract media URL from various sources
                   const getMediaUrl = () => {
-                    // First check media_urls field (for new posts)
-                    if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
-                      // media_urls might be an array of URLs or an array with nested structure
-                      const firstMedia = post.media_urls[0]
-                      if (typeof firstMedia === 'string') {
-                        return firstMedia
-                      } else if (firstMedia && typeof firstMedia === 'object' && firstMedia.url) {
-                        return firstMedia.url
+                    // First check for platform_media_url from the API
+                    if (post.platform_media_url && typeof post.platform_media_url === 'string') {
+                      return post.platform_media_url.trim()
+                    }
+                    
+                    // Then check post_results for successfully posted content with media URLs
+                    if (post.post_results && Array.isArray(post.post_results)) {
+                      for (const result of post.post_results) {
+                        if (result.success && result.data) {
+                          // Check if the result data contains media information
+                          if (result.data.media_url && typeof result.data.media_url === 'string') {
+                            return result.data.media_url.trim()
+                          }
+                          if (result.data.media_urls && Array.isArray(result.data.media_urls) && result.data.media_urls.length > 0) {
+                            const firstUrl = result.data.media_urls[0]
+                            if (typeof firstUrl === 'string') return firstUrl.trim()
+                          }
+                        }
                       }
                     }
                     
-                    // For older posts, we unfortunately don't have the media URLs stored
-                    // The post_results only contain post IDs and success status, not the actual media
+                    // Fall back to checking the media_urls field directly
+                    if (post.media_urls) {
+                      // Handle different possible formats of media_urls
+                      if (Array.isArray(post.media_urls) && post.media_urls.length > 0) {
+                        const firstMedia = post.media_urls[0]
+                        
+                        // If it's a string URL, return it directly
+                        if (typeof firstMedia === 'string' && firstMedia.trim() !== '') {
+                          // Ensure the URL is properly formatted
+                          return firstMedia.trim()
+                        }
+                        
+                        // If it's an object with a url property
+                        if (firstMedia && typeof firstMedia === 'object') {
+                          // Check for various possible property names
+                          if (firstMedia.url && typeof firstMedia.url === 'string') return firstMedia.url.trim()
+                          if (firstMedia.media_url && typeof firstMedia.media_url === 'string') return firstMedia.media_url.trim()
+                          if (firstMedia.src && typeof firstMedia.src === 'string') return firstMedia.src.trim()
+                          if (firstMedia.secure_url && typeof firstMedia.secure_url === 'string') return firstMedia.secure_url.trim()
+                        }
+                      }
+                      
+                      // If media_urls is a single string
+                      if (typeof post.media_urls === 'string' && post.media_urls.trim() !== '') {
+                        return post.media_urls.trim()
+                      }
+                    }
                     
                     return null
                   }
                   
                   const firstMediaUrl = getMediaUrl()
+                  
                   // Simple check if URL is likely a video based on extension
                   const isVideo = firstMediaUrl && (firstMediaUrl.includes('.mp4') || firstMediaUrl.includes('.mov') || firstMediaUrl.includes('.webm'))
                   
@@ -895,30 +953,42 @@ export default function DashboardPage() {
                           </span>
                         </div>
                       </div>
-                      {firstMediaUrl ? (
-                        <div className="ml-3 flex-shrink-0">
-                          {isVideo ? (
+                      <div className="ml-3 flex-shrink-0">
+                        {firstMediaUrl ? (
+                          isVideo ? (
                             <video
                               src={firstMediaUrl}
                               className="w-16 h-16 object-cover rounded-lg border border-gray-200"
                               muted
                               preload="metadata"
+                              onError={(e) => {
+                                // Replace video with placeholder on error
+                                const placeholder = document.createElement('div')
+                                placeholder.className = 'w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center'
+                                placeholder.innerHTML = '<svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>'
+                                e.currentTarget.parentNode?.replaceChild(placeholder, e.currentTarget)
+                              }}
                             />
                           ) : (
                             <img
                               src={firstMediaUrl}
                               alt="Post media"
                               className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                              onError={(e) => {
+                                // Replace image with placeholder on error
+                                const placeholder = document.createElement('div')
+                                placeholder.className = 'w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center'
+                                placeholder.innerHTML = '<svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>'
+                                e.currentTarget.parentNode?.replaceChild(placeholder, e.currentTarget)
+                              }}
                             />
-                          )}
-                        </div>
-                      ) : (
-                        <div className="ml-3 flex-shrink-0">
+                          )
+                        ) : (
                           <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
                             <FileText className="h-8 w-8 text-gray-400" />
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   )
                 })
