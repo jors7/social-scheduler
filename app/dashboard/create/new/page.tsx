@@ -689,17 +689,35 @@ function CreateNewPostPageContent() {
           token_preview: threadsAccount.access_token ? `${threadsAccount.access_token.substring(0, 20)}...` : 'null'
         })
         
-        // For multiple posts, we need threads_manage_replies permission
-        // Since that permission is not approved yet, go straight to numbered approach
+        // Filter out empty posts
         const filteredPosts = threadPosts.filter(p => p.trim().length > 0)
         let response
         let data
         let usedNumberedFallback = false
         
-        if (filteredPosts.length > 1) {
-          // Multiple posts - use numbered approach directly to avoid duplicate posting
-          console.log('Multiple posts detected, using numbered approach (threads_manage_replies not approved)')
-          toast.info('Creating numbered thread series')
+        // Always try the real thread endpoint first
+        console.log(`Attempting to create connected thread with ${filteredPosts.length} posts`)
+        toast.info('Creating thread...')
+        
+        response = await fetch('/api/post/threads/thread', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: threadsAccount.platform_user_id,
+            accessToken: threadsAccount.access_token,
+            posts: filteredPosts,
+            mediaUrls: []
+          })
+        })
+        
+        data = await response.json()
+        
+        // If the thread endpoint fails with a permission error, fall back to numbered
+        if (!response.ok && data.error && 
+            (data.error.includes('permission') || 
+             data.error.includes('reply_to_id'))) {
+          console.log('Connected thread failed, falling back to numbered approach')
+          toast.info('Creating numbered thread series instead')
           
           response = await fetch('/api/post/threads/thread-numbered', {
             method: 'POST',
@@ -714,20 +732,6 @@ function CreateNewPostPageContent() {
           
           data = await response.json()
           usedNumberedFallback = true
-        } else {
-          // Single post - can use regular thread endpoint
-          response = await fetch('/api/post/threads/thread', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: threadsAccount.platform_user_id,
-              accessToken: threadsAccount.access_token,
-              posts: filteredPosts,
-              mediaUrls: []
-            })
-          })
-          
-          data = await response.json()
         }
         
         if (!response.ok) {

@@ -12,6 +12,24 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`Creating numbered thread with ${posts.length} posts`);
+    
+    // First, get the Threads user ID
+    const meResponse = await fetch(
+      `https://graph.threads.net/v1.0/me?fields=id,username&access_token=${accessToken}`
+    );
+    
+    if (!meResponse.ok) {
+      const errorData = await meResponse.json();
+      console.error('Failed to get Threads user ID:', errorData);
+      return NextResponse.json(
+        { error: 'Failed to get Threads user ID' },
+        { status: 400 }
+      );
+    }
+    
+    const meData = await meResponse.json();
+    const threadsUserId = meData.id;
+    console.log('Threads user ID:', threadsUserId);
 
     const publishedPosts = [];
     const totalPosts = posts.length;
@@ -28,24 +46,27 @@ export async function POST(request: NextRequest) {
       
       try {
         // Step 1: Create media container for this post
-        let createParams: any = {
-          media_type: mediaUrl ? 'IMAGE' : 'TEXT',
-          access_token: accessToken
-        };
-
+        const formData = new URLSearchParams();
+        formData.append('access_token', accessToken);
+        
         if (mediaUrl) {
-          createParams.image_url = mediaUrl;
-          createParams.caption = postText;
+          formData.append('media_type', 'IMAGE');
+          formData.append('image_url', mediaUrl);
+          formData.append('caption', postText);
         } else {
-          createParams.text = postText;
+          formData.append('media_type', 'TEXT');
+          formData.append('text', postText);
         }
-
-        const createUrlParams = new URLSearchParams(createParams);
-        const createUrl = `https://graph.threads.net/v1.0/me/threads?${createUrlParams.toString()}`;
+        
+        const createUrl = `https://graph.threads.net/v1.0/${threadsUserId}/threads`;
         
         console.log(`Creating container for post ${i + 1}/${posts.length}`);
         const createResponse = await fetch(createUrl, {
-          method: 'POST'
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: formData.toString()
         });
 
         const createData = await createResponse.json();
@@ -59,17 +80,19 @@ export async function POST(request: NextRequest) {
         console.log(`Container created: ${containerId}`);
 
         // Step 2: Publish this post
-        const publishParams = {
-          creation_id: containerId,
-          access_token: accessToken
-        };
-
-        const publishUrlParams = new URLSearchParams(publishParams);
-        const publishUrl = `https://graph.threads.net/v1.0/me/threads_publish?${publishUrlParams.toString()}`;
+        const publishFormData = new URLSearchParams();
+        publishFormData.append('creation_id', containerId);
+        publishFormData.append('access_token', accessToken);
+        
+        const publishUrl = `https://graph.threads.net/v1.0/${threadsUserId}/threads_publish`;
         
         console.log(`Publishing post ${i + 1}/${posts.length}`);
         const publishResponse = await fetch(publishUrl, {
-          method: 'POST'
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: publishFormData.toString()
         });
 
         const publishData = await publishResponse.json();

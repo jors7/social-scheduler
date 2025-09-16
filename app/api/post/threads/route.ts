@@ -29,37 +29,57 @@ export async function POST(request: NextRequest) {
     // Use the valid (possibly refreshed) token
     const activeToken = validToken;
     console.log('Using token for Threads post (possibly refreshed)');
+    
+    // First, get the Threads user ID
+    const meResponse = await fetch(
+      `https://graph.threads.net/v1.0/me?fields=id,username&access_token=${activeToken}`
+    );
+    
+    if (!meResponse.ok) {
+      const errorData = await meResponse.json();
+      console.error('Failed to get Threads user ID:', errorData);
+      return NextResponse.json(
+        { error: 'Failed to get Threads user ID' },
+        { status: 400 }
+      );
+    }
+    
+    const meData = await meResponse.json();
+    const threadsUserId = meData.id;
+    console.log('Threads user ID:', threadsUserId);
 
     // Threads posting is a two-step process:
     // 1. Create a media container
     // 2. Publish the container
 
-    let createParams: any = {
-      media_type: 'TEXT',
-      text: text,
-      access_token: activeToken
-    };
-
-    // If there's a media URL, we need to handle it differently
+    // Build form data for the request
+    const formData = new URLSearchParams();
+    formData.append('access_token', activeToken);
+    
     if (mediaUrl) {
-      // For images, we need to upload to Threads first
-      // Image posting requires the image to be publicly accessible
-      createParams.media_type = 'IMAGE';
-      createParams.image_url = mediaUrl;
-      // Keep the text field for image posts - Threads uses 'text' for both text-only and image posts
-      // The 'text' field serves as the caption for image posts
+      // For image posts
+      formData.append('media_type', 'IMAGE');
+      formData.append('image_url', mediaUrl);
+      formData.append('caption', text); // Use 'caption' for image posts
+    } else {
+      // For text-only posts
+      formData.append('media_type', 'TEXT');
+      formData.append('text', text);
     }
 
     // Step 1: Create media container
-    console.log('Creating Threads media container:', createParams);
+    console.log('Creating Threads media container');
+    console.log('Form data:', formData.toString());
     
-    // Use 'me' endpoint instead of userId since the IDs don't match
-    // Threads API prefers URL parameters
-    const createUrlParams = new URLSearchParams(createParams);
-    const createUrl = `https://graph.threads.net/v1.0/me/threads?${createUrlParams.toString()}`;
+    // Use the user-specific endpoint with the Threads user ID
+    const createUrl = `https://graph.threads.net/v1.0/${threadsUserId}/threads`;
     
     const createResponse = await fetch(createUrl, {
-      method: 'POST'
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString()
     });
 
     const createData = await createResponse.json();
@@ -95,20 +115,20 @@ export async function POST(request: NextRequest) {
     console.log('Container created with ID:', containerId);
 
     // Step 2: Publish the container
-    const publishParams = {
-      creation_id: containerId,
-      access_token: activeToken
-    };
+    const publishFormData = new URLSearchParams();
+    publishFormData.append('creation_id', containerId);
+    publishFormData.append('access_token', activeToken);
 
-    console.log('Publishing Threads post:', publishParams);
+    console.log('Publishing Threads post with container ID:', containerId);
     
-    // Use 'me' endpoint instead of userId since the IDs don't match
-    // Threads API prefers URL parameters
-    const publishUrlParams = new URLSearchParams(publishParams);
-    const publishUrl = `https://graph.threads.net/v1.0/me/threads_publish?${publishUrlParams.toString()}`;
+    const publishUrl = `https://graph.threads.net/v1.0/${threadsUserId}/threads_publish`;
     
     const publishResponse = await fetch(publishUrl, {
-      method: 'POST'
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: publishFormData.toString()
     });
 
     const publishData = await publishResponse.json();

@@ -15,8 +15,8 @@ export async function GET(request: NextRequest) {
     });
     
     // MUST use THREADS_APP_ID, not the main Meta App ID!
-    const appId = process.env.THREADS_APP_ID || '2288572204931387'; // Your actual Threads App ID
-    const appSecret = process.env.THREADS_APP_SECRET || '081987a2c648624513415f53d4f707e7'; // Your Threads App Secret
+    const appId = process.env.THREADS_APP_ID || '1074593118154653'; // Your actual Threads App ID
+    const appSecret = process.env.THREADS_APP_SECRET || '775901361bf3c2853b0396d973d7c428'; // Your Threads App Secret
     
     if (!appId) {
       console.error('Missing Threads App ID');
@@ -58,10 +58,10 @@ export async function GET(request: NextRequest) {
       'params[display]': '"page"',
       'params[logger_id]': `"${loggerId}"`,
       'params[response_type]': '"code"',
-      'params[scope]': '["threads_basic","threads_content_publish"]', // Only approved permissions
+      'params[scope]': '["threads_basic","threads_content_publish","threads_manage_replies"]', // Including threads_manage_replies for reply_to_id support
       'params[state]': state,
       'params[next]': '"read"',
-      'params[steps]': '{"read":["threads_basic","threads_content_publish"]}', // Only approved permissions
+      'params[steps]': '{"read":["threads_basic","threads_content_publish","threads_manage_replies"]}', // Including threads_manage_replies for reply_to_id support
       'params[south_korea_ux]': 'false',
       source: 'gdp_delegated'
     });

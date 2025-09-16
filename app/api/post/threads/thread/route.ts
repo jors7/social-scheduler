@@ -14,13 +14,27 @@ export async function POST(request: NextRequest) {
     console.log(`Creating connected thread with ${posts.length} posts for user ${userId}`);
     console.log('Posts to create:', posts.map((p, i) => `Post ${i + 1}: ${p.substring(0, 30)}...`));
     console.log('Access token preview:', accessToken ? `${accessToken.substring(0, 20)}...` : 'null');
+    
+    // First, get the Threads user ID (different from Instagram user ID)
+    console.log('Getting Threads user ID...');
+    const meResponse = await fetch(
+      `https://graph.threads.net/v1.0/me?fields=id,username&access_token=${accessToken}`
+    );
+    
+    if (!meResponse.ok) {
+      const errorData = await meResponse.json();
+      console.error('Failed to get Threads user ID:', errorData);
+      throw new Error('Failed to get Threads user ID');
+    }
+    
+    const meData = await meResponse.json();
+    const threadsUserId = meData.id;
+    console.log('Threads user ID retrieved:', threadsUserId);
 
-    // IMPORTANT: If we have more than 1 post, we need the threads_manage_replies permission
-    // We should fail fast rather than posting the first post and then failing
+    // Note: We're using threads_content_publish only, no threads_manage_replies needed
+    // The reply_to_id parameter works with threads_basic + threads_content_publish
     if (posts.length > 1) {
-      console.log('Multiple posts detected - will need threads_manage_replies permission for replies');
-      // We could do a permission check here, but for now we'll just note it
-      // The actual permission check will happen when we try to use reply_to_id
+      console.log('Multiple posts detected - creating thread with reply_to_id');
     }
 
     const publishedPosts = [];
@@ -33,39 +47,53 @@ export async function POST(request: NextRequest) {
       
       try {
         // Step 1: Create media container for this post
-        let createParams: any = {
-          media_type: mediaUrl ? 'IMAGE' : 'TEXT',
-          access_token: accessToken
-        };
-
+        // Use form data for the POST request
+        const formData = new URLSearchParams();
+        formData.append('access_token', accessToken);
+        
         if (mediaUrl) {
-          createParams.image_url = mediaUrl;
-          createParams.caption = postText;
+          formData.append('media_type', 'IMAGE');
+          formData.append('image_url', mediaUrl);
+          formData.append('caption', postText);
         } else {
-          createParams.text = postText;
+          formData.append('media_type', 'TEXT');
+          formData.append('text', postText);
         }
+        
+        // Set reply control for who can reply (optional)
+        formData.append('reply_control', 'everyone');
 
         // If this is not the first post, add reply_to_id to create a thread
-        // This requires the threads_manage_replies permission
+        // This works with threads_basic + threads_content_publish
         if (previousPostId) {
-          createParams.reply_to_id = previousPostId;
-          console.log(`Adding reply_to_id to post ${i + 1}: reply_to_id=${previousPostId}`);
-          console.log('Full createParams with reply_to_id:', createParams);
+          formData.append('reply_to_id', previousPostId);
+          console.log(`Adding reply_to_id to post ${i + 1}:`, {
+            reply_to_id: previousPostId,
+            postNumber: i + 1,
+            totalPosts: posts.length
+          });
         } else {
           console.log(`Post ${i + 1} is the first post, no reply_to_id needed`);
-          console.log('Full createParams without reply_to_id:', createParams);
         }
 
-        const createUrlParams = new URLSearchParams(createParams);
-        const createUrl = `https://graph.threads.net/v1.0/me/threads?${createUrlParams.toString()}`;
+        // Use the correct endpoint with threads_user_id
+        const createUrl = `https://graph.threads.net/v1.0/${threadsUserId}/threads`;
         
         console.log(`Creating container for post ${i + 1}/${posts.length}`);
-        if (i > 0) {
-          console.log(`Full URL for reply: ${createUrl}`);
-          console.log(`URL params string: ${createUrlParams.toString()}`);
-        }
+        console.log('Request details:', {
+          endpoint: createUrl,
+          isReply: i > 0,
+          formData: formData.toString(),
+          hasReplyToId: formData.has('reply_to_id'),
+          threadsUserId
+        });
+        
         const createResponse = await fetch(createUrl, {
-          method: 'POST'
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: formData.toString()
         });
 
         const createData = await createResponse.json();
@@ -89,22 +117,22 @@ export async function POST(request: NextRequest) {
           const errorCode = createData.error?.code;
           const errorType = createData.error?.type;
           
-          // Treat it as a permission error if:
-          // 1. We're trying to create a reply (i > 0 and previousPostId exists)
-          // 2. The error mentions permission OR has code 10 (permission error)
-          // This catches "Application does not have permission for this action" errors
-          if (i > 0 && previousPostId && 
-              (errorMessage.toLowerCase().includes('permission') || 
-               errorMessage.includes('reply_to_id') || 
-               errorMessage.includes('threads_manage_replies') ||
-               errorCode === 10 || // Permission error code
-               errorType === 'THApiException')) {
-            console.log('Permission error detected for reply (likely reply_to_id issue), throwing specific error');
-            throw new Error('threads_manage_replies permission required for connected threads. Please use numbered threads instead.');
+          // Check if this is a reply_to_id related error
+          if (i > 0 && previousPostId) {
+            console.log('Reply creation failed. Error details:', {
+              errorMessage,
+              errorCode,
+              errorType,
+              errorSubcode: createData.error?.error_subcode,
+              isReply: true,
+              replyToId: previousPostId
+            });
+            
+            // Throw error to trigger fallback to numbered threads
+            throw new Error(`Failed to create thread reply: ${errorMessage}`);
           }
           
-          // For other errors, just throw them as is
-          console.log('Non-permission error, throwing generic error');
+          // For the first post or other errors, just throw them as is
           throw new Error(createData.error?.message || 'Failed to create post container');
         }
 
@@ -112,17 +140,19 @@ export async function POST(request: NextRequest) {
         console.log(`Container created: ${containerId}`);
 
         // Step 2: Publish this post
-        const publishParams = {
-          creation_id: containerId,
-          access_token: accessToken
-        };
-
-        const publishUrlParams = new URLSearchParams(publishParams);
-        const publishUrl = `https://graph.threads.net/v1.0/me/threads_publish?${publishUrlParams.toString()}`;
+        const publishFormData = new URLSearchParams();
+        publishFormData.append('creation_id', containerId);
+        publishFormData.append('access_token', accessToken);
+        
+        const publishUrl = `https://graph.threads.net/v1.0/${threadsUserId}/threads_publish`;
         
         console.log(`Publishing post ${i + 1}/${posts.length}`);
         const publishResponse = await fetch(publishUrl, {
-          method: 'POST'
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: publishFormData.toString()
         });
 
         const publishData = await publishResponse.json();
@@ -164,10 +194,10 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.error(`Error processing post ${i + 1}:`, error);
         
-        // If this is a permission error, throw it immediately to trigger fallback
-        if (error instanceof Error && 
-            error.message.includes('threads_manage_replies permission required')) {
-          throw error; // Re-throw permission error to trigger client-side fallback
+        // Re-throw the error to trigger fallback in client
+        if (error instanceof Error && i > 0) {
+          // This is likely a reply_to_id issue
+          throw new Error(`Thread creation failed at post ${i + 1}: ${error.message}`);
         }
         
         // Return partial success if some posts were published (for other errors)
@@ -195,7 +225,7 @@ export async function POST(request: NextRequest) {
       posts: publishedPosts,
       totalPosts: posts.length,
       isConnectedThread: true, // Indicates this created real connected replies
-      note: 'Successfully created connected thread using reply_to_id'
+      note: 'Successfully created connected thread using reply_to_id with threads_content_publish'
     });
 
   } catch (error) {
