@@ -58,10 +58,10 @@ export async function GET(request: NextRequest) {
       'params[display]': '"page"',
       'params[logger_id]': `"${loggerId}"`,
       'params[response_type]': '"code"',
-      'params[scope]': '["threads_basic","threads_content_publish","threads_manage_replies"]', // Including threads_manage_replies for reply_to_id support
+      'params[scope]': '["threads_basic","threads_content_publish","threads_manage_replies","threads_manage_insights","threads_manage_mentions","threads_read_replies","threads_profile_discovery"]', // Request ALL available Threads scopes
       'params[state]': state,
       'params[next]': '"read"',
-      'params[steps]': '{"read":["threads_basic","threads_content_publish","threads_manage_replies"]}', // Including threads_manage_replies for reply_to_id support
+      'params[steps]': '{"read":["threads_basic","threads_content_publish","threads_manage_replies","threads_manage_insights","threads_manage_mentions","threads_read_replies","threads_profile_discovery"]}', // Request ALL available Threads scopes
       'params[south_korea_ux]': 'false',
       source: 'gdp_delegated'
     });

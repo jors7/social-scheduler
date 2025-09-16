@@ -60,8 +60,7 @@ export async function POST(request: NextRequest) {
           formData.append('text', postText);
         }
         
-        // Set reply control for who can reply (optional)
-        formData.append('reply_control', 'everyone');
+        // Note: reply_control parameter removed - it requires additional permissions
 
         // If this is not the first post, add reply_to_id to create a thread
         // This works with threads_basic + threads_content_publish
@@ -128,8 +127,13 @@ export async function POST(request: NextRequest) {
               replyToId: previousPostId
             });
             
-            // Throw error to trigger fallback to numbered threads
-            throw new Error(`Failed to create thread reply: ${errorMessage}`);
+            // Only throw for permission errors (code 10)
+            // For other errors (like timing issues), throw with details
+            if (errorCode === 10) {
+              throw new Error(`Permission denied for thread reply: ${errorMessage}`);
+            } else {
+              throw new Error(`Thread reply failed (code ${errorCode}): ${errorMessage}`);
+            }
           }
           
           // For the first post or other errors, just throw them as is
@@ -183,11 +187,11 @@ export async function POST(request: NextRequest) {
         previousPostId = postId;
         console.log(`Setting previousPostId for next post: ${previousPostId}`);
 
-        // Add a longer delay between posts to avoid rate limiting
-        // Especially important when creating connected threads
+        // Add a longer delay between posts to ensure the post is fully processed
+        // Threads needs time to make the post available as a reply target
         if (i < posts.length - 1) {
-          const delay = 2000; // 2 seconds delay
-          console.log(`Waiting ${delay}ms before creating next post...`);
+          const delay = 5000; // 5 seconds delay - Threads needs time to process
+          console.log(`Waiting ${delay}ms for post to be fully processed before creating reply...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
 

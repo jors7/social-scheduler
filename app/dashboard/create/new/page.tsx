@@ -695,7 +695,7 @@ function CreateNewPostPageContent() {
         let data
         let usedNumberedFallback = false
         
-        // Always try the real thread endpoint first
+        // Try the real thread endpoint first (currently limited by Meta permissions)
         console.log(`Attempting to create connected thread with ${filteredPosts.length} posts`)
         toast.info('Creating thread...')
         
@@ -713,11 +713,12 @@ function CreateNewPostPageContent() {
         data = await response.json()
         
         // If the thread endpoint fails with a permission error, fall back to numbered
+        // Note: Meta currently restricts reply_to_id to approved apps only
         if (!response.ok && data.error && 
             (data.error.includes('permission') || 
              data.error.includes('reply_to_id'))) {
-          console.log('Connected thread failed, falling back to numbered approach')
-          toast.info('Creating numbered thread series instead')
+          console.log('Connected threads not available - Meta permission required')
+          toast.info('Creating numbered thread series (Meta limitation)')
           
           response = await fetch('/api/post/threads/thread-numbered', {
             method: 'POST',

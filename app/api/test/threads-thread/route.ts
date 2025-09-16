@@ -32,7 +32,6 @@ export async function POST(request: NextRequest) {
     const starterFormData = new URLSearchParams();
     starterFormData.append('media_type', 'TEXT');
     starterFormData.append('text', 'Test Thread - Post 1: This is the starter post');
-    starterFormData.append('reply_control', 'everyone');
     starterFormData.append('access_token', accessToken);
     
     const starterResponse = await fetch(
