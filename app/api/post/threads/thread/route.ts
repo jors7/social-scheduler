@@ -143,6 +143,14 @@ export async function POST(request: NextRequest) {
         const containerId = createData.id;
         console.log(`Container created: ${containerId}`);
 
+        // Add delay for reply containers to be fully processed
+        // Threads needs time to process reply containers before they can be published
+        if (i > 0 && previousPostId) {
+          const replyDelay = 2000; // 2 seconds for reply containers
+          console.log(`Waiting ${replyDelay}ms for reply container to be ready for publishing...`);
+          await new Promise(resolve => setTimeout(resolve, replyDelay));
+        }
+
         // Step 2: Publish this post
         const publishFormData = new URLSearchParams();
         publishFormData.append('creation_id', containerId);
