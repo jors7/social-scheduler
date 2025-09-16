@@ -4,153 +4,160 @@ import { getValidThreadsToken } from '@/lib/threads/token-manager';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const postId = searchParams.get('postId');
-    const metric = searchParams.get('metric') || 'views,likes,replies,reposts,quotes,shares';
-    const period = searchParams.get('period') || 'lifetime';
-    const accountId = searchParams.get('accountId');
-    
-    // Get user from supabase
     const supabase = await createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (userError || !user) {
+    // Check authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get query parameters
+    const searchParams = request.nextUrl.searchParams;
+    const accountId = searchParams.get('accountId');
+    const metricType = searchParams.get('type') || 'profile'; // 'profile' or 'posts'
+
     // Get Threads account with automatic token refresh
     const { token: accessToken, account, error: tokenError } = await getValidThreadsToken(accountId || undefined);
-
+    
     if (tokenError || !accessToken) {
       console.error('Failed to get valid token:', tokenError);
-      return NextResponse.json({ 
-        error: tokenError || 'No Threads account connected',
-        needsReconnect: tokenError?.includes('reconnect') || false
-      }, { status: 404 });
-    }
-
-    // Fetch insights based on whether it's for a specific post or user
-    let insightsUrl: string;
-    
-    if (postId) {
-      // Post-specific insights
-      insightsUrl = `https://graph.threads.net/v1.0/${postId}/insights?metric=${metric}&access_token=${accessToken}`;
-    } else {
-      // User insights
-      insightsUrl = `https://graph.threads.net/v1.0/me/threads_insights?metric=${metric}&period=${period}&access_token=${accessToken}`;
-    }
-
-    console.log('Fetching Threads insights:', insightsUrl);
-    const insightsResponse = await fetch(insightsUrl);
-    const insightsData = await insightsResponse.json();
-
-    if (!insightsResponse.ok) {
-      console.error('Failed to fetch insights:', insightsData);
       return NextResponse.json(
         { 
-          error: insightsData.error?.message || 'Failed to fetch insights',
-          details: insightsData.error
+          error: tokenError || 'Threads account not connected',
+          needsReconnect: tokenError?.includes('reconnect') || false
         },
-        { status: insightsResponse.status }
+        { status: 404 }
       );
     }
 
-    // Also fetch replies if requested and postId is provided
-    let repliesData = null;
-    if (postId && searchParams.get('includeReplies') === 'true') {
-      const repliesUrl = `https://graph.threads.net/v1.0/${postId}/replies?fields=id,text,username,timestamp,like_count&access_token=${accessToken}`;
+    if (metricType === 'profile') {
+      // Fetch profile insights
+      // Get user profile with follower count and other metrics
+      const profileUrl = `https://graph.threads.net/v1.0/me?fields=id,username,threads_profile_picture_url,threads_biography,follower_count,following_count&access_token=${accessToken}`;
       
-      console.log('Fetching post replies:', repliesUrl);
-      const repliesResponse = await fetch(repliesUrl);
+      console.log('Fetching Threads profile insights');
       
-      if (repliesResponse.ok) {
-        repliesData = await repliesResponse.json();
+      const profileResponse = await fetch(profileUrl);
+      
+      if (!profileResponse.ok) {
+        const errorData = await profileResponse.json();
+        console.error('Failed to fetch profile insights:', errorData);
+        
+        return NextResponse.json(
+          { 
+            error: errorData.error?.message || 'Failed to fetch profile insights',
+            details: errorData.error 
+          },
+          { status: 400 }
+        );
       }
-    }
 
-    // Fetch conversation thread if requested
-    let conversationData = null;
-    if (postId && searchParams.get('includeConversation') === 'true') {
-      const conversationUrl = `https://graph.threads.net/v1.0/${postId}/conversation?fields=id,text,username,timestamp&access_token=${accessToken}`;
+      const profileData = await profileResponse.json();
       
-      console.log('Fetching conversation thread:', conversationUrl);
-      const conversationResponse = await fetch(conversationUrl);
+      // Get recent posts to calculate engagement rates
+      const postsUrl = `https://graph.threads.net/v1.0/me/threads?fields=views,likes,replies,reposts,quotes&limit=25&access_token=${accessToken}`;
+      const postsResponse = await fetch(postsUrl);
       
-      if (conversationResponse.ok) {
-        conversationData = await conversationResponse.json();
+      let totalEngagement = 0;
+      let totalViews = 0;
+      let postCount = 0;
+      
+      if (postsResponse.ok) {
+        const postsData = await postsResponse.json();
+        if (postsData.data && Array.isArray(postsData.data)) {
+          postsData.data.forEach((post: any) => {
+            totalViews += post.views || 0;
+            totalEngagement += (post.likes || 0) + (post.replies || 0) + (post.reposts || 0) + (post.quotes || 0);
+            postCount++;
+          });
+        }
       }
+      
+      // Calculate averages and rates
+      const avgEngagementRate = totalViews > 0 ? (totalEngagement / totalViews) * 100 : 0;
+      const avgViewsPerPost = postCount > 0 ? Math.round(totalViews / postCount) : 0;
+      const avgEngagementPerPost = postCount > 0 ? Math.round(totalEngagement / postCount) : 0;
+      
+      return NextResponse.json({
+        success: true,
+        profile: {
+          id: profileData.id,
+          username: profileData.username,
+          profilePicture: profileData.threads_profile_picture_url,
+          biography: profileData.threads_biography,
+          followerCount: profileData.follower_count || 0,
+          followingCount: profileData.following_count || 0,
+          metrics: {
+            totalViews,
+            totalEngagement,
+            postCount,
+            avgEngagementRate: avgEngagementRate.toFixed(2),
+            avgViewsPerPost,
+            avgEngagementPerPost
+          }
+        },
+        account: {
+          id: account.id,
+          username: account.username || account.platform_user_id
+        }
+      });
+      
+    } else if (metricType === 'posts') {
+      // Fetch detailed post insights
+      const limit = searchParams.get('limit') || '10';
+      const postsUrl = `https://graph.threads.net/v1.0/me/threads?fields=id,text,permalink,timestamp,media_type,views,likes,replies,reposts,quotes&limit=${limit}&access_token=${accessToken}`;
+      
+      const postsResponse = await fetch(postsUrl);
+      
+      if (!postsResponse.ok) {
+        const errorData = await postsResponse.json();
+        return NextResponse.json(
+          { 
+            error: errorData.error?.message || 'Failed to fetch posts insights',
+            details: errorData.error 
+          },
+          { status: 400 }
+        );
+      }
+      
+      const postsData = await postsResponse.json();
+      
+      // Calculate metrics for each post
+      const postsWithMetrics = postsData.data?.map((post: any) => {
+        const engagement = (post.likes || 0) + (post.replies || 0) + (post.reposts || 0) + (post.quotes || 0);
+        const engagementRate = post.views > 0 ? (engagement / post.views) * 100 : 0;
+        
+        return {
+          ...post,
+          metrics: {
+            views: post.views || 0,
+            likes: post.likes || 0,
+            replies: post.replies || 0,
+            reposts: post.reposts || 0,
+            quotes: post.quotes || 0,
+            engagement,
+            engagementRate: engagementRate.toFixed(2)
+          }
+        };
+      }) || [];
+      
+      return NextResponse.json({
+        success: true,
+        posts: postsWithMetrics,
+        account: {
+          id: account.id,
+          username: account.username || account.platform_user_id
+        }
+      });
     }
-
-    return NextResponse.json({
-      success: true,
-      insights: insightsData,
-      replies: repliesData,
-      conversation: conversationData,
-      postId: postId,
-      metrics: metric.split(','),
-      period: period
-    });
-
+    
+    return NextResponse.json({ error: 'Invalid metric type' }, { status: 400 });
+    
   } catch (error) {
     console.error('Threads insights error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch insights' },
-      { status: 500 }
-    );
-  }
-}
-
-// POST endpoint to hide/unhide replies (requires threads_manage_replies)
-export async function POST(request: NextRequest) {
-  try {
-    const { replyId, action, accessToken } = await request.json();
-
-    if (!replyId || !action || !accessToken) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
-
-    if (!['hide', 'unhide'].includes(action)) {
-      return NextResponse.json(
-        { error: 'Invalid action. Must be "hide" or "unhide"' },
-        { status: 400 }
-      );
-    }
-
-    // Manage reply visibility
-    const manageUrl = `https://graph.threads.net/v1.0/${replyId}/${action}?access_token=${accessToken}`;
-    
-    console.log(`${action}ing reply ${replyId}`);
-    const manageResponse = await fetch(manageUrl, {
-      method: 'POST'
-    });
-
-    const manageData = await manageResponse.json();
-
-    if (!manageResponse.ok) {
-      console.error(`Failed to ${action} reply:`, manageData);
-      return NextResponse.json(
-        { 
-          error: manageData.error?.message || `Failed to ${action} reply`,
-          details: manageData.error
-        },
-        { status: manageResponse.status }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      action: action,
-      replyId: replyId,
-      result: manageData
-    });
-
-  } catch (error) {
-    console.error('Reply management error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to manage reply' },
+      { error: 'Failed to fetch Threads insights' },
       { status: 500 }
     );
   }

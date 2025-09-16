@@ -15,8 +15,8 @@ export async function GET(request: NextRequest) {
     });
     
     // MUST use THREADS_APP_ID, not the main Meta App ID!
-    const appId = process.env.THREADS_APP_ID || '760612513547331'; // Test app for development
-    const appSecret = process.env.THREADS_APP_SECRET || '750a8d07e0625cf53eb52dde952dabc7'; // Test app secret
+    const appId = process.env.THREADS_APP_ID;
+    const appSecret = process.env.THREADS_APP_SECRET;
     
     if (!appId) {
       console.error('Missing Threads App ID');

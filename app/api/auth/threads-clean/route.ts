@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       console.log('Cleared existing Threads accounts for user');
     }
     
-    const appId = process.env.THREADS_APP_ID || '760612513547331'; // Test app for development
+    const appId = process.env.THREADS_APP_ID;
     
     if (!appId) {
       console.error('Missing Threads App ID');
