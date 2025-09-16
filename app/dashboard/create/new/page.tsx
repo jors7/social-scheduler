@@ -737,13 +737,18 @@ function CreateNewPostPageContent() {
         
         if (!response.ok) {
           toast.error(data.error || 'Failed to post thread')
+          progressTracker.updatePlatform('threads', 'error', undefined, data.error || 'Failed to post thread')
         } else if (data.partial) {
           toast.warning(data.message)
+          progressTracker.updatePlatform('threads', 'success', `Partial: ${data.message}`)
         } else {
           const successMessage = usedNumberedFallback 
             ? `Thread posted as ${data.posts.length} numbered posts`
             : `Connected thread created with ${data.posts.length} posts!`
           toast.success(successMessage)
+          
+          // Update progress tracker to show Threads succeeded
+          progressTracker.updatePlatform('threads', 'success', successMessage)
           
           // Clear form
           setPostContent('')
