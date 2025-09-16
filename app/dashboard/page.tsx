@@ -14,7 +14,26 @@ import {
   PlusCircle,
   ArrowUpRight,
   Infinity,
-  Zap
+  Zap,
+  Info,
+  ChevronRight,
+  Sparkles as SparklesIcon,
+  Command,
+  ArrowUp,
+  ArrowDown,
+  Minus,
+  Activity,
+  Target,
+  Share2,
+  MessageSquare,
+  Heart,
+  Eye,
+  Send,
+  Lightbulb,
+  HelpCircle,
+  X,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
@@ -76,10 +95,28 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [subscription, setSubscription] = useState<any>(null)
   const [usage, setUsage] = useState<UsageData | null>(null)
+  const [activeTab, setActiveTab] = useState<'recent' | 'scheduled' | 'drafts'>('recent')
+  const [showTip, setShowTip] = useState(true)
+  const [greeting, setGreeting] = useState('')
+  const [draftPosts, setDraftPosts] = useState<PostData[]>([])
+  const [connectedPlatforms, setConnectedPlatforms] = useState<string[]>([])
+  const [showAITooltip, setShowAITooltip] = useState(false)
+  const [showPostsTooltip, setShowPostsTooltip] = useState(false)
+
+  // Get time-based greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 17) return 'Good afternoon'
+    return 'Good evening'
+  }
 
   const fetchDashboardData = async () => {
     try {
       const supabase = createClient()
+      
+      // Set greeting
+      setGreeting(getGreeting())
       
       // Check if user is authenticated
       const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -145,6 +182,23 @@ export default function DashboardPage() {
       const scheduled = scheduledResult.data || []
       
       const allPosts = [...drafts, ...scheduled]
+      
+      // Store drafts for the tabs
+      setDraftPosts(drafts)
+      
+      // Fetch connected social accounts
+      try {
+        const accountsResponse = await fetch('/api/social-accounts')
+        if (accountsResponse.ok) {
+          const accounts = await accountsResponse.json()
+          const platforms = accounts
+            .filter((acc: any) => acc.is_active)
+            .map((acc: any) => acc.platform)
+          setConnectedPlatforms(platforms)
+        }
+      } catch (error) {
+        console.error('Error fetching social accounts:', error)
+      }
       
       // Calculate stats (YouTube posts are already in scheduled_posts)
       const scheduledCount = scheduled.filter((p: PostData) => ['pending', 'posting'].includes(p.status)).length
@@ -359,240 +413,402 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Dashboard</h1>
-              {subscription && (
-                <div className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold",
-                  subscription.hasSubscription 
-                    ? "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 border border-purple-200"
-                    : "bg-gray-100 text-gray-600 border border-gray-200"
-                )}>
-                  {subscription.hasSubscription ? (
-                    <>
-                      <Crown className="h-3 w-3" />
-                      {subscription.planId ? subscription.planId.charAt(0).toUpperCase() + subscription.planId.slice(1) : 'Free'}
-                      {subscription.isTrialing && ' Trial'}
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-3 h-3 rounded-full bg-gray-400"></div>
-                      Free Plan
-                    </>
+    <div className="space-y-6">
+      {/* Welcome Section with Greeting and Tips */}
+      <div className="bg-gradient-to-br from-purple-50 via-white to-blue-50 rounded-2xl p-6 border border-purple-100 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="w-full">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    {greeting && `${greeting}! 👋`}
+                  </h1>
+                  {subscription && (
+                    <Badge className={cn(
+                      "px-3 py-1",
+                      subscription.hasSubscription 
+                        ? "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 border-purple-200"
+                        : "bg-gray-100 text-gray-600 border-gray-200"
+                    )}>
+                      {subscription.hasSubscription ? (
+                        <>
+                          <Crown className="h-3 w-3 mr-1" />
+                          {subscription.planId ? subscription.planId.charAt(0).toUpperCase() + subscription.planId.slice(1) : 'Free'}
+                          {subscription.isTrialing && ' Trial'}
+                        </>
+                      ) : (
+                        'Free Plan'
+                      )}
+                    </Badge>
                   )}
                 </div>
-              )}
+                <p className="text-gray-600 text-base">
+                  Here's what's happening with your social media today
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <Link href="/dashboard/create/new">
+                  <Button variant="gradient" size="lg" className="shadow-md hover:shadow-lg transition-all">
+                    <PlusCircle className="mr-2 h-5 w-5" />
+                    Create Post
+                  </Button>
+                </Link>
+                {subscription && !subscription.hasSubscription && (
+                  <Link href="/#pricing">
+                    <Button variant="outline" size="lg" className="hover:bg-purple-50">
+                      <Sparkles className="mr-2 h-5 w-5" />
+                      Upgrade
+                    </Button>
+                  </Link>
+                )}
+              </div>
             </div>
-            <p className="text-gray-600 mt-2 text-lg">
-              Welcome back! Here&apos;s your social media overview.
-            </p>
+            
+            {/* Quick Tip Section - Now full width */}
+            {showTip && (
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 border border-purple-100 flex items-start gap-3 mt-4">
+                <div className="p-1.5 bg-purple-100 rounded-lg">
+                  <Lightbulb className="h-4 w-4 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Pro Tip</p>
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    Schedule your posts during peak hours (9-10 AM or 7-9 PM) for maximum engagement
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowTip(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
           </div>
-        </div>
-        <div className="flex gap-3 mt-6 sm:mt-0">
-          <Link href="/dashboard/create/new">
-            <Button variant="gradient" size="lg">
-              <PlusCircle className="mr-2 h-5 w-5" />
-              Create Post
-            </Button>
-          </Link>
-          {subscription && !subscription.hasSubscription && (
-            <Link href="/#pricing">
-              <Button variant="gradient-outline" size="lg">
-                <Sparkles className="mr-2 h-5 w-5" />
-                Upgrade
-              </Button>
-            </Link>
-          )}
-          {subscription && subscription.hasSubscription && (
-            <Link href="/dashboard/billing">
-              <Button variant="outline" size="icon">
-                <Crown className="h-4 w-4" />
-              </Button>
-            </Link>
-          )}
         </div>
       </div>
 
       <SubscriptionGate feature="dashboard">
-        <div className="space-y-8">
+        <div className="space-y-6">
 
-      {/* Quick Actions */}
-      <Card variant="elevated">
-        <CardHeader className="pb-4">
-          <CardTitle variant="gradient" className="text-xl flex items-center gap-2">
-            <Zap className="h-5 w-5" />
-            Quick Actions
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            <Link href="/dashboard/create/new">
-              <Button variant="outline" className="w-full justify-start hover:shadow-md hover:-translate-y-0.5 transition-all duration-200" size="sm">
-                <div className="p-1 bg-purple-100 rounded-lg mr-3">
-                  <PlusCircle className="h-4 w-4 text-purple-600" />
+      {/* Quick Actions - Redesigned with descriptions */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <Link href="/dashboard/create/new" className="group">
+          <Card className="h-full hover:shadow-lg hover:-translate-y-1 transition-all duration-200 border-gray-200 hover:border-purple-300">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                  <PlusCircle className="h-5 w-5 text-purple-600" />
                 </div>
-                New Post
-              </Button>
-            </Link>
-            <Link href="/dashboard/posts">
-              <Button variant="outline" className="w-full justify-start hover:shadow-md hover:-translate-y-0.5 transition-all duration-200" size="sm">
-                <div className="p-1 bg-blue-100 rounded-lg mr-3">
-                  <FileText className="h-4 w-4 text-blue-600" />
+                <div className="flex-1">
+                  <p className="font-semibold text-sm text-gray-900">Create Post</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Draft new content</p>
                 </div>
-                View Posts
-              </Button>
-            </Link>
-            <Link href="/dashboard/calendar">
-              <Button variant="outline" className="w-full justify-start hover:shadow-md hover:-translate-y-0.5 transition-all duration-200" size="sm">
-                <div className="p-1 bg-green-100 rounded-lg mr-3">
-                  <Calendar className="h-4 w-4 text-green-600" />
-                </div>
-                Calendar
-              </Button>
-            </Link>
-            <Link href="/dashboard/analytics">
-              <Button variant="outline" className="w-full justify-start hover:shadow-md hover:-translate-y-0.5 transition-all duration-200" size="sm">
-                <div className="p-1 bg-orange-100 rounded-lg mr-3">
-                  <TrendingUp className="h-4 w-4 text-orange-600" />
-                </div>
-                Analytics
-              </Button>
-            </Link>
-            <Link href="/dashboard/settings">
-              <Button variant="outline" className="w-full justify-start hover:shadow-md hover:-translate-y-0.5 transition-all duration-200" size="sm">
-                <div className="p-1 bg-indigo-100 rounded-lg mr-3">
-                  <Users className="h-4 w-4 text-indigo-600" />
-                </div>
-                Accounts
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
-      {/* Usage Statistics */}
+        <Link href="/dashboard/posts" className="group">
+          <Card className="h-full hover:shadow-lg hover:-translate-y-1 transition-all duration-200 border-gray-200 hover:border-blue-300">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                  <FileText className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-sm text-gray-900">View Posts</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Manage content</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/dashboard/calendar" className="group">
+          <Card className="h-full hover:shadow-lg hover:-translate-y-1 transition-all duration-200 border-gray-200 hover:border-green-300">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
+                  <Calendar className="h-5 w-5 text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-sm text-gray-900">Calendar</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Schedule posts</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/dashboard/analytics" className="group">
+          <Card className="h-full hover:shadow-lg hover:-translate-y-1 transition-all duration-200 border-gray-200 hover:border-orange-300">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
+                  <BarChart3 className="h-5 w-5 text-orange-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-sm text-gray-900">Analytics</p>
+                  <p className="text-xs text-gray-500 mt-0.5">View insights</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/dashboard/settings" className="group">
+          <Card className="h-full hover:shadow-lg hover:-translate-y-1 transition-all duration-200 border-gray-200 hover:border-indigo-300">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-indigo-100 rounded-lg group-hover:bg-indigo-200 transition-colors">
+                  <Users className="h-5 w-5 text-indigo-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-sm text-gray-900">Accounts</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Connect platforms</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      {/* Usage & Limits - Redesigned with circular progress and explanations */}
       {usage && (
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card variant="gradient" className="overflow-hidden">
-            <CardHeader className="pb-4 bg-white/50 backdrop-blur-sm">
-              <CardTitle className="text-lg flex items-center gap-3">
-                <div className="p-2 bg-purple-500 rounded-lg text-white">
-                  <FileText className="h-5 w-5" />
+        <Card className="border-gray-200">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-gray-700" />
+                  Usage & Limits
+                </CardTitle>
+                <CardDescription>Track your monthly usage and plan limits</CardDescription>
+              </div>
+              {subscription && !subscription.hasSubscription && (
+                <Link href="/#pricing">
+                  <Button variant="outline" size="sm" className="text-xs">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Upgrade for more
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-6 sm:grid-cols-3">
+              {/* Posts Usage */}
+              <div className="text-center relative">
+                <div className="relative inline-flex items-center justify-center mb-3">
+                  <svg className="w-20 h-20 transform -rotate-90">
+                    <circle
+                      cx="40"
+                      cy="40"
+                      r="36"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="none"
+                      className="text-gray-200"
+                    />
+                    <circle
+                      cx="40"
+                      cy="40"
+                      r="36"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 36}`}
+                      strokeDashoffset={usage.posts_limit === -1 ? 0 : `${2 * Math.PI * 36 * (1 - usage.posts_used / usage.posts_limit)}`}
+                      className={cn(
+                        "transition-all duration-500",
+                        usage.posts_used > usage.posts_limit * 0.8 && usage.posts_limit !== -1 ? 'text-red-500' :
+                        usage.posts_used > usage.posts_limit * 0.5 && usage.posts_limit !== -1 ? 'text-yellow-500' : 
+                        'text-green-500'
+                      )}
+                    />
+                  </svg>
+                  <div className="absolute">
+                    <FileText className="h-6 w-6 text-gray-600" />
+                  </div>
                 </div>
-                Posts This Month
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Used this month</span>
-                  <span className={cn(
-                    "font-medium flex items-center gap-1",
-                    usage.posts_used > usage.posts_limit * 0.8 && usage.posts_limit !== -1 ? 'text-red-600' :
-                    usage.posts_used > usage.posts_limit * 0.5 && usage.posts_limit !== -1 ? 'text-yellow-600' : 
-                    'text-green-600'
-                  )}>
-                    <span>{usage.posts_used}</span>
-                    <span>/</span>
-                    {usage.posts_limit === -1 ? (
-                      <Infinity className="h-4 w-4" />
-                    ) : (
-                      <span>{usage.posts_limit}</span>
-                    )}
-                  </span>
-                </div>
-                {usage.posts_limit !== -1 && (
-                  <Progress 
-                    value={(usage.posts_used / usage.posts_limit) * 100} 
-                    className="h-2"
-                  />
+                <p className="font-semibold text-sm text-gray-900">Posts</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {usage.posts_used} / {usage.posts_limit === -1 ? '∞' : usage.posts_limit} this month
+                </p>
+                <button 
+                  onClick={() => setShowPostsTooltip(!showPostsTooltip)}
+                  className="mt-2 text-xs text-blue-600 hover:text-blue-700 inline-flex items-center gap-1 mx-auto relative"
+                >
+                  <HelpCircle className="h-3 w-3" />
+                  View plan limits
+                </button>
+                
+                {/* Posts Tooltip */}
+                {showPostsTooltip && (
+                  <div className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-3 bg-white rounded-lg shadow-lg border border-gray-200">
+                    <button
+                      onClick={() => setShowPostsTooltip(false)}
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    <p className="text-xs font-semibold text-gray-900 mb-2">Monthly Post Limits</p>
+                    <div className="space-y-1 text-xs text-gray-600">
+                      <div className="flex justify-between">
+                        <span>Free:</span>
+                        <span className="font-medium">0 posts</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Starter:</span>
+                        <span className="font-medium text-green-600">Unlimited</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Professional:</span>
+                        <span className="font-medium text-green-600">Unlimited</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Enterprise:</span>
+                        <span className="font-medium text-green-600">Unlimited</span>
+                      </div>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-gray-100">
+                      <p className="text-xs text-gray-500">Free plan is currently limited. Upgrade to post unlimited content.</p>
+                    </div>
+                  </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
 
-          <Card variant="gradient" className="overflow-hidden">
-            <CardHeader className="pb-4 bg-white/50 backdrop-blur-sm">
-              <CardTitle className="text-lg flex items-center gap-3">
-                <div className="p-2 bg-blue-500 rounded-lg text-white">
-                  <Users className="h-5 w-5" />
+              {/* Accounts Usage */}
+              <div className="text-center">
+                <div className="relative inline-flex items-center justify-center mb-3">
+                  <svg className="w-20 h-20 transform -rotate-90">
+                    <circle
+                      cx="40"
+                      cy="40"
+                      r="36"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="none"
+                      className="text-gray-200"
+                    />
+                    <circle
+                      cx="40"
+                      cy="40"
+                      r="36"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 36}`}
+                      strokeDashoffset={usage.connected_accounts_limit === -1 ? 0 : `${2 * Math.PI * 36 * (1 - usage.connected_accounts_used / usage.connected_accounts_limit)}`}
+                      className={cn(
+                        "transition-all duration-500",
+                        usage.connected_accounts_used > usage.connected_accounts_limit * 0.8 && usage.connected_accounts_limit !== -1 ? 'text-red-500' :
+                        usage.connected_accounts_used > usage.connected_accounts_limit * 0.5 && usage.connected_accounts_limit !== -1 ? 'text-yellow-500' : 
+                        'text-blue-500'
+                      )}
+                    />
+                  </svg>
+                  <div className="absolute">
+                    <Users className="h-6 w-6 text-gray-600" />
+                  </div>
                 </div>
-                Connected Accounts
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Active accounts</span>
-                  <span className={cn(
-                    "font-medium flex items-center gap-1",
-                    usage.connected_accounts_used > usage.connected_accounts_limit * 0.8 && usage.connected_accounts_limit !== -1 ? 'text-red-600' :
-                    usage.connected_accounts_used > usage.connected_accounts_limit * 0.5 && usage.connected_accounts_limit !== -1 ? 'text-yellow-600' : 
-                    'text-green-600'
-                  )}>
-                    <span>{usage.connected_accounts_used}</span>
-                    <span>/</span>
-                    {usage.connected_accounts_limit === -1 ? (
-                      <Infinity className="h-4 w-4" />
-                    ) : (
-                      <span>{usage.connected_accounts_limit}</span>
-                    )}
-                  </span>
-                </div>
-                {usage.connected_accounts_limit !== -1 && (
-                  <Progress 
-                    value={(usage.connected_accounts_used / usage.connected_accounts_limit) * 100} 
-                    className="h-2"
-                  />
-                )}
+                <p className="font-semibold text-sm text-gray-900">Connected Accounts</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {usage.connected_accounts_used} / {usage.connected_accounts_limit === -1 ? '∞' : usage.connected_accounts_limit} active
+                </p>
+                <Link href="/dashboard/settings" className="mt-2 text-xs text-blue-600 hover:text-blue-700 inline-flex justify-center items-center gap-1">
+                  <ChevronRight className="h-3 w-3" />
+                  Manage accounts
+                </Link>
               </div>
-            </CardContent>
-          </Card>
 
-          <Card variant="gradient" className="overflow-hidden">
-            <CardHeader className="pb-4 bg-white/50 backdrop-blur-sm">
-              <CardTitle className="text-lg flex items-center gap-3">
-                <div className="p-2 bg-indigo-500 rounded-lg text-white">
-                  <Sparkles className="h-5 w-5" />
+              {/* AI Usage */}
+              <div className="text-center relative">
+                <div className="relative inline-flex items-center justify-center mb-3">
+                  <svg className="w-20 h-20 transform -rotate-90">
+                    <circle
+                      cx="40"
+                      cy="40"
+                      r="36"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="none"
+                      className="text-gray-200"
+                    />
+                    <circle
+                      cx="40"
+                      cy="40"
+                      r="36"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 36}`}
+                      strokeDashoffset={usage.ai_suggestions_limit === -1 || usage.ai_suggestions_limit === 0 ? 0 : `${2 * Math.PI * 36 * (1 - usage.ai_suggestions_used / usage.ai_suggestions_limit)}`}
+                      className={cn(
+                        "transition-all duration-500",
+                        usage.ai_suggestions_used > usage.ai_suggestions_limit * 0.8 && usage.ai_suggestions_limit !== -1 && usage.ai_suggestions_limit !== 0 ? 'text-red-500' :
+                        usage.ai_suggestions_used > usage.ai_suggestions_limit * 0.5 && usage.ai_suggestions_limit !== -1 && usage.ai_suggestions_limit !== 0 ? 'text-yellow-500' : 
+                        'text-purple-500'
+                      )}
+                    />
+                  </svg>
+                  <div className="absolute">
+                    <SparklesIcon className="h-6 w-6 text-gray-600" />
+                  </div>
                 </div>
-                AI Suggestions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Used this month</span>
-                  <span className={cn(
-                    "font-medium flex items-center gap-1",
-                    usage.ai_suggestions_used > usage.ai_suggestions_limit * 0.8 && usage.ai_suggestions_limit !== -1 && usage.ai_suggestions_limit !== 0 ? 'text-red-600' :
-                    usage.ai_suggestions_used > usage.ai_suggestions_limit * 0.5 && usage.ai_suggestions_limit !== -1 && usage.ai_suggestions_limit !== 0 ? 'text-yellow-600' : 
-                    'text-green-600'
-                  )}>
-                    <span>{usage.ai_suggestions_used}</span>
-                    <span>/</span>
-                    {usage.ai_suggestions_limit === -1 ? (
-                      <Infinity className="h-4 w-4" />
-                    ) : (
-                      <span>{usage.ai_suggestions_limit}</span>
-                    )}
-                  </span>
-                </div>
-                {usage.ai_suggestions_limit !== -1 && usage.ai_suggestions_limit !== 0 && (
-                  <Progress 
-                    value={(usage.ai_suggestions_used / usage.ai_suggestions_limit) * 100} 
-                    className="h-2"
-                  />
+                <p className="font-semibold text-sm text-gray-900">AI Suggestions</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {usage.ai_suggestions_used} / {usage.ai_suggestions_limit === -1 ? '∞' : usage.ai_suggestions_limit} this month
+                </p>
+                <button 
+                  onClick={() => setShowAITooltip(!showAITooltip)}
+                  className="mt-2 text-xs text-blue-600 hover:text-blue-700 inline-flex items-center gap-1 mx-auto relative"
+                >
+                  <Info className="h-3 w-3" />
+                  Learn about AI usage
+                </button>
+                
+                {/* AI Tooltip */}
+                {showAITooltip && (
+                  <div className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-3 bg-white rounded-lg shadow-lg border border-gray-200">
+                    <button
+                      onClick={() => setShowAITooltip(false)}
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    <p className="text-xs font-semibold text-gray-900 mb-2">AI Caption Generation Limits</p>
+                    <div className="space-y-1 text-xs text-gray-600">
+                      <div className="flex justify-between">
+                        <span>Free:</span>
+                        <span className="font-medium">0 captions/month</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Starter:</span>
+                        <span className="font-medium text-purple-600">50 captions/month</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Professional:</span>
+                        <span className="font-medium text-purple-600">150 captions/month</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Enterprise:</span>
+                        <span className="font-medium text-purple-600">300 captions/month</span>
+                      </div>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-gray-100">
+                      <p className="text-xs text-gray-500">AI helps generate engaging captions for your posts.</p>
+                    </div>
+                  </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
-
 
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Recent Posts */}
@@ -800,36 +1016,85 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-          {/* Stats Grid - Activity Metrics */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {statsData.map((stat, index) => {
-              const gradientColors = [
-                'from-purple-500 to-purple-600',
-                'from-blue-500 to-blue-600', 
-                'from-green-500 to-green-600',
-                'from-orange-500 to-orange-600'
-              ]
-              return (
-                <Card key={stat.title} variant="interactive" className="overflow-hidden group">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative">
-                    <div className={`absolute inset-0 bg-gradient-to-r ${gradientColors[index]} opacity-5 group-hover:opacity-10 transition-opacity duration-200`}></div>
-                    <CardTitle className="text-sm font-medium relative z-10">{stat.title}</CardTitle>
-                    <div className={`p-2 rounded-lg bg-gradient-to-r ${gradientColors[index]} relative z-10`}>
-                      <stat.icon className="h-4 w-4 text-white" />
+          {/* Stats Overview - Improved Design */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-gray-700" />
+                  Activity Overview
+                </h2>
+                <p className="text-sm text-gray-500 mt-0.5">Your social media performance at a glance</p>
+              </div>
+              <Link href="/dashboard/analytics">
+                <Button variant="outline" size="sm" className="text-xs">
+                  View Details
+                  <ArrowUpRight className="h-3 w-3 ml-1" />
+                </Button>
+              </Link>
+            </div>
+            
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {statsData.map((stat, index) => {
+                const colors = [
+                  { bg: 'bg-purple-100', text: 'text-purple-600', border: 'border-purple-200' },
+                  { bg: 'bg-blue-100', text: 'text-blue-600', border: 'border-blue-200' },
+                  { bg: 'bg-green-100', text: 'text-green-600', border: 'border-green-200' },
+                  { bg: 'bg-orange-100', text: 'text-orange-600', border: 'border-orange-200' }
+                ]
+                const color = colors[index]
+                
+                // Get trend icon
+                const getTrendIcon = () => {
+                  if (stat.trend === 'up') return <ArrowUp className="h-3 w-3 text-green-500" />
+                  if (stat.trend === 'down') return <ArrowDown className="h-3 w-3 text-red-500" />
+                  return <Minus className="h-3 w-3 text-gray-400" />
+                }
+                
+                return (
+                  <div key={stat.title} className="relative">
+                    <div className="p-4 rounded-lg border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all duration-200">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className={cn("p-2 rounded-lg", color.bg)}>
+                          <stat.icon className={cn("h-5 w-5", color.text)} />
+                        </div>
+                        {getTrendIcon()}
+                      </div>
+                      
+                      <div>
+                        <p className="text-2xl font-bold text-gray-900 mb-1">
+                          {stat.value}
+                        </p>
+                        <p className="text-xs font-medium text-gray-600 uppercase tracking-wider mb-1">
+                          {stat.title}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {stat.description}
+                        </p>
+                      </div>
+                      
+                      {/* Info tooltip on hover */}
+                      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Info className="h-3 w-3 text-gray-400" />
+                      </button>
                     </div>
-                  </CardHeader>
-                  <CardContent className="relative z-10">
-                    <div className="text-3xl font-bold mb-1">{stat.value}</div>
-                    <p className={cn(
-                      "text-sm",
-                      stat.trend === 'up' ? 'text-green-600' : 'text-gray-600'
-                    )}>
-                      {stat.description}
-                    </p>
-                  </CardContent>
-                </Card>
-              )
-            })}
+                  </div>
+                )
+              })}
+            </div>
+            
+            {/* Additional helpful context */}
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+              <div className="flex items-start gap-2">
+                <Info className="h-4 w-4 text-blue-600 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-blue-900">Tip: Boost your engagement</p>
+                  <p className="text-xs text-blue-700 mt-0.5">
+                    Posts with images get 2.3x more engagement. Try adding visuals to your next post!
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </SubscriptionGate>
