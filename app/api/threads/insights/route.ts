@@ -175,8 +175,23 @@ export async function GET(request: NextRequest) {
               if (insightsData.data && Array.isArray(insightsData.data)) {
                 insightsData.data.forEach((metric: any) => {
                   const value = metric.values?.[0]?.value || 0;
-                  if (metric.name in metrics) {
-                    metrics[metric.name as keyof typeof metrics] = value;
+                  // Update metrics based on the metric name
+                  switch (metric.name) {
+                    case 'views':
+                      metrics.views = value;
+                      break;
+                    case 'likes':
+                      metrics.likes = value;
+                      break;
+                    case 'replies':
+                      metrics.replies = value;
+                      break;
+                    case 'reposts':
+                      metrics.reposts = value;
+                      break;
+                    case 'quotes':
+                      metrics.quotes = value;
+                      break;
                   }
                 });
                 
