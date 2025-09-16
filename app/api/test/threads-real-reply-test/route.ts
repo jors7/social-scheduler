@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     
     // Wait different amounts of time and test
     const delays = [1000, 3000, 5000, 10000];
-    const results = [];
+    const results: any[] = [];
     
     for (const delay of delays) {
       console.log(`Waiting ${delay}ms before trying reply...`);
