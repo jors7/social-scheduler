@@ -738,12 +738,18 @@ function CreateNewPostPageContent() {
         
         // Upload media for each post that has it (Threads allows 1 image per post)
         const mediaUrlsPerPost: string[] = []
+        console.log('=== THREADS MEDIA UPLOAD DEBUG ===')
+        console.log('threadsThreadMedia:', threadsThreadMedia)
+        console.log('threadsThreadMedia.length:', threadsThreadMedia.length)
+        console.log('filteredThreadData:', filteredThreadData)
+        
         if (threadsThreadMedia.some(m => m && m.length > 0)) {
           toast.info('Uploading media for thread...')
           
           for (let i = 0; i < filteredThreadData.length; i++) {
             const originalIndex = filteredThreadData[i].originalIndex
             const mediaFiles = threadsThreadMedia[originalIndex]
+            console.log(`Post ${i + 1}: originalIndex=${originalIndex}, mediaFiles=`, mediaFiles)
             if (mediaFiles && mediaFiles.length > 0) {
               // Threads only supports 1 media per post, take the first one
               const file = mediaFiles[0]
@@ -769,6 +775,7 @@ function CreateNewPostPageContent() {
                   .getPublicUrl(filename)
                 
                 mediaUrlsPerPost.push(publicUrl)
+                console.log(`Successfully uploaded media for post ${i + 1}: ${publicUrl}`)
               } catch (error) {
                 console.error('Error uploading media for post', i + 1, error)
                 toast.error(`Failed to upload media for post ${i + 1}`)
@@ -776,9 +783,13 @@ function CreateNewPostPageContent() {
               }
             } else {
               mediaUrlsPerPost.push('') // No media for this post
+              console.log(`No media for post ${i + 1}`)
             }
           }
         }
+        
+        console.log('Final mediaUrlsPerPost:', mediaUrlsPerPost)
+        console.log('mediaUrlsPerPost.length:', mediaUrlsPerPost.length)
         
         let response
         let data
@@ -788,15 +799,18 @@ function CreateNewPostPageContent() {
         console.log(`Attempting to create connected thread with ${filteredPosts.length} posts`)
         toast.info('Creating thread...')
         
+        const threadPayload = {
+          userId: threadsAccount.platform_user_id,
+          accessToken: threadsAccount.access_token,
+          posts: filteredPosts,
+          mediaUrls: mediaUrlsPerPost.length > 0 ? mediaUrlsPerPost : []
+        }
+        console.log('Sending to /api/post/threads/thread:', threadPayload)
+        
         response = await fetch('/api/post/threads/thread', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: threadsAccount.platform_user_id,
-            accessToken: threadsAccount.access_token,
-            posts: filteredPosts,
-            mediaUrls: mediaUrlsPerPost.length > 0 ? mediaUrlsPerPost : []
-          })
+          body: JSON.stringify(threadPayload)
         })
         
         data = await response.json()
@@ -809,16 +823,19 @@ function CreateNewPostPageContent() {
           console.log('Connected threads not available - Meta permission required')
           toast.info('Creating numbered thread series (Meta limitation)')
           
+          const numberedPayload = {
+            userId: threadsAccount.platform_user_id,
+            accessToken: threadsAccount.access_token,
+            posts: filteredPosts,
+            mediaUrls: mediaUrlsPerPost.length > 0 ? mediaUrlsPerPost : [],
+            addNumbers: true
+          }
+          console.log('Falling back to numbered thread. Payload:', numberedPayload)
+          
           response = await fetch('/api/post/threads/thread-numbered', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: threadsAccount.platform_user_id,
-              accessToken: threadsAccount.access_token,
-              posts: filteredPosts,
-              mediaUrls: mediaUrlsPerPost.length > 0 ? mediaUrlsPerPost : [],
-              addNumbers: true
-            })
+            body: JSON.stringify(numberedPayload)
           })
           
           data = await response.json()

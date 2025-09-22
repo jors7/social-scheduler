@@ -12,6 +12,8 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`Creating numbered thread with ${posts.length} posts`);
+    console.log('Received mediaUrls:', mediaUrls);
+    console.log('mediaUrls length:', mediaUrls.length);
     
     // First, get the Threads user ID
     const meResponse = await fetch(
@@ -39,6 +41,8 @@ export async function POST(request: NextRequest) {
       let postText = posts[i];
       const mediaUrl = mediaUrls[i]; // Optional media for this specific post
       
+      console.log(`Post ${i + 1}: mediaUrl = "${mediaUrl}"`);
+      
       // Add numbering if requested and there's more than one post
       if (addNumbers && totalPosts > 1) {
         postText = `[${i + 1}/${totalPosts}] ${postText}`;
@@ -50,6 +54,7 @@ export async function POST(request: NextRequest) {
         formData.append('access_token', accessToken);
         
         if (mediaUrl) {
+          console.log(`Post ${i + 1} has media, adding IMAGE type with URL: ${mediaUrl}`);
           formData.append('media_type', 'IMAGE');
           formData.append('image_url', mediaUrl);
           formData.append('caption', postText);
