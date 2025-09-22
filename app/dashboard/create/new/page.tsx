@@ -816,6 +816,7 @@ function CreateNewPostPageContent() {
               userId: threadsAccount.platform_user_id,
               accessToken: threadsAccount.access_token,
               posts: filteredPosts,
+              mediaUrls: mediaUrlsPerPost.length > 0 ? mediaUrlsPerPost : [],
               addNumbers: true
             })
           })
