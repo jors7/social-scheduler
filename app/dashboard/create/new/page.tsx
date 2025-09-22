@@ -146,6 +146,12 @@ function CreateNewPostPageContent() {
   // Threads-specific state
   const [threadsMode, setThreadsMode] = useState<'single' | 'thread'>('single')
   const [threadPosts, setThreadPosts] = useState<string[]>([''])
+  
+  // Twitter-specific state
+  const [twitterMode, setTwitterMode] = useState<'single' | 'thread'>('single')
+  const [twitterThreadPosts, setTwitterThreadPosts] = useState<string[]>([''])
+  
+  
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
   const loadedDraftRef = useRef<string | null>(null)
   const [shouldAutoPublish, setShouldAutoPublish] = useState(false)
@@ -183,11 +189,19 @@ function CreateNewPostPageContent() {
   const [tiktokSaveAsDraft, setTiktokSaveAsDraft] = useState(false)
 
   const togglePlatform = (platformId: string) => {
-    setSelectedPlatforms(prev =>
-      prev.includes(platformId)
+    setSelectedPlatforms(prev => {
+      const newPlatforms = prev.includes(platformId)
         ? prev.filter(id => id !== platformId)
         : [...prev, platformId]
-    )
+      
+      // If Twitter is being deselected, reset Twitter mode
+      if (platformId === 'twitter' && prev.includes('twitter') && !newPlatforms.includes('twitter')) {
+        setTwitterMode('single')
+        setTwitterThreadPosts([''])
+      }
+      
+      return newPlatforms
+    })
   }
 
   const handleContentChange = (content: string) => {
@@ -293,6 +307,7 @@ function CreateNewPostPageContent() {
   }
 
   const handlePostNow = useCallback(async () => {
+    
     if (selectedPlatforms.length === 0) {
       toast.error('Please select at least one platform')
       return
@@ -302,6 +317,11 @@ function CreateNewPostPageContent() {
     const isThreadsThreadMode = selectedPlatforms.length === 1 && 
       selectedPlatforms[0] === 'threads' && 
       threadsMode === 'thread'
+    
+    // Special handling for Twitter thread mode
+    const isTwitterThreadMode = selectedPlatforms.length === 1 && 
+      selectedPlatforms[0] === 'twitter' && 
+      twitterMode === 'thread'
     
     if (isThreadsThreadMode) {
       // For Threads thread mode, check threadPosts instead of main content
@@ -317,7 +337,21 @@ function CreateNewPostPageContent() {
       }
       // If we have thread content, skip all other content validation
       // and proceed directly with posting logic
-    } else {
+    } else if (isTwitterThreadMode) {
+      // For Twitter thread mode, check twitterThreadPosts instead of main content
+      const hasTwitterThreadContent = twitterThreadPosts.some(p => p && typeof p === 'string' && p.trim().length > 0)
+      if (!hasTwitterThreadContent) {
+        toast.error('Please add content to at least one tweet in your thread')
+        return
+      }
+      // If we have thread content, skip all other content validation
+      // and proceed directly with posting logic
+    }
+    
+    // Regular content validation (not thread mode)
+    console.log('About to check regular validation. isThreadsThreadMode:', isThreadsThreadMode, 'isTwitterThreadMode:', isTwitterThreadMode)
+    if (!isThreadsThreadMode && !isTwitterThreadMode) {
+      console.log('Entering regular validation block')
 
     // Check if we have content either in main area or platform-specific
     const hasMainContent = postContent.trim().length > 0
@@ -420,8 +454,8 @@ function CreateNewPostPageContent() {
         toast.error('Please enter content for non-Instagram platforms')
         return
       }
-    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode) {
-      // No content at all for regular posts (skip this check for Threads thread mode)
+    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode && !isTwitterThreadMode) {
+      // No content at all for regular posts (skip this check for Threads thread mode and Twitter thread mode)
       console.log('No content validation path - failing')
       console.log('Validation state:', {
         hasMainContent,
@@ -431,7 +465,8 @@ function CreateNewPostPageContent() {
         hasTikTokContent,
         hasInstagramStory,
         isInstagramStoryOnly,
-        isThreadsThreadMode
+        isThreadsThreadMode,
+        isTwitterThreadMode
       })
       toast.error('Please enter some content')
       return
@@ -464,14 +499,14 @@ function CreateNewPostPageContent() {
       }
     }
 
-    } // End of else block for non-Threads-thread-mode validation
+    } // End of if block for regular content validation (not thread mode)
 
     // Filter to only supported platforms for now
-    const supportedPlatforms = selectedPlatforms.filter(p => ['instagram', 'facebook', 'bluesky', 'pinterest', 'tiktok', 'youtube', 'linkedin', 'threads'].includes(p))
-    const unsupportedPlatforms = selectedPlatforms.filter(p => !['instagram', 'facebook', 'bluesky', 'pinterest', 'tiktok', 'youtube', 'linkedin', 'threads'].includes(p))
+    const supportedPlatforms = selectedPlatforms.filter(p => ['twitter', 'instagram', 'facebook', 'bluesky', 'pinterest', 'tiktok', 'youtube', 'linkedin', 'threads'].includes(p))
+    const unsupportedPlatforms = selectedPlatforms.filter(p => !['twitter', 'instagram', 'facebook', 'bluesky', 'pinterest', 'tiktok', 'youtube', 'linkedin', 'threads'].includes(p))
 
     if (supportedPlatforms.length === 0) {
-      toast.error('Please select Instagram, Facebook, Bluesky, Pinterest, TikTok, YouTube, LinkedIn, or Threads (other platforms coming soon!)')
+      toast.error('Please select X (Twitter), Instagram, Facebook, Bluesky, Pinterest, TikTok, YouTube, LinkedIn, or Threads')
       return
     }
 
@@ -763,9 +798,89 @@ function CreateNewPostPageContent() {
         return
       }
 
+      // Handle Twitter thread mode separately
+      if (supportedPlatforms.length === 1 && supportedPlatforms[0] === 'twitter' && twitterMode === 'thread' && twitterThreadPosts.length > 0) {
+        // Get Twitter account
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          progressTracker.updatePlatform('twitter', 'error', undefined, 'User not authenticated')
+          progressTracker.finish()
+          clearTimeout(timeoutId)
+          setIsPosting(false)
+          return
+        }
+
+        const { data: twitterAccount } = await supabase
+          .from('social_accounts')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('platform', 'twitter')
+          .eq('is_active', true)
+          .single()
+
+        if (!twitterAccount) {
+          progressTracker.updatePlatform('twitter', 'error', undefined, 'Twitter account not connected')
+          progressTracker.finish()
+          clearTimeout(timeoutId)
+          setIsPosting(false)
+          return
+        }
+
+        console.log(`Posting thread for @${twitterAccount.username}`)
+        
+        // Filter out empty tweets
+        const filteredTweets = twitterThreadPosts.filter(p => p.trim().length > 0)
+        
+        console.log(`Creating Twitter thread with ${filteredTweets.length} tweets`)
+        toast.info('Creating Twitter thread...')
+        
+        const response = await fetch('/api/post/twitter/thread', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tweets: filteredTweets,
+            accessToken: twitterAccount.access_token,
+            accessSecret: twitterAccount.access_secret,
+            userId: user.id,
+            addNumbers: true // Add [1/n] numbering
+          })
+        })
+        
+        const data = await response.json()
+        
+        if (!response.ok) {
+          toast.error(data.error || 'Failed to post Twitter thread')
+          progressTracker.updatePlatform('twitter', 'error', undefined, data.error || 'Failed to post thread')
+        } else {
+          const successMessage = `Twitter thread created with ${data.data.tweetCount} tweets!`
+          toast.success(successMessage)
+          
+          // Update progress tracker to show Twitter succeeded
+          progressTracker.updatePlatform('twitter', 'success', successMessage)
+          
+          // Clear form
+          setPostContent('')
+          setTwitterThreadPosts([''])
+          setTwitterMode('single')
+          setSelectedPlatforms([])
+        }
+        
+        progressTracker.finish()
+        clearTimeout(timeoutId)
+        setIsPosting(false)
+        return
+      }
+
       // If we're in threads mode with thread posts, we've already handled it above
       // This prevents duplicate posting
       if (selectedPlatforms.length === 1 && selectedPlatforms[0] === 'threads' && threadsMode === 'thread') {
+        clearTimeout(timeoutId)
+        setIsPosting(false)
+        return
+      }
+
+      // If we're in twitter thread mode, we've already handled it above
+      if (selectedPlatforms.length === 1 && selectedPlatforms[0] === 'twitter' && twitterMode === 'thread') {
         clearTimeout(timeoutId)
         setIsPosting(false)
         return
@@ -918,6 +1033,7 @@ function CreateNewPostPageContent() {
     }
   }, [selectedPlatforms, postContent, platformContent, selectedFiles, uploadedMediaUrls, currentDraftId, 
       youtubeVideoFile, youtubeTitle, youtubeDescription, youtubeTags, youtubeCategoryId, youtubePrivacyStatus, youtubeThumbnailFile,
+      twitterMode, twitterThreadPosts,
       selectedPinterestBoard, pinterestTitle, pinterestDescription, pinterestLink,
       tiktokPrivacyLevel, tiktokSaveAsDraft, instagramAsStory, threadPosts, threadsMode])
 
@@ -937,11 +1053,25 @@ function CreateNewPostPageContent() {
       selectedPlatforms[0] === 'threads' && 
       threadsMode === 'thread'
     
+    // Special handling for Twitter thread mode
+    const isTwitterThreadMode = selectedPlatforms.length === 1 && 
+      selectedPlatforms[0] === 'twitter' && 
+      twitterMode === 'thread'
+    
     if (isThreadsThreadMode) {
       // For Threads thread mode, check threadPosts instead of main content
       const hasThreadContent = threadPosts.some(p => p.trim().length > 0)
       if (!hasThreadContent) {
         toast.error('Please add content to at least one thread post')
+        return
+      }
+      // If we have thread content, skip all other content validation
+      // and proceed directly with scheduling logic
+    } else if (isTwitterThreadMode) {
+      // For Twitter thread mode, check twitterThreadPosts instead of main content
+      const hasTwitterThreadContent = twitterThreadPosts.some(p => p && typeof p === 'string' && p.trim().length > 0)
+      if (!hasTwitterThreadContent) {
+        toast.error('Please add content to at least one tweet in your thread')
         return
       }
       // If we have thread content, skip all other content validation
@@ -1049,8 +1179,8 @@ function CreateNewPostPageContent() {
         toast.error('Please enter content for non-Instagram platforms')
         return
       }
-    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode) {
-      // No content at all for regular posts (skip this check for Threads thread mode)
+    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode && !isTwitterThreadMode) {
+      // No content at all for regular posts (skip this check for Threads thread mode and Twitter thread mode)
       console.log('No content validation path - failing')
       console.log('Validation state:', {
         hasMainContent,
@@ -1060,7 +1190,8 @@ function CreateNewPostPageContent() {
         hasTikTokContent,
         hasInstagramStory,
         isInstagramStoryOnly,
-        isThreadsThreadMode
+        isThreadsThreadMode,
+        isTwitterThreadMode
       })
       toast.error('Please enter some content')
       return
@@ -1093,7 +1224,7 @@ function CreateNewPostPageContent() {
       }
     }
 
-    } // End of else block for non-Threads-thread-mode validation
+    } // End of if block for regular content validation (not thread mode)
 
     setIsPosting(true)
 
@@ -1827,6 +1958,68 @@ function CreateNewPostPageContent() {
             </Card>
           )}
 
+          {/* Twitter/X Thread Mode */}
+          {selectedPlatforms.length === 1 && selectedPlatforms[0] === 'twitter' && (
+            <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 border-gray-200 dark:border-gray-800">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
+                  <span className="text-2xl">𝕏</span>
+                  X (Twitter) Options
+                </CardTitle>
+                <CardDescription className="text-sm sm:text-base text-gray-600">
+                  Choose how to post to X
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <Button
+                    type="button"
+                    variant={twitterMode === 'single' ? 'default' : 'outline'}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setTwitterMode('single')
+                    }}
+                    size="sm"
+                  >
+                    Single Tweet
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={twitterMode === 'thread' ? 'default' : 'outline'}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setTwitterMode('thread')
+                    }}
+                    size="sm"
+                  >
+                    Thread (Multiple Tweets)
+                  </Button>
+                </div>
+                
+                {twitterMode === 'thread' && (
+                  <div className="space-y-4">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <p className="text-sm text-blue-800 dark:text-blue-200">
+                        <strong>Twitter Thread:</strong> Creates connected tweets (280 chars each).
+                        <span className="block mt-1 text-xs">
+                          ✨ Tweets will be connected as replies. Optional [1/n] numbering available.
+                        </span>
+                      </p>
+                    </div>
+                    <ThreadComposer
+                      onPost={(posts) => setTwitterThreadPosts(posts)}
+                      maxPosts={15}
+                      maxCharsPerPost={280}
+                      autoUpdate={true}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Media Upload */}
           <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
             <CardHeader className="pb-4">
@@ -2173,7 +2366,8 @@ function CreateNewPostPageContent() {
                       !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
                       !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(url => url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')))) &&
                       !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'instagram' && instagramAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
-                      !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'threads' && threadsMode === 'thread' && threadPosts.some(p => p.trim())))
+                      !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'threads' && threadsMode === 'thread' && threadPosts.some(p => p.trim())) &&
+                      !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'twitter' && twitterMode === 'thread' && twitterThreadPosts.some(p => p.trim())))
                   }
                   onClick={handlePostNow}
                 >

@@ -689,8 +689,7 @@ export default function SettingsContent() {
       id: 'twitter',
       name: 'X (Twitter)',
       icon: '𝕏',
-      color: 'bg-black',
-      note: 'Free tier: Read-only access'
+      color: 'bg-black'
     },
     {
       id: 'instagram',

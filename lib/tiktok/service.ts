@@ -80,9 +80,11 @@ export class TikTokService {
     }
   ) {
     try {
+      // Check if we're in sandbox mode from environment variable
+      const isSandbox = process.env.TIKTOK_SANDBOX === 'true';
+      
       // IMPORTANT: Sandbox apps can only use SELF_ONLY privacy level
       // Override privacy level for sandbox mode
-      const isSandbox = true; // Set to false when app is approved
       if (isSandbox && privacyLevel !== 'SELF_ONLY') {
         console.warn('Sandbox mode: Overriding privacy level to SELF_ONLY');
         privacyLevel = 'SELF_ONLY';
@@ -196,13 +198,25 @@ export class TikTokService {
         console.warn('No publish_id returned from TikTok. Full response:', initData);
       }
       
-      return {
-        success: false, // Mark as false since it's only sandbox testing
-        sandbox: true, // Indicate this is sandbox mode
-        publishId: publishId,
-        uploadUrl: null, // No upload URL with PULL_FROM_URL
-        message: 'TikTok Sandbox Mode: API test successful. Actual posting requires app approval from TikTok.'
-      };
+      // Return success based on whether we're in sandbox mode
+      if (isSandbox) {
+        return {
+          success: false, // Mark as false since it's only sandbox testing
+          sandbox: true, // Indicate this is sandbox mode
+          publishId: publishId,
+          uploadUrl: null, // No upload URL with PULL_FROM_URL
+          message: 'TikTok Sandbox Mode: API test successful. Actual posting requires app approval from TikTok.'
+        };
+      } else {
+        // Production mode - actual posting
+        return {
+          success: true,
+          sandbox: false,
+          publishId: publishId,
+          uploadUrl: null, // No upload URL with PULL_FROM_URL
+          message: 'TikTok video upload initiated successfully. Processing may take 30 seconds to 2 minutes.'
+        };
+      }
 
     } catch (error) {
       console.error('TikTok post creation error:', error);
@@ -255,8 +269,8 @@ export class TikTokService {
    * TikTok has specific requirements for video content
    */
   static formatContent(content: string): string {
-    // TikTok captions have a 150 character limit
-    const maxLength = 150;
+    // TikTok captions have a 2200 character limit
+    const maxLength = 2200;
     
     // Clean HTML and format content
     let cleanContent = content

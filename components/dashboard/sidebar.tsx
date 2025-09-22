@@ -179,6 +179,13 @@ export function Sidebar() {
           href: '/dashboard/seo',
           icon: Search,
           badge: 'Admin',
+        },
+        // Twitter Usage Monitor
+        {
+          name: 'Twitter Usage',
+          href: '/dashboard/admin/twitter-usage',
+          icon: BarChart3,
+          badge: 'Admin',
         }
       )
       

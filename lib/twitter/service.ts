@@ -39,10 +39,9 @@ export class TwitterService {
     }
   }
 
-  // Post a tweet (Note: Free tier doesn't allow posting)
+  // Post a tweet
   async postTweet(text: string, mediaIds?: string[]): Promise<{ id: string; text: string }> {
     try {
-      // Check if we can post (requires Basic tier or higher)
       const tweetData: any = { text };
       if (mediaIds && mediaIds.length > 0) {
         tweetData.media = { 
@@ -57,11 +56,20 @@ export class TwitterService {
         text: result.data.text || text,
       };
     } catch (error: any) {
-      if (error.code === 403 || error.data?.detail?.includes('Free')) {
-        throw new Error('Posting tweets requires Twitter API Basic tier ($100/month). Free tier only supports reading tweets.');
-      }
       console.error('Error posting tweet:', error);
-      throw new Error('Failed to post tweet');
+      
+      // Check for rate limit errors
+      if (error.code === 429) {
+        throw new Error('Twitter rate limit exceeded. Please try again later.');
+      }
+      
+      // Check for authentication errors
+      if (error.code === 401) {
+        throw new Error('Twitter authentication failed. Please reconnect your account.');
+      }
+      
+      // Generic error
+      throw new Error('Failed to post tweet. Please try again.');
     }
   }
 
@@ -90,6 +98,89 @@ export class TwitterService {
     } catch (error) {
       console.error('Error fetching user tweets:', error);
       throw new Error('Failed to fetch tweets');
+    }
+  }
+
+  // Post a thread (multiple connected tweets)
+  async postThread(tweets: string[], mediaIds?: string[][]): Promise<{ ids: string[]; urls: string[] }> {
+    const postedTweets: { id: string; text: string }[] = [];
+    const tweetUrls: string[] = [];
+    
+    try {
+      // Get the user info for constructing URLs
+      const user = await this.verifyCredentials();
+      
+      // Post the first tweet
+      const firstTweetData: any = { text: tweets[0] };
+      if (mediaIds && mediaIds[0] && mediaIds[0].length > 0) {
+        firstTweetData.media = { 
+          media_ids: mediaIds[0].slice(0, 4) as [string] | [string, string] | [string, string, string] | [string, string, string, string]
+        };
+      }
+      
+      console.log('Posting first tweet of thread...');
+      const firstTweet = await this.client.v2.tweet(firstTweetData);
+      postedTweets.push({
+        id: firstTweet.data.id,
+        text: firstTweet.data.text || tweets[0]
+      });
+      tweetUrls.push(`https://twitter.com/${user.username}/status/${firstTweet.data.id}`);
+      
+      // Post the remaining tweets as replies
+      let previousTweetId = firstTweet.data.id;
+      
+      for (let i = 1; i < tweets.length; i++) {
+        const tweetData: any = { 
+          text: tweets[i],
+          reply: {
+            in_reply_to_tweet_id: previousTweetId
+          }
+        };
+        
+        // Add media if provided for this tweet
+        if (mediaIds && mediaIds[i] && mediaIds[i].length > 0) {
+          tweetData.media = { 
+            media_ids: mediaIds[i].slice(0, 4) as [string] | [string, string] | [string, string, string] | [string, string, string, string]
+          };
+        }
+        
+        console.log(`Posting tweet ${i + 1}/${tweets.length} as reply to ${previousTweetId}...`);
+        const replyTweet = await this.client.v2.tweet(tweetData);
+        
+        postedTweets.push({
+          id: replyTweet.data.id,
+          text: replyTweet.data.text || tweets[i]
+        });
+        tweetUrls.push(`https://twitter.com/${user.username}/status/${replyTweet.data.id}`);
+        
+        previousTweetId = replyTweet.data.id;
+      }
+      
+      console.log(`Successfully posted thread with ${postedTweets.length} tweets`);
+      
+      return {
+        ids: postedTweets.map(t => t.id),
+        urls: tweetUrls
+      };
+    } catch (error: any) {
+      console.error('Error posting thread:', error);
+      
+      // Check for rate limit errors
+      if (error.code === 429) {
+        throw new Error('Twitter rate limit exceeded. Please try again later.');
+      }
+      
+      // Check for authentication errors
+      if (error.code === 401) {
+        throw new Error('Twitter authentication failed. Please reconnect your account.');
+      }
+      
+      // If we've posted some tweets, include that info in the error
+      if (postedTweets.length > 0) {
+        throw new Error(`Thread partially posted (${postedTweets.length}/${tweets.length} tweets). Error: ${error.message}`);
+      }
+      
+      throw new Error('Failed to post thread. Please try again.');
     }
   }
 }

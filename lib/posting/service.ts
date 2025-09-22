@@ -218,6 +218,9 @@ export class PostingService {
       case 'threads':
         return await this.postToThreads(textContent, account, mediaUrls);
       
+      case 'twitter':
+        return await this.postToTwitter(textContent, account, mediaUrls);
+      
       default:
         return {
           platform,
@@ -756,6 +759,59 @@ export class PostingService {
       console.error('Threads posting error:', error);
       return {
         platform: 'threads',
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  private async postToTwitter(content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
+    try {
+      // Get current user from auth
+      const { data: { user } } = await this.supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const response = await fetch('/api/post/twitter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: content,
+          accessToken: account.access_token,
+          accessSecret: account.access_secret,
+          userId: user.id,
+          mediaUrls: mediaUrls,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Twitter posting failed');
+      }
+
+      return {
+        platform: 'twitter',
+        success: true,
+        postId: data.data?.id,
+        data: {
+          id: data.data?.id,
+          metrics: {
+            likes: 0,
+            comments: 0,
+            shares: 0,
+            impressions: 0,
+            reach: 0
+          }
+        }
+      };
+    } catch (error) {
+      console.error('Twitter posting error:', error);
+      return {
+        platform: 'twitter',
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
       };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,17 +17,30 @@ interface ThreadComposerProps {
   maxPosts?: number;
   maxCharsPerPost?: number;
   useNumbering?: boolean; // Add numbering to posts [1/3], [2/3], etc.
+  autoUpdate?: boolean; // Auto-update parent component on every change
+  currentPosts?: string[]; // Current posts from parent
 }
 
 export function ThreadComposer({ 
   onPost, 
   maxPosts = 10, 
   maxCharsPerPost = 500,
-  useNumbering = true 
+  useNumbering = true,
+  autoUpdate = false,
+  currentPosts = []
 }: ThreadComposerProps) {
-  const [posts, setPosts] = useState<ThreadPost[]>([
-    { id: '1', text: '' }
-  ]);
+  const [posts, setPosts] = useState<ThreadPost[]>(() => {
+    // Always start with at least one empty post
+    return [{ id: '1', text: '' }];
+  });
+  
+  // Initialize parent on mount if autoUpdate is enabled
+  useEffect(() => {
+    if (autoUpdate && onPost) {
+      const postTexts = posts.map(p => p.text);
+      onPost(postTexts);
+    }
+  }, []); // Only run once on mount
 
   const addPost = () => {
     if (posts.length >= maxPosts) {
@@ -39,7 +52,14 @@ export function ThreadComposer({
       id: Date.now().toString(),
       text: ''
     };
-    setPosts([...posts, newPost]);
+    const updatedPosts = [...posts, newPost];
+    setPosts(updatedPosts);
+    
+    // Update parent if autoUpdate is enabled
+    if (autoUpdate && onPost) {
+      const postTexts = updatedPosts.map(p => p.text);
+      onPost(postTexts);
+    }
   };
 
   const removePost = (id: string) => {
@@ -47,13 +67,27 @@ export function ThreadComposer({
       toast.error('Thread must have at least one post');
       return;
     }
-    setPosts(posts.filter(p => p.id !== id));
+    const updatedPosts = posts.filter(p => p.id !== id);
+    setPosts(updatedPosts);
+    
+    // Update parent if autoUpdate is enabled
+    if (autoUpdate && onPost) {
+      const postTexts = updatedPosts.map(p => p.text);
+      onPost(postTexts);
+    }
   };
 
   const updatePost = (id: string, text: string) => {
-    setPosts(posts.map(p => 
+    const updatedPosts = posts.map(p => 
       p.id === id ? { ...p, text } : p
-    ));
+    );
+    setPosts(updatedPosts);
+    
+    // Immediately update parent if autoUpdate is enabled
+    if (autoUpdate && onPost) {
+      const postTexts = updatedPosts.map(p => p.text);
+      onPost(postTexts);
+    }
   };
 
   const handlePost = () => {
@@ -148,15 +182,17 @@ export function ThreadComposer({
         </div>
       </div>
 
-      <Button
-        className="w-full"
-        size="lg"
-        onClick={handlePost}
-        disabled={nonEmptyCount === 0}
-      >
-        <Link2 className="mr-2 h-4 w-4" />
-        Prepare Thread ({nonEmptyCount} post{nonEmptyCount !== 1 ? 's' : ''})
-      </Button>
+      {!autoUpdate && (
+        <Button
+          className="w-full"
+          size="lg"
+          onClick={handlePost}
+          disabled={nonEmptyCount === 0}
+        >
+          <Link2 className="mr-2 h-4 w-4" />
+          Prepare Thread ({nonEmptyCount} post{nonEmptyCount !== 1 ? 's' : ''})
+        </Button>
+      )}
     </div>
   );
 }
