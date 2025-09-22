@@ -113,12 +113,13 @@ export class TwitterService {
       // Post the first tweet
       const firstTweetData: any = { text: tweets[0] };
       if (mediaIds && mediaIds[0] && mediaIds[0].length > 0) {
+        console.log(`Adding ${mediaIds[0].length} media items to first tweet`);
         firstTweetData.media = { 
           media_ids: mediaIds[0].slice(0, 4) as [string] | [string, string] | [string, string, string] | [string, string, string, string]
         };
       }
       
-      console.log('Posting first tweet of thread...');
+      console.log('Posting first tweet of thread...', firstTweetData);
       const firstTweet = await this.client.v2.tweet(firstTweetData);
       postedTweets.push({
         id: firstTweet.data.id,
@@ -139,12 +140,13 @@ export class TwitterService {
         
         // Add media if provided for this tweet
         if (mediaIds && mediaIds[i] && mediaIds[i].length > 0) {
+          console.log(`Adding ${mediaIds[i].length} media items to tweet ${i + 1}`);
           tweetData.media = { 
             media_ids: mediaIds[i].slice(0, 4) as [string] | [string, string] | [string, string, string] | [string, string, string, string]
           };
         }
         
-        console.log(`Posting tweet ${i + 1}/${tweets.length} as reply to ${previousTweetId}...`);
+        console.log(`Posting tweet ${i + 1}/${tweets.length} as reply to ${previousTweetId}...`, tweetData);
         const replyTweet = await this.client.v2.tweet(tweetData);
         
         postedTweets.push({

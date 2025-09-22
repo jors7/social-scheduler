@@ -4,35 +4,46 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, X, Link2 } from 'lucide-react';
+import { Plus, X, Link2, ImageIcon, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ThreadPost {
   id: string;
   text: string;
+  mediaFiles?: File[];
+  mediaUrls?: string[];
 }
 
 interface ThreadComposerProps {
   onPost?: (posts: string[]) => void;
+  onMediaChange?: (media: (File[] | undefined)[]) => void;
   maxPosts?: number;
   maxCharsPerPost?: number;
+  maxMediaPerPost?: number;
   useNumbering?: boolean; // Add numbering to posts [1/3], [2/3], etc.
   autoUpdate?: boolean; // Auto-update parent component on every change
   currentPosts?: string[]; // Current posts from parent
+  platform?: 'twitter' | 'threads'; // Platform-specific limits
 }
 
 export function ThreadComposer({ 
   onPost, 
+  onMediaChange,
   maxPosts = 10, 
   maxCharsPerPost = 500,
+  maxMediaPerPost = 4,
   useNumbering = true,
   autoUpdate = false,
-  currentPosts = []
+  currentPosts = [],
+  platform = 'twitter'
 }: ThreadComposerProps) {
   const [posts, setPosts] = useState<ThreadPost[]>(() => {
     // Always start with at least one empty post
-    return [{ id: '1', text: '' }];
+    return [{ id: '1', text: '', mediaFiles: [], mediaUrls: [] }];
   });
+  
+  // Set platform-specific limits
+  const mediaLimit = platform === 'threads' ? 1 : maxMediaPerPost;
   
   // Initialize parent on mount if autoUpdate is enabled
   useEffect(() => {
@@ -50,15 +61,23 @@ export function ThreadComposer({
     
     const newPost: ThreadPost = {
       id: Date.now().toString(),
-      text: ''
+      text: '',
+      mediaFiles: [],
+      mediaUrls: []
     };
     const updatedPosts = [...posts, newPost];
     setPosts(updatedPosts);
     
     // Update parent if autoUpdate is enabled
-    if (autoUpdate && onPost) {
-      const postTexts = updatedPosts.map(p => p.text);
-      onPost(postTexts);
+    if (autoUpdate) {
+      if (onPost) {
+        const postTexts = updatedPosts.map(p => p.text);
+        onPost(postTexts);
+      }
+      if (onMediaChange) {
+        const media = updatedPosts.map(p => p.mediaFiles);
+        onMediaChange(media);
+      }
     }
   };
 
@@ -71,9 +90,15 @@ export function ThreadComposer({
     setPosts(updatedPosts);
     
     // Update parent if autoUpdate is enabled
-    if (autoUpdate && onPost) {
-      const postTexts = updatedPosts.map(p => p.text);
-      onPost(postTexts);
+    if (autoUpdate) {
+      if (onPost) {
+        const postTexts = updatedPosts.map(p => p.text);
+        onPost(postTexts);
+      }
+      if (onMediaChange) {
+        const media = updatedPosts.map(p => p.mediaFiles);
+        onMediaChange(media);
+      }
     }
   };
 
@@ -84,9 +109,76 @@ export function ThreadComposer({
     setPosts(updatedPosts);
     
     // Immediately update parent if autoUpdate is enabled
-    if (autoUpdate && onPost) {
-      const postTexts = updatedPosts.map(p => p.text);
-      onPost(postTexts);
+    if (autoUpdate) {
+      if (onPost) {
+        const postTexts = updatedPosts.map(p => p.text);
+        onPost(postTexts);
+      }
+      if (onMediaChange) {
+        const media = updatedPosts.map(p => p.mediaFiles);
+        onMediaChange(media);
+      }
+    }
+  };
+  
+  const handleMediaSelect = (postId: string, files: FileList | null) => {
+    if (!files) return;
+    
+    const fileArray = Array.from(files);
+    const post = posts.find(p => p.id === postId);
+    
+    if (!post) return;
+    
+    // Check media limit
+    const currentCount = post.mediaFiles?.length || 0;
+    if (currentCount + fileArray.length > mediaLimit) {
+      toast.error(`Maximum ${mediaLimit} ${mediaLimit === 1 ? 'image' : 'images'} per ${platform === 'threads' ? 'post' : 'tweet'}`);
+      return;
+    }
+    
+    const updatedPosts = posts.map(p => {
+      if (p.id === postId) {
+        const newFiles = [...(p.mediaFiles || []), ...fileArray];
+        const newUrls = newFiles.map(f => URL.createObjectURL(f));
+        return { ...p, mediaFiles: newFiles, mediaUrls: newUrls };
+      }
+      return p;
+    });
+    
+    setPosts(updatedPosts);
+    
+    // Update parent
+    if (autoUpdate && onMediaChange) {
+      const media = updatedPosts.map(p => p.mediaFiles);
+      onMediaChange(media);
+    }
+  };
+  
+  const removeMedia = (postId: string, index: number) => {
+    const updatedPosts = posts.map(p => {
+      if (p.id === postId) {
+        const newFiles = [...(p.mediaFiles || [])];
+        const newUrls = [...(p.mediaUrls || [])];
+        
+        // Revoke the URL to free memory
+        if (newUrls[index]) {
+          URL.revokeObjectURL(newUrls[index]);
+        }
+        
+        newFiles.splice(index, 1);
+        newUrls.splice(index, 1);
+        
+        return { ...p, mediaFiles: newFiles, mediaUrls: newUrls };
+      }
+      return p;
+    });
+    
+    setPosts(updatedPosts);
+    
+    // Update parent
+    if (autoUpdate && onMediaChange) {
+      const media = updatedPosts.map(p => p.mediaFiles);
+      onMediaChange(media);
     }
   };
 
@@ -141,9 +233,33 @@ export function ThreadComposer({
                 />
                 
                 <div className="flex justify-between items-center mt-2">
-                  <span className={`text-sm ${post.text.length > maxCharsPerPost * 0.9 ? 'text-orange-500' : 'text-gray-500'}`}>
-                    {post.text.length}/{maxCharsPerPost}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm ${post.text.length > maxCharsPerPost * 0.9 ? 'text-orange-500' : 'text-gray-500'}`}>
+                      {post.text.length}/{maxCharsPerPost}
+                    </span>
+                    
+                    {/* Media upload button */}
+                    <div className="relative">
+                      <input
+                        type="file"
+                        id={`media-${post.id}`}
+                        accept="image/*,video/*"
+                        multiple={mediaLimit > 1}
+                        className="hidden"
+                        onChange={(e) => handleMediaSelect(post.id, e.target.files)}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => document.getElementById(`media-${post.id}`)?.click()}
+                        disabled={(post.mediaFiles?.length || 0) >= mediaLimit}
+                        className="gap-1"
+                      >
+                        <ImageIcon className="h-4 w-4" />
+                        {post.mediaFiles?.length ? `${post.mediaFiles.length}/${mediaLimit}` : 'Add'}
+                      </Button>
+                    </div>
+                  </div>
                   
                   {posts.length > 1 && (
                     <Button
@@ -156,6 +272,29 @@ export function ThreadComposer({
                     </Button>
                   )}
                 </div>
+                
+                {/* Media preview */}
+                {post.mediaUrls && post.mediaUrls.length > 0 && (
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {post.mediaUrls.map((url, mediaIndex) => (
+                      <div key={mediaIndex} className="relative group">
+                        <img
+                          src={url}
+                          alt={`Media ${mediaIndex + 1}`}
+                          className="w-full h-24 object-cover rounded-lg"
+                        />
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removeMedia(post.id, mediaIndex)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 

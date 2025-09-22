@@ -146,10 +146,12 @@ function CreateNewPostPageContent() {
   // Threads-specific state
   const [threadsMode, setThreadsMode] = useState<'single' | 'thread'>('single')
   const [threadPosts, setThreadPosts] = useState<string[]>([''])
+  const [threadsThreadMedia, setThreadsThreadMedia] = useState<(File[] | undefined)[]>([])
   
   // Twitter-specific state
   const [twitterMode, setTwitterMode] = useState<'single' | 'thread'>('single')
   const [twitterThreadPosts, setTwitterThreadPosts] = useState<string[]>([''])
+  const [twitterThreadMedia, setTwitterThreadMedia] = useState<(File[] | undefined)[]>([])
   
   
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
@@ -724,8 +726,60 @@ function CreateNewPostPageContent() {
           token_preview: threadsAccount.access_token ? `${threadsAccount.access_token.substring(0, 20)}...` : 'null'
         })
         
-        // Filter out empty posts
-        const filteredPosts = threadPosts.filter(p => p.trim().length > 0)
+        // Filter out empty posts BUT keep track of original indices for media
+        const filteredThreadData: { text: string; originalIndex: number }[] = []
+        threadPosts.forEach((post, index) => {
+          if (post.trim().length > 0) {
+            filteredThreadData.push({ text: post, originalIndex: index })
+          }
+        })
+        
+        const filteredPosts = filteredThreadData.map(d => d.text)
+        
+        // Upload media for each post that has it (Threads allows 1 image per post)
+        const mediaUrlsPerPost: string[] = []
+        if (threadsThreadMedia.some(m => m && m.length > 0)) {
+          toast.info('Uploading media for thread...')
+          
+          for (let i = 0; i < filteredThreadData.length; i++) {
+            const originalIndex = filteredThreadData[i].originalIndex
+            const mediaFiles = threadsThreadMedia[originalIndex]
+            if (mediaFiles && mediaFiles.length > 0) {
+              // Threads only supports 1 media per post, take the first one
+              const file = mediaFiles[0]
+              try {
+                // Generate unique filename
+                const timestamp = Date.now()
+                const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+                const filename = `threads-thread/${user.id}/${timestamp}-${sanitizedName}`
+                
+                // Upload to Supabase Storage
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                  .from('post-media')
+                  .upload(filename, file, {
+                    contentType: file.type,
+                    upsert: false
+                  })
+                
+                if (uploadError) throw uploadError
+                
+                // Get public URL
+                const { data: { publicUrl } } = supabase.storage
+                  .from('post-media')
+                  .getPublicUrl(filename)
+                
+                mediaUrlsPerPost.push(publicUrl)
+              } catch (error) {
+                console.error('Error uploading media for post', i + 1, error)
+                toast.error(`Failed to upload media for post ${i + 1}`)
+                mediaUrlsPerPost.push('') // Add empty string to maintain array indices
+              }
+            } else {
+              mediaUrlsPerPost.push('') // No media for this post
+            }
+          }
+        }
+        
         let response
         let data
         let usedNumberedFallback = false
@@ -741,7 +795,7 @@ function CreateNewPostPageContent() {
             userId: threadsAccount.platform_user_id,
             accessToken: threadsAccount.access_token,
             posts: filteredPosts,
-            mediaUrls: []
+            mediaUrls: mediaUrlsPerPost.length > 0 ? mediaUrlsPerPost : []
           })
         })
         
@@ -788,6 +842,7 @@ function CreateNewPostPageContent() {
           // Clear form
           setPostContent('')
           setThreadPosts([''])
+          setThreadsThreadMedia([])
           setThreadsMode('single')
           setSelectedPlatforms([])
         }
@@ -828,10 +883,63 @@ function CreateNewPostPageContent() {
 
         console.log(`Posting thread for @${twitterAccount.username}`)
         
-        // Filter out empty tweets
-        const filteredTweets = twitterThreadPosts.filter(p => p.trim().length > 0)
+        // Filter out empty tweets BUT keep track of original indices for media
+        const filteredData: { text: string; originalIndex: number }[] = []
+        twitterThreadPosts.forEach((post, index) => {
+          if (post.trim().length > 0) {
+            filteredData.push({ text: post, originalIndex: index })
+          }
+        })
+        
+        const filteredTweets = filteredData.map(d => d.text)
+        
+        // Upload media for each tweet that has it
+        const mediaUrlsPerTweet: string[][] = []
+        if (twitterThreadMedia.some(m => m && m.length > 0)) {
+          toast.info('Uploading media for thread...')
+        }
+        
+        for (let i = 0; i < filteredData.length; i++) {
+          const originalIndex = filteredData[i].originalIndex
+          const mediaFiles = twitterThreadMedia[originalIndex]
+          if (mediaFiles && mediaFiles.length > 0) {
+            const urls: string[] = []
+            for (const file of mediaFiles) {
+              try {
+                // Generate unique filename
+                const timestamp = Date.now()
+                const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+                const filename = `twitter-thread/${user.id}/${timestamp}-${sanitizedName}`
+                
+                // Upload to Supabase Storage
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                  .from('post-media')
+                  .upload(filename, file, {
+                    contentType: file.type,
+                    upsert: false
+                  })
+                
+                if (uploadError) throw uploadError
+                
+                // Get public URL
+                const { data: { publicUrl } } = supabase.storage
+                  .from('post-media')
+                  .getPublicUrl(filename)
+                
+                urls.push(publicUrl)
+              } catch (error) {
+                console.error('Error uploading media for tweet', i + 1, error)
+                toast.error(`Failed to upload media for tweet ${i + 1}`)
+              }
+            }
+            mediaUrlsPerTweet.push(urls)
+          } else {
+            mediaUrlsPerTweet.push([])
+          }
+        }
         
         console.log(`Creating Twitter thread with ${filteredTweets.length} tweets`)
+        console.log('Media URLs per tweet:', mediaUrlsPerTweet)
         toast.info('Creating Twitter thread...')
         
         const response = await fetch('/api/post/twitter/thread', {
@@ -839,6 +947,7 @@ function CreateNewPostPageContent() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             tweets: filteredTweets,
+            mediaUrls: mediaUrlsPerTweet,
             accessToken: twitterAccount.access_token,
             accessSecret: twitterAccount.access_secret,
             userId: user.id,
@@ -861,6 +970,7 @@ function CreateNewPostPageContent() {
           // Clear form
           setPostContent('')
           setTwitterThreadPosts([''])
+          setTwitterThreadMedia([])
           setTwitterMode('single')
           setSelectedPlatforms([])
         }
@@ -1949,8 +2059,11 @@ function CreateNewPostPageContent() {
                     </div>
                     <ThreadComposer
                       onPost={(posts) => setThreadPosts(posts)}
+                      onMediaChange={(media) => setThreadsThreadMedia(media)}
                       maxPosts={10}
                       maxCharsPerPost={500}
+                      maxMediaPerPost={1}
+                      platform="threads"
                     />
                   </div>
                 )}
@@ -2010,9 +2123,12 @@ function CreateNewPostPageContent() {
                     </div>
                     <ThreadComposer
                       onPost={(posts) => setTwitterThreadPosts(posts)}
+                      onMediaChange={(media) => setTwitterThreadMedia(media)}
                       maxPosts={15}
                       maxCharsPerPost={280}
+                      maxMediaPerPost={4}
                       autoUpdate={true}
+                      platform="twitter"
                     />
                   </div>
                 )}

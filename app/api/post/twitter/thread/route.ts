@@ -103,16 +103,25 @@ export async function POST(request: NextRequest) {
     // Handle media uploads if present
     let mediaIdArrays: string[][] = [];
     if (mediaUrls && Array.isArray(mediaUrls)) {
-      for (const urls of mediaUrls) {
+      console.log(`Processing media for ${mediaUrls.length} tweets`);
+      for (let i = 0; i < mediaUrls.length; i++) {
+        const urls = mediaUrls[i];
         const mediaIds: string[] = [];
-        if (urls && Array.isArray(urls)) {
+        if (urls && Array.isArray(urls) && urls.length > 0) {
+          console.log(`Tweet ${i + 1} has ${urls.length} media files`);
           for (const url of urls.slice(0, 4)) { // Max 4 images per tweet
             try {
+              console.log(`Fetching media from: ${url}`);
               const response = await fetch(url);
+              if (!response.ok) {
+                throw new Error(`Failed to fetch media: ${response.status} ${response.statusText}`);
+              }
               const buffer = Buffer.from(await response.arrayBuffer());
               const mimeType = response.headers.get('content-type') || 'image/jpeg';
               
+              console.log(`Uploading media to Twitter (${mimeType}, ${buffer.length} bytes)`);
               const mediaId = await twitterService.uploadMedia(buffer, mimeType);
+              console.log(`Media uploaded successfully with ID: ${mediaId}`);
               mediaIds.push(mediaId);
             } catch (error) {
               console.error('Error uploading media to Twitter:', error);
@@ -121,6 +130,9 @@ export async function POST(request: NextRequest) {
         }
         mediaIdArrays.push(mediaIds);
       }
+      console.log('Final media ID arrays:', mediaIdArrays);
+    } else {
+      console.log('No media URLs provided');
     }
 
     // Post the thread
