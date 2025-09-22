@@ -2082,6 +2082,7 @@ function CreateNewPostPageContent() {
                       maxPosts={10}
                       maxCharsPerPost={500}
                       maxMediaPerPost={1}
+                      autoUpdate={true}
                       platform="threads"
                     />
                   </div>
