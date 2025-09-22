@@ -1143,9 +1143,10 @@ function CreateNewPostPageContent() {
     }
   }, [selectedPlatforms, postContent, platformContent, selectedFiles, uploadedMediaUrls, currentDraftId, 
       youtubeVideoFile, youtubeTitle, youtubeDescription, youtubeTags, youtubeCategoryId, youtubePrivacyStatus, youtubeThumbnailFile,
-      twitterMode, twitterThreadPosts,
+      twitterMode, twitterThreadPosts, twitterThreadMedia,
       selectedPinterestBoard, pinterestTitle, pinterestDescription, pinterestLink,
-      tiktokPrivacyLevel, tiktokSaveAsDraft, instagramAsStory, threadPosts, threadsMode])
+      tiktokPrivacyLevel, tiktokSaveAsDraft, instagramAsStory, threadPosts, threadsMode, threadsThreadMedia,
+      supabase, selectedAccounts, uploadFiles])
 
   const handleSchedulePost = async () => {
     if (!scheduledDate || !scheduledTime) {
