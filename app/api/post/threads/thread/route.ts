@@ -13,8 +13,6 @@ export async function POST(request: NextRequest) {
 
     console.log(`Creating connected thread with ${posts.length} posts for user ${userId}`);
     console.log('Posts to create:', posts.map((p, i) => `Post ${i + 1}: ${p.substring(0, 30)}...`));
-    console.log('Received mediaUrls:', mediaUrls);
-    console.log('mediaUrls length:', mediaUrls.length);
     console.log('Access token preview:', accessToken ? `${accessToken.substring(0, 20)}...` : 'null');
     
     // First, get the Threads user ID (different from Instagram user ID)
@@ -47,8 +45,6 @@ export async function POST(request: NextRequest) {
       const postText = posts[i];
       const mediaUrl = mediaUrls[i]; // Optional media for this specific post
       
-      console.log(`Processing post ${i + 1}: mediaUrl = "${mediaUrl}"`);
-      
       try {
         // Step 1: Create media container for this post
         // Use form data for the POST request
@@ -56,12 +52,10 @@ export async function POST(request: NextRequest) {
         formData.append('access_token', accessToken);
         
         if (mediaUrl) {
-          console.log(`Post ${i + 1} has media, creating IMAGE container with URL: ${mediaUrl}`);
           formData.append('media_type', 'IMAGE');
           formData.append('image_url', mediaUrl);
           formData.append('caption', postText);
         } else {
-          console.log(`Post ${i + 1} has no media, creating TEXT container`);
           formData.append('media_type', 'TEXT');
           formData.append('text', postText);
         }

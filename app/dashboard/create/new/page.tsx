@@ -738,18 +738,12 @@ function CreateNewPostPageContent() {
         
         // Upload media for each post that has it (Threads allows 1 image per post)
         const mediaUrlsPerPost: string[] = []
-        console.log('=== THREADS MEDIA UPLOAD DEBUG ===')
-        console.log('threadsThreadMedia:', threadsThreadMedia)
-        console.log('threadsThreadMedia.length:', threadsThreadMedia.length)
-        console.log('filteredThreadData:', filteredThreadData)
-        
         if (threadsThreadMedia.some(m => m && m.length > 0)) {
           toast.info('Uploading media for thread...')
           
           for (let i = 0; i < filteredThreadData.length; i++) {
             const originalIndex = filteredThreadData[i].originalIndex
             const mediaFiles = threadsThreadMedia[originalIndex]
-            console.log(`Post ${i + 1}: originalIndex=${originalIndex}, mediaFiles=`, mediaFiles)
             if (mediaFiles && mediaFiles.length > 0) {
               // Threads only supports 1 media per post, take the first one
               const file = mediaFiles[0]
@@ -775,7 +769,6 @@ function CreateNewPostPageContent() {
                   .getPublicUrl(filename)
                 
                 mediaUrlsPerPost.push(publicUrl)
-                console.log(`Successfully uploaded media for post ${i + 1}: ${publicUrl}`)
               } catch (error) {
                 console.error('Error uploading media for post', i + 1, error)
                 toast.error(`Failed to upload media for post ${i + 1}`)
@@ -783,13 +776,9 @@ function CreateNewPostPageContent() {
               }
             } else {
               mediaUrlsPerPost.push('') // No media for this post
-              console.log(`No media for post ${i + 1}`)
             }
           }
         }
-        
-        console.log('Final mediaUrlsPerPost:', mediaUrlsPerPost)
-        console.log('mediaUrlsPerPost.length:', mediaUrlsPerPost.length)
         
         let response
         let data
@@ -799,18 +788,15 @@ function CreateNewPostPageContent() {
         console.log(`Attempting to create connected thread with ${filteredPosts.length} posts`)
         toast.info('Creating thread...')
         
-        const threadPayload = {
-          userId: threadsAccount.platform_user_id,
-          accessToken: threadsAccount.access_token,
-          posts: filteredPosts,
-          mediaUrls: mediaUrlsPerPost.length > 0 ? mediaUrlsPerPost : []
-        }
-        console.log('Sending to /api/post/threads/thread:', threadPayload)
-        
         response = await fetch('/api/post/threads/thread', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(threadPayload)
+          body: JSON.stringify({
+            userId: threadsAccount.platform_user_id,
+            accessToken: threadsAccount.access_token,
+            posts: filteredPosts,
+            mediaUrls: mediaUrlsPerPost.length > 0 ? mediaUrlsPerPost : []
+          })
         })
         
         data = await response.json()
@@ -823,19 +809,16 @@ function CreateNewPostPageContent() {
           console.log('Connected threads not available - Meta permission required')
           toast.info('Creating numbered thread series (Meta limitation)')
           
-          const numberedPayload = {
-            userId: threadsAccount.platform_user_id,
-            accessToken: threadsAccount.access_token,
-            posts: filteredPosts,
-            mediaUrls: mediaUrlsPerPost.length > 0 ? mediaUrlsPerPost : [],
-            addNumbers: true
-          }
-          console.log('Falling back to numbered thread. Payload:', numberedPayload)
-          
           response = await fetch('/api/post/threads/thread-numbered', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(numberedPayload)
+            body: JSON.stringify({
+              userId: threadsAccount.platform_user_id,
+              accessToken: threadsAccount.access_token,
+              posts: filteredPosts,
+              mediaUrls: mediaUrlsPerPost.length > 0 ? mediaUrlsPerPost : [],
+              addNumbers: true
+            })
           })
           
           data = await response.json()
@@ -856,6 +839,49 @@ function CreateNewPostPageContent() {
           
           // Update progress tracker to show Threads succeeded
           progressTracker.updatePlatform('threads', 'success', successMessage)
+          
+          // Save thread to database
+          try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user && data.posts) {
+              const postedTime = new Date().toISOString()
+              
+              // Build post_results array with all thread posts
+              const postResults = data.posts.map((post: any, index: number) => ({
+                platform: 'threads',
+                success: true,
+                postId: post.postId,
+                containerId: post.containerId,
+                isThread: true,
+                isReply: post.isReply,
+                threadIndex: index,
+                threadTotal: data.posts.length,
+                isConnectedThread: data.isConnectedThread,
+                usedNumberedFallback: usedNumberedFallback
+              }))
+              
+              // Use first post content for main content field
+              const mainContent = filteredPosts[0] || threadPosts[0]
+              
+              await supabase
+                .from('scheduled_posts')
+                .insert({
+                  user_id: user.id,
+                  content: mainContent,
+                  platforms: ['threads'],
+                  platform_content: { 
+                    threads: `Thread: ${filteredPosts.join(' | ')}` // Store all posts
+                  },
+                  media_urls: mediaUrlsPerPost.filter(url => url), // Filter out empty strings
+                  status: 'posted',
+                  scheduled_for: postedTime,
+                  posted_at: postedTime,
+                  post_results: postResults
+                })
+            }
+          } catch (error) {
+            console.error('Failed to save Threads thread to database:', error)
+          }
           
           // Clear form
           setPostContent('')
@@ -956,8 +982,6 @@ function CreateNewPostPageContent() {
           }
         }
         
-        console.log(`Creating Twitter thread with ${filteredTweets.length} tweets`)
-        console.log('Media URLs per tweet:', mediaUrlsPerTweet)
         toast.info('Creating Twitter thread...')
         
         const response = await fetch('/api/post/twitter/thread', {
@@ -984,6 +1008,46 @@ function CreateNewPostPageContent() {
           
           // Update progress tracker to show Twitter succeeded
           progressTracker.updatePlatform('twitter', 'success', successMessage)
+          
+          // Save thread to database
+          try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user && data.data) {
+              const postedTime = new Date().toISOString()
+              
+              // Build post_results array with all thread tweets
+              const postResults = data.data.ids.map((id: string, index: number) => ({
+                platform: 'twitter',
+                success: true,
+                postId: id,
+                url: data.data.urls[index],
+                isThread: true,
+                threadIndex: index,
+                threadTotal: data.data.tweetCount
+              }))
+              
+              // Use first tweet content for main content field
+              const mainContent = filteredTweets[0] || twitterThreadPosts[0]
+              
+              await supabase
+                .from('scheduled_posts')
+                .insert({
+                  user_id: user.id,
+                  content: mainContent,
+                  platforms: ['twitter'],
+                  platform_content: { 
+                    twitter: `Thread: ${filteredTweets.join(' | ')}` // Store all tweets
+                  },
+                  media_urls: mediaUrlsPerTweet.flat(), // Flatten array of arrays
+                  status: 'posted',
+                  scheduled_for: postedTime,
+                  posted_at: postedTime,
+                  post_results: postResults
+                })
+            }
+          } catch (error) {
+            console.error('Failed to save Twitter thread to database:', error)
+          }
           
           // Clear form
           setPostContent('')
