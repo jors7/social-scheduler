@@ -43,8 +43,7 @@ export async function GET(request: NextRequest) {
         'read_insights',
         'pages_read_user_content',
         'pages_manage_posts',
-        'business_management',
-        'instagram_manage_insights'
+        'business_management'
       ].join(','),
       response_type: 'code',
       display: 'popup'
