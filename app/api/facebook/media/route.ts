@@ -231,8 +231,8 @@ export async function GET(request: NextRequest) {
         };
         
         try {
-          // Skip insights API since we don't have read_insights permission
-          // Just try to get updated engagement data
+          // Try to get insights if available (requires read_insights permission)
+          // First try to get updated engagement data
           const fields = 'likes.summary(true),comments.summary(true),shares,reactions.summary(true)';
           const engagementUrl = `https://graph.facebook.com/v21.0/${post.id}?fields=${fields}&access_token=${account.access_token}`;
           const engagementResponse = await fetch(engagementUrl);
@@ -254,6 +254,30 @@ export async function GET(request: NextRequest) {
               metrics.views = post.initial_metrics.views;
               metrics.impressions = post.initial_metrics.views;
               metrics.reach = Math.floor(post.initial_metrics.views * 0.7);
+            }
+            
+            // Try to get post insights for impressions and reach
+            try {
+              const insightsUrl = `https://graph.facebook.com/v21.0/${post.id}/insights?metric=post_impressions,post_impressions_unique&access_token=${account.access_token}`;
+              const insightsResponse = await fetch(insightsUrl);
+              
+              if (insightsResponse.ok) {
+                const insightsData = await insightsResponse.json();
+                if (insightsData.data && Array.isArray(insightsData.data)) {
+                  insightsData.data.forEach((metric: any) => {
+                    if (metric.name === 'post_impressions' && metric.values?.[0]) {
+                      metrics.impressions = metric.values[0].value || metrics.impressions;
+                      metrics.views = metric.values[0].value || metrics.views;
+                    }
+                    if (metric.name === 'post_impressions_unique' && metric.values?.[0]) {
+                      metrics.reach = metric.values[0].value || metrics.reach;
+                    }
+                  });
+                }
+              }
+            } catch (error) {
+              // Insights might not be available, continue with existing metrics
+              console.log('Could not fetch insights for post:', post.id);
             }
           }
           

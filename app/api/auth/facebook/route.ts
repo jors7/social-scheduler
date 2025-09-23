@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
       scope: [
         'public_profile',
         'pages_show_list',
-        'pages_read_engagement', 
+        'pages_read_engagement',
+        'read_insights',
         'pages_manage_posts',
         'business_management'
       ].join(','),
