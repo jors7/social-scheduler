@@ -44,9 +44,9 @@ export async function GET(request: NextRequest) {
     // Fetch both posts and videos (including reels) from Facebook
     console.log('Fetching Facebook media from API');
     
-    // Prepare URLs for parallel fetching
-    const postsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url,full_picture,attachments{media_type,media,url}&limit=${limit}&access_token=${account.access_token}`;
-    const videosUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/videos?fields=id,title,description,created_time,permalink_url,source,thumbnails,length,from&limit=${limit}&access_token=${account.access_token}`;
+    // Prepare URLs for parallel fetching - use simpler attachment fields
+    const postsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url,full_picture,attachments,likes.summary(true),comments.summary(true),shares,reactions.summary(true)&limit=${limit}&access_token=${account.access_token}`;
+    const videosUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/videos?fields=id,title,description,created_time,permalink_url,source,thumbnails,length,from,views,likes.summary(true),comments.summary(true)&limit=${limit}&access_token=${account.access_token}`;
     
     // Fetch both endpoints in parallel
     const [postsResponse, videosResponse] = await Promise.all([
@@ -84,17 +84,37 @@ export async function GET(request: NextRequest) {
 
     const postsData = await postsResponse.json();
     
-    // Process posts
-    const posts = postsData.data?.map((post: any) => ({
-      id: post.id,
-      message: post.message || '',
-      created_time: post.created_time,
-      permalink_url: post.permalink_url,
-      full_picture: post.full_picture,
-      media_type: post.attachments?.data?.[0]?.media_type || 'status',
-      media_url: post.attachments?.data?.[0]?.media?.image?.src || post.full_picture,
-      source_type: 'post'
-    })) || [];
+    // Process posts with engagement data
+    const posts = postsData.data?.map((post: any) => {
+      // Extract media type from attachments safely
+      let mediaType = 'status';
+      let mediaUrl = post.full_picture;
+      
+      if (post.attachments?.data && post.attachments.data.length > 0) {
+        const attachment = post.attachments.data[0];
+        mediaType = attachment.media_type || attachment.type || 'status';
+        if (attachment.media?.image?.src) {
+          mediaUrl = attachment.media.image.src;
+        }
+      }
+      
+      return {
+        id: post.id,
+        message: post.message || '',
+        created_time: post.created_time,
+        permalink_url: post.permalink_url,
+        full_picture: post.full_picture,
+        media_type: mediaType,
+        media_url: mediaUrl,
+        source_type: 'post',
+        initial_metrics: {
+          likes: post.likes?.summary?.total_count || 0,
+          comments: post.comments?.summary?.total_count || 0,
+          shares: post.shares?.count || 0,
+          reactions: post.reactions?.summary?.total_count || 0
+        }
+      };
+    }) || [];
     
     // Process videos if available
     let videos: any[] = [];
@@ -111,9 +131,24 @@ export async function GET(request: NextRequest) {
           media_url: video.thumbnails?.data?.[0]?.uri || null,
           video_source: video.source,
           source_type: 'video',
-          is_reel: video.description?.includes('#reels') || video.title?.includes('#reels') || false
+          is_reel: video.description?.includes('#reels') || video.title?.includes('#reels') || false,
+          initial_metrics: {
+            views: video.views || 0,
+            likes: video.likes?.summary?.total_count || 0,
+            comments: video.comments?.summary?.total_count || 0,
+            shares: 0,
+            reactions: 0
+          }
         })) || [];
-        console.log(`Fetched ${videos.length} videos including reels`);
+        console.log(`Fetched ${videos.length} videos including reels with view counts`);
+        // Log sample video data for debugging
+        if (videos.length > 0) {
+          console.log('Sample video:', {
+            id: videos[0].id,
+            message: videos[0].message?.substring(0, 50),
+            views: videos[0].initial_metrics?.views
+          });
+        }
       } catch (err) {
         console.error('Error processing videos:', err);
       }
@@ -123,12 +158,54 @@ export async function GET(request: NextRequest) {
     const allMedia = [...posts, ...videos];
     const uniqueMedia = new Map();
     
-    // Deduplicate by ID, keeping the version with more data
-    allMedia.forEach(item => {
-      const existing = uniqueMedia.get(item.id);
-      if (!existing || (item.source_type === 'video' && existing.source_type === 'post')) {
-        // Prefer video data as it has more details
-        uniqueMedia.set(item.id, item);
+    // Deduplicate by ID, intelligently merging data
+    console.log(`Total media before dedup: ${allMedia.length} (${posts.length} posts, ${videos.length} videos)`);
+    
+    // Create a map of video view counts for untitled videos (likely Instagram reels)
+    const videoViewsMap = new Map();
+    videos.forEach(video => {
+      if (video.message?.toLowerCase() === 'untitled' || !video.message) {
+        // Store the views for matching with posts later
+        videoViewsMap.set(video.created_time, video.initial_metrics?.views || 0);
+        console.log(`Found untitled video with ${video.initial_metrics?.views} views at ${video.created_time}`);
+      }
+    });
+    
+    // Add all posts, enriching with video view data if available
+    posts.forEach((post: any) => {
+      // Try to find matching video views by timestamp (within 60 seconds)
+      const postTime = new Date(post.created_time).getTime();
+      let matchedViews = 0;
+      
+      for (const [videoTime, views] of Array.from(videoViewsMap.entries())) {
+        const videoTimeMs = new Date(videoTime).getTime();
+        const timeDiff = Math.abs(postTime - videoTimeMs);
+        
+        // If within 60 seconds, consider it a match
+        if (timeDiff < 60000) {
+          matchedViews = views;
+          console.log(`Matched post ${post.id} with video views: ${views}`);
+          break;
+        }
+      }
+      
+      // Enhance post metrics with video views if found
+      if (matchedViews > 0) {
+        post.initial_metrics.views = matchedViews;
+      }
+      
+      uniqueMedia.set(post.id, post);
+    });
+    
+    // Only add videos that have real titles (not Instagram reels duplicates)
+    videos.forEach(video => {
+      const hasRealTitle = video.message && 
+                          video.message !== '' && 
+                          video.message.toLowerCase() !== 'untitled';
+      
+      if (hasRealTitle) {
+        console.log(`Adding standalone video ${video.id}: "${video.message}"`);
+        uniqueMedia.set(video.id, video);
       }
     });
     
@@ -137,91 +214,60 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => new Date(b.created_time).getTime() - new Date(a.created_time).getTime())
       .slice(0, parseInt(limit));
 
-    // Try to fetch insights for each post
+    // Try to fetch additional metrics for each post
     const mediaWithMetrics = await Promise.all(
       media.map(async (post: any) => {
+        // Start with initial metrics if available
+        const metrics: any = {
+          impressions: post.initial_metrics?.views || 0,
+          engagement: 0,
+          clicks: 0,
+          reactions: post.initial_metrics?.reactions || 0,
+          likes: post.initial_metrics?.likes || 0,
+          comments: post.initial_metrics?.comments || 0,
+          shares: post.initial_metrics?.shares || 0,
+          views: post.initial_metrics?.views || 0,
+          reach: 0
+        };
+        
         try {
-          // Fetch insights for the post
-          const insightsUrl = `https://graph.facebook.com/v21.0/${post.id}/insights?metric=post_impressions,post_engaged_users,post_clicks,post_reactions_by_type_total&access_token=${account.access_token}`;
-          const insightsResponse = await fetch(insightsUrl);
+          // Skip insights API since we don't have read_insights permission
+          // Just try to get updated engagement data
+          const fields = 'likes.summary(true),comments.summary(true),shares,reactions.summary(true)';
+          const engagementUrl = `https://graph.facebook.com/v21.0/${post.id}?fields=${fields}&access_token=${account.access_token}`;
+          const engagementResponse = await fetch(engagementUrl);
           
-          if (insightsResponse.ok) {
-            const insightsData = await insightsResponse.json();
-            const metrics: any = {
-              impressions: 0,
-              engagement: 0,
-              clicks: 0,
-              reactions: 0,
-              likes: 0,
-              comments: 0,
-              shares: 0
-            };
+          if (engagementResponse.ok) {
+            const engagementData = await engagementResponse.json();
             
-            // Process insights data
-            if (insightsData.data && Array.isArray(insightsData.data)) {
-              insightsData.data.forEach((metric: any) => {
-                switch(metric.name) {
-                  case 'post_impressions':
-                    metrics.impressions = metric.values?.[0]?.value || 0;
-                    break;
-                  case 'post_engaged_users':
-                    metrics.engagement = metric.values?.[0]?.value || 0;
-                    break;
-                  case 'post_clicks':
-                    metrics.clicks = metric.values?.[0]?.value || 0;
-                    break;
-                  case 'post_reactions_by_type_total':
-                    const reactions = metric.values?.[0]?.value || {};
-                    metrics.reactions = Object.values(reactions).reduce((sum: number, val: any) => sum + (val || 0), 0);
-                    metrics.likes = reactions.like || 0;
-                    break;
-                }
-              });
+            // Update metrics with fresh engagement data
+            metrics.likes = engagementData.likes?.summary?.total_count || metrics.likes;
+            metrics.comments = engagementData.comments?.summary?.total_count || metrics.comments;
+            metrics.shares = engagementData.shares?.count || metrics.shares;
+            metrics.reactions = engagementData.reactions?.summary?.total_count || metrics.reactions;
+            
+            // Calculate total engagement
+            metrics.engagement = metrics.likes + metrics.comments + metrics.shares;
+            
+            // Use initial views if we have them
+            if (post.initial_metrics?.views && post.initial_metrics.views > 0) {
+              metrics.views = post.initial_metrics.views;
+              metrics.impressions = post.initial_metrics.views;
+              metrics.reach = Math.floor(post.initial_metrics.views * 0.7);
             }
-            
-            // Also fetch comments and shares count
-            const engagementUrl = `https://graph.facebook.com/v21.0/${post.id}?fields=comments.summary(true),shares&access_token=${account.access_token}`;
-            const engagementResponse = await fetch(engagementUrl);
-            
-            if (engagementResponse.ok) {
-              const engagementData = await engagementResponse.json();
-              metrics.comments = engagementData.comments?.summary?.total_count || 0;
-              metrics.shares = engagementData.shares?.count || 0;
-            }
-            
-            return {
-              ...post,
-              metrics
-            };
-          } else {
-            // If insights fail, return post without metrics
-            console.log('Could not fetch insights for post (permission may be missing)');
-            return {
-              ...post,
-              metrics: {
-                impressions: 0,
-                engagement: 0,
-                clicks: 0,
-                reactions: 0,
-                likes: 0,
-                comments: 0,
-                shares: 0
-              }
-            };
           }
-        } catch (error) {
-          console.error('Error fetching post insights:', error);
+          
+          console.log(`Metrics for post ${post.id}:`, metrics);
           return {
             ...post,
-            metrics: {
-              impressions: 0,
-              engagement: 0,
-              clicks: 0,
-              reactions: 0,
-              likes: 0,
-              comments: 0,
-              shares: 0
-            }
+            metrics
+          };
+        } catch (error) {
+          console.error('Error fetching post metrics:', error);
+          // Return with initial metrics if available
+          return {
+            ...post,
+            metrics
           };
         }
       })

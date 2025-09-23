@@ -65,18 +65,33 @@ export function TopPosts({ analyticsData }: TopPostsProps) {
           if (result.success && result.data) {
             platforms.push(result.platform)
             if (result.data.metrics) {
-              // Handle both Instagram and Threads metrics
-              const engagement = (result.data.metrics.likes || 0) + 
-                                (result.data.metrics.comments || 0) + 
-                                (result.data.metrics.shares || 0) +
-                                (result.data.metrics.replies || 0) +  // Threads
-                                (result.data.metrics.reposts || 0) +  // Threads
-                                (result.data.metrics.quotes || 0)      // Threads
+              // Handle metrics for all platforms
+              const metrics = result.data.metrics
+              const engagement = 
+                (metrics.likes || 0) + 
+                (metrics.comments || 0) + 
+                (metrics.shares || 0) +
+                (metrics.replies || 0) +     // Threads
+                (metrics.reposts || 0) +     // Threads
+                (metrics.quotes || 0) +       // Threads
+                (metrics.reactions || 0)      // Facebook
               totalEngagement += engagement
-              totalReach += result.data.metrics.views || result.data.metrics.impressions || result.data.metrics.reach || 0
+              totalReach += metrics.views || metrics.impressions || metrics.reach || 0
             }
           }
         })
+      }
+      
+      // Also check for platform-specific metrics that might be stored separately
+      if (post.facebook_metrics) {
+        if (!platforms.includes('facebook')) {
+          platforms.push('facebook')
+        }
+        const metrics = post.facebook_metrics
+        const fbEngagement = (metrics.likes || 0) + (metrics.comments || 0) + 
+                           (metrics.shares || 0) + (metrics.reactions || 0)
+        totalEngagement = Math.max(totalEngagement, fbEngagement)
+        totalReach = Math.max(totalReach, metrics.views || metrics.impressions || metrics.reach || 0)
       }
       
       return {

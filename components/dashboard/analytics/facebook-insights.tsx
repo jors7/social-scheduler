@@ -32,6 +32,8 @@ interface FacebookMetrics {
   likes: number
   comments: number
   shares: number
+  views?: number
+  reach?: number
 }
 
 interface FacebookPost {
@@ -99,7 +101,14 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
       const pageInsightsResponse = await fetch(`/api/facebook/insights?${queryParams}`)
       if (pageInsightsResponse.ok) {
         const data = await pageInsightsResponse.json()
+        console.log('Page insights data received in component:', data)
+        console.log('Setting pageInsights to:', data.insights)
         setPageInsights(data.insights)
+        
+        // Show a message if insights are limited
+        if (data.error) {
+          console.log('Limited insights available:', data.error)
+        }
       }
 
       // Fetch recent posts directly from Facebook
@@ -240,123 +249,115 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
 
   return (
     <div className={cn("space-y-6", className)}>
-      {/* Page Overview */}
-      <Card className="overflow-hidden border border-gray-200">
-        <CardHeader className="bg-white border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <CardTitle className="flex items-center gap-2">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Facebook className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <span className="text-gray-900 font-bold">
-                    Facebook Page Insights
-                  </span>
-                  {selectedAccount && (
-                    <Badge className="ml-2 bg-gray-100 text-gray-700 border-gray-300">
-                      {selectedAccount.display_name || selectedAccount.username}
-                    </Badge>
-                  )}
-                </CardTitle>
-                <CardDescription className="text-gray-600 mt-1">
-                  {selectedAccount 
-                    ? `Analytics for ${selectedAccount.display_name || selectedAccount.username}`
-                    : 'Performance metrics for your Facebook Page'}
-                </CardDescription>
-              {facebookAccounts.length > 1 && (
-                <div className="mt-2">
-                  <select
-                    className="text-sm border rounded-lg px-3 py-1.5 bg-white"
-                    value={selectedAccount?.id || ''}
-                    onChange={(e) => {
-                      const account = facebookAccounts.find(acc => acc.id === e.target.value)
-                      if (account) {
-                        setSelectedAccount(account)
-                        fetchFacebookInsights(account.id)
-                      }
-                    }}
-                  >
-                    {facebookAccounts.map(account => (
-                      <option key={account.id} value={account.id}>
-                        {account.display_name || account.username}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="ml-2 text-xs text-gray-500">
-                    Switch between {facebookAccounts.length} connected pages
-                  </span>
-                </div>
+      {/* Profile Overview */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Facebook className="h-5 w-5" />
+              Profile Overview
+              {selectedAccount && (
+                <Badge variant="outline" className="ml-2 text-xs">
+                  {selectedAccount.display_name || selectedAccount.username}
+                </Badge>
               )}
-            </div>
-            <div className="flex items-center gap-2">
-              <select
-                className="text-xs border rounded-lg px-2 py-1"
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value as any)}
-              >
-                <option value="day">Last 24 hours</option>
-                <option value="week">Last 7 days</option>
-                <option value="days_28">Last 28 days</option>
-              </select>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleRefresh}
-                disabled={refreshing}
-              >
-                <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-              </Button>
-            </div>
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="hover:shadow-md transition-all"
+            >
+              <RefreshCw className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
           </div>
-          </CardHeader>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Page Impressions */}
-            <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200">
-              <div className="flex items-center gap-2 mb-2">
+          <CardDescription>
+            Your Facebook performance metrics
+          </CardDescription>
+          {facebookAccounts.length > 1 && (
+            <div className="mt-2">
+              <select
+                className="text-sm border rounded-lg px-3 py-1.5 bg-white"
+                value={selectedAccount?.id || ''}
+                onChange={(e) => {
+                  const account = facebookAccounts.find(acc => acc.id === e.target.value)
+                  if (account) {
+                    setSelectedAccount(account)
+                    fetchFacebookInsights(account.id)
+                  }
+                }}
+              >
+                {facebookAccounts.map(account => (
+                  <option key={account.id} value={account.id}>
+                    {account.display_name || account.username}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {/* Impressions */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
                 <Eye className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Impressions</p>
+                <p className="text-xs font-medium text-gray-500">Impressions</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold">
                 {formatNumber(pageInsights?.impressions?.value || 0)}
               </p>
               {getChangeIndicator(pageInsights?.impressions?.value || 0, pageInsights?.impressions?.previous || 0)}
             </div>
 
             {/* Engagement */}
-            <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
                 <Activity className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Engagement</p>
+                <p className="text-xs font-medium text-gray-500">Engagement</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold">
                 {formatNumber(pageInsights?.engagement?.value || 0)}
               </p>
               {getChangeIndicator(pageInsights?.engagement?.value || 0, pageInsights?.engagement?.previous || 0)}
             </div>
 
             {/* Page Views */}
-            <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
                 <MousePointer className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Page Views</p>
+                <p className="text-xs font-medium text-gray-500">Page Views</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold">
                 {formatNumber(pageInsights?.page_views?.value || 0)}
               </p>
               {getChangeIndicator(pageInsights?.page_views?.value || 0, pageInsights?.page_views?.previous || 0)}
             </div>
 
-            {/* Followers */}
-            <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Followers</p>
+            {/* Reach */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <ThumbsUp className="h-4 w-4 text-gray-500" />
+                <p className="text-xs font-medium text-gray-500">Reach</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatNumber(pageInsights?.fan_count?.value || 0)}
+              <p className="text-2xl font-bold">
+                {formatNumber(pageInsights?.reach?.value || 0)}
               </p>
-              {getChangeIndicator(pageInsights?.fan_count?.value || 0, pageInsights?.fan_count?.previous || 0)}
+              {getChangeIndicator(pageInsights?.reach?.value || 0, pageInsights?.reach?.previous || 0)}
+            </div>
+
+            {/* Followers */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-gray-500" />
+                <p className="text-xs font-medium text-gray-500">Followers</p>
+              </div>
+              <p className="text-2xl font-bold">
+                {formatNumber(pageInsights?.followers?.value || pageInsights?.fan_count?.value || 0)}
+              </p>
+              {getChangeIndicator(pageInsights?.followers?.value || 0, pageInsights?.followers?.previous || 0)}
             </div>
           </div>
         </CardContent>
@@ -491,6 +492,70 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Top Performing Posts */}
+      {recentPosts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Top Performing Posts
+            </CardTitle>
+            <CardDescription>
+              Your best posts based on engagement
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentPosts
+                .sort((a, b) => {
+                  const engagementA = (a.metrics?.reactions || 0) + (a.metrics?.likes || 0) + (a.metrics?.comments || 0) + (a.metrics?.shares || 0)
+                  const engagementB = (b.metrics?.reactions || 0) + (b.metrics?.likes || 0) + (b.metrics?.comments || 0) + (b.metrics?.shares || 0)
+                  return engagementB - engagementA
+                })
+                .slice(0, 3)
+                .map((post, index) => {
+                  const totalEngagement = (post.metrics?.reactions || 0) + (post.metrics?.likes || 0) + 
+                                         (post.metrics?.comments || 0) + (post.metrics?.shares || 0)
+                  const formatDate = (dateString: string) => {
+                    const date = new Date(dateString)
+                    const now = new Date()
+                    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+                    
+                    if (diffInHours < 24) {
+                      return `${Math.floor(diffInHours)}h ago`
+                    } else if (diffInHours < 48) {
+                      return 'Yesterday'
+                    } else {
+                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    }
+                  }
+
+                  return (
+                    <div key={post.id} className="flex items-start gap-3">
+                      <div className={cn(
+                        "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm",
+                        index === 0 && "bg-gradient-to-r from-yellow-400 to-orange-400",
+                        index === 1 && "bg-gradient-to-r from-gray-400 to-gray-500",
+                        index === 2 && "bg-gradient-to-r from-orange-400 to-orange-500"
+                      )}>
+                        {index + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-700 line-clamp-2">{post.message}</p>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                          <span>{formatNumber(totalEngagement)} engagements</span>
+                          <span>{formatNumber(post.metrics?.views || post.metrics?.impressions || post.metrics?.reach || 0)} views</span>
+                          <span>{formatDate(post.created_time)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

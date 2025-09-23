@@ -19,7 +19,8 @@ import {
   Info,
   Camera,
   FileText,
-  ChevronDown
+  ChevronDown,
+  MousePointer
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -295,120 +296,127 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
 
   return (
     <div className={cn("space-y-6", className)}>
-      {/* Account Overview */}
-      <Card className="overflow-hidden border border-gray-200">
-        <CardHeader className="bg-white border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <CardTitle className="flex items-center gap-2">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <Camera className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <span className="text-gray-900 font-bold">
-                    Instagram Insights
-                  </span>
-                  {selectedAccount && (
-                    <Badge className="ml-2 bg-gray-100 text-gray-700 border-gray-300">
-                      @{selectedAccount.username || selectedAccount.platform_user_id}
-                    </Badge>
-                  )}
-                </CardTitle>
-                <CardDescription className="text-gray-600 mt-1">
-                  {selectedAccount 
-                    ? `Analytics for @${selectedAccount.username || selectedAccount.platform_user_id}`
-                    : 'Performance metrics for your Instagram Business account'}
-                </CardDescription>
-              {instagramAccounts.length > 1 && (
-                <div className="mt-2">
-                  <select
-                    className="text-sm border rounded-lg px-3 py-1.5 bg-white"
-                    value={selectedAccount?.id || ''}
-                    onChange={(e) => {
-                      const account = instagramAccounts.find(acc => acc.id === e.target.value)
-                      if (account) {
-                        setSelectedAccount(account)
-                        fetchInstagramInsights(account.id)
-                      }
-                    }}
-                  >
-                    {instagramAccounts.map(account => (
-                      <option key={account.id} value={account.id}>
-                        @{account.username || account.platform_user_id}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="ml-2 text-xs text-gray-500">
-                    Switch between {instagramAccounts.length} connected accounts
-                  </span>
-                </div>
+      {/* Profile Overview */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              Profile Overview
+              {selectedAccount && (
+                <Badge variant="outline" className="ml-2 text-xs">
+                  @{selectedAccount.username || selectedAccount.platform_user_id}
+                </Badge>
               )}
-            </div>
-            <div className="flex items-center gap-2">
-              <select
-                className="text-xs border rounded-lg px-2 py-1"
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value as any)}
-              >
-                <option value="day">Last 24 hours</option>
-                <option value="week">Last 7 days</option>
-                <option value="days_28">Last 28 days</option>
-              </select>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleRefresh}
-                disabled={refreshing}
-              >
-                <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-              </Button>
-            </div>
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="hover:shadow-md transition-all"
+            >
+              <RefreshCw className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
           </div>
-          </CardHeader>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <CardDescription>
+            Your Instagram performance metrics
+          </CardDescription>
+          {instagramAccounts.length > 1 && (
+            <div className="mt-2">
+              <select
+                className="text-sm border rounded-lg px-3 py-1.5 bg-white"
+                value={selectedAccount?.id || ''}
+                onChange={(e) => {
+                  const account = instagramAccounts.find(acc => acc.id === e.target.value)
+                  if (account) {
+                    setSelectedAccount(account)
+                    fetchInstagramInsights(account.id)
+                  }
+                }}
+              >
+                {instagramAccounts.map(account => (
+                  <option key={account.id} value={account.id}>
+                    @{account.username || account.platform_user_id}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {/* Reach */}
-            <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Reach</p>
+                <p className="text-xs font-medium text-gray-500">Reach</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold">
                 {formatNumber(userInsights?.reach?.value || 0)}
               </p>
               {getChangeIndicator(userInsights?.reach?.value || 0, userInsights?.reach?.previous || 0)}
             </div>
 
             {/* Profile Views */}
-            <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
                 <Eye className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Profile Views</p>
+                <p className="text-xs font-medium text-gray-500">Profile Views</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold">
                 {formatNumber(userInsights?.profile_views?.value || 0)}
               </p>
               {getChangeIndicator(userInsights?.profile_views?.value || 0, userInsights?.profile_views?.previous || 0)}
             </div>
 
-            {/* Website Clicks */}
-            <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200">
-              <div className="flex items-center gap-2 mb-2">
+            {/* Impressions */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
                 <Activity className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Website Clicks</p>
+                <p className="text-xs font-medium text-gray-500">Impressions</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold">
+                {formatNumber(userInsights?.impressions?.value || 0)}
+              </p>
+              {getChangeIndicator(userInsights?.impressions?.value || 0, userInsights?.impressions?.previous || 0)}
+            </div>
+
+            {/* Website Clicks */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <MousePointer className="h-4 w-4 text-gray-500" />
+                <p className="text-xs font-medium text-gray-500">Website Clicks</p>
+              </div>
+              <p className="text-2xl font-bold">
                 {formatNumber(userInsights?.website_clicks?.value || 0)}
               </p>
               {getChangeIndicator(userInsights?.website_clicks?.value || 0, userInsights?.website_clicks?.previous || 0)}
             </div>
 
-            {/* Follower Count */}
-            <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Followers</p>
+            {/* Engagement */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Heart className="h-4 w-4 text-gray-500" />
+                <p className="text-xs font-medium text-gray-500">Engagement</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold">
+                {formatNumber((userInsights?.likes?.value || 0) + (userInsights?.comments?.value || 0))}
+              </p>
+              {getChangeIndicator(
+                (userInsights?.likes?.value || 0) + (userInsights?.comments?.value || 0),
+                (userInsights?.likes?.previous || 0) + (userInsights?.comments?.previous || 0)
+              )}
+            </div>
+
+            {/* Followers */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-gray-500" />
+                <p className="text-xs font-medium text-gray-500">Followers</p>
+              </div>
+              <p className="text-2xl font-bold">
                 {formatNumber(userInsights?.follower_count?.value || 0)}
               </p>
               {getChangeIndicator(userInsights?.follower_count?.value || 0, userInsights?.follower_count?.previous || 0)}
@@ -566,6 +574,69 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Top Performing Posts */}
+      {recentPosts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Top Performing Posts
+            </CardTitle>
+            <CardDescription>
+              Your best posts based on engagement
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentPosts
+                .sort((a, b) => {
+                  const engagementA = (a.metrics?.likes || 0) + (a.metrics?.comments || 0) + (a.metrics?.saves || 0)
+                  const engagementB = (b.metrics?.likes || 0) + (b.metrics?.comments || 0) + (b.metrics?.saves || 0)
+                  return engagementB - engagementA
+                })
+                .slice(0, 3)
+                .map((post, index) => {
+                  const totalEngagement = (post.metrics?.likes || 0) + (post.metrics?.comments || 0) + (post.metrics?.saves || 0)
+                  const formatDate = (dateString: string) => {
+                    const date = new Date(dateString)
+                    const now = new Date()
+                    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+                    
+                    if (diffInHours < 24) {
+                      return `${Math.floor(diffInHours)}h ago`
+                    } else if (diffInHours < 48) {
+                      return 'Yesterday'
+                    } else {
+                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    }
+                  }
+
+                  return (
+                    <div key={post.id} className="flex items-start gap-3">
+                      <div className={cn(
+                        "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm",
+                        index === 0 && "bg-gradient-to-r from-yellow-400 to-orange-400",
+                        index === 1 && "bg-gradient-to-r from-gray-400 to-gray-500",
+                        index === 2 && "bg-gradient-to-r from-orange-400 to-orange-500"
+                      )}>
+                        {index + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-700 line-clamp-2">{post.caption || 'No caption'}</p>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                          <span>{formatNumber(totalEngagement)} engagements</span>
+                          <span>{formatNumber(post.metrics?.reach || 0)} reach</span>
+                          <span>{formatDate(post.timestamp)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

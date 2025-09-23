@@ -138,69 +138,62 @@ export function MetricsUpdater({ onUpdate, className }: MetricsUpdaterProps) {
     })
     setUpdateStatus(newStatus)
 
-    // Update each selected platform
-    for (const platform of Array.from(selectedPlatforms)) {
-      try {
-        let endpoint = ''
-        switch (platform) {
-          case 'instagram':
-            endpoint = '/api/instagram/update-metrics'
-            break
-          case 'threads':
-            endpoint = '/api/threads/update-metrics'
-            break
-          case 'linkedin':
-            endpoint = '/api/linkedin/update-metrics'
-            break
-          case 'twitter':
-          case 'x':
-            endpoint = '/api/twitter/update-metrics'
-            break
-          // Add more platforms as they become available
-          default:
-            continue
-        }
+    // Update all selected platforms with a single API call
+    try {
+      const response = await fetch('/api/posts/update-metrics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
 
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        })
-
-        const data = await response.json()
-        
-        // Update status for this platform
+      const data = await response.json()
+      
+      // Update status for all platforms
+      selectedPlatforms.forEach(platform => {
         const platformStatus = newStatus.get(platform)
         if (platformStatus) {
           platformStatus.updating = false
           platformStatus.success = response.ok
           
           if (response.ok) {
-            platformStatus.message = data.updatedCount > 0 
-              ? `Updated ${data.updatedCount} posts`
-              : 'No posts to update'
+            // Check if there were any errors for this specific platform
+            const platformErrors = data.errors?.filter((e: any) => e.platform === platform)
+            if (platformErrors?.length > 0) {
+              platformStatus.success = false
+              platformStatus.message = 'Some posts failed to update'
+            } else {
+              platformStatus.message = data.message || 'Metrics updated'
+            }
           } else {
             platformStatus.message = data.error || 'Failed to update'
           }
           
           newStatus.set(platform, platformStatus)
-          setUpdateStatus(new Map(newStatus))
         }
+      })
+      
+      setUpdateStatus(new Map(newStatus))
 
-        if (response.ok && data.updatedCount > 0) {
-          toast.success(`${platform}: Updated ${data.updatedCount} posts`)
-        }
-      } catch (error) {
-        console.error(`Error updating ${platform} metrics:`, error)
-        
+      if (response.ok && data.message) {
+        toast.success(data.message)
+      } else if (!response.ok) {
+        toast.error(data.error || 'Failed to update metrics')
+      }
+    } catch (error) {
+      console.error('Error updating metrics:', error)
+      
+      // Mark all platforms as failed
+      selectedPlatforms.forEach(platform => {
         const platformStatus = newStatus.get(platform)
         if (platformStatus) {
           platformStatus.updating = false
           platformStatus.success = false
           platformStatus.message = 'Network error'
           newStatus.set(platform, platformStatus)
-          setUpdateStatus(new Map(newStatus))
         }
-      }
+      })
+      
+      setUpdateStatus(new Map(newStatus))
+      toast.error('Failed to connect to server')
     }
 
     setUpdating(false)
