@@ -31,9 +31,9 @@ export function TikTokVideoSettings({
             <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
             <span>TikTok requires video content (MP4, MOV, or AVI format)</span>
           </div>
-          <div className="p-2 bg-amber-50 border border-amber-200 rounded-md text-xs text-amber-800">
-            <strong>Sandbox Mode:</strong> Videos will be posted as private (SELF_ONLY) until app review is complete. 
-            You can change privacy settings in the TikTok app after posting.
+          <div className="p-2 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-800">
+            <strong>Draft Mode:</strong> Videos are saved as drafts in TikTok. 
+            You can edit and publish them directly from the TikTok app.
           </div>
         </CardDescription>
       </CardHeader>
