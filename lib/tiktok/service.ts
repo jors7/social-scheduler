@@ -215,7 +215,7 @@ export class TikTokService {
           sandbox: true, // Indicate this is sandbox/unaudited mode
           publishId: publishId,
           uploadUrl: null, // No upload URL with PULL_FROM_URL
-          message: 'TikTok post saved as draft. Your app needs TikTok audit approval to post publicly. The video will be visible in your TikTok drafts.'
+          message: `Video submitted to TikTok (ID: ${publishId}). Processing can take 2-10 minutes. Check your TikTok app drafts after processing completes.`
         };
       } else {
         // Fully approved production mode - actual public posting
