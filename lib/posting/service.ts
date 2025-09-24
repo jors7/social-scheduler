@@ -522,36 +522,34 @@ export class PostingService {
       }
 
       // For now, we'll use the first media URL as the video
-      // In a production app, you'd need to verify this is actually a video
       let videoUrl = mediaUrls[0];
       
-      // TikTok requires URL ownership verification for PULL_FROM_URL
-      // We must use our own domain (www.socialcal.app) not Supabase
-      if (videoUrl.includes('supabase.co')) {
-        // In production, use proxy endpoint with verified domain
-        // In development, also use production domain as TikTok needs verified URL
-        const baseUrl = 'https://www.socialcal.app';
-        const proxiedUrl = `${baseUrl}/api/media/proxy?url=${encodeURIComponent(videoUrl)}`;
-        
-        console.log('Converting to verified domain for TikTok:', proxiedUrl);
-        
-        // Verify the original video exists before sending to TikTok
-        try {
-          const checkResponse = await fetch(videoUrl, { method: 'HEAD' });
-          if (!checkResponse.ok) {
-            console.error('Video URL is not accessible:', videoUrl, 'Status:', checkResponse.status);
-            throw new Error('Video file not found. It may have been deleted. Please upload a new video.');
-          }
-          videoUrl = proxiedUrl; // Use the proxied URL for TikTok
-        } catch (error) {
-          console.error('Failed to verify video URL:', error);
-          throw new Error('Unable to access video file. Please try uploading again.');
-        }
+      // Download the video to use FILE_UPLOAD method (more reliable than PULL_FROM_URL)
+      console.log('Downloading video for TikTok FILE_UPLOAD:', videoUrl);
+      
+      // Fetch the video data
+      const videoResponse = await fetch(videoUrl);
+      if (!videoResponse.ok) {
+        console.error('Failed to download video:', videoResponse.status);
+        throw new Error('Video file not found. It may have been deleted. Please upload a new video.');
       }
+      
+      // Get video as buffer
+      const videoArrayBuffer = await videoResponse.arrayBuffer();
+      const videoBuffer = Buffer.from(videoArrayBuffer);
+      const videoSize = videoBuffer.length;
+      
+      console.log('Video downloaded successfully:', {
+        size: videoSize,
+        sizeMB: (videoSize / (1024 * 1024)).toFixed(2) + ' MB'
+      });
 
       // Use privacy level from account (passed from postData) or default to public
       const privacyLevel = account.tiktok_privacy_level || 'PUBLIC_TO_EVERYONE';
       const isDraft = privacyLevel === 'SELF_ONLY';
+
+      // Convert buffer to base64 for transmission
+      const videoBase64 = videoBuffer.toString('base64');
 
       const response = await fetch('/api/post/tiktok', {
         method: 'POST',
@@ -562,6 +560,8 @@ export class PostingService {
           accessToken: account.access_token,
           content: content,
           videoUrl: videoUrl,
+          videoBuffer: videoBase64,
+          videoSize: videoSize,
           privacyLevel: privacyLevel,
           options: {
             allowComment: !isDraft,

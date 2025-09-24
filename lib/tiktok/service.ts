@@ -235,6 +235,172 @@ export class TikTokService {
   }
 
   /**
+   * Upload video using FILE_UPLOAD method (more reliable than PULL_FROM_URL)
+   * @param title - Video caption
+   * @param videoBuffer - Video file buffer
+   * @param videoSize - Size of video in bytes
+   * @param privacyLevel - Privacy level
+   */
+  async createPostWithFileUpload(
+    title: string,
+    videoBuffer: Buffer,
+    videoSize: number,
+    privacyLevel: 'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY' = 'PUBLIC_TO_EVERYONE',
+    options?: {
+      disableComment?: boolean;
+      disableDuet?: boolean;
+      disableStitch?: boolean;
+      allowComment?: boolean;
+      allowDuet?: boolean;
+      allowStitch?: boolean;
+      allowDownload?: boolean;
+      videoCoverTimestamp?: number;
+    }
+  ) {
+    try {
+      const isSandbox = process.env.TIKTOK_SANDBOX === 'true';
+      const isUnaudited = process.env.TIKTOK_UNAUDITED === 'true';
+      
+      if ((isSandbox || isUnaudited) && privacyLevel !== 'SELF_ONLY') {
+        console.warn('App is unaudited or in sandbox mode: Overriding privacy level to SELF_ONLY (draft)');
+        privacyLevel = 'SELF_ONLY';
+      }
+      
+      const isDraft = privacyLevel === 'SELF_ONLY';
+      const endpoint = isDraft ? TIKTOK_INBOX_URL : TIKTOK_DIRECT_POST_URL;
+      
+      // Calculate chunk size and count
+      // For videos < 64MB, use single chunk
+      // For videos >= 64MB, use 50MB chunks
+      const MAX_SINGLE_CHUNK_SIZE = 64 * 1024 * 1024; // 64MB
+      const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB chunks for larger files
+      
+      let chunkSize: number;
+      let totalChunkCount: number;
+      
+      if (videoSize <= MAX_SINGLE_CHUNK_SIZE) {
+        // Single chunk upload
+        chunkSize = videoSize;
+        totalChunkCount = 1;
+      } else {
+        // Multi-chunk upload
+        chunkSize = CHUNK_SIZE;
+        totalChunkCount = Math.ceil(videoSize / chunkSize);
+      }
+      
+      console.log('TikTok FILE_UPLOAD configuration:', {
+        videoSize,
+        chunkSize,
+        totalChunkCount,
+        isDraft,
+        endpoint
+      });
+      
+      // Step 1: Initialize upload with FILE_UPLOAD
+      let requestBody: any = {
+        source_info: {
+          source: 'FILE_UPLOAD',
+          video_size: videoSize,
+          chunk_size: chunkSize,
+          total_chunk_count: totalChunkCount
+        }
+      };
+      
+      if (isDraft) {
+        requestBody.post_info = {
+          title: title.substring(0, 2200),
+        };
+      } else {
+        requestBody.post_info = {
+          title: title.substring(0, 2200),
+          privacy_level: privacyLevel,
+          disable_comment: options?.disableComment || false,
+          disable_duet: options?.disableDuet || false,
+          disable_stitch: options?.disableStitch || false,
+          video_cover_timestamp_ms: options?.videoCoverTimestamp || 1000,
+        };
+      }
+      
+      const initResponse = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!initResponse.ok) {
+        const errorData = await initResponse.json();
+        console.error('TikTok FILE_UPLOAD init error:', errorData);
+        throw new Error(`Failed to initialize upload: ${errorData.error?.message || errorData.message || 'Unknown error'}`);
+      }
+
+      const initData = await initResponse.json();
+      const publishId = initData.data?.publish_id;
+      const uploadUrl = initData.data?.upload_url;
+      
+      if (!uploadUrl) {
+        throw new Error('No upload URL received from TikTok');
+      }
+      
+      console.log('TikTok upload initialized:', { publishId, uploadUrl });
+      
+      // Step 2: Upload chunks
+      let uploadedBytes = 0;
+      
+      for (let chunkIndex = 0; chunkIndex < totalChunkCount; chunkIndex++) {
+        const start = chunkIndex * chunkSize;
+        const end = Math.min(start + chunkSize, videoSize);
+        const chunkBuffer = videoBuffer.slice(start, end);
+        const chunkLength = end - start;
+        
+        console.log(`Uploading chunk ${chunkIndex + 1}/${totalChunkCount}:`, {
+          start,
+          end,
+          chunkLength
+        });
+        
+        const uploadResponse = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'video/mp4',
+            'Content-Length': chunkLength.toString(),
+            'Content-Range': `bytes ${start}-${end - 1}/${videoSize}`
+          },
+          body: chunkBuffer,
+        });
+        
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          console.error('Chunk upload failed:', errorText);
+          throw new Error(`Failed to upload chunk ${chunkIndex + 1}: ${errorText}`);
+        }
+        
+        uploadedBytes = end;
+        console.log(`Chunk ${chunkIndex + 1} uploaded successfully. Total uploaded: ${uploadedBytes}/${videoSize}`);
+      }
+      
+      console.log('All chunks uploaded successfully!');
+      console.log('🎯 PUBLISH ID:', publishId);
+      
+      return {
+        success: true,
+        sandbox: isSandbox || isUnaudited,
+        publishId: publishId,
+        uploadUrl: uploadUrl,
+        message: isDraft 
+          ? `Video uploaded to TikTok drafts (ID: ${publishId}). Check your TikTok app.`
+          : `Video uploaded to TikTok successfully (ID: ${publishId}).`
+      };
+      
+    } catch (error) {
+      console.error('TikTok FILE_UPLOAD error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Check the status of a video upload
    * @param publishId - The publish ID returned from createPost
    */

@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     console.log('TikTok POST request body:', body);
-    const { accessToken, content, videoUrl, privacyLevel, options } = body;
+    const { accessToken, content, videoUrl, videoBuffer, videoSize, privacyLevel, options } = body;
 
     if (!accessToken) {
       return NextResponse.json(
@@ -14,9 +14,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!videoUrl) {
+    if (!videoUrl && !videoBuffer) {
       return NextResponse.json(
-        { error: 'TikTok requires a video URL' },
+        { error: 'TikTok requires a video' },
         { status: 400 }
       );
     }
@@ -35,13 +35,27 @@ export async function POST(request: NextRequest) {
     const tiktokService = new TikTokService(accessToken);
 
     try {
-      // Create the post
-      const result = await tiktokService.createPost(
-        formattedContent,
-        videoUrl,
-        privacyLevel || 'PUBLIC_TO_EVERYONE',
-        options
-      );
+      let result;
+      
+      if (videoBuffer && videoSize) {
+        // Use FILE_UPLOAD method (more reliable)
+        const buffer = Buffer.from(videoBuffer, 'base64');
+        result = await tiktokService.createPostWithFileUpload(
+          formattedContent,
+          buffer,
+          videoSize,
+          privacyLevel || 'PUBLIC_TO_EVERYONE',
+          options
+        );
+      } else {
+        // Fallback to PULL_FROM_URL (less reliable)
+        result = await tiktokService.createPost(
+          formattedContent,
+          videoUrl,
+          privacyLevel || 'PUBLIC_TO_EVERYONE',
+          options
+        );
+      }
 
       // Pass through the sandbox flag and message if present
       return NextResponse.json({
