@@ -521,35 +521,14 @@ export class PostingService {
         throw new Error('TikTok requires a video to post');
       }
 
-      // For now, we'll use the first media URL as the video
-      let videoUrl = mediaUrls[0];
+      // Use the first media URL as the video
+      const videoUrl = mediaUrls[0];
       
-      // Download the video to use FILE_UPLOAD method (more reliable than PULL_FROM_URL)
-      console.log('Downloading video for TikTok FILE_UPLOAD:', videoUrl);
-      
-      // Fetch the video data
-      const videoResponse = await fetch(videoUrl);
-      if (!videoResponse.ok) {
-        console.error('Failed to download video:', videoResponse.status);
-        throw new Error('Video file not found. It may have been deleted. Please upload a new video.');
-      }
-      
-      // Get video as buffer
-      const videoArrayBuffer = await videoResponse.arrayBuffer();
-      const videoBuffer = Buffer.from(videoArrayBuffer);
-      const videoSize = videoBuffer.length;
-      
-      console.log('Video downloaded successfully:', {
-        size: videoSize,
-        sizeMB: (videoSize / (1024 * 1024)).toFixed(2) + ' MB'
-      });
+      console.log('Sending video URL to TikTok API:', videoUrl);
 
       // Use privacy level from account (passed from postData) or default to public
       const privacyLevel = account.tiktok_privacy_level || 'PUBLIC_TO_EVERYONE';
       const isDraft = privacyLevel === 'SELF_ONLY';
-
-      // Convert buffer to base64 for transmission
-      const videoBase64 = videoBuffer.toString('base64');
 
       const response = await fetch('/api/post/tiktok', {
         method: 'POST',
@@ -560,8 +539,6 @@ export class PostingService {
           accessToken: account.access_token,
           content: content,
           videoUrl: videoUrl,
-          videoBuffer: videoBase64,
-          videoSize: videoSize,
           privacyLevel: privacyLevel,
           options: {
             allowComment: !isDraft,

@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TikTokService } from '@/lib/tiktok/service';
 
+export const maxDuration = 60; // 60 seconds for video download and upload
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('TikTok POST request body:', body);
-    const { accessToken, content, videoUrl, videoBuffer, videoSize, privacyLevel, options } = body;
+    console.log('TikTok POST request received');
+    const { accessToken, content, videoUrl, privacyLevel, options } = body;
 
     if (!accessToken) {
       return NextResponse.json(
@@ -14,9 +17,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!videoUrl && !videoBuffer) {
+    if (!videoUrl) {
       return NextResponse.json(
-        { error: 'TikTok requires a video' },
+        { error: 'TikTok requires a video URL' },
         { status: 400 }
       );
     }
@@ -35,27 +38,32 @@ export async function POST(request: NextRequest) {
     const tiktokService = new TikTokService(accessToken);
 
     try {
-      let result;
+      // Download video from URL to use FILE_UPLOAD method
+      console.log('Downloading video for TikTok FILE_UPLOAD:', videoUrl);
       
-      if (videoBuffer && videoSize) {
-        // Use FILE_UPLOAD method (more reliable)
-        const buffer = Buffer.from(videoBuffer, 'base64');
-        result = await tiktokService.createPostWithFileUpload(
-          formattedContent,
-          buffer,
-          videoSize,
-          privacyLevel || 'PUBLIC_TO_EVERYONE',
-          options
-        );
-      } else {
-        // Fallback to PULL_FROM_URL (less reliable)
-        result = await tiktokService.createPost(
-          formattedContent,
-          videoUrl,
-          privacyLevel || 'PUBLIC_TO_EVERYONE',
-          options
-        );
+      const videoResponse = await fetch(videoUrl);
+      if (!videoResponse.ok) {
+        console.error('Failed to download video:', videoResponse.status);
+        throw new Error('Failed to download video. Please ensure the video is accessible.');
       }
+      
+      const videoArrayBuffer = await videoResponse.arrayBuffer();
+      const videoBuffer = Buffer.from(videoArrayBuffer);
+      const videoSize = videoBuffer.length;
+      
+      console.log('Video downloaded:', {
+        size: videoSize,
+        sizeMB: (videoSize / (1024 * 1024)).toFixed(2) + ' MB'
+      });
+      
+      // Use FILE_UPLOAD method for reliable upload
+      const result = await tiktokService.createPostWithFileUpload(
+        formattedContent,
+        videoBuffer,
+        videoSize,
+        privacyLevel || 'PUBLIC_TO_EVERYONE',
+        options
+      );
 
       // Pass through the sandbox flag and message if present
       return NextResponse.json({
