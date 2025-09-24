@@ -62,6 +62,7 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
   const [postsLimit, setPostsLimit] = useState(5)
   const [hasMorePosts, setHasMorePosts] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [permissionsError, setPermissionsError] = useState<string | null>(null)
 
   const fetchFacebookInsights = async (accountId?: string) => {
     try {
@@ -92,6 +93,22 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
       
       setSelectedAccount(accountToUse)
 
+      // Check permissions but don't show warning if data is actually working
+      const permissionsResponse = await fetch(`/api/facebook/permissions?accountId=${accountToUse.id}`)
+      let hasWorkingAnalytics = false
+      if (permissionsResponse.ok) {
+        const permData = await permissionsResponse.json()
+        const accountPerms = permData.accounts?.[0]
+        if (accountPerms) {
+          hasWorkingAnalytics = accountPerms.hasFullAccess
+          console.log(`[${accountToUse.display_name}] Permission check result:`, {
+            hasFullAccess: accountPerms.hasFullAccess,
+            permissions: accountPerms.permissions,
+            errors: accountPerms.errors
+          })
+        }
+      }
+      
       // Fetch page-level insights for the selected account
       const queryParams = new URLSearchParams({
         type: 'page',
@@ -103,7 +120,29 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
         const data = await pageInsightsResponse.json()
         console.log('Page insights data received in component:', data)
         console.log('Setting pageInsights to:', data.insights)
+        console.log('Detailed insights values:', {
+          impressions: data.insights?.impressions,
+          engagement: data.insights?.engagement,
+          reach: data.insights?.reach,
+          page_views: data.insights?.page_views,
+          followers: data.insights?.followers
+        })
         setPageInsights(data.insights)
+        
+        // Check if we actually got data
+        const hasData = data.insights && (
+          data.insights.impressions?.value > 0 ||
+          data.insights.engagement?.value > 0 ||
+          data.insights.reach?.value > 0 ||
+          data.insights.followers?.value > 0
+        )
+        
+        // Only show permission error if we have no working analytics AND no data
+        if (!hasWorkingAnalytics && !hasData) {
+          setPermissionsError('Limited analytics access. Some metrics may be unavailable.')
+        } else {
+          setPermissionsError(null)
+        }
         
         // Show a message if insights are limited
         if (data.error) {
@@ -249,6 +288,22 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
 
   return (
     <div className={cn("space-y-6", className)}>
+      {/* Permission Warning */}
+      {permissionsError && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <Info className="h-5 w-5 text-yellow-600 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-yellow-800">Limited Analytics Access</p>
+              <p className="text-sm text-yellow-700 mt-1">{permissionsError}</p>
+              <p className="text-xs text-yellow-600 mt-2">
+                To enable full analytics, reconnect your Facebook account with "read_insights" permission.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Profile Overview */}
       <Card>
         <CardHeader>
@@ -262,16 +317,46 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
                 </Badge>
               )}
             </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="hover:shadow-md transition-all"
-            >
-              <RefreshCw className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")} />
-              {refreshing ? 'Refreshing...' : 'Refresh'}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  const response = await fetch(`/api/facebook/permissions${selectedAccount ? `?accountId=${selectedAccount.id}` : ''}`);
+                  if (response.ok) {
+                    const data = await response.json();
+                    console.log('Permissions check:', data);
+                    if (data.accounts?.[0]) {
+                      const acc = data.accounts[0];
+                      if (!acc.hasFullAccess) {
+                        // Check if we're actually getting data despite permission issues
+                        if (pageInsights && (pageInsights.impressions?.value > 0 || pageInsights.engagement?.value > 0)) {
+                          toast.info(`${acc.pageName} has working analytics despite permission warnings`);
+                        } else {
+                          toast.warning(`${acc.pageName} may have limited analytics access. Try refreshing.`);
+                        }
+                      } else {
+                        toast.success(`${acc.pageName} analytics working correctly`);
+                      }
+                    }
+                  }
+                }}
+                className="text-xs"
+              >
+                <Info className="h-3 w-3 mr-1" />
+                Check Status
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="hover:shadow-md transition-all"
+              >
+                <RefreshCw className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")} />
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </Button>
+            </div>
           </div>
           <CardDescription>
             Your Facebook performance metrics

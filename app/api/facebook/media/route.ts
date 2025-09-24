@@ -281,7 +281,13 @@ export async function GET(request: NextRequest) {
             }
           }
           
-          console.log(`Metrics for post ${post.id}:`, metrics);
+          console.log(`[${account.display_name || account.username}] Metrics for post ${post.id}:`, {
+            impressions: metrics.impressions,
+            reach: metrics.reach,
+            engagement: metrics.engagement,
+            likes: metrics.likes,
+            hasViews: metrics.views > 0
+          });
           return {
             ...post,
             metrics
@@ -297,9 +303,24 @@ export async function GET(request: NextRequest) {
       })
     );
 
+    // Calculate totals from individual posts for debugging
+    const totalMetrics = mediaWithMetrics.reduce((acc, post) => {
+      return {
+        impressions: acc.impressions + (post.metrics?.impressions || 0),
+        reach: acc.reach + (post.metrics?.reach || 0),
+        engagement: acc.engagement + (post.metrics?.engagement || 0),
+        likes: acc.likes + (post.metrics?.likes || 0),
+        comments: acc.comments + (post.metrics?.comments || 0),
+        shares: acc.shares + (post.metrics?.shares || 0)
+      };
+    }, { impressions: 0, reach: 0, engagement: 0, likes: 0, comments: 0, shares: 0 });
+    
+    console.log(`[${account.display_name || account.username}] MEDIA ENDPOINT TOTALS:`, totalMetrics);
+
     return NextResponse.json({
       success: true,
       media: mediaWithMetrics,
+      totalMetrics, // Include for debugging
       account: {
         id: account.id,
         username: account.username || account.platform_user_id,
