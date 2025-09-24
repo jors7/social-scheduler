@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -179,6 +179,7 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
     }, 100)
     
     return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPeriod, postsLimit])
 
   const handleRefresh = async () => {
@@ -297,7 +298,7 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
               <p className="text-sm font-medium text-yellow-800">Limited Analytics Access</p>
               <p className="text-sm text-yellow-700 mt-1">{permissionsError}</p>
               <p className="text-xs text-yellow-600 mt-2">
-                To enable full analytics, reconnect your Facebook account with "read_insights" permission.
+                To enable full analytics, reconnect your Facebook account with &quot;read_insights&quot; permission.
               </p>
             </div>
           </div>
