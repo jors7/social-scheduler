@@ -41,7 +41,6 @@ export async function GET(request: NextRequest) {
         'pages_show_list',
         'pages_read_engagement',
         'read_insights',
-        'pages_read_user_content',
         'pages_manage_posts',
         'business_management'
       ].join(','),
