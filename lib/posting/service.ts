@@ -525,13 +525,21 @@ export class PostingService {
       // In a production app, you'd need to verify this is actually a video
       let videoUrl = mediaUrls[0];
       
-      // Convert Supabase URL to proxy URL for TikTok domain verification
+      // For TikTok, we'll use the direct Supabase URL
+      // The proxy endpoint has issues and TikTok can access Supabase directly
       if (videoUrl.includes('supabase.co')) {
-        // Always use the production URL for TikTok since that's what's verified
-        // Use www subdomain as that's where the site is deployed
-        const baseUrl = 'https://www.socialcal.app';
-        videoUrl = `${baseUrl}/api/media/proxy?url=${encodeURIComponent(videoUrl)}`;
-        console.log('Converted video URL for TikTok:', videoUrl);
+        console.log('Using direct Supabase URL for TikTok:', videoUrl);
+        // Verify the URL is accessible before sending to TikTok
+        try {
+          const checkResponse = await fetch(videoUrl, { method: 'HEAD' });
+          if (!checkResponse.ok) {
+            console.error('Video URL is not accessible:', videoUrl, 'Status:', checkResponse.status);
+            throw new Error('Video file not found. It may have been deleted. Please upload a new video.');
+          }
+        } catch (error) {
+          console.error('Failed to verify video URL:', error);
+          throw new Error('Unable to access video file. Please try uploading again.');
+        }
       }
 
       // Use privacy level from account (passed from postData) or default to public

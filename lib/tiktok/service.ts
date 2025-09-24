@@ -81,12 +81,14 @@ export class TikTokService {
   ) {
     try {
       // Check if we're in sandbox mode from environment variable
+      // OR if the app is unaudited (even with production credentials)
       const isSandbox = process.env.TIKTOK_SANDBOX === 'true';
+      const isUnaudited = process.env.TIKTOK_UNAUDITED === 'true';
       
-      // IMPORTANT: Sandbox apps can only use SELF_ONLY privacy level
-      // Override privacy level for sandbox mode
-      if (isSandbox && privacyLevel !== 'SELF_ONLY') {
-        console.warn('Sandbox mode: Overriding privacy level to SELF_ONLY');
+      // IMPORTANT: Sandbox and unaudited apps can only use SELF_ONLY privacy level
+      // TikTok requires apps to be audited before they can post publicly
+      if ((isSandbox || isUnaudited) && privacyLevel !== 'SELF_ONLY') {
+        console.warn('App is unaudited or in sandbox mode: Overriding privacy level to SELF_ONLY (draft)');
         privacyLevel = 'SELF_ONLY';
       }
       
@@ -178,10 +180,20 @@ export class TikTokService {
         fullResponse: JSON.stringify(initData, null, 2)
       });
       
+      const publishId = initData.data?.publish_id || initData.publish_id;
+      
       // CRITICAL: Store publish_id for debugging
-      if (initData.data?.publish_id || initData.publish_id) {
-        console.log('🎯 SAVE THIS PUBLISH ID FOR STATUS CHECK:', initData.data?.publish_id || initData.publish_id);
+      if (publishId) {
+        console.log('🎯 SAVE THIS PUBLISH ID FOR STATUS CHECK:', publishId);
         console.log('To check status, go to: /dashboard/tiktok-debug');
+        
+        // For inbox/draft posts, check the processing status
+        if (isDraft) {
+          console.log('Draft post initiated. TikTok is processing the video...');
+          // Note: TikTok needs time to process the video before it appears in drafts
+          // It can take 30 seconds to several minutes depending on video size
+          console.log('Video will appear in TikTok drafts after processing completes.');
+        }
       }
 
       // The actual video upload would happen here
@@ -192,23 +204,21 @@ export class TikTokService {
       // TikTok will download the video from the provided URL
       // Processing takes 30 seconds to 2 minutes
       
-      const publishId = initData.data?.publish_id || initData.publish_id;
-      
       if (!publishId) {
         console.warn('No publish_id returned from TikTok. Full response:', initData);
       }
       
-      // Return success based on whether we're in sandbox mode
-      if (isSandbox) {
+      // Return success based on whether we're in sandbox/unaudited mode or fully approved
+      if (isSandbox || isUnaudited) {
         return {
-          success: false, // Mark as false since it's only sandbox testing
-          sandbox: true, // Indicate this is sandbox mode
+          success: true, // Mark as true since draft posting works
+          sandbox: true, // Indicate this is sandbox/unaudited mode
           publishId: publishId,
           uploadUrl: null, // No upload URL with PULL_FROM_URL
-          message: 'TikTok Sandbox Mode: API test successful. Actual posting requires app approval from TikTok.'
+          message: 'TikTok post saved as draft. Your app needs TikTok audit approval to post publicly. The video will be visible in your TikTok drafts.'
         };
       } else {
-        // Production mode - actual posting
+        // Fully approved production mode - actual public posting
         return {
           success: true,
           sandbox: false,
