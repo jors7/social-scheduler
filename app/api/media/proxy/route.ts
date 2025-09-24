@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
-export const runtime = 'edge'; // Use edge runtime for streaming
+export const runtime = 'nodejs'; // Use Node.js runtime for better compatibility
 
 export async function GET(request: NextRequest) {
   try {
