@@ -35,9 +35,19 @@ export function EngagementChart({ analyticsData }: EngagementChartProps) {
     if (post.post_results && Array.isArray(post.post_results)) {
       post.post_results.forEach((result: any) => {
         if (result.success && result.data?.metrics) {
-          likes += result.data.metrics.likes || 0
-          comments += result.data.metrics.comments || 0
-          shares += result.data.metrics.shares || 0
+          const metrics = result.data.metrics
+          likes += metrics.likes || 0
+          
+          // Handle platform-specific metrics
+          if (result.platform === 'threads') {
+            // Threads uses replies instead of comments
+            comments += metrics.replies || 0
+            // Threads uses reposts and quotes instead of shares
+            shares += (metrics.reposts || 0) + (metrics.quotes || 0)
+          } else {
+            comments += metrics.comments || 0
+            shares += metrics.shares || 0
+          }
         }
       })
     }

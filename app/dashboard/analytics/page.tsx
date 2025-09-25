@@ -39,6 +39,25 @@ export default function AnalyticsPage() {
 
   const fetchAnalyticsData = async () => {
     try {
+      // Calculate date range filter
+      const now = new Date()
+      let startDate = new Date()
+      
+      switch (dateRange) {
+        case '7d':
+          startDate.setDate(now.getDate() - 7)
+          break
+        case '30d':
+          startDate.setDate(now.getDate() - 30)
+          break
+        case '90d':
+          startDate.setDate(now.getDate() - 90)
+          break
+        case '1y':
+          startDate.setFullYear(now.getFullYear() - 1)
+          break
+      }
+      
       // Fetch all posts data
       const [draftsResponse, scheduledResponse] = await Promise.all([
         fetch('/api/drafts'),
@@ -57,7 +76,15 @@ export default function AnalyticsPage() {
       const drafts = draftsData.drafts || []
       const scheduled = scheduledData.posts || []
       const allPosts = [...drafts, ...scheduled]
-      const postedPosts = scheduled.filter((post: any) => post.status === 'posted')
+      
+      // Filter posted posts by date range
+      const postedPosts = scheduled.filter((post: any) => {
+        if (post.status !== 'posted') return false
+        if (!post.posted_at) return false
+        
+        const postDate = new Date(post.posted_at)
+        return postDate >= startDate && postDate <= now
+      })
       
       // Calculate analytics
       let totalEngagement = 0
@@ -84,16 +111,28 @@ export default function AnalyticsPage() {
               
               if (result.data.metrics) {
                 const metrics = result.data.metrics
-                const engagement = (metrics.likes || 0) + (metrics.comments || 0) + (metrics.shares || 0)
-                const reach = metrics.views || metrics.impressions || 0
+                
+                // Calculate engagement based on platform
+                let engagement = 0
+                if (platform === 'threads') {
+                  // Threads uses different metric names
+                  engagement = (metrics.likes || 0) + (metrics.replies || 0) + 
+                               (metrics.reposts || 0) + (metrics.quotes || 0)
+                } else {
+                  // Facebook, Instagram, etc. use standard metrics
+                  engagement = (metrics.likes || 0) + (metrics.comments || 0) + (metrics.shares || 0)
+                }
+                
+                const reach = metrics.views || metrics.reach || metrics.impressions || 0
+                const impressions = metrics.impressions || metrics.views || reach
                 
                 totalEngagement += engagement
                 totalReach += reach
-                totalImpressions += reach // For now, treating views as impressions
+                totalImpressions += impressions
                 
                 platformStats[platform].engagement += engagement
                 platformStats[platform].reach += reach
-                platformStats[platform].impressions += reach
+                platformStats[platform].impressions += impressions
               }
             }
           })
@@ -131,7 +170,24 @@ export default function AnalyticsPage() {
     }
   }
   
+  // Function to trigger metrics update
+  const triggerMetricsUpdate = async () => {
+    try {
+      // Silently trigger metrics update in background
+      await fetch('/api/posts/update-metrics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+    } catch (error) {
+      console.log('Background metrics update failed:', error)
+    }
+  }
+  
   useEffect(() => {
+    // Trigger metrics update on page load
+    triggerMetricsUpdate()
+    
+    // Then fetch analytics data
     fetchAnalyticsData()
   }, [dateRange])
 
