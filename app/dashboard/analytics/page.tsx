@@ -98,6 +98,7 @@ export default function AnalyticsPage() {
           post.post_results.forEach((result: any) => {
             if (result.success && result.data) {
               const platform = result.platform
+              
               if (!platformStats[platform]) {
                 platformStats[platform] = {
                   posts: 0,

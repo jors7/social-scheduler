@@ -74,9 +74,11 @@ export async function POST(request: NextRequest) {
           // Fetch fresh metrics based on platform
           switch (result.platform) {
             case 'facebook':
-              if (result.data.postId && account.access_token) {
+              // Facebook posts may have either 'id' or 'postId'
+              const fbPostId = result.data.id || result.data.postId;
+              if (fbPostId && account.access_token) {
                 const metrics = await fetchFacebookPostMetrics(
-                  result.data.postId,
+                  fbPostId,
                   account.access_token
                 );
                 if (metrics) {
@@ -127,6 +129,29 @@ export async function POST(request: NextRequest) {
                   };
                   hasUpdates = true;
                 }
+              }
+              break;
+            
+            case 'bluesky':
+              // For Bluesky, ensure metrics object exists even if we can't fetch real metrics
+              if ((result.data.uri || result.data.cid) && !result.data.metrics) {
+                // Set default metrics for Bluesky if they don't exist
+                updatedResults[i] = {
+                  ...result,
+                  data: {
+                    ...result.data,
+                    metrics: {
+                      likes: 0,
+                      reposts: 0,
+                      replies: 0,
+                      quotes: 0,
+                      views: 0,
+                      impressions: 0,
+                      reach: 0
+                    }
+                  }
+                };
+                hasUpdates = true; // Mark as updated so it gets saved
               }
               break;
           }
