@@ -318,46 +318,16 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
                 </Badge>
               )}
             </CardTitle>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={async () => {
-                  const response = await fetch(`/api/facebook/permissions${selectedAccount ? `?accountId=${selectedAccount.id}` : ''}`);
-                  if (response.ok) {
-                    const data = await response.json();
-                    console.log('Permissions check:', data);
-                    if (data.accounts?.[0]) {
-                      const acc = data.accounts[0];
-                      if (!acc.hasFullAccess) {
-                        // Check if we're actually getting data despite permission issues
-                        if (pageInsights && (pageInsights.impressions?.value > 0 || pageInsights.engagement?.value > 0)) {
-                          toast.info(`${acc.pageName} has working analytics despite permission warnings`);
-                        } else {
-                          toast.warning(`${acc.pageName} may have limited analytics access. Try refreshing.`);
-                        }
-                      } else {
-                        toast.success(`${acc.pageName} analytics working correctly`);
-                      }
-                    }
-                  }
-                }}
-                className="text-xs"
-              >
-                <Info className="h-3 w-3 mr-1" />
-                Check Status
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="hover:shadow-md transition-all"
-              >
-                <RefreshCw className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")} />
-                {refreshing ? 'Refreshing...' : 'Refresh'}
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="hover:shadow-md transition-all"
+            >
+              <RefreshCw className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
           </div>
           <CardDescription>
             Your Facebook performance metrics
