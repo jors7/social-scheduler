@@ -63,6 +63,8 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
   const [hasMorePosts, setHasMorePosts] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [permissionsError, setPermissionsError] = useState<string | null>(null)
+  const [switchingAccount, setSwitchingAccount] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState('')
 
   const fetchFacebookInsights = async (accountId?: string) => {
     try {
@@ -333,17 +335,37 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
             Your Facebook performance metrics
           </CardDescription>
           {facebookAccounts.length > 1 && (
-            <div className="mt-2">
+            <div className="mt-2 flex items-center gap-2">
               <select
-                className="text-sm border rounded-lg px-3 py-1.5 bg-white"
+                className={cn(
+                  "text-sm border rounded-lg px-3 py-1.5 bg-white",
+                  switchingAccount && "opacity-60 cursor-wait"
+                )}
                 value={selectedAccount?.id || ''}
-                onChange={(e) => {
+                onChange={async (e) => {
                   const account = facebookAccounts.find(acc => acc.id === e.target.value)
-                  if (account) {
+                  if (account && !switchingAccount) {
+                    setSwitchingAccount(true)
+                    setLoadingMessage(`Loading analytics for ${account.display_name || account.username}...`)
+                    toast.info(`Switching to ${account.display_name || account.username}...`)
+                    
+                    // Set a timeout for long loading
+                    const timeoutId = setTimeout(() => {
+                      if (switchingAccount) {
+                        toast.info('Still loading, this may take a moment...')
+                      }
+                    }, 5000)
+                    
                     setSelectedAccount(account)
-                    fetchFacebookInsights(account.id)
+                    await fetchFacebookInsights(account.id)
+                    
+                    clearTimeout(timeoutId)
+                    setSwitchingAccount(false)
+                    setLoadingMessage('')
+                    toast.success('Analytics loaded successfully')
                   }
                 }}
+                disabled={switchingAccount}
               >
                 {facebookAccounts.map(account => (
                   <option key={account.id} value={account.id}>
@@ -351,10 +373,22 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
                   </option>
                 ))}
               </select>
+              {switchingAccount && (
+                <RefreshCw className="h-4 w-4 animate-spin text-gray-500" />
+              )}
             </div>
           )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative">
+          {/* Loading overlay */}
+          {switchingAccount && (
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
+              <div className="flex flex-col items-center gap-3">
+                <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+                <p className="text-sm text-gray-600 font-medium">{loadingMessage || 'Loading...'}</p>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {/* Impressions */}
             <div className="space-y-2">
@@ -439,7 +473,16 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
             Engagement metrics for your latest Facebook posts
           </CardDescription>
         </CardHeader>
-        <CardContent className="pt-6">
+        <CardContent className="pt-6 relative">
+          {/* Loading overlay for posts section */}
+          {switchingAccount && (
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
+              <div className="flex flex-col items-center gap-3">
+                <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+                <p className="text-sm text-gray-600 font-medium">Loading posts...</p>
+              </div>
+            </div>
+          )}
           {recentPosts.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Info className="mx-auto h-8 w-8 mb-2 text-gray-300" />
