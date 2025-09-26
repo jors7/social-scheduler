@@ -97,6 +97,9 @@ export default function PostsPage() {
       
       const scheduled: UnifiedPost[] = (scheduledData.posts || []).map((post: any) => ({
         ...post,
+        // Keep the original status (pending, posting, cancelled, etc.)
+        // but ensure we have a status field
+        status: post.status || 'pending',
         source: 'scheduled' as const
       }))
       
@@ -140,10 +143,18 @@ export default function PostsPage() {
 
   const filteredPosts = allPosts
     .filter(post => {
-      // Tab filtering
-      if (activeTab === 'scheduled' && !['pending', 'posting', 'cancelled'].includes(post.status)) return false
-      if (activeTab === 'posted' && post.status !== 'posted') return false
-      if (activeTab === 'draft' && post.status !== 'draft') return false
+      // Tab filtering - need to check both status and source for proper filtering
+      if (activeTab === 'scheduled') {
+        // For scheduled tab, show only posts with pending, posting, or cancelled status
+        if (!['pending', 'posting', 'cancelled'].includes(post.status)) return false
+      } else if (activeTab === 'posted') {
+        // For posted tab, show only posts with posted status
+        if (post.status !== 'posted') return false
+      } else if (activeTab === 'draft') {
+        // For draft tab, show only posts with draft status
+        if (post.status !== 'draft') return false
+      }
+      // activeTab === 'all' shows everything
       
       // Search filtering
       const content = stripHtml(post.content)
