@@ -11,7 +11,7 @@ interface AnalyticsData {
   totalImpressions: number
   engagementRate: number
   topPlatform: string
-  postedPosts: any[]
+  allPosts: any[]
   platformStats: Record<string, any>
 }
 
@@ -26,25 +26,40 @@ export function ReachChart({ analyticsData }: ReachChartProps) {
     return <div className="h-[500px] sm:h-[550px] animate-pulse bg-gray-200 rounded"></div>
   }
   
-  // Generate chart data from posted posts - group by date
+  // Generate chart data from all posts - group by date
   const dataMap = new Map<string, any>()
   
-  analyticsData.postedPosts.forEach(post => {
-    if (!post.posted_at) return // Skip posts without posted_at
-    
+  analyticsData.allPosts.forEach(post => {
+    // Get the posted date and metrics based on platform
+    let dateStr = ''
     let reach = 0
     let impressions = 0
     
-    if (post.post_results && Array.isArray(post.post_results)) {
-      post.post_results.forEach((result: any) => {
-        if (result.success && result.data?.metrics) {
-          reach += result.data.metrics.views || result.data.metrics.impressions || 0
-          impressions += result.data.metrics.views || result.data.metrics.impressions || 0
-        }
-      })
+    // Handle different data structures from various platforms
+    if (post.platform === 'facebook') {
+      dateStr = post.created_time || post.timestamp || ''
+      reach = post.reach || 0
+      impressions = post.impressions || reach || 0
+    } else if (post.platform === 'instagram') {
+      dateStr = post.timestamp || ''
+      reach = post.reach || 0
+      impressions = post.impressions || reach || 0
+    } else if (post.platform === 'threads') {
+      dateStr = post.timestamp || ''
+      reach = post.views || 0
+      impressions = post.views || 0 // Threads only has views
+    } else if (post.platform === 'bluesky') {
+      dateStr = post.createdAt || ''
+      // Bluesky doesn't provide real reach/impressions
+      reach = 0
+      impressions = 0
     }
     
-    const date = new Date(post.posted_at)
+    if (!dateStr) return // Skip posts without date
+    
+    const date = new Date(dateStr)
+    if (isNaN(date.getTime())) return // Skip invalid dates
+    
     const dateKey = date.toISOString().split('T')[0] // Use YYYY-MM-DD as key
     
     // Format date consistently

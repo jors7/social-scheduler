@@ -12,7 +12,7 @@ interface AnalyticsData {
   totalImpressions: number
   engagementRate: number
   topPlatform: string
-  postedPosts: any[]
+  allPosts: any[]
   platformStats: Record<string, any>
 }
 
@@ -54,54 +54,62 @@ export function TopPosts({ analyticsData }: TopPostsProps) {
   }
   
   // Calculate top posts based on engagement
-  const topPosts = analyticsData.postedPosts
+  const topPosts = analyticsData.allPosts
     .map(post => {
+      // Handle different data structures from various platform APIs
       let totalEngagement = 0
       let totalReach = 0
+      let content = ''
+      let posted_at = ''
+      let hasMedia = false
       const platforms: string[] = []
       
-      if (post.post_results && Array.isArray(post.post_results)) {
-        post.post_results.forEach((result: any) => {
-          if (result.success && result.data) {
-            platforms.push(result.platform)
-            if (result.data.metrics) {
-              // Handle metrics for all platforms
-              const metrics = result.data.metrics
-              const engagement = 
-                (metrics.likes || 0) + 
-                (metrics.comments || 0) + 
-                (metrics.shares || 0) +
-                (metrics.replies || 0) +     // Threads
-                (metrics.reposts || 0) +     // Threads
-                (metrics.quotes || 0) +       // Threads
-                (metrics.reactions || 0)      // Facebook
-              totalEngagement += engagement
-              totalReach += metrics.views || metrics.impressions || metrics.reach || 0
-            }
-          }
-        })
+      // Add platform to list
+      if (post.platform) {
+        platforms.push(post.platform)
       }
       
-      // Also check for platform-specific metrics that might be stored separately
-      if (post.facebook_metrics) {
-        if (!platforms.includes('facebook')) {
-          platforms.push('facebook')
-        }
-        const metrics = post.facebook_metrics
-        const fbEngagement = (metrics.likes || 0) + (metrics.comments || 0) + 
-                           (metrics.shares || 0) + (metrics.reactions || 0)
-        totalEngagement = Math.max(totalEngagement, fbEngagement)
-        totalReach = Math.max(totalReach, metrics.views || metrics.impressions || metrics.reach || 0)
+      // Facebook posts
+      if (post.platform === 'facebook') {
+        content = post.message || ''
+        totalEngagement = (post.likes || 0) + (post.comments || 0) + (post.shares || 0) + (post.reactions || 0)
+        totalReach = post.reach || post.impressions || 0
+        posted_at = post.created_time || post.timestamp || ''
+        hasMedia = post.type === 'photo' || post.type === 'video'
+      }
+      // Instagram posts
+      else if (post.platform === 'instagram') {
+        content = post.caption || ''
+        totalEngagement = (post.likes || 0) + (post.comments || 0) + (post.saves || 0)
+        totalReach = post.reach || post.impressions || 0
+        posted_at = post.timestamp || ''
+        hasMedia = post.media_type === 'IMAGE' || post.media_type === 'VIDEO' || post.media_type === 'CAROUSEL_ALBUM'
+      }
+      // Threads posts
+      else if (post.platform === 'threads') {
+        content = post.text || ''
+        totalEngagement = (post.likes || 0) + (post.replies || 0) + (post.reposts || 0) + (post.quotes || 0)
+        totalReach = post.views || 0
+        posted_at = post.timestamp || ''
+        hasMedia = post.media_type === 'IMAGE' || post.media_type === 'VIDEO'
+      }
+      // Bluesky posts
+      else if (post.platform === 'bluesky') {
+        content = post.text || ''
+        totalEngagement = (post.likes || 0) + (post.reposts || 0) + (post.replies || 0) + (post.quotes || 0)
+        totalReach = post.likes + post.reposts // Bluesky doesn't provide view counts
+        posted_at = post.createdAt || ''
+        hasMedia = false // Would need to check post.embed for media
       }
       
       return {
         id: post.id,
-        content: stripHtml(post.content || post.title || ''),
-        platforms: platforms.length > 0 ? platforms : (post.platforms || []),
+        content: stripHtml(content),
+        platforms: platforms,
         engagement: totalEngagement,
         reach: totalReach,
-        posted_at: post.posted_at || post.uploaded_at || post.scheduled_for,
-        hasMedia: (post.media_urls && post.media_urls.length > 0) || platforms.includes('youtube')
+        posted_at: posted_at,
+        hasMedia: hasMedia
       }
     })
     .sort((a, b) => {

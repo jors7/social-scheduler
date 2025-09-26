@@ -38,11 +38,16 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // Use specified account or first available
+    // Use the found account (will be the specific one if accountId was provided, or first available)
     const account = accounts[0];
 
     // Fetch both posts and videos (including reels) from Facebook
-    console.log('Fetching Facebook media from API');
+    console.log('Fetching Facebook media from API for:', {
+      accountId: account.id,
+      username: account.username,
+      platform_user_id: account.platform_user_id,
+      requestedAccountId: accountId
+    });
     
     // Prepare URLs for parallel fetching - use simpler attachment fields
     const postsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url,full_picture,attachments,likes.summary(true),comments.summary(true),shares,reactions.summary(true)&limit=${limit}&access_token=${account.access_token}`;

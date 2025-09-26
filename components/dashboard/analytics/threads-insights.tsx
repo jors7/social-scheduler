@@ -489,6 +489,93 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
         </CardContent>
       </Card>
 
+      {/* Top Performing Posts */}
+      {recentPosts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Top Performing Posts
+            </CardTitle>
+            <CardDescription>
+              Your best posts based on engagement
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {(() => {
+                // Ensure metrics exist and calculate engagement
+                const postsWithEngagement = recentPosts.map(post => {
+                  const engagement = (post.metrics?.likes || 0) + 
+                                    (post.metrics?.replies || 0) + 
+                                    (post.metrics?.reposts || 0) + 
+                                    (post.metrics?.quotes || 0);
+                  return { ...post, totalEngagement: engagement };
+                });
+                
+                // Debug logging
+                console.log('[Threads] Posts engagement before sorting:', 
+                  postsWithEngagement.map(p => ({
+                    text: p.text?.substring(0, 30),
+                    engagement: p.totalEngagement,
+                    date: p.timestamp
+                  }))
+                );
+                
+                // Sort by engagement (highest first), then by date if equal
+                const sortedPosts = postsWithEngagement.sort((a, b) => {
+                  // First sort by engagement
+                  if (a.totalEngagement !== b.totalEngagement) {
+                    return b.totalEngagement - a.totalEngagement;
+                  }
+                  // If engagement is equal, sort by date (newest first)
+                  return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+                });
+                
+                // Take top 3 posts
+                return sortedPosts.slice(0, 3).map((post, index) => {
+                  const totalEngagement = post.totalEngagement
+                  const formatDate = (dateString: string) => {
+                    const date = new Date(dateString)
+                    const now = new Date()
+                    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+                    
+                    if (diffInHours < 24) {
+                      return `${Math.floor(diffInHours)}h ago`
+                    } else if (diffInHours < 48) {
+                      return 'Yesterday'
+                    } else {
+                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    }
+                  }
+
+                  return (
+                    <div key={post.id} className="flex items-start gap-3">
+                      <div className={cn(
+                        "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm",
+                        index === 0 && "bg-gradient-to-r from-yellow-400 to-orange-400",
+                        index === 1 && "bg-gradient-to-r from-gray-400 to-gray-500",
+                        index === 2 && "bg-gradient-to-r from-orange-400 to-orange-500"
+                      )}>
+                        {index + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-700 line-clamp-2">{post.text || 'No text'}</p>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                          <span>{formatNumber(totalEngagement)} engagements</span>
+                          <span>{formatNumber(post.metrics?.views || 0)} views</span>
+                          <span>{formatDate(post.timestamp)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })
+              })()}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Recent Posts Performance */}
       <Card className="overflow-hidden border border-gray-200">
         <CardHeader className="bg-gray-50 border-b border-gray-200">
@@ -645,72 +732,6 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
           )}
         </CardContent>
       </Card>
-
-      {/* Top Performing Posts */}
-      {recentPosts.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Top Performing Posts
-            </CardTitle>
-            <CardDescription>
-              Your best posts based on engagement
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentPosts
-                .sort((a, b) => {
-                  const engagementA = (a.metrics?.likes || 0) + (a.metrics?.replies || 0) + 
-                                      (a.metrics?.reposts || 0) + (a.metrics?.quotes || 0)
-                  const engagementB = (b.metrics?.likes || 0) + (b.metrics?.replies || 0) + 
-                                      (b.metrics?.reposts || 0) + (b.metrics?.quotes || 0)
-                  return engagementB - engagementA
-                })
-                .slice(0, 3)
-                .map((post, index) => {
-                  const totalEngagement = (post.metrics?.likes || 0) + (post.metrics?.replies || 0) + 
-                                         (post.metrics?.reposts || 0) + (post.metrics?.quotes || 0)
-                  const formatDate = (dateString: string) => {
-                    const date = new Date(dateString)
-                    const now = new Date()
-                    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-                    
-                    if (diffInHours < 24) {
-                      return `${Math.floor(diffInHours)}h ago`
-                    } else if (diffInHours < 48) {
-                      return 'Yesterday'
-                    } else {
-                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                    }
-                  }
-
-                  return (
-                    <div key={post.id} className="flex items-start gap-3">
-                      <div className={cn(
-                        "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm",
-                        index === 0 && "bg-gradient-to-r from-yellow-400 to-orange-400",
-                        index === 1 && "bg-gradient-to-r from-gray-400 to-gray-500",
-                        index === 2 && "bg-gradient-to-r from-orange-400 to-orange-500"
-                      )}>
-                        {index + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-700 line-clamp-2">{post.text || 'No text'}</p>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                          <span>{formatNumber(totalEngagement)} engagements</span>
-                          <span>{formatNumber(post.metrics?.views || 0)} views</span>
-                          <span>{formatDate(post.timestamp)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

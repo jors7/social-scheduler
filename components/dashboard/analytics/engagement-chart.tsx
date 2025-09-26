@@ -9,7 +9,7 @@ interface AnalyticsData {
   totalImpressions: number
   engagementRate: number
   topPlatform: string
-  postedPosts: any[]
+  allPosts: any[]
   platformStats: Record<string, any>
 }
 
@@ -22,37 +22,44 @@ export function EngagementChart({ analyticsData }: EngagementChartProps) {
     return <div className="h-[250px] sm:h-[300px] animate-pulse bg-gray-200 rounded"></div>
   }
   
-  // Generate chart data from posted posts - group by date
+  // Generate chart data from all posts - group by date
   const dataMap = new Map<string, any>()
   
-  analyticsData.postedPosts.forEach(post => {
-    if (!post.posted_at) return // Skip posts without posted_at
-    
+  analyticsData.allPosts.forEach(post => {
+    // Get the posted date based on platform
+    let dateStr = ''
     let likes = 0
     let comments = 0
     let shares = 0
     
-    if (post.post_results && Array.isArray(post.post_results)) {
-      post.post_results.forEach((result: any) => {
-        if (result.success && result.data?.metrics) {
-          const metrics = result.data.metrics
-          likes += metrics.likes || 0
-          
-          // Handle platform-specific metrics
-          if (result.platform === 'threads') {
-            // Threads uses replies instead of comments
-            comments += metrics.replies || 0
-            // Threads uses reposts and quotes instead of shares
-            shares += (metrics.reposts || 0) + (metrics.quotes || 0)
-          } else {
-            comments += metrics.comments || 0
-            shares += metrics.shares || 0
-          }
-        }
-      })
+    // Handle different date field names from various platforms
+    if (post.platform === 'facebook') {
+      dateStr = post.created_time || post.timestamp || ''
+      likes = post.likes || 0
+      comments = post.comments || 0
+      shares = post.shares || 0
+    } else if (post.platform === 'instagram') {
+      dateStr = post.timestamp || ''
+      likes = post.likes || 0
+      comments = post.comments || 0
+      shares = post.saves || 0 // Use saves as shares for Instagram
+    } else if (post.platform === 'threads') {
+      dateStr = post.timestamp || ''
+      likes = post.likes || 0
+      comments = post.replies || 0
+      shares = (post.reposts || 0) + (post.quotes || 0)
+    } else if (post.platform === 'bluesky') {
+      dateStr = post.createdAt || ''
+      likes = post.likes || 0
+      comments = post.replies || 0
+      shares = post.reposts || 0
     }
     
-    const date = new Date(post.posted_at)
+    if (!dateStr) return // Skip posts without date
+    
+    const date = new Date(dateStr)
+    if (isNaN(date.getTime())) return // Skip invalid dates
+    
     const dateKey = date.toISOString().split('T')[0] // Use YYYY-MM-DD as key
     
     // Format date consistently

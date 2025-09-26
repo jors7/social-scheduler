@@ -18,7 +18,9 @@ import {
   Linkedin,
   Twitter,
   RefreshCw,
-  Activity
+  Activity,
+  Clock,
+  AlertCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -41,10 +43,20 @@ interface PlatformMetrics {
   quotes?: number
 }
 
+// Enhanced in-memory cache with platform-specific caching
+const metricsCache = {
+  data: null as any,
+  timestamp: 0,
+  TTL: 30 * 60 * 1000, // 30 minutes cache for better performance
+  platformData: new Map<string, { data: any, timestamp: number, error?: string }>()
+}
+
 export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatformsOverviewProps) {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [platformMetrics, setPlatformMetrics] = useState<PlatformMetrics[]>([])
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [platformErrors, setPlatformErrors] = useState<Record<string, string>>({})
   const [totalMetrics, setTotalMetrics] = useState({
     posts: 0,
     engagement: 0,
@@ -56,48 +68,67 @@ export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatf
 
   useEffect(() => {
     fetchAllPlatformMetrics()
-    // Set up an interval to refresh data every 30 seconds
-    const interval = setInterval(() => {
-      fetchAllPlatformMetrics()
-    }, 30000)
-    
-    return () => clearInterval(interval)
   }, [connectedPlatforms.join(',')])
 
   const fetchAllPlatformMetrics = async (isRefresh = false) => {
     try {
+      // Check cache first (unless it's a manual refresh)
+      if (!isRefresh && metricsCache.data && (Date.now() - metricsCache.timestamp < metricsCache.TTL)) {
+        // Use cached data
+        setPlatformMetrics(metricsCache.data.platformMetrics)
+        setTotalMetrics(metricsCache.data.totalMetrics)
+        setLastUpdated(new Date(metricsCache.timestamp))
+        setLoading(false)
+        return
+      }
+      
       if (isRefresh) {
         setRefreshing(true)
       } else {
         setLoading(true)
       }
       
-      // Fetch all posts - add cache busting to ensure fresh data
-      const [draftsResponse, scheduledResponse] = await Promise.all([
-        fetch('/api/drafts?t=' + Date.now()),
-        fetch('/api/posts/schedule?t=' + Date.now())
-      ])
-      
-      if (!draftsResponse.ok || !scheduledResponse.ok) {
-        throw new Error('Failed to fetch posts data')
+      // Fetch real-time data from platform analytics APIs with smart caching
+      const fetchWithCache = async (platform: string, url: string) => {
+        try {
+          const res = await fetch(url)
+          if (res.ok) {
+            const data = await res.json()
+            // Cache successful response
+            metricsCache.platformData.set(platform, {
+              data,
+              timestamp: Date.now()
+            })
+            return data
+          } else {
+            // Try to use cached data if available
+            const cached = metricsCache.platformData.get(platform)
+            if (cached && (Date.now() - cached.timestamp < metricsCache.TTL)) {
+              console.log(`Using cached data for ${platform} due to API error`)
+              return cached.data
+            }
+            return { metrics: null, error: `Failed to fetch ${platform} data` }
+          }
+        } catch (error) {
+          // Try to use cached data on network error
+          const cached = metricsCache.platformData.get(platform)
+          if (cached && (Date.now() - cached.timestamp < metricsCache.TTL)) {
+            console.log(`Using cached data for ${platform} due to network error`)
+            return cached.data
+          }
+          return { metrics: null, error: `Network error for ${platform}` }
+        }
       }
       
-      const [draftsData, scheduledData] = await Promise.all([
-        draftsResponse.json(),
-        scheduledResponse.json()
+      const [facebookData, instagramData, threadsData, blueskyData] = await Promise.all([
+        fetchWithCache('facebook', '/api/analytics/facebook?days=7'),
+        fetchWithCache('instagram', '/api/analytics/instagram?days=7'),
+        fetchWithCache('threads', '/api/analytics/threads?days=7'),
+        fetchWithCache('bluesky', '/api/analytics/bluesky?days=7')
       ])
       
-      const drafts = draftsData.drafts || []
-      const scheduled = scheduledData.posts || []
-      const allPosts = [...drafts, ...scheduled]
-      const postedPosts = scheduled.filter((post: any) => post.status === 'posted')
-      
-      console.log('All Platforms Overview - Posts count:', {
-        drafts: drafts.length,
-        scheduled: scheduled.length,
-        posted: postedPosts.length,
-        total: allPosts.length
-      })
+      // Track errors for display
+      const errors: Record<string, string> = {}
       
       // Initialize all platforms with zero metrics
       const allPlatforms = ['facebook', 'instagram', 'threads', 'twitter', 'linkedin', 'bluesky', 'pinterest', 'tiktok', 'youtube']
@@ -120,59 +151,109 @@ export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatf
         })
       })
       
-      // Update metrics for platforms with posted content
-      postedPosts.forEach((post: any) => {
-        if (post.post_results && Array.isArray(post.post_results)) {
-          post.post_results.forEach((result: any) => {
-            if (result.success && result.data) {
-              const platform = result.platform.toLowerCase()
-              
-              const metrics = metricsMap.get(platform)
-              if (metrics) {
-                metrics.posts++
-                
-                if (result.data.metrics) {
-                  const m = result.data.metrics
-                  metrics.likes += m.likes || 0
-                  metrics.comments += m.comments || 0
-                  metrics.shares += m.shares || 0
-                  metrics.views = (metrics.views || 0) + (m.views || 0)
-                  metrics.replies = (metrics.replies || 0) + (m.replies || 0)
-                  metrics.reposts = (metrics.reposts || 0) + (m.reposts || 0)
-                  metrics.quotes = (metrics.quotes || 0) + (m.quotes || 0)
-                  
-                  // Calculate engagement based on platform
-                  if (platform === 'threads') {
-                    metrics.totalEngagement += (m.likes || 0) + (m.replies || 0) + (m.reposts || 0) + (m.quotes || 0) + (m.shares || 0)
-                  } else {
-                    metrics.totalEngagement += (m.likes || 0) + (m.comments || 0) + (m.shares || 0)
-                  }
-                  
-                  metrics.totalReach += m.views || m.impressions || m.reach || 0
-                }
-              }
-            }
-          })
-        }
-      })
+      // Process Facebook data
+      if (facebookData.metrics) {
+        const metrics = metricsMap.get('facebook')!
+        const m = facebookData.metrics
+        metrics.posts = m.totalPosts
+        metrics.totalEngagement = m.totalEngagement
+        metrics.totalReach = m.totalReach
+        
+        // Aggregate metrics from posts
+        m.posts.forEach((post: any) => {
+          metrics.likes += post.likes || 0
+          metrics.comments += post.comments || 0
+          metrics.shares += post.shares || 0
+        })
+      } else if (facebookData.error) {
+        errors.facebook = 'Unable to load Facebook data'
+      }
+      
+      // Process Instagram data
+      if (instagramData.metrics) {
+        const metrics = metricsMap.get('instagram')!
+        const m = instagramData.metrics
+        metrics.posts = m.totalPosts
+        metrics.totalEngagement = m.totalEngagement
+        metrics.totalReach = m.totalReach
+        
+        // Aggregate metrics from posts
+        m.posts.forEach((post: any) => {
+          metrics.likes += post.likes || 0
+          metrics.comments += post.comments || 0
+          metrics.shares += post.saves || 0 // Instagram uses saves as shares
+        })
+      } else if (instagramData.error) {
+        errors.instagram = 'Token expired - reconnect needed'
+      }
+      
+      // Process Threads data
+      if (threadsData.metrics) {
+        const metrics = metricsMap.get('threads')!
+        const m = threadsData.metrics
+        metrics.posts = m.totalPosts
+        metrics.totalEngagement = m.totalEngagement
+        metrics.totalReach = m.totalViews
+        metrics.views = m.totalViews
+        
+        // Aggregate metrics from posts
+        m.posts.forEach((post: any) => {
+          metrics.likes += post.likes || 0
+          metrics.replies = (metrics.replies || 0) + (post.replies || 0)
+          metrics.reposts = (metrics.reposts || 0) + (post.reposts || 0)
+          metrics.quotes = (metrics.quotes || 0) + (post.quotes || 0)
+        })
+        
+        // For Threads, comments are replies
+        metrics.comments = metrics.replies || 0
+      }
+      
+      // Process Bluesky data
+      if (blueskyData.metrics) {
+        const metrics = metricsMap.get('bluesky')!
+        const m = blueskyData.metrics
+        metrics.posts = m.totalPosts
+        metrics.totalEngagement = m.totalEngagement
+        metrics.totalReach = m.totalReach
+        
+        // Aggregate metrics from posts
+        m.posts.forEach((post: any) => {
+          metrics.likes += post.likes || 0
+          metrics.replies = (metrics.replies || 0) + (post.replies || 0)
+          metrics.reposts = (metrics.reposts || 0) + (post.reposts || 0)
+          metrics.quotes = (metrics.quotes || 0) + (post.quotes || 0)
+        })
+        
+        // For Bluesky, comments are replies and shares are reposts
+        metrics.comments = metrics.replies || 0
+        metrics.shares = metrics.reposts || 0
+      } else if (blueskyData.error) {
+        errors.bluesky = 'Rate limited - try again later'
+      }
       
       const platformMetricsArray = Array.from(metricsMap.values())
       setPlatformMetrics(platformMetricsArray)
+      setPlatformErrors(errors)
       
       // Calculate totals
-      // For posts, count the actual number of posted posts, not the number of successful results
-      const totalPostsCount = postedPosts.length
-      
       const totals = platformMetricsArray.reduce((acc, pm) => ({
-        posts: totalPostsCount, // Use actual posted posts count
+        posts: acc.posts + pm.posts,
         engagement: acc.engagement + pm.totalEngagement,
         reach: acc.reach + pm.totalReach,
         likes: acc.likes + pm.likes,
-        comments: acc.comments + pm.comments + (pm.replies || 0),
-        shares: acc.shares + pm.shares + (pm.reposts || 0)
-      }), { posts: totalPostsCount, engagement: 0, reach: 0, likes: 0, comments: 0, shares: 0 })
+        comments: acc.comments + pm.comments,
+        shares: acc.shares + pm.shares
+      }), { posts: 0, engagement: 0, reach: 0, likes: 0, comments: 0, shares: 0 })
       
       setTotalMetrics(totals)
+      
+      // Update cache
+      metricsCache.data = {
+        platformMetrics: platformMetricsArray,
+        totalMetrics: totals
+      }
+      metricsCache.timestamp = Date.now()
+      setLastUpdated(new Date())
       
     } catch (error) {
       console.error('Error fetching platform metrics:', error)
@@ -243,27 +324,72 @@ export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatf
     }
   }
   
-  const platformsWithReach = ['facebook', 'instagram', 'threads'] // Platforms that have reach metrics
-
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
     return num.toString()
   }
 
-  if (loading) {
+  if (loading && !metricsCache.data) {
     return (
-      <div className={cn("space-y-4", className)}>
-        {[1, 2].map((i) => (
-          <Card key={i}>
-            <CardContent className="py-8">
-              <div className="animate-pulse space-y-3">
-                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+      <div className={cn("space-y-6", className)}>
+        <Card className="overflow-hidden">
+          <CardContent className="py-16">
+            <div className="flex flex-col items-center justify-center space-y-6">
+              {/* Animated Loading Circle */}
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full border-4 border-gray-200"></div>
+                <div className="absolute top-0 left-0 w-24 h-24 rounded-full border-4 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent animate-spin"></div>
+                
+                {/* Center Icon */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <BarChart3 className="h-10 w-10 text-blue-500 animate-pulse" />
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+              
+              {/* Loading Text */}
+              <div className="text-center space-y-2">
+                <h3 className="text-lg font-semibold text-gray-900">Loading Analytics</h3>
+                <p className="text-sm text-gray-500">Fetching data from your connected platforms...</p>
+              </div>
+              
+              {/* Platform Icons */}
+              <div className="flex space-x-3">
+                {['facebook', 'instagram', 'threads', 'bluesky'].map((platform, index) => (
+                  <div
+                    key={platform}
+                    className={cn(
+                      "w-10 h-10 rounded-lg flex items-center justify-center text-white animate-pulse",
+                      getPlatformColor(platform).replace('from-', 'bg-').split(' ')[0]
+                    )}
+                    style={{
+                      animationDelay: `${index * 200}ms`
+                    }}
+                  >
+                    {getPlatformIcon(platform)}
+                  </div>
+                ))}
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse" 
+                     style={{
+                       animation: 'loading 2s ease-in-out infinite'
+                     }}
+                />
+              </div>
+              
+              <style jsx>{`
+                @keyframes loading {
+                  0% { width: 0%; }
+                  50% { width: 70%; }
+                  100% { width: 100%; }
+                }
+              `}</style>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -283,14 +409,27 @@ export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatf
                 Aggregated metrics across all your connected platforms
               </CardDescription>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fetchAllPlatformMetrics(true)}
-              disabled={refreshing}
-            >
-              <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-            </Button>
+            <div className="flex items-center gap-2">
+              {lastUpdated && (
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <Clock className="h-3 w-3" />
+                  <span>
+                    Updated {new Date().getTime() - lastUpdated.getTime() < 60000 
+                      ? 'just now' 
+                      : `${Math.floor((new Date().getTime() - lastUpdated.getTime()) / 60000)} min ago`}
+                  </span>
+                </div>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchAllPlatformMetrics(true)}
+                disabled={refreshing}
+              >
+                <RefreshCw className={cn("h-4 w-4 mr-1", refreshing && "animate-spin")} />
+                Refresh
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -383,12 +522,25 @@ export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatf
               }).map((pm) => (
                 <div 
                   key={pm.platform} 
-                  className="flex flex-col items-center group"
+                  className="flex flex-col items-center group relative"
                 >
+                  {/* Error indicator */}
+                  {platformErrors[pm.platform] && (
+                    <div className="absolute -top-1 -right-1 z-10">
+                      <div className="relative group/tooltip">
+                        <AlertCircle className="h-4 w-4 text-red-500 animate-pulse" />
+                        <div className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none">
+                          {platformErrors[pm.platform]}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Platform Icon */}
                   <div className={cn(
                     "p-2.5 rounded-lg bg-gradient-to-br text-white mb-2 transition-all duration-200 group-hover:scale-110 group-hover:shadow-lg",
-                    getPlatformColor(pm.platform)
+                    getPlatformColor(pm.platform),
+                    platformErrors[pm.platform] && "opacity-60"
                   )}>
                     {getPlatformIcon(pm.platform)}
                   </div>
@@ -416,7 +568,7 @@ export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatf
                     {/* Reach */}
                     <div className="text-center">
                       <p className="text-sm font-bold text-gray-900">
-                        {platformsWithReach.includes(pm.platform.toLowerCase()) && pm.totalReach > 0 
+                        {pm.totalReach > 0 
                           ? formatNumber(pm.totalReach) 
                           : '-'}
                       </p>

@@ -70,6 +70,8 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
     try {
       setLoading(true)
       
+      console.log(`[Facebook Insights] fetchFacebookInsights called with accountId: ${accountId}`)
+      
       // Check if Facebook account is connected
       const accountResponse = await fetch('/api/social-accounts')
       if (!accountResponse.ok) {
@@ -152,18 +154,48 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
         }
       }
 
-      // Fetch recent posts directly from Facebook
+      // Fetch recent posts - if accountId provided, find that account, otherwise use selected or first
+      let accountToFetch = selectedAccount || facebookAccountsList[0]
+      if (accountId) {
+        accountToFetch = facebookAccountsList.find((acc: any) => acc.id === accountId) || accountToFetch
+      }
+      
+      if (!accountToFetch) {
+        setRecentPosts([])
+        setHasMorePosts(false)
+        return
+      }
+      
       const mediaQueryParams = new URLSearchParams({
         limit: postsLimit.toString(),
-        ...(accountToUse?.id && { accountId: accountToUse.id })
+        accountId: accountToFetch.id
       })
+      
+      console.log(`[Facebook Insights] Fetching media for account:`, {
+        id: accountToFetch.id,
+        username: accountToFetch.username,
+        url: `/api/facebook/media?${mediaQueryParams.toString()}`
+      })
+      
       const mediaResponse = await fetch(`/api/facebook/media?${mediaQueryParams}`)
       if (mediaResponse.ok) {
-        const { media } = await mediaResponse.json()
+        const data = await mediaResponse.json()
+        const { media } = data
+        console.log(`[Facebook Insights] Response for ${accountToFetch.username}:`, {
+          mediaCount: media?.length || 0,
+          firstPost: media?.[0] ? { 
+            message: media[0].message?.substring(0, 30), 
+            created_time: media[0].created_time 
+          } : null,
+          accountInfo: data.account
+        })
         setRecentPosts(media || [])
-        
         // Check if there might be more posts available
-        setHasMorePosts(media && media.length === postsLimit)
+        setHasMorePosts((media?.length || 0) >= postsLimit)
+      } else {
+        console.error(`[Facebook Insights] Failed to fetch media for ${accountToFetch.username}`)
+        setRecentPosts([])
+        setHasMorePosts(false)
       }
     } catch (error) {
       console.error('Error fetching Facebook insights:', error)
@@ -453,6 +485,93 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
         </CardContent>
       </Card>
 
+      {/* Top Performing Posts */}
+      {recentPosts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Top Performing Posts
+            </CardTitle>
+            <CardDescription>
+              Your best posts based on engagement
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {(() => {
+                // Ensure metrics exist and calculate engagement
+                const postsWithEngagement = recentPosts.map(post => {
+                  const engagement = (post.metrics?.reactions || 0) + 
+                                    (post.metrics?.likes || 0) + 
+                                    (post.metrics?.comments || 0) + 
+                                    (post.metrics?.shares || 0);
+                  return { ...post, totalEngagement: engagement };
+                });
+                
+                // Debug logging
+                console.log('[Facebook] Posts engagement before sorting:', 
+                  postsWithEngagement.map(p => ({
+                    message: p.message?.substring(0, 30),
+                    engagement: p.totalEngagement,
+                    date: p.created_time
+                  }))
+                );
+                
+                // Sort by engagement (highest first), then by date if equal
+                const sortedPosts = postsWithEngagement.sort((a, b) => {
+                  // First sort by engagement
+                  if (a.totalEngagement !== b.totalEngagement) {
+                    return b.totalEngagement - a.totalEngagement;
+                  }
+                  // If engagement is equal, sort by date (newest first)
+                  return new Date(b.created_time).getTime() - new Date(a.created_time).getTime();
+                });
+                
+                // Take top 3 posts
+                return sortedPosts.slice(0, 3).map((post, index) => {
+                  const totalEngagement = post.totalEngagement
+                  const formatDate = (dateString: string) => {
+                    const date = new Date(dateString)
+                    const now = new Date()
+                    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+                    
+                    if (diffInHours < 24) {
+                      return `${Math.floor(diffInHours)}h ago`
+                    } else if (diffInHours < 48) {
+                      return 'Yesterday'
+                    } else {
+                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    }
+                  }
+
+                  return (
+                    <div key={post.id} className="flex items-start gap-3">
+                      <div className={cn(
+                        "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm",
+                        index === 0 && "bg-gradient-to-r from-yellow-400 to-orange-400",
+                        index === 1 && "bg-gradient-to-r from-gray-400 to-gray-500",
+                        index === 2 && "bg-gradient-to-r from-orange-400 to-orange-500"
+                      )}>
+                        {index + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-700 line-clamp-2">{post.message}</p>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                          <span>{formatNumber(totalEngagement)} engagements</span>
+                          <span>{formatNumber(post.metrics?.views || post.metrics?.impressions || post.metrics?.reach || 0)} views</span>
+                          <span>{formatDate(post.created_time)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })
+              })()}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Recent Posts Performance */}
       <Card className="overflow-hidden border border-gray-200">
         <CardHeader className="bg-gray-50 border-b border-gray-200">
@@ -591,70 +710,6 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
           )}
         </CardContent>
       </Card>
-
-      {/* Top Performing Posts */}
-      {recentPosts.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Top Performing Posts
-            </CardTitle>
-            <CardDescription>
-              Your best posts based on engagement
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentPosts
-                .sort((a, b) => {
-                  const engagementA = (a.metrics?.reactions || 0) + (a.metrics?.likes || 0) + (a.metrics?.comments || 0) + (a.metrics?.shares || 0)
-                  const engagementB = (b.metrics?.reactions || 0) + (b.metrics?.likes || 0) + (b.metrics?.comments || 0) + (b.metrics?.shares || 0)
-                  return engagementB - engagementA
-                })
-                .slice(0, 3)
-                .map((post, index) => {
-                  const totalEngagement = (post.metrics?.reactions || 0) + (post.metrics?.likes || 0) + 
-                                         (post.metrics?.comments || 0) + (post.metrics?.shares || 0)
-                  const formatDate = (dateString: string) => {
-                    const date = new Date(dateString)
-                    const now = new Date()
-                    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-                    
-                    if (diffInHours < 24) {
-                      return `${Math.floor(diffInHours)}h ago`
-                    } else if (diffInHours < 48) {
-                      return 'Yesterday'
-                    } else {
-                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                    }
-                  }
-
-                  return (
-                    <div key={post.id} className="flex items-start gap-3">
-                      <div className={cn(
-                        "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm",
-                        index === 0 && "bg-gradient-to-r from-yellow-400 to-orange-400",
-                        index === 1 && "bg-gradient-to-r from-gray-400 to-gray-500",
-                        index === 2 && "bg-gradient-to-r from-orange-400 to-orange-500"
-                      )}>
-                        {index + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-700 line-clamp-2">{post.message}</p>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                          <span>{formatNumber(totalEngagement)} engagements</span>
-                          <span>{formatNumber(post.metrics?.views || post.metrics?.impressions || post.metrics?.reach || 0)} views</span>
-                          <span>{formatDate(post.created_time)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

@@ -9,7 +9,7 @@ interface AnalyticsData {
   totalImpressions: number
   engagementRate: number
   topPlatform: string
-  postedPosts: any[]
+  allPosts: any[]
   platformStats: Record<string, any>
 }
 
