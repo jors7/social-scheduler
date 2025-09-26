@@ -37,7 +37,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { getClientSubscription } from '@/lib/subscription/client'
@@ -347,16 +347,18 @@ export default function DashboardPage() {
     }
   }
   
-  // Fetch analytics data from platform APIs with caching
+  // Fetch analytics data from platform APIs
   const fetchAnalyticsData = async () => {
-    // Check cache first
-    if (analyticsCache && Date.now() - analyticsCache.timestamp < CACHE_DURATION) {
-      return analyticsCache.data
+    console.log('[Dashboard] fetchAnalyticsData called')
+    if (fetchingAnalytics || analyticsLoaded) {
+      console.log('[Dashboard] Skipping fetch - already fetching or loaded')
+      return
     }
 
     setFetchingAnalytics(true)
     try {
       // Fetch data from all platforms in parallel (last 7 days for dashboard)
+      console.log('[Dashboard] Fetching analytics from APIs...')
       const [facebookRes, instagramRes, threadsRes, blueskyRes] = await Promise.all([
         fetch(`/api/analytics/facebook?days=7`),
         fetch(`/api/analytics/instagram?days=7`),
@@ -384,6 +386,7 @@ export default function DashboardPage() {
         totalEngagement += metrics.totalEngagement
         totalReach += metrics.totalReach
         totalImpressions += metrics.totalImpressions
+        console.log('[Dashboard] Facebook metrics:', metrics)
       }
 
       // Process Instagram data
@@ -393,6 +396,7 @@ export default function DashboardPage() {
         totalEngagement += metrics.totalEngagement
         totalReach += metrics.totalReach
         totalImpressions += metrics.totalImpressions
+        console.log('[Dashboard] Instagram metrics:', metrics)
       }
 
       // Process Threads data
@@ -402,6 +406,7 @@ export default function DashboardPage() {
         totalEngagement += metrics.totalEngagement
         totalReach += metrics.totalViews
         totalImpressions += metrics.totalViews
+        console.log('[Dashboard] Threads metrics:', metrics)
       }
 
       // Process Bluesky data
@@ -410,6 +415,7 @@ export default function DashboardPage() {
         totalPosts += metrics.totalPosts
         totalEngagement += metrics.totalEngagement
         totalReach += metrics.totalReach
+        console.log('[Dashboard] Bluesky metrics:', metrics)
       }
 
       const analyticsData = {
@@ -419,28 +425,30 @@ export default function DashboardPage() {
         totalImpressions,
         engagementRate: totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0
       }
-
-      // Update cache
-      setAnalyticsCache({ data: analyticsData, timestamp: Date.now() })
+      
+      console.log('[Dashboard] Analytics data aggregated:', analyticsData)
       
       // Update analytics stats
-      setAnalyticsStats({
+      const newAnalyticsStats = {
         totalPosts: analyticsData.totalPosts,
         scheduledPosts: stats?.scheduledPosts || 0,
         draftPosts: stats?.draftPosts || 0,
         postedPosts: analyticsData.totalPosts,
         totalReach: analyticsData.totalReach,
         avgEngagement: analyticsData.engagementRate
-      })
+      }
       
+      console.log('[Dashboard] Setting new analytics stats:', newAnalyticsStats)
+      setAnalyticsStats(newAnalyticsStats)
       setAnalyticsLoaded(true)
+      setFetchingAnalytics(false)
+      
       return analyticsData
     } catch (error) {
       console.error('Error fetching analytics data:', error)
-      setAnalyticsLoaded(true) // Mark as loaded even on error
-      return null
-    } finally {
+      setAnalyticsLoaded(true)
       setFetchingAnalytics(false)
+      return null
     }
   }
 
@@ -448,33 +456,18 @@ export default function DashboardPage() {
     fetchDashboardData()
   }, [])
 
-  // IntersectionObserver to trigger analytics loading when Activity Overview is visible
+  // Trigger analytics loading immediately when component mounts
   useEffect(() => {
-    if (!activityOverviewRef.current || analyticsLoaded) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && !analyticsLoaded && !fetchingAnalytics) {
-            // Trigger analytics data fetch when section becomes visible
-            fetchAnalyticsData()
-          }
-        })
-      },
-      {
-        threshold: 0.1, // Trigger when 10% of the component is visible
-        rootMargin: '50px' // Start loading 50px before it comes into view
-      }
-    )
-
-    observer.observe(activityOverviewRef.current)
+    // Always fetch analytics after a short delay
+    const timeoutId = setTimeout(() => {
+      console.log('[Dashboard] Auto-triggering analytics fetch')
+      fetchAnalyticsData()
+    }, 1000)
 
     return () => {
-      if (activityOverviewRef.current) {
-        observer.unobserve(activityOverviewRef.current)
-      }
+      clearTimeout(timeoutId)
     }
-  }, [analyticsLoaded, fetchingAnalytics])
+  }, [])
   
   const stripHtml = (html: string) => {
     return html
@@ -538,15 +531,23 @@ export default function DashboardPage() {
 
   // Use analytics stats if loaded, otherwise use local stats
   const displayStats = analyticsStats || stats
+  const isUsingPlatformData = analyticsStats !== null
+  
+  console.log('[Dashboard] Display stats:', {
+    analyticsLoaded,
+    hasAnalyticsStats: analyticsStats !== null,
+    isUsingPlatformData,
+    displayStats
+  })
   
   const statsData = [
     {
       title: 'Total Posts',
       value: displayStats?.totalPosts.toString() || '0',
-      description: analyticsLoaded && analyticsStats ? 'Published on platforms' : 'Local data',
+      description: isUsingPlatformData ? 'Published on platforms' : 'Local data',
       icon: FileText,
       trend: 'neutral',
-      isRealTime: analyticsLoaded && analyticsStats !== null
+      isRealTime: isUsingPlatformData
     },
     {
       title: 'Scheduled',
@@ -562,7 +563,7 @@ export default function DashboardPage() {
       description: displayStats?.postedPosts ? `From ${displayStats.postedPosts} posted` : 'No data yet',
       icon: Users,
       trend: displayStats?.totalReach ? 'up' : 'neutral',
-      isRealTime: analyticsLoaded && analyticsStats !== null
+      isRealTime: isUsingPlatformData
     },
     {
       title: 'Engagement Rate',
@@ -570,7 +571,7 @@ export default function DashboardPage() {
       description: displayStats?.totalReach ? 'Average across posts' : 'No data yet',
       icon: TrendingUp,
       trend: displayStats?.avgEngagement ? 'up' : 'neutral',
-      isRealTime: analyticsLoaded && analyticsStats !== null
+      isRealTime: isUsingPlatformData
     },
   ]
 
@@ -1276,13 +1277,13 @@ export default function DashboardPage() {
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-gray-700" />
                   Activity Overview
-                  {fetchingAnalytics && analyticsLoaded && (
+                  {fetchingAnalytics && (
                     <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />
                   )}
                 </h2>
                 <p className="text-sm text-gray-500 mt-0.5">
                   Your social media performance at a glance
-                  {analyticsCache && analyticsLoaded && (
+                  {analyticsCache && isUsingPlatformData && (
                     <span className="text-xs text-gray-400 ml-2">
                       • Updated {Math.floor((Date.now() - analyticsCache.timestamp) / 60000)} min ago
                     </span>
@@ -1297,8 +1298,8 @@ export default function DashboardPage() {
               </Link>
             </div>
             
-            {/* Show loading state if fetching analytics for the first time */}
-            {fetchingAnalytics && !analyticsLoaded ? (
+            {/* Show loading state if analytics not loaded yet */}
+            {!analyticsLoaded ? (
               <div className="flex flex-col items-center justify-center py-12">
                 {/* Platform icons */}
                 <div className="flex gap-4 mb-6">
@@ -1327,7 +1328,9 @@ export default function DashboardPage() {
                   />
                 </div>
                 
-                <p className="text-sm text-gray-500 mt-4">Loading platform analytics...</p>
+                <p className="text-sm text-gray-500 mt-4">
+                  {fetchingAnalytics ? 'Loading platform analytics...' : 'Preparing analytics...'}
+                </p>
                 
                 <style jsx>{`
                   @keyframes loading {
