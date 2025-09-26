@@ -15,7 +15,6 @@ import {
   FileText
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import Image from 'next/image'
 
 type PostVariant = 'posted' | 'scheduled' | 'draft'
 
@@ -182,18 +181,26 @@ export function PostCard({
       {/* Always show thumbnail area for consistency */}
       <div className="relative aspect-video bg-gray-100">
         {imageUrl ? (
-          <Image
+          <img
             src={imageUrl}
             alt="Post thumbnail"
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => {
+              // Hide broken image and show placeholder instead
+              e.currentTarget.style.display = 'none'
+              const placeholder = e.currentTarget.nextElementSibling
+              if (placeholder) {
+                (placeholder as HTMLElement).style.display = 'flex'
+              }
+            }}
           />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-50">
-            <FileText className="h-12 w-12 text-gray-300" />
-          </div>
-        )}
+        ) : null}
+        <div 
+          className="w-full h-full flex items-center justify-center bg-gray-50"
+          style={{ display: imageUrl ? 'none' : 'flex' }}
+        >
+          <FileText className="h-12 w-12 text-gray-300" />
+        </div>
       </div>
 
       <CardContent className="p-4 flex-1 flex flex-col">
