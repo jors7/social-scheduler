@@ -135,7 +135,14 @@ export function PostCard({
       const postedPost = post as PostedPost
       return postedPost.platform_media_url || postedPost.media_urls?.[0]
     }
-    return post.media_urls?.[0]
+    // For scheduled and draft posts, handle media_urls properly
+    const mediaUrls = post.media_urls
+    if (mediaUrls && Array.isArray(mediaUrls) && mediaUrls.length > 0) {
+      // Filter out any null/undefined values
+      const validUrl = mediaUrls.find(url => url && typeof url === 'string')
+      return validUrl || null
+    }
+    return null
   }
 
   // Get the appropriate title/content for display
