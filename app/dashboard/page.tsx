@@ -41,7 +41,7 @@ import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { getClientSubscription } from '@/lib/subscription/client'
-import { Crown, Sparkles } from 'lucide-react'
+import { Crown, Sparkles, RefreshCw } from 'lucide-react'
 import { SUBSCRIPTION_PLANS } from '@/lib/subscription/plans'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 
@@ -103,6 +103,9 @@ export default function DashboardPage() {
   const [connectedPlatforms, setConnectedPlatforms] = useState<string[]>([])
   const [showAITooltip, setShowAITooltip] = useState(false)
   const [showPostsTooltip, setShowPostsTooltip] = useState(false)
+  const [analyticsCache, setAnalyticsCache] = useState<{ data: any, timestamp: number } | null>(null)
+  const [fetchingAnalytics, setFetchingAnalytics] = useState(false)
+  const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes in milliseconds
 
   // Get time-based greeting
   const getGreeting = () => {
@@ -201,37 +204,52 @@ export default function DashboardPage() {
         console.error('Error fetching social accounts:', error)
       }
       
-      // Calculate stats (YouTube posts are already in scheduled_posts)
+      // Calculate local stats (for drafts and scheduled)
       const scheduledCount = scheduled.filter((p: PostData) => ['pending', 'posting'].includes(p.status)).length
       const postedCount = scheduled.filter((p: PostData) => ['posted'].includes(p.status)).length
       const draftCount = drafts.length
       
-      // Calculate engagement from posted posts
-      const postedPosts = scheduled.filter((p: PostData) => p.status === 'posted')
-      let totalReach = 0
-      let totalEngagement = 0
+      // Fetch analytics data from platform APIs
+      const analyticsData = await fetchAnalyticsData()
       
-      postedPosts.forEach((post: PostData) => {
-        if (post.post_results) {
-          post.post_results.forEach((result: any) => {
-            if (result.success && result.data?.metrics) {
-              totalReach += result.data.metrics.views || result.data.metrics.impressions || 0
-              totalEngagement += (result.data.metrics.likes || 0) + (result.data.metrics.comments || 0) + (result.data.metrics.shares || 0)
-            }
-          })
-        }
-      })
-      
-      const avgEngagement = totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0
-      
-      setStats({
-        totalPosts: allPosts.length,  // YouTube posts are already in scheduled
-        scheduledPosts: scheduledCount,
-        draftPosts: draftCount,
-        postedPosts: postedCount,
-        totalReach,
-        avgEngagement
-      })
+      if (analyticsData) {
+        // Use real platform data for metrics
+        setStats({
+          totalPosts: analyticsData.totalPosts,  // Real posts from platforms
+          scheduledPosts: scheduledCount,  // From local database
+          draftPosts: draftCount,  // From local database
+          postedPosts: analyticsData.totalPosts,  // Same as totalPosts from platforms
+          totalReach: analyticsData.totalReach,  // Real reach from platforms
+          avgEngagement: analyticsData.engagementRate  // Real engagement rate from platforms
+        })
+      } else {
+        // Fallback to local data if API fails
+        const postedPosts = scheduled.filter((p: PostData) => p.status === 'posted')
+        let totalReach = 0
+        let totalEngagement = 0
+        
+        postedPosts.forEach((post: PostData) => {
+          if (post.post_results) {
+            post.post_results.forEach((result: any) => {
+              if (result.success && result.data?.metrics) {
+                totalReach += result.data.metrics.views || result.data.metrics.impressions || 0
+                totalEngagement += (result.data.metrics.likes || 0) + (result.data.metrics.comments || 0) + (result.data.metrics.shares || 0)
+              }
+            })
+          }
+        })
+        
+        const avgEngagement = totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0
+        
+        setStats({
+          totalPosts: allPosts.length,  // Local database count
+          scheduledPosts: scheduledCount,
+          draftPosts: draftCount,
+          postedPosts: postedCount,
+          totalReach,
+          avgEngagement
+        })
+      }
       
       // Get recent posts with media URLs from platforms
       try {
@@ -340,6 +358,91 @@ export default function DashboardPage() {
     }
   }
   
+  // Fetch analytics data from platform APIs with caching
+  const fetchAnalyticsData = async () => {
+    // Check cache first
+    if (analyticsCache && Date.now() - analyticsCache.timestamp < CACHE_DURATION) {
+      return analyticsCache.data
+    }
+
+    setFetchingAnalytics(true)
+    try {
+      // Fetch data from all platforms in parallel (last 7 days for dashboard)
+      const [facebookRes, instagramRes, threadsRes, blueskyRes] = await Promise.all([
+        fetch(`/api/analytics/facebook?days=7`),
+        fetch(`/api/analytics/instagram?days=7`),
+        fetch(`/api/analytics/threads?days=7`),
+        fetch(`/api/analytics/bluesky?days=7`)
+      ])
+
+      const [facebookData, instagramData, threadsData, blueskyData] = await Promise.all([
+        facebookRes.ok ? facebookRes.json() : { metrics: null },
+        instagramRes.ok ? instagramRes.json() : { metrics: null },
+        threadsRes.ok ? threadsRes.json() : { metrics: null },
+        blueskyRes.ok ? blueskyRes.json() : { metrics: null }
+      ])
+
+      // Aggregate all metrics
+      let totalPosts = 0
+      let totalEngagement = 0
+      let totalReach = 0
+      let totalImpressions = 0
+
+      // Process Facebook data
+      if (facebookData.metrics) {
+        const metrics = facebookData.metrics
+        totalPosts += metrics.totalPosts
+        totalEngagement += metrics.totalEngagement
+        totalReach += metrics.totalReach
+        totalImpressions += metrics.totalImpressions
+      }
+
+      // Process Instagram data
+      if (instagramData.metrics) {
+        const metrics = instagramData.metrics
+        totalPosts += metrics.totalPosts
+        totalEngagement += metrics.totalEngagement
+        totalReach += metrics.totalReach
+        totalImpressions += metrics.totalImpressions
+      }
+
+      // Process Threads data
+      if (threadsData.metrics) {
+        const metrics = threadsData.metrics
+        totalPosts += metrics.totalPosts
+        totalEngagement += metrics.totalEngagement
+        totalReach += metrics.totalViews
+        totalImpressions += metrics.totalViews
+      }
+
+      // Process Bluesky data
+      if (blueskyData.metrics) {
+        const metrics = blueskyData.metrics
+        totalPosts += metrics.totalPosts
+        totalEngagement += metrics.totalEngagement
+        totalReach += metrics.totalReach
+      }
+
+      const analyticsData = {
+        totalPosts,
+        totalEngagement,
+        totalReach,
+        totalImpressions,
+        engagementRate: totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0
+      }
+
+      // Update cache
+      setAnalyticsCache({ data: analyticsData, timestamp: Date.now() })
+
+      return analyticsData
+    } catch (error) {
+      console.error('Error fetching analytics data:', error)
+      return null
+    } finally {
+      setFetchingAnalytics(false)
+    }
+  }
+
   useEffect(() => {
     fetchDashboardData()
   }, [])
@@ -408,30 +511,34 @@ export default function DashboardPage() {
     {
       title: 'Total Posts',
       value: stats?.totalPosts.toString() || '0',
-      description: `${stats?.draftPosts || 0} drafts, ${stats?.scheduledPosts || 0} scheduled`,
+      description: stats?.totalPosts ? 'Published on platforms' : 'No posts yet',
       icon: FileText,
-      trend: 'neutral'
+      trend: 'neutral',
+      isRealTime: true
     },
     {
       title: 'Scheduled',
       value: stats?.scheduledPosts.toString() || '0',
       description: 'Ready to post',
       icon: Clock,
-      trend: 'neutral'
+      trend: 'neutral',
+      isRealTime: false
     },
     {
       title: 'Total Reach',
       value: stats?.totalReach ? (stats.totalReach > 999 ? `${(stats.totalReach / 1000).toFixed(1)}K` : stats.totalReach.toString()) : '0',
-      description: `From ${stats?.postedPosts || 0} posted`,
+      description: stats?.postedPosts ? `From ${stats.postedPosts} posted` : 'No data yet',
       icon: Users,
-      trend: stats?.totalReach ? 'up' : 'neutral'
+      trend: stats?.totalReach ? 'up' : 'neutral',
+      isRealTime: true
     },
     {
       title: 'Engagement Rate',
       value: stats?.avgEngagement ? `${stats.avgEngagement.toFixed(1)}%` : '0%',
       description: stats?.totalReach ? 'Average across posts' : 'No data yet',
       icon: TrendingUp,
-      trend: stats?.avgEngagement ? 'up' : 'neutral'
+      trend: stats?.avgEngagement ? 'up' : 'neutral',
+      isRealTime: true
     },
   ]
 
@@ -1094,8 +1201,18 @@ export default function DashboardPage() {
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-gray-700" />
                   Activity Overview
+                  {fetchingAnalytics && (
+                    <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />
+                  )}
                 </h2>
-                <p className="text-sm text-gray-500 mt-0.5">Your social media performance at a glance</p>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Your social media performance at a glance
+                  {analyticsCache && (
+                    <span className="text-xs text-gray-400 ml-2">
+                      • Updated {Math.floor((Date.now() - analyticsCache.timestamp) / 60000)} min ago
+                    </span>
+                  )}
+                </p>
               </div>
               <Link href="/dashboard/analytics">
                 <Button variant="outline" size="sm" className="text-xs">
@@ -1138,6 +1255,11 @@ export default function DashboardPage() {
                         </p>
                         <p className="text-xs font-medium text-gray-600 uppercase tracking-wider mb-1">
                           {stat.title}
+                          {stat.isRealTime && (
+                            <span className="ml-1 text-[10px] font-normal text-blue-500 lowercase">
+                              • live
+                            </span>
+                          )}
                         </p>
                         <p className="text-xs text-gray-500">
                           {stat.description}
