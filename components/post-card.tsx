@@ -11,7 +11,8 @@ import {
   Eye,
   Send,
   FileEdit,
-  Trash2
+  Trash2,
+  FileText
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
@@ -90,6 +91,18 @@ const formatDate = (dateString: string) => {
   })
 }
 
+const formatDateTime = (dateString: string) => {
+  const date = new Date(dateString)
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  })
+}
+
 const formatScheduledDate = (scheduledFor: string) => {
   const now = new Date()
   const scheduled = new Date(scheduledFor)
@@ -154,72 +167,83 @@ export function PostCard({
   const imageUrl = getImageUrl()
   const displayContent = getDisplayContent()
   const status = getStatus()
+  const timeUntil = variant === 'scheduled' ? formatScheduledDate((post as ScheduledPost).scheduled_for) : ''
+  const isOverdue = timeUntil === 'Overdue'
 
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow group">
-      <CardContent className="p-0">
-        {/* Thumbnail */}
-        {imageUrl && (
-          <div className="relative aspect-video bg-gray-100">
-            <Image
-              src={imageUrl}
-              alt="Post thumbnail"
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
+    <Card className="overflow-hidden hover:shadow-md transition-shadow group h-full flex flex-col">
+      {/* Always show thumbnail area for consistency */}
+      <div className="relative aspect-video bg-gray-100">
+        {imageUrl ? (
+          <Image
+            src={imageUrl}
+            alt="Post thumbnail"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-50">
+            <FileText className="h-12 w-12 text-gray-300" />
           </div>
         )}
+      </div>
 
-        <div className="p-4">
-          {/* Selection checkbox */}
+      <CardContent className="p-4 flex-1 flex flex-col">
+        {/* Checkbox and Content */}
+        <div className="flex items-start gap-3 mb-3">
           {onToggleSelection && (
-            <div className="flex items-start gap-3 mb-3">
-              <input
-                type="checkbox"
-                checked={selected}
-                onChange={onToggleSelection}
-                className="mt-1 rounded border-gray-300"
-              />
-              <div className="flex-1 min-w-0">
-                {/* Content */}
-                <p className="text-gray-900 line-clamp-2 font-medium">
-                  {displayContent}
-                </p>
-              </div>
-            </div>
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={onToggleSelection}
+              className="mt-0.5 rounded border-gray-300"
+            />
           )}
-
-          {!onToggleSelection && (
-            <p className="text-gray-900 line-clamp-2 font-medium mb-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-gray-900 line-clamp-2 font-medium text-sm">
               {displayContent}
             </p>
-          )}
-
-          {/* Platform badges */}
-          <div className="flex flex-wrap gap-1 mb-3">
-            {post.platforms.map(platform => (
-              <span
-                key={platform}
-                className={cn(
-                  "px-2 py-0.5 text-xs font-medium rounded",
-                  platformColors[platform] || 'bg-gray-200 text-gray-700'
-                )}
-              >
-                {platform.charAt(0).toUpperCase() + platform.slice(1)}
-              </span>
-            ))}
           </div>
+        </div>
 
-          {/* Date and status info */}
-          <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-            {variant === 'posted' && 'posted_at' in post && (
-              <span>{formatDate(post.posted_at || post.created_at)}</span>
-            )}
-            
-            {variant === 'scheduled' && 'scheduled_for' in post && (
-              <div className="flex items-center gap-2">
-                <span>{formatScheduledDate((post as ScheduledPost).scheduled_for)}</span>
+        {/* Platform badges */}
+        <div className="flex flex-wrap gap-1 mb-3">
+          {post.platforms.map(platform => (
+            <span
+              key={platform}
+              className={cn(
+                "px-2 py-0.5 text-xs font-medium rounded",
+                platformColors[platform] || 'bg-gray-200 text-gray-700'
+              )}
+            >
+              {platform.charAt(0).toUpperCase() + platform.slice(1)}
+            </span>
+          ))}
+        </div>
+
+        {/* Date, time and status info - push to bottom */}
+        <div className="mt-auto">
+          {variant === 'posted' && 'posted_at' in post && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">
+                Posted
+              </span>
+              <span className="text-xs text-gray-500">
+                {formatDate(post.posted_at || post.created_at)}
+              </span>
+            </div>
+          )}
+          
+          {variant === 'scheduled' && 'scheduled_for' in post && (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className={cn(
+                  "text-xs font-medium",
+                  isOverdue ? 'text-red-600' : 'text-gray-600'
+                )}>
+                  {timeUntil}
+                </span>
                 {status && status !== 'pending' && (
                   <span className={cn(
                     "px-1.5 py-0.5 rounded text-xs font-medium",
@@ -232,24 +256,30 @@ export function PostCard({
                   </span>
                 )}
               </div>
-            )}
-            
-            {variant === 'draft' && (
-              <span>
-                {('updated_at' in post && post.updated_at) 
-                  ? `Updated ${formatDate(post.updated_at)}`
-                  : `Created ${formatDate(post.created_at)}`
-                }
+              <div className="text-xs text-gray-400">
+                {formatDateTime((post as ScheduledPost).scheduled_for)}
+              </div>
+            </div>
+          )}
+          
+          {variant === 'draft' && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">
+                {('updated_at' in post && post.updated_at) ? 'Updated' : 'Created'}
               </span>
-            )}
-          </div>
+              <span className="text-xs text-gray-500">
+                {formatDate(('updated_at' in post && post.updated_at) ? post.updated_at : post.created_at)}
+              </span>
+            </div>
+          )}
 
           {/* Action buttons */}
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
             {variant === 'posted' && (
               <>
-                <Button size="sm" variant="ghost" className="h-7 px-2">
+                <Button size="sm" variant="ghost" className="h-7 px-2 flex-1">
                   <Eye className="h-3 w-3" />
+                  <span className="ml-1 text-xs">View</span>
                 </Button>
               </>
             )}
@@ -272,8 +302,9 @@ export function PostCard({
                   </Button>
                 )}
                 {(status === 'pending' || status === 'cancelled') && onPostNow && (
-                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={onPostNow}>
+                  <Button size="sm" variant="ghost" className="h-7 px-2 flex-1" onClick={onPostNow}>
                     <Send className="h-3 w-3" />
+                    <span className="ml-1 text-xs">Post Now</span>
                   </Button>
                 )}
               </>
@@ -282,13 +313,9 @@ export function PostCard({
             {variant === 'draft' && (
               <>
                 {onLoadDraft && (
-                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={onLoadDraft}>
+                  <Button size="sm" variant="ghost" className="h-7 px-2 flex-1" onClick={onLoadDraft}>
                     <FileEdit className="h-3 w-3" />
-                  </Button>
-                )}
-                {onEdit && (
-                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={onEdit}>
-                    <Edit className="h-3 w-3" />
+                    <span className="ml-1 text-xs">Edit</span>
                   </Button>
                 )}
                 {onDelete && (
