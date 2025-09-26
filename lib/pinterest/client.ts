@@ -2,9 +2,9 @@ export class PinterestClient {
   private accessToken: string;
   private apiBaseUrl: string;
 
-  constructor(accessToken: string, useSandbox: boolean = true) {
+  constructor(accessToken: string, useSandbox: boolean = false) {
     this.accessToken = accessToken;
-    // Use sandbox API for trial apps, production API for approved apps
+    // Now using production API by default since we have standard access
     this.apiBaseUrl = useSandbox 
       ? 'https://api-sandbox.pinterest.com/v5'
       : 'https://api.pinterest.com/v5';

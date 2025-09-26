@@ -67,9 +67,8 @@ export async function POST(request: NextRequest) {
       if (pinError.message.includes('403') || pinError.message.includes('Forbidden')) {
         return NextResponse.json(
           { 
-            error: 'Pinterest posting is not available. Your app may need approval from Pinterest for posting capabilities.',
-            pendingApproval: true,
-            details: 'Pinterest requires app review for public posting. Posts are currently limited to sandbox mode.'
+            error: 'Pinterest posting permission denied. Please check your board permissions.',
+            details: pinError.message
           },
           { status: 403 }
         );
@@ -88,9 +87,8 @@ export async function POST(request: NextRequest) {
       // Generic error with helpful message
       return NextResponse.json(
         { 
-          error: 'Unable to post to Pinterest. This may be due to app limitations or Pinterest API restrictions.',
-          details: pinError.message,
-          helpText: 'Pinterest posting requires app review approval. Contact support if this persists.'
+          error: 'Unable to post to Pinterest. Please try again or check your board permissions.',
+          details: pinError.message
         },
         { status: 500 }
       );

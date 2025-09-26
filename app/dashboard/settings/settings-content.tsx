@@ -684,7 +684,13 @@ export default function SettingsContent() {
     }
   }
 
-  const socialPlatforms = [
+  const socialPlatforms: Array<{
+    id: string
+    name: string
+    icon: string
+    color: string
+    note?: string
+  }> = [
     {
       id: 'twitter',
       name: 'X (Twitter)',
@@ -737,8 +743,7 @@ export default function SettingsContent() {
       id: 'pinterest',
       name: 'Pinterest',
       icon: 'P',
-      color: 'bg-red-700',
-      note: 'Pending app review - Posting limited to sandbox mode'
+      color: 'bg-red-700'
     },
   ]
 

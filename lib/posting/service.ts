@@ -453,11 +453,8 @@ export class PostingService {
         throw new Error('Pinterest requires at least one image');
       }
 
-      // For sandbox testing, we may need to handle image URLs differently
-      // Pinterest sandbox may not accept all external URLs
-      let imageUrl = mediaUrls[0];
-      
-      // If it's a Supabase URL or similar, we might need to handle it specially
+      // Use the first image for Pinterest
+      const imageUrl = mediaUrls[0];
       console.log('Pinterest: Using image URL:', imageUrl);
 
       const response = await fetch('/api/post/pinterest', {
@@ -478,12 +475,12 @@ export class PostingService {
       const data = await response.json();
 
       if (!response.ok) {
-        // Check if it's an approval-related error
-        if (data.pendingApproval || data.error?.includes('approval') || data.error?.includes('limited')) {
+        // Handle Pinterest-specific errors
+        if (data.error?.includes('permission') || data.error?.includes('403')) {
           return {
             platform: 'pinterest',
             success: false,
-            error: 'Pinterest posting requires app review approval. Currently limited to sandbox mode.'
+            error: 'Pinterest board permissions error. Please check your board settings.'
           };
         }
         throw new Error(data.error || 'Pinterest posting failed');
@@ -502,8 +499,8 @@ export class PostingService {
         errorMessage = 'Pinterest requires an image to create a pin';
       } else if (errorMessage.includes('authentication') || errorMessage.includes('401')) {
         errorMessage = 'Pinterest account needs to be reconnected';
-      } else if (errorMessage.includes('app review') || errorMessage.includes('sandbox')) {
-        errorMessage = 'Pinterest posting requires app review approval';
+      } else if (errorMessage.includes('board')) {
+        errorMessage = 'Pinterest board selection or permissions error';
       }
       
       return {
