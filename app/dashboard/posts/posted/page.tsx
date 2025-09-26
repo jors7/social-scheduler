@@ -15,15 +15,9 @@ import {
   Copy,
   Send,
   ExternalLink,
-  TrendingUp,
   Clock,
   X,
-  Heart,
-  MessageCircle,
-  BarChart3,
-  Eye,
-  Bookmark,
-  Users
+  FileText
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -41,6 +35,10 @@ interface PostedPost {
   posted_at?: string
   post_results?: any[]
   error_message?: string
+  platform_media_url?: string  // Generic platform media URL from API
+  pinterest_media_url?: string  // Deprecated, use platform_media_url
+  pinterest_title?: string
+  pinterest_description?: string
 }
 
 interface PostStats {
@@ -64,17 +62,7 @@ interface InstagramInsights {
   profile_views?: number
 }
 
-const platformIcons: Record<string, string> = {
-  twitter: '𝕏',
-  instagram: '📷',
-  facebook: 'f',
-  linkedin: 'in',
-  youtube: '▶',
-  tiktok: '♪',
-  threads: '@',
-  bluesky: '🦋',
-  pinterest: 'P',
-}
+// Platform icons removed - using full names with colored badges instead
 
 export default function PostedPostsPage() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -87,21 +75,15 @@ export default function PostedPostsPage() {
 
   const fetchPostedPosts = async () => {
     try {
-      // Fetch posts with 'posted' and 'failed' status
-      const response = await fetch('/api/posts/schedule?status=posted,failed')
+      // Fetch posts with media URLs from server-side API
+      const response = await fetch('/api/posts/posted-with-media?status=posted,failed')
       
       if (!response.ok) throw new Error('Failed to fetch posts')
       
-      const postsData = await response.json()
-      const posts = postsData.posts || []
+      const data = await response.json()
+      const posts = data.posts || []
       
-      // Sort by posted date (most recent first)
-      posts.sort((a: any, b: any) => {
-        const dateA = new Date(a.posted_at || a.scheduled_for).getTime()
-        const dateB = new Date(b.posted_at || b.scheduled_for).getTime()
-        return dateB - dateA
-      })
-      
+      // Posts are already sorted by the API, just set them
       setPostedPosts(posts)
     } catch (error) {
       console.error('Error fetching posted posts:', error)
@@ -353,71 +335,6 @@ export default function PostedPostsPage() {
             </Button>
           </div>
 
-          {/* Summary Stats - Elevated cards with gradients */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
-                    <Send className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Posts</p>
-                    <p className="text-2xl font-bold text-gray-900">{filteredPosts.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
-                    <TrendingUp className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Views</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                  {filteredPosts.reduce((sum, post) => sum + getPostStats(post).views, 0).toLocaleString()}
-                </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl shadow-lg">
-                    <Heart className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Likes</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {filteredPosts.reduce((sum, post) => sum + getPostStats(post).likes, 0)}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <div className="p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-lg">
-                    <MessageCircle className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Engagement</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {(() => {
-                        const totalViews = filteredPosts.reduce((sum, post) => sum + getPostStats(post).views, 0)
-                        const totalEngagement = filteredPosts.reduce((sum, post) => sum + getTotalEngagement(getPostStats(post)), 0)
-                        return totalViews > 0 ? Math.round((totalEngagement / totalViews) * 100) : 0
-                      })()}%
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
 
           {/* Bulk Actions - Glass morphism effect */}
           {selectedPosts.length > 0 && (
@@ -444,8 +361,8 @@ export default function PostedPostsPage() {
             </Card>
           )}
 
-          {/* Posts List */}
-          <div className="space-y-4">
+          {/* Posts Grid */}
+          <div>
         {loading ? (
           <Card variant="glass" className="border-blue-200">
             <CardContent className="text-center py-12">
@@ -467,7 +384,7 @@ export default function PostedPostsPage() {
           </Card>
         ) : (
           <>
-            <div className="flex items-center gap-2 px-4">
+            <div className="flex items-center gap-2 px-4 mb-6">
               <input
                 type="checkbox"
                 checked={selectedPosts.length === filteredPosts.length && filteredPosts.length > 0}
@@ -477,211 +394,187 @@ export default function PostedPostsPage() {
               <span className="text-sm text-gray-600">Select all</span>
             </div>
             
-            {filteredPosts.map(post => {
-              const stats = getPostStats(post)           
-              return (
-                <Card key={post.id} variant="elevated" className="overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
-                  <CardContent className="p-0">
-                    <div className="flex items-start p-4 gap-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedPosts.includes(post.id)}
-                        onChange={() => togglePostSelection(post.id)}
-                        className="mt-1 rounded border-gray-300"
-                      />
-                      
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-lg line-clamp-1">{stripHtml(post.content).slice(0, 60)}...</h3>
-                            <p className="text-gray-600 mt-1 line-clamp-2">{stripHtml(post.content)}</p>
-                            
-                            <div className="flex items-center gap-4 mt-3">
-                              <div className="flex items-center gap-2">
-                                {post.status === 'posted' ? (
-                                  <>
-                                    <Send className="h-4 w-4 text-green-500" />
-                                    <span className="text-xs px-2 py-1 rounded-full font-medium bg-green-100 text-green-700">
-                                      Posted
-                                    </span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <X className="h-4 w-4 text-red-500" />
-                                    <span className="text-xs px-2 py-1 rounded-full font-medium bg-red-100 text-red-700">
-                                      Failed
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                              
-                              <span className="text-sm text-gray-500">
-                                {post.posted_at ? formatDate(post.posted_at) : formatDate(post.scheduled_for)}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredPosts.map(post => {
+                // Helper function to get media URL (prioritize platform-fetched media URL)
+                const getMediaUrl = () => {
+                  // Use platform-fetched media URL if available (includes Pinterest)
+                  if (post.platform_media_url) {
+                    return post.platform_media_url
+                  }
+                  
+                  // Fallback to pinterest_media_url for backwards compatibility
+                  if (post.pinterest_media_url) {
+                    return post.pinterest_media_url
+                  }
+                  
+                  // Otherwise use the first media URL from the array
+                  if (post.media_urls && post.media_urls.length > 0) {
+                    return post.media_urls[0]
+                  }
+                  
+                  return null
+                }
+                
+                // Helper function to get display content (prioritize Pinterest title)
+                const getDisplayContent = () => {
+                  // For Pinterest posts, use title if available
+                  if (post.platforms.includes('pinterest')) {
+                    if (post.pinterest_title) {
+                      return post.pinterest_title
+                    }
+                    
+                    // Check platform_content for Pinterest-specific content
+                    if (post.platform_content?.pinterest) {
+                      // Extract title from "title: description" format
+                      const content = post.platform_content.pinterest
+                      const colonIndex = content.indexOf(':')
+                      if (colonIndex > 0) {
+                        return content.substring(0, colonIndex).trim()
+                      }
+                      return content
+                    }
+                  }
+                  
+                  // Otherwise return regular content
+                  return post.content
+                }
+                
+                const firstMediaUrl = getMediaUrl()
+                const displayContent = getDisplayContent()
+                const isVideo = firstMediaUrl ? (
+                  firstMediaUrl.includes('.mp4') || 
+                  firstMediaUrl.includes('.mov') || 
+                  firstMediaUrl.includes('.webm') ||
+                  firstMediaUrl.includes('video')
+                ) : false
+                
+                return (
+                  <Card key={post.id} variant="elevated" className="overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedPosts.includes(post.id)}
+                          onChange={() => togglePostSelection(post.id)}
+                          className="mt-1 rounded border-gray-300"
+                        />
+                        
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-base line-clamp-2 overflow-hidden text-ellipsis">{stripHtml(displayContent)}</h3>
+                          
+                          <div className="flex items-center gap-2 mt-3">
+                            {post.status === 'posted' ? (
+                              <span className="text-xs px-2 py-1 rounded-full font-medium bg-green-100 text-green-700">
+                                Posted
                               </span>
-                              
-                              <div className="flex gap-1">
-                                {post.platforms.map(platform => (
-                                  <span
-                                    key={platform}
-                                    className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-xs"
-                                    title={platform}
-                                  >
-                                    {platformIcons[platform] || platform[0].toUpperCase()}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            {post.error_message && (
-                              <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-600">
-                                <strong>Error:</strong> {post.error_message}
-                              </div>
+                            ) : (
+                              <span className="text-xs px-2 py-1 rounded-full font-medium bg-red-100 text-red-700">
+                                Failed
+                              </span>
                             )}
                             
-                            {/* Show post URLs for platforms that provide them */}
-                            {post.post_results && post.post_results.length > 0 && (
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                {post.post_results.map((result: any, idx: number) => {
-                                  if (result.success && result.url) {
-                                    return (
-                                      <a
-                                        key={idx}
-                                        href={result.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md text-sm transition-colors"
-                                      >
-                                        <ExternalLink className="h-3 w-3" />
-                                        View on {result.platform === 'youtube' ? 'YouTube' : result.platform.charAt(0).toUpperCase() + result.platform.slice(1)}
-                                      </a>
-                                    )
-                                  }
-                                  return null
-                                })}
-                              </div>
-                            )}
-                            
-                            {/* Performance Stats - show for all posts, but note when no data available */}
-                            <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                              {post.status === 'posted' ? (
-                                <>
-                                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                    <div className="text-center">
-                                      <p className="text-sm font-medium text-gray-600">Views</p>
-                                      <p className="text-lg font-bold">{stats.views.toLocaleString()}</p>
-                                    </div>
-                                    <div className="text-center">
-                                      <p className="text-sm font-medium text-gray-600">Likes</p>
-                                      <p className="text-lg font-bold">{stats.likes}</p>
-                                    </div>
-                                    <div className="text-center">
-                                      <p className="text-sm font-medium text-gray-600">Comments</p>
-                                      <p className="text-lg font-bold">{stats.comments}</p>
-                                    </div>
-                                    <div className="text-center">
-                                      <p className="text-sm font-medium text-gray-600">Shares</p>
-                                      <p className="text-lg font-bold">{stats.shares}</p>
-                                    </div>
-                                    <div className="text-center">
-                                      <p className="text-sm font-medium text-gray-600">Engagement</p>
-                                      <p className="text-lg font-bold">{getEngagementRate(stats)}%</p>
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Instagram-specific insights button */}
-                                  {post.post_results?.some((r: any) => r.platform === 'instagram' && r.success && r.data?.id) && (
-                                    <div className="mt-4 pt-4 border-t border-blue-100">
-                                      {postInsights[post.id] ? (
-                                        <div className="space-y-3">
-                                          <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                                              <Eye className="h-4 w-4" />
-                                              Instagram Insights
-                                            </span>
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              onClick={() => {
-                                                const instagramResult = post.post_results?.find((r: any) => r.platform === 'instagram')
-                                                if (instagramResult?.data?.id) {
-                                                  fetchInstagramInsights(post.id, instagramResult.data.id)
-                                                }
-                                              }}
-                                              disabled={loadingInsights[post.id]}
-                                            >
-                                              Refresh
-                                            </Button>
-                                          </div>
-                                          <div className="grid grid-cols-3 gap-3">
-                                            <div className="text-center p-2 bg-white rounded-lg">
-                                              <Eye className="h-4 w-4 mx-auto mb-1 text-purple-600" />
-                                              <p className="text-xs text-gray-600">Impressions</p>
-                                              <p className="text-sm font-bold">{postInsights[post.id].impressions}</p>
-                                            </div>
-                                            <div className="text-center p-2 bg-white rounded-lg">
-                                              <Users className="h-4 w-4 mx-auto mb-1 text-blue-600" />
-                                              <p className="text-xs text-gray-600">Reach</p>
-                                              <p className="text-sm font-bold">{postInsights[post.id].reach}</p>
-                                            </div>
-                                            <div className="text-center p-2 bg-white rounded-lg">
-                                              <Bookmark className="h-4 w-4 mx-auto mb-1 text-pink-600" />
-                                              <p className="text-xs text-gray-600">Saves</p>
-                                              <p className="text-sm font-bold">{postInsights[post.id].saved}</p>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ) : (
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          className="w-full"
-                                          onClick={() => {
-                                            const instagramResult = post.post_results?.find((r: any) => r.platform === 'instagram')
-                                            if (instagramResult?.data?.id) {
-                                              fetchInstagramInsights(post.id, instagramResult.data.id)
-                                            }
-                                          }}
-                                          disabled={loadingInsights[post.id]}
-                                        >
-                                          {loadingInsights[post.id] ? (
-                                            <>
-                                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2" />
-                                              Loading Instagram Insights...
-                                            </>
-                                          ) : (
-                                            <>
-                                              <BarChart3 className="h-4 w-4 mr-2" />
-                                              View Instagram Insights
-                                            </>
-                                          )}
-                                        </Button>
-                                      )}
-                                    </div>
-                                  )}
-                                </>
-                              ) : (
-                                <div className="text-center text-sm text-gray-500">
-                                  No analytics available for failed posts
-                                </div>
-                              )}
-                              {post.status === 'posted' && stats.views === 0 && stats.likes === 0 && !postInsights[post.id] && (
-                                <div className="text-center text-xs text-gray-400 mt-2">
-                                  Analytics data will be available when platforms provide engagement metrics
-                                </div>
-                              )}
-                            </div>
+                            <span className="text-xs text-gray-500">
+                              {post.posted_at ? formatDate(post.posted_at) : formatDate(post.scheduled_for)}
+                            </span>
                           </div>
                           
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-1 mt-2 flex-wrap">
+                            {post.platforms.map(platform => (
+                              <span
+                                key={platform}
+                                className={cn(
+                                  "text-xs px-2 py-1 rounded-full font-medium text-white",
+                                  platform === 'facebook' && 'bg-[#1877F2]',
+                                  platform === 'instagram' && 'bg-gradient-to-r from-purple-500 to-pink-500',
+                                  platform === 'twitter' && 'bg-black',
+                                  platform === 'linkedin' && 'bg-[#0A66C2]',
+                                  platform === 'threads' && 'bg-black',
+                                  platform === 'bluesky' && 'bg-[#00A8E8]',
+                                  platform === 'youtube' && 'bg-[#FF0000]',
+                                  platform === 'tiktok' && 'bg-black',
+                                  platform === 'pinterest' && 'bg-[#E60023]',
+                                  !['facebook', 'instagram', 'twitter', 'linkedin', 'threads', 'bluesky', 'youtube', 'tiktok', 'pinterest'].includes(platform) && 'bg-gray-500'
+                                )}
+                              >
+                                {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                              </span>
+                            ))}
+                          </div>
+                          
+                          {post.error_message && (
+                            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-600">
+                              {post.error_message.slice(0, 100)}...
+                            </div>
+                          )}
+                          
+                          {/* Show post URLs for platforms that provide them */}
+                          {post.post_results && post.post_results.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {post.post_results.map((result: any, idx: number) => {
+                                if (result.success && result.url) {
+                                  return (
+                                    <a
+                                      key={idx}
+                                      href={result.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md text-xs transition-colors"
+                                    >
+                                      <ExternalLink className="h-3 w-3" />
+                                      View
+                                    </a>
+                                  )
+                                }
+                                return null
+                              })}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Thumbnail */}
+                        <div className="flex-shrink-0">
+                          {firstMediaUrl ? (
+                            isVideo ? (
+                              <video
+                                src={firstMediaUrl}
+                                className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                                muted
+                                preload="metadata"
+                                onError={(e) => {
+                                  // Replace video with placeholder on error
+                                  const placeholder = document.createElement('div')
+                                  placeholder.className = 'w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center'
+                                  placeholder.innerHTML = '<svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>'
+                                  e.currentTarget.parentNode?.replaceChild(placeholder, e.currentTarget)
+                                }}
+                              />
+                            ) : (
+                              <img
+                                src={firstMediaUrl}
+                                alt="Post media"
+                                className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                                onError={(e) => {
+                                  // Replace image with placeholder on error
+                                  const placeholder = document.createElement('div')
+                                  placeholder.className = 'w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center'
+                                  placeholder.innerHTML = '<svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>'
+                                  e.currentTarget.parentNode?.replaceChild(placeholder, e.currentTarget)
+                                }}
+                              />
+                            )
+                          ) : (
+                            <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
+                              <FileText className="h-8 w-8 text-gray-400" />
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
           </>
         )}
           </div>
