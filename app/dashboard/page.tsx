@@ -37,7 +37,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { getClientSubscription } from '@/lib/subscription/client'
@@ -105,6 +105,9 @@ export default function DashboardPage() {
   const [showPostsTooltip, setShowPostsTooltip] = useState(false)
   const [analyticsCache, setAnalyticsCache] = useState<{ data: any, timestamp: number } | null>(null)
   const [fetchingAnalytics, setFetchingAnalytics] = useState(false)
+  const [analyticsLoaded, setAnalyticsLoaded] = useState(false)
+  const [analyticsStats, setAnalyticsStats] = useState<DashboardStats | null>(null)
+  const activityOverviewRef = useRef<HTMLDivElement>(null)
   const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes in milliseconds
 
   // Get time-based greeting
@@ -209,47 +212,33 @@ export default function DashboardPage() {
       const postedCount = scheduled.filter((p: PostData) => ['posted'].includes(p.status)).length
       const draftCount = drafts.length
       
-      // Fetch analytics data from platform APIs
-      const analyticsData = await fetchAnalyticsData()
+      // Calculate local stats from database (for immediate display)
+      const postedPosts = scheduled.filter((p: PostData) => p.status === 'posted')
+      let totalReach = 0
+      let totalEngagement = 0
       
-      if (analyticsData) {
-        // Use real platform data for metrics
-        setStats({
-          totalPosts: analyticsData.totalPosts,  // Real posts from platforms
-          scheduledPosts: scheduledCount,  // From local database
-          draftPosts: draftCount,  // From local database
-          postedPosts: analyticsData.totalPosts,  // Same as totalPosts from platforms
-          totalReach: analyticsData.totalReach,  // Real reach from platforms
-          avgEngagement: analyticsData.engagementRate  // Real engagement rate from platforms
-        })
-      } else {
-        // Fallback to local data if API fails
-        const postedPosts = scheduled.filter((p: PostData) => p.status === 'posted')
-        let totalReach = 0
-        let totalEngagement = 0
-        
-        postedPosts.forEach((post: PostData) => {
-          if (post.post_results) {
-            post.post_results.forEach((result: any) => {
-              if (result.success && result.data?.metrics) {
-                totalReach += result.data.metrics.views || result.data.metrics.impressions || 0
-                totalEngagement += (result.data.metrics.likes || 0) + (result.data.metrics.comments || 0) + (result.data.metrics.shares || 0)
-              }
-            })
-          }
-        })
-        
-        const avgEngagement = totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0
-        
-        setStats({
-          totalPosts: allPosts.length,  // Local database count
-          scheduledPosts: scheduledCount,
-          draftPosts: draftCount,
-          postedPosts: postedCount,
-          totalReach,
-          avgEngagement
-        })
-      }
+      postedPosts.forEach((post: PostData) => {
+        if (post.post_results) {
+          post.post_results.forEach((result: any) => {
+            if (result.success && result.data?.metrics) {
+              totalReach += result.data.metrics.views || result.data.metrics.impressions || 0
+              totalEngagement += (result.data.metrics.likes || 0) + (result.data.metrics.comments || 0) + (result.data.metrics.shares || 0)
+            }
+          })
+        }
+      })
+      
+      const avgEngagement = totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0
+      
+      // Set initial stats with local data
+      setStats({
+        totalPosts: allPosts.length,  // Local database count
+        scheduledPosts: scheduledCount,
+        draftPosts: draftCount,
+        postedPosts: postedCount,
+        totalReach,
+        avgEngagement
+      })
       
       // Get recent posts with media URLs from platforms
       try {
@@ -433,10 +422,22 @@ export default function DashboardPage() {
 
       // Update cache
       setAnalyticsCache({ data: analyticsData, timestamp: Date.now() })
-
+      
+      // Update analytics stats
+      setAnalyticsStats({
+        totalPosts: analyticsData.totalPosts,
+        scheduledPosts: stats?.scheduledPosts || 0,
+        draftPosts: stats?.draftPosts || 0,
+        postedPosts: analyticsData.totalPosts,
+        totalReach: analyticsData.totalReach,
+        avgEngagement: analyticsData.engagementRate
+      })
+      
+      setAnalyticsLoaded(true)
       return analyticsData
     } catch (error) {
       console.error('Error fetching analytics data:', error)
+      setAnalyticsLoaded(true) // Mark as loaded even on error
       return null
     } finally {
       setFetchingAnalytics(false)
@@ -446,6 +447,34 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchDashboardData()
   }, [])
+
+  // IntersectionObserver to trigger analytics loading when Activity Overview is visible
+  useEffect(() => {
+    if (!activityOverviewRef.current || analyticsLoaded) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !analyticsLoaded && !fetchingAnalytics) {
+            // Trigger analytics data fetch when section becomes visible
+            fetchAnalyticsData()
+          }
+        })
+      },
+      {
+        threshold: 0.1, // Trigger when 10% of the component is visible
+        rootMargin: '50px' // Start loading 50px before it comes into view
+      }
+    )
+
+    observer.observe(activityOverviewRef.current)
+
+    return () => {
+      if (activityOverviewRef.current) {
+        observer.unobserve(activityOverviewRef.current)
+      }
+    }
+  }, [analyticsLoaded, fetchingAnalytics])
   
   const stripHtml = (html: string) => {
     return html
@@ -507,18 +536,21 @@ export default function DashboardPage() {
     )
   }
 
+  // Use analytics stats if loaded, otherwise use local stats
+  const displayStats = analyticsStats || stats
+  
   const statsData = [
     {
       title: 'Total Posts',
-      value: stats?.totalPosts.toString() || '0',
-      description: stats?.totalPosts ? 'Published on platforms' : 'No posts yet',
+      value: displayStats?.totalPosts.toString() || '0',
+      description: analyticsLoaded && analyticsStats ? 'Published on platforms' : 'Local data',
       icon: FileText,
       trend: 'neutral',
-      isRealTime: true
+      isRealTime: analyticsLoaded && analyticsStats !== null
     },
     {
       title: 'Scheduled',
-      value: stats?.scheduledPosts.toString() || '0',
+      value: displayStats?.scheduledPosts.toString() || '0',
       description: 'Ready to post',
       icon: Clock,
       trend: 'neutral',
@@ -526,19 +558,19 @@ export default function DashboardPage() {
     },
     {
       title: 'Total Reach',
-      value: stats?.totalReach ? (stats.totalReach > 999 ? `${(stats.totalReach / 1000).toFixed(1)}K` : stats.totalReach.toString()) : '0',
-      description: stats?.postedPosts ? `From ${stats.postedPosts} posted` : 'No data yet',
+      value: displayStats?.totalReach ? (displayStats.totalReach > 999 ? `${(displayStats.totalReach / 1000).toFixed(1)}K` : displayStats.totalReach.toString()) : '0',
+      description: displayStats?.postedPosts ? `From ${displayStats.postedPosts} posted` : 'No data yet',
       icon: Users,
-      trend: stats?.totalReach ? 'up' : 'neutral',
-      isRealTime: true
+      trend: displayStats?.totalReach ? 'up' : 'neutral',
+      isRealTime: analyticsLoaded && analyticsStats !== null
     },
     {
       title: 'Engagement Rate',
-      value: stats?.avgEngagement ? `${stats.avgEngagement.toFixed(1)}%` : '0%',
-      description: stats?.totalReach ? 'Average across posts' : 'No data yet',
+      value: displayStats?.avgEngagement ? `${displayStats.avgEngagement.toFixed(1)}%` : '0%',
+      description: displayStats?.totalReach ? 'Average across posts' : 'No data yet',
       icon: TrendingUp,
-      trend: stats?.avgEngagement ? 'up' : 'neutral',
-      isRealTime: true
+      trend: displayStats?.avgEngagement ? 'up' : 'neutral',
+      isRealTime: analyticsLoaded && analyticsStats !== null
     },
   ]
 
@@ -1237,20 +1269,20 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-          {/* Stats Overview - Improved Design */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          {/* Stats Overview - Improved Design with Lazy Loading */}
+          <div ref={activityOverviewRef} className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-gray-700" />
                   Activity Overview
-                  {fetchingAnalytics && (
+                  {fetchingAnalytics && analyticsLoaded && (
                     <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />
                   )}
                 </h2>
                 <p className="text-sm text-gray-500 mt-0.5">
                   Your social media performance at a glance
-                  {analyticsCache && (
+                  {analyticsCache && analyticsLoaded && (
                     <span className="text-xs text-gray-400 ml-2">
                       • Updated {Math.floor((Date.now() - analyticsCache.timestamp) / 60000)} min ago
                     </span>
@@ -1265,8 +1297,59 @@ export default function DashboardPage() {
               </Link>
             </div>
             
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {statsData.map((stat, index) => {
+            {/* Show loading state if fetching analytics for the first time */}
+            {fetchingAnalytics && !analyticsLoaded ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                {/* Platform icons */}
+                <div className="flex gap-4 mb-6">
+                  {[
+                    { emoji: 'f', color: 'text-[#1877F2]' },
+                    { emoji: '📷', color: 'text-purple-500' },
+                    { emoji: '@', color: 'text-gray-800' },
+                    { emoji: '🦋', color: 'text-blue-500' },
+                  ].map((platform, idx) => (
+                    <div key={idx} 
+                         className={`text-2xl ${platform.color} opacity-60`}
+                         style={{
+                           animation: `pulse 2s ease-in-out ${idx * 0.2}s infinite`
+                         }}>
+                      <span>{platform.emoji}</span>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Progress Bar */}
+                <div className="w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full" 
+                       style={{
+                         animation: 'loading 2s ease-in-out infinite'
+                       }}
+                  />
+                </div>
+                
+                <p className="text-sm text-gray-500 mt-4">Loading platform analytics...</p>
+                
+                <style jsx>{`
+                  @keyframes loading {
+                    0% { width: 0%; }
+                    50% { width: 70%; }
+                    100% { width: 100%; }
+                  }
+                  @keyframes pulse {
+                    0%, 100% { 
+                      opacity: 0.6;
+                      transform: scale(1);
+                    }
+                    50% { 
+                      opacity: 1;
+                      transform: scale(1.1);
+                    }
+                  }
+                `}</style>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {statsData.map((stat, index) => {
                 const colors = [
                   { bg: 'bg-purple-100', text: 'text-purple-600', border: 'border-purple-200' },
                   { bg: 'bg-blue-100', text: 'text-blue-600', border: 'border-blue-200' },
@@ -1317,7 +1400,8 @@ export default function DashboardPage() {
                   </div>
                 )
               })}
-            </div>
+              </div>
+            )}
             
             {/* Additional helpful context */}
             <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
