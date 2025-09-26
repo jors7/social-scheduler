@@ -121,6 +121,38 @@ export async function GET(request: NextRequest) {
                       const threadsData = await threadsResponse.json();
                       platformMediaUrl = threadsData.media_url || threadsData.thumbnail_url;
                     }
+                  } else if (platform === 'pinterest') {
+                    // Fetch Pinterest pin with media
+                    try {
+                      const pinterestResponse = await fetch(
+                        `https://api.pinterest.com/v5/pins/${result.postId}`,
+                        {
+                          headers: {
+                            'Authorization': `Bearer ${account.access_token}`,
+                            'Content-Type': 'application/json'
+                          }
+                        }
+                      );
+                      
+                      if (pinterestResponse.ok) {
+                        const pinData = await pinterestResponse.json();
+                        // Pinterest API returns media in a specific structure
+                        if (pinData.media) {
+                          if (pinData.media.images) {
+                            // Get the best available image size
+                            const imageUrl = 
+                              pinData.media.images['1200x']?.url ||
+                              pinData.media.images['600x']?.url ||
+                              pinData.media.images['400x300']?.url ||
+                              pinData.media.images.orig?.url;
+                            platformMediaUrl = imageUrl;
+                          }
+                        }
+                        console.log('Pinterest media URL extracted for', result.postId, ':', platformMediaUrl);
+                      }
+                    } catch (pinError) {
+                      console.error('Error fetching Pinterest pin:', pinError);
+                    }
                   }
                 } catch (error) {
                   console.error(`Error fetching media for ${platform} post ${result.postId}:`, error);

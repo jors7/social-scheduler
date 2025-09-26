@@ -1027,10 +1027,53 @@ export default function DashboardPage() {
                   const isVideo = firstMediaUrl && (firstMediaUrl.includes('.mp4') || firstMediaUrl.includes('.mov') || firstMediaUrl.includes('.webm'))
                   
                   
+                  // Get display content - use Pinterest-specific fields if available
+                  const getDisplayContent = () => {
+                    // Check if this is a Pinterest post with specific content
+                    if (post.platforms.includes('pinterest')) {
+                      // Type assertion to access Pinterest fields
+                      const pinterestPost = post as any
+                      
+                      // First check if Pinterest fields exist as separate columns
+                      if (pinterestPost.pinterest_title || pinterestPost.pinterest_description) {
+                        const title = pinterestPost.pinterest_title || ''
+                        const description = pinterestPost.pinterest_description || ''
+                        // Return only the title, fallback to description if no title
+                        return title || description
+                      }
+                      
+                      // Check platform_content JSONB field for Pinterest content
+                      if (pinterestPost.platform_content?.pinterest) {
+                        // Extract just the title part (before the colon) if it's in "title: description" format
+                        const content = pinterestPost.platform_content.pinterest
+                        const colonIndex = content.indexOf(':')
+                        if (colonIndex > 0) {
+                          return content.substring(0, colonIndex).trim()
+                        }
+                        return content
+                      }
+                    }
+                    
+                    // Check if there's platform-specific content for the first platform
+                    const postWithPlatformContent = post as any
+                    if (postWithPlatformContent.platform_content && post.platforms.length > 0) {
+                      const firstPlatform = post.platforms[0]
+                      if (postWithPlatformContent.platform_content[firstPlatform]) {
+                        return postWithPlatformContent.platform_content[firstPlatform]
+                      }
+                    }
+                    
+                    // Fall back to regular content
+                    return post.content || ''
+                  }
+                  
+                  const displayContent = getDisplayContent()
+                  const truncatedContent = stripHtml(displayContent).slice(0, 60)
+                  
                   return (
                     <div key={post.id} className="flex items-center justify-between p-5 border border-gray-100 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-gradient-to-r from-gray-50 to-white">
                       <div className="flex-1">
-                        <p className="font-medium line-clamp-1">{stripHtml(post.content).slice(0, 60)}...</p>
+                        <p className="font-medium line-clamp-1">{truncatedContent}{truncatedContent.length >= 60 ? '...' : ''}</p>
                         <div className="flex items-center gap-2 mt-1">
                           {post.platforms.map((platform) => (
                             <span

@@ -1138,6 +1138,24 @@ function CreateNewPostPageContent() {
               error: r.error || null
             }))
             
+            // Build platform_content with Pinterest data if needed
+            const enrichedPlatformContent = { ...platformContent }
+            if (supportedPlatforms.includes('pinterest') && (pinterestTitle || pinterestDescription)) {
+              // Store Pinterest title (and optionally description) in platform_content
+              // Format: "title: description" for parsing, but dashboard will only show title
+              const pinterestContent = []
+              if (pinterestTitle) pinterestContent.push(pinterestTitle)
+              if (!pinterestTitle && pinterestDescription) {
+                // Only use description if there's no title
+                pinterestContent.push(pinterestDescription)
+              } else if (pinterestTitle && pinterestDescription) {
+                // Store both but separated by colon for parsing
+                enrichedPlatformContent.pinterest = `${pinterestTitle}: ${pinterestDescription}`
+              } else {
+                enrichedPlatformContent.pinterest = pinterestContent.join('')
+              }
+            }
+            
             // Store in scheduled_posts table
             await supabase
               .from('scheduled_posts')
@@ -1145,7 +1163,7 @@ function CreateNewPostPageContent() {
                 user_id: user.id,
                 content: postContent,
                 platforms: supportedPlatforms,
-                platform_content: Object.keys(platformContent).length > 0 ? platformContent : {},
+                platform_content: Object.keys(enrichedPlatformContent).length > 0 ? enrichedPlatformContent : {},
                 media_urls: mediaUrls.length > 0 ? mediaUrls : [],
                 status: successful.length > 0 && failed.length === 0 ? 'posted' : 
                         successful.length > 0 && failed.length > 0 ? 'partial' : 'failed',
