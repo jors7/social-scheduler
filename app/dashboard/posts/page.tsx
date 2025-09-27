@@ -143,7 +143,7 @@ export default function PostsPage() {
 
   const filteredPosts = allPosts
     .filter(post => {
-      // Tab filtering - need to check both status and source for proper filtering
+      // Tab filtering
       if (activeTab === 'scheduled') {
         // For scheduled tab, show only posts with pending, posting, or cancelled status
         if (!['pending', 'posting', 'cancelled'].includes(post.status)) return false
@@ -162,14 +162,15 @@ export default function PostsPage() {
       
       return true
     })
-    .sort((a, b) => {
-      if (sortBy === 'recent') {
-        const aDate = new Date(a.updated_at || a.posted_at || a.created_at)
-        const bDate = new Date(b.updated_at || b.posted_at || b.created_at)
-        return bDate.getTime() - aDate.getTime()
-      }
-      return 0
-    })
+  
+  const sortedPosts = filteredPosts.sort((a, b) => {
+    if (sortBy === 'recent') {
+      const aDate = new Date(a.updated_at || a.posted_at || a.created_at)
+      const bDate = new Date(b.updated_at || b.posted_at || b.created_at)
+      return bDate.getTime() - aDate.getTime()
+    }
+    return 0
+  })
 
   const togglePostSelection = (postId: string) => {
     setSelectedPosts(prev =>
@@ -180,12 +181,11 @@ export default function PostsPage() {
   }
 
   const toggleAllPosts = () => {
-    if (selectedPosts.length === filteredPosts.length) {
+    if (selectedPosts.length === sortedPosts.length) {
       setSelectedPosts([])
     } else {
-      setSelectedPosts(filteredPosts.map(post => post.id))
+      setSelectedPosts(sortedPosts.map(post => post.id))
     }
-  }
 
   const handleEditPost = (postId: string) => {
     const post = allPosts.find(p => p.id === postId)
@@ -417,7 +417,7 @@ export default function PostsPage() {
             />
             {/* Add post count */}
             <div className="flex items-center text-sm text-gray-600">
-              {filteredPosts.length} post{filteredPosts.length !== 1 ? 's' : ''}
+              {sortedPosts.length} post{sortedPosts.length !== 1 ? 's' : ''}
             </div>
           </div>
 
@@ -449,7 +449,7 @@ export default function PostsPage() {
                 <p className="text-gray-500">Loading posts...</p>
               </CardContent>
             </Card>
-          ) : filteredPosts.length === 0 ? (
+          ) : sortedPosts.length === 0 ? (
             <Card className="bg-gradient-to-br from-purple-50 to-blue-50">
               <CardContent className="text-center py-16">
                 <div className="inline-flex items-center justify-center p-6 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full mb-6">
@@ -476,16 +476,16 @@ export default function PostsPage() {
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  checked={selectedPosts.length === filteredPosts.length && filteredPosts.length > 0}
+                  checked={selectedPosts.length === sortedPosts.length && sortedPosts.length > 0}
                   onChange={toggleAllPosts}
                   className="rounded border-gray-300"
                 />
-                <span className="text-sm text-gray-600">Select all ({filteredPosts.length} posts)</span>
+                <span className="text-sm text-gray-600">Select all ({sortedPosts.length} posts)</span>
               </div>
               
               {/* Grid of posts */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredPosts.map(post => (
+                {sortedPosts.map(post => (
                   <PostCard
                     key={post.id}
                     post={post}
@@ -507,4 +507,5 @@ export default function PostsPage() {
       </SubscriptionGate>
     </div>
   )
+}
 }
