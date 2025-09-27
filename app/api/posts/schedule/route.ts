@@ -340,9 +340,10 @@ export async function PATCH(request: NextRequest) {
     console.log('Update data:', updateData);
 
     // First verify the post exists and belongs to the user
+    // Also fetch platforms to check if Twitter limit applies
     const { data: existingPost, error: fetchError } = await supabase
       .from('scheduled_posts')
-      .select('id, user_id')
+      .select('id, user_id, platforms')
       .eq('id', postId)
       .single();
     
@@ -355,9 +356,23 @@ export async function PATCH(request: NextRequest) {
     }
     
     if (existingPost.user_id !== user.id) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Unauthorized to update this post'
       }, { status: 403 });
+    }
+
+    // Check Twitter limit if updating schedule date and post includes Twitter
+    if (scheduledFor !== undefined && existingPost.platforms &&
+        (existingPost.platforms.includes('twitter') || existingPost.platforms.includes('x'))) {
+      const scheduledDate = new Date(scheduledFor);
+      const limitCheck = await checkTwitterScheduleLimit(user.id, scheduledDate);
+      if (!limitCheck.allowed) {
+        console.log(`User ${user.id} reached Twitter limit when rescheduling post ${postId} to ${scheduledDate.toISOString().split('T')[0]}`);
+        return NextResponse.json({
+          error: limitCheck.message,
+          limitReached: true
+        }, { status: 429 });
+      }
     }
 
     // Update WITHOUT .select() to avoid type casting issues
