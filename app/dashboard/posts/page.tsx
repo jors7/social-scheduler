@@ -74,7 +74,7 @@ export default function PostsPage() {
       // Fetch drafts, scheduled, and posted posts concurrently
       const [draftsResponse, scheduledResponse, postedResponse] = await Promise.all([
         fetch('/api/drafts'),
-        fetch('/api/posts/schedule?status=all'),
+        fetch('/api/posts/schedule?status=pending,posting,cancelled,failed'),
         fetch('/api/posts/posted-with-media')
       ])
       
@@ -87,35 +87,60 @@ export default function PostsPage() {
         scheduledResponse.json(),
         postedResponse.json()
       ])
-      
+
       // Transform and combine the data
       const drafts: UnifiedPost[] = (draftsData.drafts || []).map((draft: any) => ({
         ...draft,
         status: 'draft',
         source: 'draft' as const
       }))
-      
-      const scheduled: UnifiedPost[] = (scheduledData.posts || []).map((post: any) => ({
-        ...post,
-        // Keep the original status (pending, posting, cancelled, etc.)
-        // but ensure we have a status field
-        status: post.status || 'pending',
-        source: 'scheduled' as const
-      }))
-      
+
+      const scheduled: UnifiedPost[] = (scheduledData.posts || [])
+        .filter((post: any) => ['pending', 'posting', 'cancelled', 'failed'].includes(post.status))
+        .map((post: any) => ({
+          ...post,
+          // Keep the original status (pending, posting, cancelled, etc.)
+          // but ensure we have a status field
+          status: post.status || 'pending',
+          source: 'scheduled' as const
+        }))
+
       const posted: UnifiedPost[] = (postedData.posts || []).map((post: any) => ({
         ...post,
         status: 'posted',
         source: 'posted' as const
       }))
-      
-      // Combine and sort by most recent first
-      const combined = [...drafts, ...scheduled, ...posted].sort((a, b) => {
+
+      // Deduplicate by ID - keep the most accurate version
+      const postMap = new Map<string, UnifiedPost>()
+
+      // For scheduled posts with pending/failed status, they should stay as scheduled
+      // For posted posts that were successfully posted, they should be shown as posted
+
+      // First, add all drafts
+      drafts.forEach(post => postMap.set(post.id, post))
+
+      // Then add posted posts (successfully posted content)
+      posted.forEach(post => {
+        if (!postMap.has(post.id)) {
+          postMap.set(post.id, post)
+        }
+      })
+
+      // Finally add scheduled posts - these will override posted versions if they exist
+      // because if a post appears in scheduled with pending/failed status, that's its current state
+      scheduled.forEach(post => {
+        // Always use the scheduled version for pending/failed posts
+        postMap.set(post.id, post)
+      })
+
+      // Convert map back to array and sort by most recent first
+      const combined = Array.from(postMap.values()).sort((a, b) => {
         const aDate = new Date(a.updated_at || a.posted_at || a.created_at)
         const bDate = new Date(b.updated_at || b.posted_at || b.created_at)
         return bDate.getTime() - aDate.getTime()
       })
-      
+
       setAllPosts(combined)
     } catch (error) {
       console.error('Error fetching posts:', error)
@@ -143,23 +168,23 @@ export default function PostsPage() {
 
   const filteredPosts = allPosts
     .filter(post => {
-      // Tab filtering
+      // Tab filtering based on source field
       if (activeTab === 'scheduled') {
-        // For scheduled tab, show only posts with pending, posting, or cancelled status
-        if (!['pending', 'posting', 'cancelled'].includes(post.status)) return false
+        // For scheduled tab, show only posts from scheduled source
+        if (post.source !== 'scheduled') return false
       } else if (activeTab === 'posted') {
-        // For posted tab, show only posts with posted status
-        if (post.status !== 'posted') return false
+        // For posted tab, show only posts from posted source
+        if (post.source !== 'posted') return false
       } else if (activeTab === 'draft') {
-        // For draft tab, show only posts with draft status
-        if (post.status !== 'draft') return false
+        // For draft tab, show only posts from draft source
+        if (post.source !== 'draft') return false
       }
       // activeTab === 'all' shows everything
-      
+
       // Search filtering
       const content = stripHtml(post.content)
       if (searchQuery && !content.toLowerCase().includes(searchQuery.toLowerCase())) return false
-      
+
       return true
     })
   
@@ -186,6 +211,7 @@ export default function PostsPage() {
     } else {
       setSelectedPosts(sortedPosts.map(post => post.id))
     }
+  }
 
   const handleEditPost = (postId: string) => {
     const post = allPosts.find(p => p.id === postId)
@@ -369,9 +395,9 @@ export default function PostsPage() {
             {tabs.map(tab => {
               const Icon = tab.icon
               const count = tab.id === 'all' ? allPosts.length :
-                           tab.id === 'scheduled' ? allPosts.filter(p => ['pending', 'posting', 'cancelled'].includes(p.status)).length :
-                           tab.id === 'posted' ? allPosts.filter(p => p.status === 'posted').length :
-                           tab.id === 'draft' ? allPosts.filter(p => p.status === 'draft').length : 0
+                           tab.id === 'scheduled' ? allPosts.filter(p => p.source === 'scheduled').length :
+                           tab.id === 'posted' ? allPosts.filter(p => p.source === 'posted').length :
+                           tab.id === 'draft' ? allPosts.filter(p => p.source === 'draft').length : 0
               
               return (
                 <button
@@ -507,5 +533,4 @@ export default function PostsPage() {
       </SubscriptionGate>
     </div>
   )
-}
 }

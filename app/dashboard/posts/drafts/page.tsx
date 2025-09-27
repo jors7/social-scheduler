@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { CustomSelect } from '@/components/ui/custom-select'
-import { 
-  Search, 
+import {
+  Search,
   FileText,
   Edit,
   Trash2,
-  Calendar
+  Calendar,
+  Clock
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
@@ -158,35 +159,12 @@ export default function DraftPostsPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="space-y-8">
-        <div className="space-y-4">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-orange-600 to-amber-600 rounded-xl text-white">
-              <FileText className="h-8 w-8" />
-            </div>
-            Draft Content
-          </h1>
-        </div>
-        <Card>
-          <CardContent className="text-center py-12">
-            <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-orange-100 to-amber-100 rounded-full mb-4">
-              <FileText className="h-8 w-8 text-orange-600 animate-pulse" />
-            </div>
-            <p className="text-gray-600 font-medium">Loading your drafts...</p>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="space-y-4">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-r from-orange-600 to-amber-600 rounded-xl text-white">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white">
             <FileText className="h-8 w-8" />
           </div>
           Draft Content
@@ -220,16 +198,18 @@ export default function DraftPostsPage() {
               className="min-w-[200px] h-10"
             />
             {/* Add draft count */}
-            <div className="flex items-center text-sm text-gray-600">
-              {filteredDrafts.length} draft{filteredDrafts.length !== 1 ? 's' : ''}
-            </div>
+            {!loading && (
+              <div className="flex items-center text-sm text-gray-600">
+                {filteredDrafts.length} draft{filteredDrafts.length !== 1 ? 's' : ''}
+              </div>
+            )}
           </div>
 
           {/* Bulk Actions */}
-          {selectedDrafts.length > 0 && (
-            <Card className="border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50">
+          {!loading && selectedDrafts.length > 0 && (
+            <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
               <CardContent className="flex items-center justify-between py-4">
-                <span className="text-sm font-medium text-orange-900">
+                <span className="text-sm font-medium text-purple-900">
                   {selectedDrafts.length} draft{selectedDrafts.length > 1 ? 's' : ''} selected
                 </span>
                 <Button variant="outline" size="sm" onClick={handleBulkDelete} className="hover:bg-red-50 hover:border-red-300">
@@ -241,16 +221,23 @@ export default function DraftPostsPage() {
           )}
 
           {/* Drafts Grid */}
-          {filteredDrafts.length === 0 ? (
-            <Card className="bg-gradient-to-br from-orange-50 to-amber-50">
+          {loading ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <Clock className="mx-auto h-12 w-12 text-gray-400 mb-4 animate-spin" />
+                <p className="text-gray-500">Loading your drafts...</p>
+              </CardContent>
+            </Card>
+          ) : filteredDrafts.length === 0 ? (
+            <Card className="bg-gradient-to-br from-purple-50 to-blue-50">
               <CardContent className="text-center py-16">
-                <div className="inline-flex items-center justify-center p-6 bg-gradient-to-br from-orange-100 to-amber-100 rounded-full mb-6">
-                  <FileText className="h-12 w-12 text-orange-600" />
+                <div className="inline-flex items-center justify-center p-6 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full mb-6">
+                  <FileText className="h-12 w-12 text-purple-600" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">No drafts found</h3>
                 <p className="text-gray-600 mb-6">Start creating content to see your drafts here</p>
                 <Button 
-                  className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white shadow-lg" 
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg" 
                   onClick={() => router.push('/dashboard/create/new')}
                 >
                   <Edit className="mr-2 h-4 w-4" />
