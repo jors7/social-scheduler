@@ -1209,7 +1209,9 @@ export default function DashboardPage() {
                 upcomingSchedule.map((day) => (
                   <div key={day.date} className="flex items-center justify-between p-5 border border-gray-100 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-gradient-to-r from-gray-50 to-white">
                     <div className="flex-1">
-                      <span className="font-medium">{day.date}</span>
+                      <span className="font-medium">
+                        {day.date}, {day.dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                      </span>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-sm text-gray-600">
                           {day.posts} post{day.posts !== 1 ? 's' : ''}
