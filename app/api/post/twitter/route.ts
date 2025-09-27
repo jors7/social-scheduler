@@ -11,7 +11,7 @@ const supabase = createClient(
 async function checkDailyLimit(): Promise<{ allowed: boolean; used: number; remaining: number }> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const { count, error } = await supabase
     .from('twitter_usage')
     .select('*', { count: 'exact', head: true })
@@ -19,11 +19,33 @@ async function checkDailyLimit(): Promise<{ allowed: boolean; used: number; rema
 
   const used = count || 0;
   const remaining = Math.max(0, 17 - used);
-  
+
   return {
     allowed: used < 17,
     used,
     remaining
+  };
+}
+
+// Check per-user daily limit (configurable, default 2 posts per day)
+async function checkUserDailyLimit(userId: string): Promise<{ allowed: boolean; used: number; limit: number }> {
+  const userLimit = parseInt(process.env.TWITTER_USER_DAILY_LIMIT || '2');
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+  // Use the database function to count user's posts for today
+  const { data, error } = await supabase
+    .rpc('count_user_twitter_posts', {
+      user_uuid: userId,
+      check_date: todayStr
+    });
+
+  const used = data || 0;
+
+  return {
+    allowed: used < userLimit,
+    used,
+    limit: userLimit
   };
 }
 
@@ -43,17 +65,32 @@ export async function POST(request: NextRequest) {
   try {
     const { text, accessToken, accessSecret, userId, mediaUrls } = await request.json();
 
-    if (!text || !accessToken || !accessSecret) {
+    if (!text || !accessToken || !accessSecret || !userId) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Check daily rate limit
+    // Check per-user daily limit first (hidden 2 posts/day limit)
+    const userLimitCheck = await checkUserDailyLimit(userId);
+    if (!userLimitCheck.allowed) {
+      console.log(`User ${userId} reached daily Twitter limit (${userLimitCheck.used}/${userLimitCheck.limit})`);
+      return NextResponse.json(
+        {
+          error: 'You\'ve reached your daily Twitter posting limit. To conserve API resources, we currently limit posts to 2 per day. This is a temporary measure while we upgrade our infrastructure.',
+          limitReached: true,
+          used: userLimitCheck.used,
+          limit: userLimitCheck.limit
+        },
+        { status: 429 }
+      );
+    }
+
+    // Check app-wide daily rate limit (17 posts/day total)
     const { allowed, remaining } = await checkDailyLimit();
     if (!allowed) {
-      console.log('Twitter daily limit reached (17 posts/day)');
+      console.log('Twitter app-wide limit reached (17 posts/day)');
       return NextResponse.json(
         { error: 'Twitter posting is temporarily unavailable. Please try again tomorrow.' },
         { status: 429 }

@@ -1,8 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
+
+// Helper function to check Twitter limits for scheduling
+async function checkTwitterScheduleLimit(userId: string, scheduledDate: Date): Promise<{ allowed: boolean; message?: string }> {
+  const userLimit = parseInt(process.env.TWITTER_USER_DAILY_LIMIT || '2');
+  const dateStr = scheduledDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+  // Create service role client for database function
+  const supabaseService = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  // Use the database function to count user's posts for the scheduled date
+  const { data, error } = await supabaseService
+    .rpc('count_user_twitter_posts', {
+      user_uuid: userId,
+      check_date: dateStr
+    });
+
+  const used = data || 0;
+
+  if (used >= userLimit) {
+    return {
+      allowed: false,
+      message: `You've already scheduled ${used} Twitter posts for ${dateStr}. To conserve API resources, we currently limit posts to ${userLimit} per day per user.`
+    };
+  }
+
+  return { allowed: true };
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,7 +99,7 @@ export async function POST(request: NextRequest) {
     });
     
     if (scheduledDate <= fiveMinutesAgo) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Scheduled time must be in the future',
         details: {
           scheduledFor: scheduledDate.toISOString(),
@@ -76,6 +107,18 @@ export async function POST(request: NextRequest) {
           message: 'Please schedule at least 5 minutes from now'
         }
       }, { status: 400 });
+    }
+
+    // Check Twitter daily limit if Twitter is selected
+    if ((platforms.includes('twitter') || platforms.includes('x')) && user) {
+      const limitCheck = await checkTwitterScheduleLimit(user.id, scheduledDate);
+      if (!limitCheck.allowed) {
+        console.log(`User ${user.id} reached Twitter scheduling limit for ${scheduledDate.toISOString().split('T')[0]}`);
+        return NextResponse.json({
+          error: limitCheck.message,
+          limitReached: true
+        }, { status: 429 });
+      }
     }
 
     // Save to database WITHOUT .select() to avoid type casting issue
