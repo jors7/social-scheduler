@@ -1676,11 +1676,13 @@ function CreateNewPostPageContent() {
 
       const method = currentDraftId ? 'PATCH' : 'POST'
       const body = {
-        title: title || 'Untitled Draft',
+        title: title || (selectedPlatforms.includes('pinterest') && pinterestTitle ? pinterestTitle : 'Untitled Draft'),
         content: postContent,
         platforms: selectedPlatforms,
         platformContent: Object.keys(filteredPlatformContent).length > 0 ? filteredPlatformContent : undefined,
         mediaUrls: mediaUrls,
+        pinterest_title: pinterestTitle || undefined,
+        pinterest_description: pinterestDescription || undefined,
       }
       
       if (currentDraftId) {

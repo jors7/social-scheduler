@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, content, platforms, platformContent, mediaUrls } = body;
+    const { title, content, platforms, platformContent, mediaUrls, pinterest_title, pinterest_description } = body;
 
     // Validate inputs
     if (!content || !platforms || platforms.length === 0) {
@@ -88,16 +88,26 @@ export async function POST(request: NextRequest) {
     const draftTitle = title || `Draft - ${new Date().toLocaleDateString()}`;
 
     // Save draft
+    const insertData: any = {
+      user_id: user.id,
+      title: draftTitle,
+      content,
+      platforms,
+      platform_content: platformContent || {},
+      media_urls: mediaUrls || []
+    };
+
+    // Add Pinterest fields if provided
+    if (pinterest_title) {
+      insertData.pinterest_title = pinterest_title;
+    }
+    if (pinterest_description) {
+      insertData.pinterest_description = pinterest_description;
+    }
+
     const { data, error } = await supabase
       .from('drafts')
-      .insert({
-        user_id: user.id,
-        title: draftTitle,
-        content,
-        platforms,
-        platform_content: platformContent || {},
-        media_urls: mediaUrls || []
-      })
+      .insert(insertData)
       .select()
       .single();
 
@@ -143,22 +153,33 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { draftId, title, content, platforms, platformContent, mediaUrls } = body;
+    const { draftId, title, content, platforms, platformContent, mediaUrls, pinterest_title, pinterest_description } = body;
 
     if (!draftId) {
       return NextResponse.json({ error: 'Draft ID is required' }, { status: 400 });
     }
 
+    // Build update data
+    const updateData: any = {
+      title,
+      content,
+      platforms,
+      platform_content: platformContent,
+      media_urls: mediaUrls
+    };
+
+    // Add Pinterest fields if provided
+    if (pinterest_title !== undefined) {
+      updateData.pinterest_title = pinterest_title;
+    }
+    if (pinterest_description !== undefined) {
+      updateData.pinterest_description = pinterest_description;
+    }
+
     // Update draft
     const { data, error } = await supabase
       .from('drafts')
-      .update({
-        title,
-        content,
-        platforms,
-        platform_content: platformContent,
-        media_urls: mediaUrls
-      })
+      .update(updateData)
       .eq('id', draftId)
       .eq('user_id', user.id)
       .select()

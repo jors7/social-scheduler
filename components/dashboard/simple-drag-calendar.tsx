@@ -14,6 +14,8 @@ interface ScheduledPost {
   scheduled_for: string
   status: 'pending' | 'posting' | 'posted' | 'failed' | 'cancelled'
   created_at: string
+  pinterest_title?: string
+  pinterest_description?: string
 }
 
 interface DragDropCalendarProps {
@@ -332,7 +334,9 @@ export function SimpleDragCalendar({
                               {formatTime(post.scheduled_for)}
                             </div>
                             <div className="truncate opacity-90 text-[10px] leading-tight">
-                              {stripHtml(post.content).slice(0, 35)}...
+                              {post.platforms?.includes('pinterest') && post.pinterest_title
+                                ? post.pinterest_title
+                                : stripHtml(post.content).slice(0, 35) + '...'}
                             </div>
                             <div className="text-[9px] opacity-75 mt-0.5">
                               {post.platforms.join(' · ')}
@@ -410,7 +414,9 @@ export function SimpleDragCalendar({
                           </span>
                         </div>
                         <div className="text-sm opacity-90 mb-2">
-                          {stripHtml(post.content).slice(0, 150)}...
+                          {post.platforms?.includes('pinterest') && post.pinterest_title
+                            ? post.pinterest_title
+                            : stripHtml(post.content).slice(0, 150) + '...'}
                         </div>
                         <div className="flex flex-wrap gap-1">
                           {post.platforms.map(platform => (

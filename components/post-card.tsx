@@ -36,11 +36,15 @@ interface PostedPost extends BasePost {
 interface ScheduledPost extends BasePost {
   scheduled_for: string
   status: 'pending' | 'posting' | 'posted' | 'failed' | 'cancelled'
+  pinterest_title?: string
+  pinterest_description?: string
 }
 
 interface DraftPost extends BasePost {
   title?: string
   updated_at?: string
+  pinterest_title?: string
+  pinterest_description?: string
 }
 
 type Post = PostedPost | ScheduledPost | DraftPost
@@ -146,19 +150,40 @@ export function PostCard({
 
   // Get the appropriate title/content for display
   const getDisplayContent = () => {
-    if (variant === 'posted' && 'pinterest_title' in post) {
-      const postedPost = post as PostedPost
-      if (postedPost.pinterest_title) {
-        return postedPost.pinterest_title
+    // Check for Pinterest title first (works for all variants)
+    if (post.platforms?.includes('pinterest') && 'pinterest_title' in post) {
+      const pinterestPost = post as any
+      if (pinterestPost.pinterest_title) {
+        return pinterestPost.pinterest_title
       }
     }
+
+    // Then check for draft title
     if (variant === 'draft' && 'title' in post) {
       const draftPost = post as DraftPost
-      if (draftPost.title) {
+      if (draftPost.title && draftPost.title !== 'Untitled Draft') {
         return draftPost.title
       }
     }
-    return stripHtml(post.content)
+
+    // For Pinterest posts, try to show something meaningful
+    if (post.platforms?.includes('pinterest')) {
+      // Try pinterest_description if available
+      const pinterestPost = post as any
+      if (pinterestPost.pinterest_description) {
+        return pinterestPost.pinterest_description
+      }
+      // If content is empty or very short, show a default
+      const content = stripHtml(post.content)
+      if (!content || content.trim() === '') {
+        return 'Pinterest Pin'
+      }
+      return content
+    }
+
+    // Default to content or fallback text
+    const content = stripHtml(post.content)
+    return content || 'No content'
   }
 
   // Get status for scheduled posts

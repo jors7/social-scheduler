@@ -21,6 +21,8 @@ interface ScheduledPost {
   scheduled_for: string
   status: 'pending' | 'posting' | 'posted' | 'failed' | 'cancelled'
   created_at: string
+  pinterest_title?: string
+  pinterest_description?: string
 }
 
 export default function CalendarPage() {

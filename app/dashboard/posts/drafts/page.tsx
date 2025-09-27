@@ -29,6 +29,8 @@ interface Draft {
   media_urls: string[]
   created_at: string
   updated_at: string
+  pinterest_title?: string
+  pinterest_description?: string
 }
 
 // Helper function to strip HTML tags
