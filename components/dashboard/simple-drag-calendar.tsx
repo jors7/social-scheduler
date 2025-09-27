@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, Edit, Trash2, X, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Edit, Trash2, X, Clock, Image, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -11,6 +11,7 @@ interface ScheduledPost {
   id: string
   content: string
   platforms: string[]
+  media_urls?: any[] | string
   scheduled_for: string
   status: 'pending' | 'posting' | 'posted' | 'failed' | 'cancelled'
   created_at: string
@@ -47,6 +48,19 @@ const platformAbbreviations: Record<string, string> = {
   threads: 'TH',
   bluesky: 'BS',
   pinterest: 'PI'
+}
+
+const platformIcons: Record<string, string> = {
+  twitter: '𝕏',
+  x: '𝕏',
+  instagram: '📷',
+  facebook: '📘',
+  linkedin: '💼',
+  youtube: '📺',
+  tiktok: '🎵',
+  threads: '🧵',
+  bluesky: '☁️',
+  pinterest: '📌'
 }
 
 export function SimpleDragCalendar({ 
@@ -122,8 +136,8 @@ export function SimpleDragCalendar({
   }
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
+    return new Date(dateString).toLocaleTimeString('en-US', {
+      hour: 'numeric',
       minute: '2-digit',
       hour12: true
     })
@@ -132,6 +146,37 @@ export function SimpleDragCalendar({
   const getPostColor = (post: ScheduledPost) => {
     const primaryPlatform = post.platforms[0] as keyof typeof platformColors
     return platformColors[primaryPlatform] || 'bg-gray-500'
+  }
+
+  const getMediaUrl = (post: ScheduledPost): string | null => {
+    // Check the media_urls field
+    if (post.media_urls) {
+      // Handle different possible formats of media_urls
+      if (Array.isArray(post.media_urls) && post.media_urls.length > 0) {
+        const firstMedia = post.media_urls[0]
+
+        // If it's a string URL, return it directly
+        if (typeof firstMedia === 'string' && firstMedia.trim() !== '') {
+          return firstMedia.trim()
+        }
+
+        // If it's an object, try to extract the URL from various possible properties
+        if (firstMedia && typeof firstMedia === 'object') {
+          // Check for various possible property names
+          if (firstMedia.url && typeof firstMedia.url === 'string') return firstMedia.url.trim()
+          if (firstMedia.media_url && typeof firstMedia.media_url === 'string') return firstMedia.media_url.trim()
+          if (firstMedia.src && typeof firstMedia.src === 'string') return firstMedia.src.trim()
+          if (firstMedia.secure_url && typeof firstMedia.secure_url === 'string') return firstMedia.secure_url.trim()
+        }
+      }
+
+      // If media_urls is a single string
+      if (typeof post.media_urls === 'string' && post.media_urls.trim() !== '') {
+        return post.media_urls.trim()
+      }
+    }
+
+    return null
   }
 
   const handleDragStart = (e: React.DragEvent, postId: string) => {
@@ -393,76 +438,114 @@ export function SimpleDragCalendar({
             </CardHeader>
             <CardContent className="p-4 overflow-y-auto max-h-[calc(80vh-4rem)]">
               <div className="space-y-3">
-                {getPostsForDate(selectedDate).map((post) => (
-                  <div
-                    key={post.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, post.id)}
-                    onDragEnd={handleDragEnd}
-                    className={cn(
-                      "group p-4 rounded-lg text-white cursor-move transition-all hover:shadow-lg",
-                      getPostColor(post),
-                      draggedPostId === post.id ? "opacity-50" : ""
-                    )}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Clock className="h-4 w-4" />
-                          <span className="font-medium">
-                            {formatTime(post.scheduled_for)}
-                          </span>
+                {getPostsForDate(selectedDate).map((post) => {
+                  const mediaUrl = getMediaUrl(post)
+                  const primaryPlatform = post.platforms[0]
+                  const platformIcon = platformIcons[primaryPlatform] || '📝'
+
+                  return (
+                    <div
+                      key={post.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, post.id)}
+                      onDragEnd={handleDragEnd}
+                      className={cn(
+                        "group p-4 rounded-lg text-white cursor-move transition-all hover:shadow-lg",
+                        getPostColor(post),
+                        draggedPostId === post.id ? "opacity-50" : ""
+                      )}
+                    >
+                      <div className="flex items-start gap-4">
+                        {/* Media thumbnail or platform icon */}
+                        <div className="flex-shrink-0">
+                          {mediaUrl ? (
+                            <img
+                              src={mediaUrl}
+                              alt="Post media"
+                              className="w-16 h-16 object-cover rounded-lg border-2 border-white/20"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                target.style.display = 'none'
+                                const fallback = target.nextElementSibling
+                                if (fallback) {
+                                  (fallback as HTMLElement).style.display = 'flex'
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <div
+                            className={cn(
+                              "w-16 h-16 rounded-lg flex items-center justify-center text-2xl bg-white/10 border-2 border-white/20",
+                              mediaUrl ? "hidden" : ""
+                            )}
+                          >
+                            {platformIcon}
+                          </div>
                         </div>
-                        <div className="text-sm opacity-90 mb-2">
-                          {post.platforms?.includes('pinterest') && post.pinterest_title
-                            ? post.pinterest_title
-                            : stripHtml(post.content).slice(0, 150) + '...'}
+
+                        {/* Content */}
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Clock className="h-4 w-4" />
+                                <span className="font-medium">
+                                  {formatTime(post.scheduled_for)}
+                                </span>
+                              </div>
+                              <div className="text-sm opacity-90 mb-2">
+                                {post.platforms?.includes('pinterest') && post.pinterest_title
+                                  ? post.pinterest_title
+                                  : stripHtml(post.content).slice(0, 150) + '...'}
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {post.platforms.map(platform => (
+                                  <span
+                                    key={platform}
+                                    className="text-xs bg-white/20 px-2 py-1 rounded"
+                                  >
+                                    {platform}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex gap-2 ml-4">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="hover:bg-white/20 text-white"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedDate(null)
+                                  onPostEdit(post.id)
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="hover:bg-white/20 text-white"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  if (confirm('Are you sure you want to delete this post?')) {
+                                    onPostDelete(post.id)
+                                    // Refresh the modal if still open
+                                    if (getPostsForDate(selectedDate).length === 1) {
+                                      setSelectedDate(null)
+                                    }
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex flex-wrap gap-1">
-                          {post.platforms.map(platform => (
-                            <span 
-                              key={platform} 
-                              className="text-xs bg-white/20 px-2 py-1 rounded"
-                            >
-                              {platform}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex gap-2 ml-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="hover:bg-white/20 text-white"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedDate(null)
-                            onPostEdit(post.id)
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="hover:bg-white/20 text-white"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            if (confirm('Are you sure you want to delete this post?')) {
-                              onPostDelete(post.id)
-                              // Refresh the modal if still open
-                              if (getPostsForDate(selectedDate).length === 1) {
-                                setSelectedDate(null)
-                              }
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
               <div className="mt-4 text-xs text-gray-500 text-center">
                 💡 Drag posts from here to any calendar day to reschedule
