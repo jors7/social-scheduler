@@ -335,7 +335,7 @@ export default function DashboardPage() {
           postGroups: data.postGroups 
         }))
         .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime())
-        .slice(0, 4)
+        .slice(0, 5)
       
       setUpcomingSchedule(scheduleArray)
       
