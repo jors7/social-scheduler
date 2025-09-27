@@ -1636,7 +1636,9 @@ function CreateNewPostPageContent() {
 
     } catch (error) {
       console.error('Scheduling error:', error)
-      toast.error('Failed to schedule post')
+      // Show the actual error message if available
+      const errorMessage = error instanceof Error ? error.message : 'Failed to schedule post'
+      toast.error(errorMessage)
     } finally {
       setIsPosting(false)
     }
