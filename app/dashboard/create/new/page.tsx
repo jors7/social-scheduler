@@ -149,11 +149,19 @@ function CreateNewPostPageContent() {
   const [threadsThreadMedia, setThreadsThreadMedia] = useState<(File[] | undefined)[]>([])
   
   // Twitter-specific state
+  // Hardcoded to false to disable thread mode and hide Twitter Options card
+  const enableTwitterThreads = false // process.env.NEXT_PUBLIC_ENABLE_TWITTER_THREADS === 'true'
   const [twitterMode, setTwitterMode] = useState<'single' | 'thread'>('single')
   const [twitterThreadPosts, setTwitterThreadPosts] = useState<string[]>([''])
   const [twitterThreadMedia, setTwitterThreadMedia] = useState<(File[] | undefined)[]>([])
-  
-  
+
+  // Force single mode when threads are disabled
+  useEffect(() => {
+    if (!enableTwitterThreads && twitterMode === 'thread') {
+      setTwitterMode('single')
+    }
+  }, [enableTwitterThreads, twitterMode])
+
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
   const loadedDraftRef = useRef<string | null>(null)
   const [shouldAutoPublish, setShouldAutoPublish] = useState(false)
@@ -2175,8 +2183,8 @@ function CreateNewPostPageContent() {
             </Card>
           )}
 
-          {/* Twitter/X Thread Mode */}
-          {selectedPlatforms.length === 1 && selectedPlatforms[0] === 'twitter' && (
+          {/* Twitter/X Thread Mode - Only show when threads are enabled */}
+          {selectedPlatforms.length === 1 && selectedPlatforms[0] === 'twitter' && enableTwitterThreads && (
             <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 border-gray-200 dark:border-gray-800">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
@@ -2188,52 +2196,66 @@ function CreateNewPostPageContent() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <Button
-                    type="button"
-                    variant={twitterMode === 'single' ? 'default' : 'outline'}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      setTwitterMode('single')
-                    }}
-                    size="sm"
-                  >
-                    Single Tweet
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={twitterMode === 'thread' ? 'default' : 'outline'}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      setTwitterMode('thread')
-                    }}
-                    size="sm"
-                  >
-                    Thread (Multiple Tweets)
-                  </Button>
-                </div>
-                
-                {twitterMode === 'thread' && (
-                  <div className="space-y-4">
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                      <p className="text-sm text-blue-800 dark:text-blue-200">
-                        <strong>Twitter Thread:</strong> Creates connected tweets (280 chars each).
-                        <span className="block mt-1 text-xs">
-                          ✨ Tweets will be connected as replies. Optional [1/n] numbering available.
-                        </span>
-                      </p>
+                {/* Twitter thread mode temporarily disabled to conserve API calls */}
+                {enableTwitterThreads ? (
+                  <>
+                    <div className="flex items-center gap-4">
+                      <Button
+                        type="button"
+                        variant={twitterMode === 'single' ? 'default' : 'outline'}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setTwitterMode('single')
+                        }}
+                        size="sm"
+                      >
+                        Single Tweet
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={twitterMode === 'thread' ? 'default' : 'outline'}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setTwitterMode('thread')
+                        }}
+                        size="sm"
+                      >
+                        Thread (Multiple Tweets)
+                      </Button>
                     </div>
-                    <ThreadComposer
-                      onPost={(posts) => setTwitterThreadPosts(posts)}
-                      onMediaChange={(media) => setTwitterThreadMedia(media)}
-                      maxPosts={15}
-                      maxCharsPerPost={280}
-                      maxMediaPerPost={4}
-                      autoUpdate={true}
-                      platform="twitter"
-                    />
+
+                    {twitterMode === 'thread' && (
+                      <div className="space-y-4">
+                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                          <p className="text-sm text-blue-800 dark:text-blue-200">
+                            <strong>Twitter Thread:</strong> Creates connected tweets (280 chars each).
+                            <span className="block mt-1 text-xs">
+                              ✨ Tweets will be connected as replies. Optional [1/n] numbering available.
+                            </span>
+                          </p>
+                        </div>
+                        <ThreadComposer
+                          onPost={(posts) => setTwitterThreadPosts(posts)}
+                          onMediaChange={(media) => setTwitterThreadMedia(media)}
+                          maxPosts={15}
+                          maxCharsPerPost={280}
+                          maxMediaPerPost={4}
+                          autoUpdate={true}
+                          platform="twitter"
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                      <strong>Single Tweet Mode:</strong> Create one tweet up to 280 characters.
+                      <span className="block mt-1 text-xs text-blue-600 dark:text-blue-400">
+                        💡 Thread mode is temporarily disabled to optimize API usage.
+                      </span>
+                    </p>
                   </div>
                 )}
               </CardContent>
