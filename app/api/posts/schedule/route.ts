@@ -23,7 +23,42 @@ async function checkTwitterScheduleLimit(userId: string, scheduledDate: Date): P
       check_date: dateStr
     });
 
+  if (error) {
+    console.error('Error calling count_user_twitter_posts:', error);
+    // If function doesn't exist, fall back to manual counting
+    // Count scheduled posts for this user on this date - fetch and filter manually
+    const { data: scheduledPosts } = await supabaseService
+      .from('scheduled_posts')
+      .select('platforms')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .gte('scheduled_for', `${dateStr}T00:00:00`)
+      .lt('scheduled_for', `${dateStr}T23:59:59`);
+
+    // Filter posts that include twitter or x platform
+    const twitterPosts = scheduledPosts?.filter(post =>
+      post.platforms && (
+        post.platforms.includes('twitter') ||
+        post.platforms.includes('x')
+      )
+    ) || [];
+
+    const scheduledCount = twitterPosts.length;
+
+    const used = scheduledCount || 0;
+    console.log(`Fallback count for user ${userId} on ${dateStr}: ${used} scheduled tweets`);
+
+    if (used >= userLimit) {
+      return {
+        allowed: false,
+        message: `You've already scheduled ${used} Twitter posts for ${dateStr}. To conserve API resources, we currently limit posts to ${userLimit} per day per user.`
+      };
+    }
+    return { allowed: true };
+  }
+
   const used = data || 0;
+  console.log(`User ${userId} has ${used} Twitter posts scheduled/posted for ${dateStr}`)
 
   if (used >= userLimit) {
     return {
