@@ -559,14 +559,14 @@ export class InstagramClient {
         // Metrics for Reels - comprehensive set
         metricsToTry = ['plays', 'reach', 'likes', 'comments', 'shares', 'saves', 'total_interactions'];
       } else if (mediaType === 'VIDEO') {
-        // Metrics for regular videos
-        metricsToTry = ['impressions', 'reach', 'saved'];
+        // Metrics for regular videos (impressions deprecated April 2025)
+        metricsToTry = ['reach', 'saved', 'likes', 'comments', 'shares', 'total_interactions'];
       } else if (mediaType === 'CAROUSEL_ALBUM') {
-        // Metrics for Carousel posts
-        metricsToTry = ['carousel_album_impressions', 'carousel_album_reach', 'carousel_album_saved'];
+        // Metrics for Carousel posts (impressions deprecated April 2025)
+        metricsToTry = ['reach', 'saved', 'likes', 'comments', 'shares', 'total_interactions'];
       } else {
-        // For IMAGE posts - use standard metrics
-        metricsToTry = ['impressions', 'reach', 'saved'];
+        // For IMAGE posts - standard supported metrics (impressions deprecated April 2025)
+        metricsToTry = ['reach', 'saved', 'likes', 'comments', 'shares', 'total_interactions'];
       }
 
       // Use the metrics as specified or fallback to defaults
@@ -733,14 +733,14 @@ export class InstagramClient {
 
   async getUserInsights(period: 'day' | 'week' | 'days_28' = 'days_28', metrics?: string[]) {
     try {
-      // Instagram Business account metrics
-      // Some metrics might not be available depending on account type and permissions
+      // Instagram account metrics (impressions deprecated April 2025)
+      // Universal metrics that work for BUSINESS, CREATOR, and MEDIA_CREATOR accounts
       const defaultMetrics = [
         'reach',
-        'impressions',
         'profile_views',
         'follower_count',
-        'website_clicks'
+        'accounts_engaged',
+        'total_interactions'
       ];
 
       const metricsToFetch = metrics || defaultMetrics;

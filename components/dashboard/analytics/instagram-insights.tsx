@@ -26,7 +26,6 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
 interface InstagramMetrics {
-  impressions: number
   reach: number
   saves: number
   profile_views: number
@@ -35,6 +34,9 @@ interface InstagramMetrics {
   likes: number
   comments: number
   shares: number
+  total_interactions: number
+  accounts_engaged?: number
+  plays?: number // For REELS
 }
 
 interface InstagramPost {
@@ -129,15 +131,16 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
           media.map(async (post: any) => {
             // Start with basic engagement metrics from the media object
             let metrics = {
-              impressions: 0,
               reach: 0,
               saves: 0,
               likes: post.like_count || 0,  // Use like_count from media object
               comments: post.comments_count || 0,  // Use comments_count from media object
               shares: 0,
               engagement: 0,
+              total_interactions: 0,
               profile_views: 0,
-              follower_count: 0
+              follower_count: 0,
+              plays: 0 // For REELS/VIDEO
             }
             
             try {
@@ -152,29 +155,30 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
                 if (post.media_type === 'VIDEO' || post.media_type === 'REELS') {
                   metrics = {
                     ...metrics,
-                    impressions: insights.plays?.value || 0, // Use plays for videos
+                    plays: insights.plays?.value || 0, // Plays for videos/reels
                     reach: insights.reach?.value || 0,
-                    saves: insights.saved?.value || 0,
+                    saves: insights.saved?.value || insights.saves?.value || 0,
                     shares: insights.shares?.value || 0,
+                    total_interactions: insights.total_interactions?.value || 0,
                     engagement: insights.total_interactions?.value || 0
                   }
                 } else if (post.media_type === 'CAROUSEL_ALBUM') {
                   metrics = {
                     ...metrics,
-                    impressions: insights.carousel_album_impressions?.value || 0,
-                    reach: insights.carousel_album_reach?.value || 0,
-                    saves: insights.carousel_album_saved?.value || 0,
-                    shares: insights.carousel_album_engagement?.value || 0,
-                    engagement: insights.carousel_album_engagement?.value || 0
+                    reach: insights.reach?.value || 0,
+                    saves: insights.saved?.value || insights.saves?.value || 0,
+                    shares: insights.shares?.value || 0,
+                    total_interactions: insights.total_interactions?.value || 0,
+                    engagement: insights.total_interactions?.value || 0
                   }
                 } else {
                   // For regular IMAGE posts
                   metrics = {
                     ...metrics,
-                    impressions: insights.impressions?.value || 0, // Don't use reach as fallback - they're different metrics
                     reach: insights.reach?.value || 0,
-                    saves: insights.saved?.value || 0,
+                    saves: insights.saved?.value || insights.saves?.value || 0,
                     shares: insights.shares?.value || 0,
+                    total_interactions: insights.total_interactions?.value || 0,
                     engagement: insights.total_interactions?.value || insights.engagement?.value || 0
                   }
                 }
@@ -442,28 +446,28 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
               {getChangeIndicator(userInsights?.profile_views?.value || 0, userInsights?.profile_views?.previous || 0)}
             </div>
 
-            {/* Impressions */}
+            {/* Total Interactions */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Activity className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-500">Impressions</p>
+                <p className="text-xs font-medium text-gray-500">Total Interactions</p>
               </div>
               <p className="text-2xl font-bold">
-                {formatNumber(userInsights?.impressions?.value || 0)}
+                {formatNumber(userInsights?.total_interactions?.value || 0)}
               </p>
-              {getChangeIndicator(userInsights?.impressions?.value || 0, userInsights?.impressions?.previous || 0)}
+              {getChangeIndicator(userInsights?.total_interactions?.value || 0, userInsights?.total_interactions?.previous || 0)}
             </div>
 
-            {/* Website Clicks */}
+            {/* Accounts Engaged */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <MousePointer className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-500">Website Clicks</p>
+                <Users className="h-4 w-4 text-gray-500" />
+                <p className="text-xs font-medium text-gray-500">Accounts Engaged</p>
               </div>
               <p className="text-2xl font-bold">
-                {formatNumber(userInsights?.website_clicks?.value || 0)}
+                {formatNumber(userInsights?.accounts_engaged?.value || 0)}
               </p>
-              {getChangeIndicator(userInsights?.website_clicks?.value || 0, userInsights?.website_clicks?.previous || 0)}
+              {getChangeIndicator(userInsights?.accounts_engaged?.value || 0, userInsights?.accounts_engaged?.previous || 0)}
             </div>
 
             {/* Engagement */}
@@ -659,14 +663,7 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                    <div className="flex items-center gap-2">
-                      <Eye className="h-3 w-3 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">Impressions</p>
-                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.impressions || 0)}</p>
-                      </div>
-                    </div>
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                     <div className="flex items-center gap-2">
                       <Users className="h-3 w-3 text-gray-400" />
                       <div>
@@ -689,10 +686,24 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      <Share2 className="h-3 w-3 text-gray-400" />
+                      <div>
+                        <p className="text-xs text-gray-500">Shares</p>
+                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.shares || 0)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
                       <Bookmark className="h-3 w-3 text-gray-400" />
                       <div>
                         <p className="text-xs text-gray-500">Saves</p>
                         <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.saves || 0)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Activity className="h-3 w-3 text-gray-400" />
+                      <div>
+                        <p className="text-xs text-gray-500">Total Interactions</p>
+                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.total_interactions || 0)}</p>
                       </div>
                     </div>
                   </div>
