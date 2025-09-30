@@ -276,17 +276,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const platformUserId = profileData.id || igBusinessAccountId;
+    // IMPORTANT: Use user_id from token exchange, NOT from profile API
+    // The token is tied to user_id from token exchange response
+    const platformUserId = user_id.toString();
     const accountName = profileData.username || `instagram_${user_id}`;
     const username = profileData.username || `instagram_${user_id}`;
     const profileImageUrl = profileData.profile_picture_url || null;
-    
+
     console.log('Storing Instagram account data:', {
       user_id: user.id,
       platform: 'instagram',
       platform_user_id: platformUserId,
       username: username,
-      access_token: 'REDACTED'
+      access_token: 'REDACTED',
+      token_user_id: user_id,
+      profile_user_id: profileData.id
     });
     
     // Use service role client for database operations to bypass RLS
