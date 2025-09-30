@@ -208,7 +208,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       accounts: debugInfo,
-      recommendations: [...new Set(recommendations)], // Remove duplicates
+      recommendations: Array.from(new Set(recommendations)), // Remove duplicates
       summary: {
         hasBusinessAccount: debugInfo.some(d => ['BUSINESS', 'CREATOR'].includes(d.tests.profile?.accountType)),
         hasInsightsAccess: debugInfo.some(d => d.tests.userInsights?.success),
