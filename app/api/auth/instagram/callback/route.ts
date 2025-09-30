@@ -290,6 +290,11 @@ export async function GET(request: NextRequest) {
     });
     
     // Use service role client for database operations to bypass RLS
+    console.log('[Instagram Callback] Creating service role client...');
+    console.log('[Instagram Callback] SUPABASE_URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log('[Instagram Callback] SERVICE_ROLE_KEY exists:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+    console.log('[Instagram Callback] SERVICE_ROLE_KEY length:', process.env.SUPABASE_SERVICE_ROLE_KEY?.length);
+
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -300,6 +305,8 @@ export async function GET(request: NextRequest) {
         }
       }
     );
+
+    console.log('[Instagram Callback] Service role client created successfully');
 
     // First, deactivate all existing Instagram accounts for this user
     const { error: deactivateError } = await supabaseAdmin
@@ -330,7 +337,7 @@ export async function GET(request: NextRequest) {
     if (existingAccount) {
       // Update existing account and reactivate it
       console.log('[Instagram Callback] Updating existing account:', existingAccount.id);
-      const { error: dbError } = await supabaseAdmin
+      const { data: updateData, error: dbError, count } = await supabaseAdmin
         .from('social_accounts')
         .update({
           platform_user_id: platformUserId,
@@ -339,7 +346,14 @@ export async function GET(request: NextRequest) {
           is_active: true,
           updated_at: new Date().toISOString()
         })
-        .eq('id', existingAccount.id);
+        .eq('id', existingAccount.id)
+        .select();
+
+      console.log('[Instagram Callback] Update result:', {
+        error: dbError,
+        rowsAffected: updateData?.length || 0,
+        data: updateData
+      });
 
       if (dbError) {
         console.error('[Instagram Callback] Database update error:', dbError);
@@ -347,6 +361,14 @@ export async function GET(request: NextRequest) {
           new URL('/dashboard/settings?error=database_error', request.url)
         );
       }
+
+      if (!updateData || updateData.length === 0) {
+        console.error('[Instagram Callback] UPDATE returned 0 rows - RLS may be blocking!');
+        return NextResponse.redirect(
+          new URL('/dashboard/settings?error=update_failed', request.url)
+        );
+      }
+
       console.log('[Instagram Callback] Account updated successfully');
     } else {
       // Insert new account
