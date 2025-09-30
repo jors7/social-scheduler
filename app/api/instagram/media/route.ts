@@ -51,7 +51,15 @@ export async function GET(request: NextRequest) {
 
     // Fetch media from Instagram
     const mediaResponse = await client.getMedia(limit);
-    
+
+    // Fetch account info including follower count
+    let accountInfo = null;
+    try {
+      accountInfo = await client.getAccountInfo();
+    } catch (error) {
+      console.error('Failed to fetch account info:', error);
+    }
+
     // Return media with account info
     return NextResponse.json({
       success: true,
@@ -60,7 +68,11 @@ export async function GET(request: NextRequest) {
       account: {
         id: account.id,
         username: account.username,
-        platform_user_id: account.platform_user_id
+        platform_user_id: account.platform_user_id,
+        followers_count: accountInfo?.followers_count || 0,
+        follows_count: accountInfo?.follows_count || 0,
+        media_count: accountInfo?.media_count || 0,
+        account_type: accountInfo?.account_type || 'UNKNOWN'
       }
     });
 

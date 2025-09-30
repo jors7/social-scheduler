@@ -68,6 +68,7 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
   const [hasMorePosts, setHasMorePosts] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [tokenExpired, setTokenExpired] = useState(false)
+  const [accountInfo, setAccountInfo] = useState<any>(null)
 
   const fetchInstagramInsights = async (accountId?: string) => {
     try {
@@ -98,29 +99,17 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
         return
       }
 
-      // Fetch user-level insights for the selected account
-      const queryParams = new URLSearchParams({
-        type: 'user',
-        period: selectedPeriod,
-        ...(selectedAccount?.id && { accountId: selectedAccount.id })
-      })
-      const userInsightsResponse = await fetch(`/api/instagram/insights?${queryParams}`)
-      if (userInsightsResponse.ok) {
-        const data = await userInsightsResponse.json()
-        console.log('User insights response:', data)
-        setUserInsights(data.insights)
-      } else {
-        console.error('Failed to fetch user insights')
-      }
-
-      // Fetch recent posts directly from Instagram
+      // Fetch recent posts directly from Instagram (user insights will be calculated from post metrics)
       const mediaQueryParams = new URLSearchParams({
         limit: postsLimit.toString(),
         ...(selectedAccount?.id && { accountId: selectedAccount.id })
       })
       const mediaResponse = await fetch(`/api/instagram/media?${mediaQueryParams}`)
       if (mediaResponse.ok) {
-        const { media } = await mediaResponse.json()
+        const { media, account: fetchedAccountInfo } = await mediaResponse.json()
+
+        // Store account info for displaying limitations
+        setAccountInfo(fetchedAccountInfo)
 
         // Check if there might be more posts available
         setHasMorePosts(media.length === postsLimit)
@@ -203,6 +192,31 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
         )
 
         setRecentPosts(postsWithInsights.filter(Boolean))
+
+        // Calculate profile overview from post metrics instead of user insights API
+        const profileMetrics = postsWithInsights.reduce((acc, post) => {
+          return {
+            reach: acc.reach + (post.metrics?.reach || 0),
+            total_interactions: acc.total_interactions + (post.metrics?.total_interactions || 0),
+            likes: acc.likes + (post.metrics?.likes || 0),
+            comments: acc.comments + (post.metrics?.comments || 0),
+            shares: acc.shares + (post.metrics?.shares || 0),
+            saves: acc.saves + (post.metrics?.saves || 0)
+          }
+        }, { reach: 0, total_interactions: 0, likes: 0, comments: 0, shares: 0, saves: 0 })
+
+        // Set user insights with calculated values from posts + account info
+        setUserInsights({
+          reach: { value: profileMetrics.reach },
+          total_interactions: { value: profileMetrics.total_interactions },
+          likes: { value: profileMetrics.likes },
+          comments: { value: profileMetrics.comments },
+          shares: { value: profileMetrics.shares },
+          saves: { value: profileMetrics.saves },
+          profile_views: { value: 0 }, // Not available (requires 100+ followers)
+          follower_count: { value: fetchedAccountInfo?.followers_count || 0 }, // From account info
+          accounts_engaged: { value: 0 } // Not available
+        })
       } else {
         // Check if token expired
         const errorData = await mediaResponse.json()
@@ -499,6 +513,24 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Metrics Limitations Info */}
+      {accountInfo && (accountInfo.followers_count < 100 || accountInfo.account_type === 'MEDIA_CREATOR') && (
+        <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1 text-sm text-blue-900">
+            <p className="font-medium mb-1">Some metrics may show limited data:</p>
+            <ul className="list-disc list-inside space-y-1 text-blue-800">
+              {accountInfo.followers_count < 100 && (
+                <li>Profile Views requires 100+ followers (you have {accountInfo.followers_count})</li>
+              )}
+              {accountInfo.account_type === 'MEDIA_CREATOR' && (
+                <li>Accounts Engaged is not available for Creator accounts</li>
+              )}
+            </ul>
+          </div>
+        </div>
+      )}
 
       {/* Top Performing Posts */}
       {recentPosts.length > 0 && (

@@ -9,7 +9,6 @@ interface InstagramMetrics {
   totalPosts: number;
   totalEngagement: number;
   totalReach: number;
-  totalImpressions: number;
   posts: Array<{
     id: string;
     caption?: string;
@@ -21,7 +20,7 @@ interface InstagramMetrics {
     comments: number;
     saves: number;
     reach: number;
-    impressions: number;
+    total_interactions: number;
   }>;
 }
 
@@ -53,12 +52,11 @@ export async function GET(request: NextRequest) {
 
     if (accountsError || !accounts || accounts.length === 0) {
       console.log('[Instagram Analytics] No active Instagram accounts found');
-      return NextResponse.json({ 
+      return NextResponse.json({
         metrics: {
           totalPosts: 0,
           totalEngagement: 0,
           totalReach: 0,
-          totalImpressions: 0,
           posts: []
         }
       });
@@ -68,7 +66,6 @@ export async function GET(request: NextRequest) {
       totalPosts: 0,
       totalEngagement: 0,
       totalReach: 0,
-      totalImpressions: 0,
       posts: []
     };
 
@@ -124,13 +121,13 @@ export async function GET(request: NextRequest) {
         if (days <= 7) {
           // For 7-day queries: Process all posts with full insights
           for (const media of postsInDateRange) {
-            let saves = 0, reach = 0, impressions = 0;
-            
-            // Try to get insights for all posts
+            let saves = 0, reach = 0, total_interactions = 0;
+
+            // Try to get insights for all posts (impressions deprecated April 2025)
             try {
-              const insightsUrl = `https://graph.facebook.com/v21.0/${media.id}/insights?metric=reach,impressions,saved&access_token=${account.access_token}`;
+              const insightsUrl = `https://graph.facebook.com/v21.0/${media.id}/insights?metric=reach,saved,total_interactions&access_token=${account.access_token}`;
               const insightsResponse = await fetch(insightsUrl);
-              
+
               if (insightsResponse.ok) {
                 const insightsData = await insightsResponse.json();
                 if (insightsData.data && Array.isArray(insightsData.data)) {
@@ -138,11 +135,11 @@ export async function GET(request: NextRequest) {
                     if (metric.name === 'reach' && metric.values?.[0]) {
                       reach = metric.values[0].value || 0;
                     }
-                    if (metric.name === 'impressions' && metric.values?.[0]) {
-                      impressions = metric.values[0].value || 0;
-                    }
                     if (metric.name === 'saved' && metric.values?.[0]) {
                       saves = metric.values[0].value || 0;
+                    }
+                    if (metric.name === 'total_interactions' && metric.values?.[0]) {
+                      total_interactions = metric.values[0].value || 0;
                     }
                   });
                 }
@@ -150,7 +147,7 @@ export async function GET(request: NextRequest) {
             } catch (insightsError) {
               console.log(`Insights not available for media ${media.id}`);
             }
-            
+
             const postMetrics = {
               id: media.id,
               caption: media.caption,
@@ -162,14 +159,13 @@ export async function GET(request: NextRequest) {
               comments: media.comments_count || 0,
               saves,
               reach,
-              impressions
+              total_interactions
             };
-            
+
             allMetrics.posts.push(postMetrics);
             allMetrics.totalPosts++;
             allMetrics.totalEngagement += postMetrics.likes + postMetrics.comments + postMetrics.saves;
             allMetrics.totalReach += reach;
-            allMetrics.totalImpressions += impressions;
           }
         } else {
           // For 30/90 day queries: Two-pass approach
@@ -191,14 +187,14 @@ export async function GET(request: NextRequest) {
           // Process top posts with insights
           for (let i = 0; i < topPosts.length; i++) {
             const media = topPosts[i];
-            let saves = 0, reach = 0, impressions = 0;
-            
+            let saves = 0, reach = 0, total_interactions = 0;
+
             // Get insights for top 5 posts only
             if (i < 5) {
               try {
-                const insightsUrl = `https://graph.facebook.com/v21.0/${media.id}/insights?metric=reach,impressions,saved&access_token=${account.access_token}`;
+                const insightsUrl = `https://graph.facebook.com/v21.0/${media.id}/insights?metric=reach,saved,total_interactions&access_token=${account.access_token}`;
                 const insightsResponse = await fetch(insightsUrl);
-                
+
                 if (insightsResponse.ok) {
                   const insightsData = await insightsResponse.json();
                   if (insightsData.data && Array.isArray(insightsData.data)) {
@@ -206,11 +202,11 @@ export async function GET(request: NextRequest) {
                       if (metric.name === 'reach' && metric.values?.[0]) {
                         reach = metric.values[0].value || 0;
                       }
-                      if (metric.name === 'impressions' && metric.values?.[0]) {
-                        impressions = metric.values[0].value || 0;
-                      }
                       if (metric.name === 'saved' && metric.values?.[0]) {
                         saves = metric.values[0].value || 0;
+                      }
+                      if (metric.name === 'total_interactions' && metric.values?.[0]) {
+                        total_interactions = metric.values[0].value || 0;
                       }
                     });
                   }
@@ -219,7 +215,7 @@ export async function GET(request: NextRequest) {
                 console.log(`Insights not available for media ${media.id}`);
               }
             }
-            
+
             const postMetrics = {
               id: media.id,
               caption: media.caption,
@@ -231,14 +227,13 @@ export async function GET(request: NextRequest) {
               comments: media.comments_count || 0,
               saves,
               reach,
-              impressions
+              total_interactions
             };
-            
+
             allMetrics.posts.push(postMetrics);
             allMetrics.totalPosts++;
             allMetrics.totalEngagement += postMetrics.likes + postMetrics.comments + postMetrics.saves;
             allMetrics.totalReach += reach;
-            allMetrics.totalImpressions += impressions;
           }
         }
         
@@ -249,8 +244,7 @@ export async function GET(request: NextRequest) {
               posts: allMetrics.posts.slice(-postsInDateRange.length), // Keep only posts from this account
               totalPosts: postsInDateRange.length,
               totalEngagement: allMetrics.totalEngagement,
-              totalReach: allMetrics.totalReach,
-              totalImpressions: allMetrics.totalImpressions
+              totalReach: allMetrics.totalReach
             },
             timestamp: Date.now()
           });
@@ -267,7 +261,6 @@ export async function GET(request: NextRequest) {
             allMetrics.totalPosts += cached.data.totalPosts;
             allMetrics.totalEngagement += cached.data.totalEngagement;
             allMetrics.totalReach += cached.data.totalReach;
-            allMetrics.totalImpressions += cached.data.totalImpressions;
             allMetrics.posts.push(...cached.data.posts);
           }
         }

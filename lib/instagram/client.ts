@@ -864,4 +864,24 @@ export class InstagramClient {
       throw new Error(`Failed to fetch story insights: ${error.message}`);
     }
   }
+
+  async getAccountInfo() {
+    try {
+      const response = await fetch(
+        `${this.baseURL}/${this.userID}?fields=id,username,name,account_type,media_count,followers_count,follows_count&access_token=${this.accessToken}`
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Failed to fetch account info:', error);
+        throw new Error(error.error?.message || 'Failed to fetch account info');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching Instagram account info:', error);
+      throw error;
+    }
+  }
 }

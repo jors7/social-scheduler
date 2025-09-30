@@ -105,18 +105,18 @@ export default function AnalyticsPage() {
         totalPosts += metrics.totalPosts
         totalEngagement += metrics.totalEngagement
         totalReach += metrics.totalReach
-        totalImpressions += metrics.totalImpressions
-        
+        // Instagram no longer provides impressions (deprecated April 2025)
+
         platformStats.instagram = {
           posts: metrics.totalPosts,
           engagement: metrics.totalEngagement,
           reach: metrics.totalReach,
-          impressions: metrics.totalImpressions
+          impressions: 0 // Deprecated metric
         }
-        
+
         // Add posts with platform tag
         metrics.posts.forEach((post: any) => {
-          allPosts.push({ ...post, platform: 'instagram' })
+          allPosts.push({ ...post, platform: 'instagram', impressions: 0 })
         })
       }
 
