@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { InstagramService } from '@/lib/instagram/service';
 
@@ -288,8 +289,20 @@ export async function GET(request: NextRequest) {
       access_token: 'REDACTED'
     });
     
+    // Use service role client for database operations to bypass RLS
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+
     // First, deactivate all existing Instagram accounts for this user
-    const { error: deactivateError } = await supabase
+    const { error: deactivateError } = await supabaseAdmin
       .from('social_accounts')
       .update({ is_active: false })
       .eq('user_id', user.id)
@@ -300,7 +313,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if this specific account (by platform_user_id) already exists
-    const { data: existingAccount, error: fetchError } = await supabase
+    const { data: existingAccount, error: fetchError } = await supabaseAdmin
       .from('social_accounts')
       .select('id')
       .eq('user_id', user.id)
@@ -317,7 +330,7 @@ export async function GET(request: NextRequest) {
     if (existingAccount) {
       // Update existing account and reactivate it
       console.log('[Instagram Callback] Updating existing account:', existingAccount.id);
-      const { error: dbError } = await supabase
+      const { error: dbError } = await supabaseAdmin
         .from('social_accounts')
         .update({
           platform_user_id: platformUserId,
@@ -338,7 +351,7 @@ export async function GET(request: NextRequest) {
     } else {
       // Insert new account
       console.log('[Instagram Callback] Inserting new account for platform_user_id:', platformUserId);
-      const { error: dbError } = await supabase
+      const { error: dbError } = await supabaseAdmin
         .from('social_accounts')
         .insert({
           user_id: user.id,
