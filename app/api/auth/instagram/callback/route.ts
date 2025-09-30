@@ -289,14 +289,18 @@ export async function GET(request: NextRequest) {
     });
     
     // First, deactivate all existing Instagram accounts for this user
-    await supabase
+    const { error: deactivateError } = await supabase
       .from('social_accounts')
       .update({ is_active: false })
       .eq('user_id', user.id)
       .eq('platform', 'instagram');
 
+    if (deactivateError) {
+      console.error('Error deactivating Instagram accounts:', deactivateError);
+    }
+
     // Check if this specific account (by platform_user_id) already exists
-    const { data: existingAccount } = await supabase
+    const { data: existingAccount, error: fetchError } = await supabase
       .from('social_accounts')
       .select('id')
       .eq('user_id', user.id)
@@ -304,8 +308,15 @@ export async function GET(request: NextRequest) {
       .eq('platform_user_id', platformUserId)
       .maybeSingle();
 
+    if (fetchError) {
+      console.error('Error fetching existing Instagram account:', fetchError);
+    }
+
+    console.log('[Instagram Callback] Existing account found:', existingAccount ? 'YES' : 'NO');
+
     if (existingAccount) {
       // Update existing account and reactivate it
+      console.log('[Instagram Callback] Updating existing account:', existingAccount.id);
       const { error: dbError } = await supabase
         .from('social_accounts')
         .update({
@@ -318,13 +329,15 @@ export async function GET(request: NextRequest) {
         .eq('id', existingAccount.id);
 
       if (dbError) {
-        console.error('Database update error:', dbError);
+        console.error('[Instagram Callback] Database update error:', dbError);
         return NextResponse.redirect(
           new URL('/dashboard/settings?error=database_error', request.url)
         );
       }
+      console.log('[Instagram Callback] Account updated successfully');
     } else {
       // Insert new account
+      console.log('[Instagram Callback] Inserting new account for platform_user_id:', platformUserId);
       const { error: dbError } = await supabase
         .from('social_accounts')
         .insert({
@@ -337,11 +350,13 @@ export async function GET(request: NextRequest) {
         });
 
       if (dbError) {
-        console.error('Database insert error:', dbError);
+        console.error('[Instagram Callback] Database insert error:', dbError);
+        console.error('[Instagram Callback] Insert failed for user_id:', user.id, 'platform_user_id:', platformUserId);
         return NextResponse.redirect(
           new URL('/dashboard/settings?error=database_error', request.url)
         );
       }
+      console.log('[Instagram Callback] Account inserted successfully');
     }
 
     console.log('Instagram account connected successfully');
