@@ -288,16 +288,24 @@ export async function GET(request: NextRequest) {
       access_token: 'REDACTED'
     });
     
-    // Check if this account already exists
+    // First, deactivate all existing Instagram accounts for this user
+    await supabase
+      .from('social_accounts')
+      .update({ is_active: false })
+      .eq('user_id', user.id)
+      .eq('platform', 'instagram');
+
+    // Check if this specific account (by platform_user_id) already exists
     const { data: existingAccount } = await supabase
       .from('social_accounts')
       .select('id')
       .eq('user_id', user.id)
       .eq('platform', 'instagram')
-      .single();
+      .eq('platform_user_id', platformUserId)
+      .maybeSingle();
 
     if (existingAccount) {
-      // Update existing account
+      // Update existing account and reactivate it
       const { error: dbError } = await supabase
         .from('social_accounts')
         .update({
@@ -307,10 +315,13 @@ export async function GET(request: NextRequest) {
           profile_image_url: profileImageUrl,
           access_token: access_token, // Long-lived token
           access_secret: token_type, // Store token type for debugging
+          is_active: true,
+          needs_reauth: false,
+          last_error: null,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingAccount.id);
-        
+
       if (dbError) {
         console.error('Database update error:', dbError);
         return NextResponse.redirect(
@@ -332,7 +343,7 @@ export async function GET(request: NextRequest) {
           access_secret: token_type, // Store token type for debugging
           is_active: true
         });
-        
+
       if (dbError) {
         console.error('Database insert error:', dbError);
         return NextResponse.redirect(
