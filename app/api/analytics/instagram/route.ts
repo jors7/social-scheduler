@@ -84,25 +84,20 @@ export async function GET(request: NextRequest) {
           const errorText = await mediaResponse.text();
           console.error(`[Instagram Analytics] Failed to fetch media for account ${account.id}:`, errorText);
           
-          // Check if token is expired
+          // Check if token is expired - but don't deactivate immediately
+          // Token might be temporarily invalid due to Instagram API issues
           try {
             const errorData = JSON.parse(errorText);
             if (errorData.error?.code === 190) {
-              // Token is invalid or expired
-              console.log('[Instagram Analytics] Token expired for account:', account.id);
-              
-              // Mark the account as inactive if token expired
-              await supabase
-                .from('social_accounts')
-                .update({
-                  is_active: false
-                })
-                .eq('id', account.id);
+              console.log('[Instagram Analytics] Token error for account:', account.id);
+              console.log('[Instagram Analytics] Error details:', errorData.error);
+              // Don't deactivate - let user reconnect manually if needed
+              // Deactivating automatically causes accounts to disappear unexpectedly
             }
           } catch (e) {
             // Error parsing error response
           }
-          
+
           continue;
         }
 
