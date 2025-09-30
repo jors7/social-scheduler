@@ -53,8 +53,8 @@ export async function GET(request: NextRequest) {
     const authParams = new URLSearchParams();
     authParams.append('client_id', instagramAppId);
     authParams.append('redirect_uri', redirectUri);
-    // Keep working posting scopes + add insights scopes
-    authParams.append('scope', 'instagram_business_basic,instagram_business_content_publish,instagram_manage_insights,pages_show_list,pages_read_engagement');
+    // Only use approved scopes (insights scopes need Meta approval first)
+    authParams.append('scope', 'instagram_business_basic,instagram_business_content_publish');
     authParams.append('response_type', 'code');
     authParams.append('state', state);
     
