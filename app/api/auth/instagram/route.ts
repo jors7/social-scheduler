@@ -48,19 +48,19 @@ export async function GET(request: NextRequest) {
 
     // Instagram API with Instagram Login - Option B (Instagram-only, no Facebook)
     // instagramAppId is already defined above
-    
+
     // Build params for Instagram OAuth
     const authParams = new URLSearchParams();
     authParams.append('client_id', instagramAppId);
     authParams.append('redirect_uri', redirectUri);
-    // Only use approved scopes (insights scopes need Meta approval first)
-    authParams.append('scope', 'instagram_business_basic,instagram_business_content_publish');
+    // Working scopes + insights scope
+    authParams.append('scope', 'instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights');
     authParams.append('response_type', 'code');
     authParams.append('state', state);
-    
+
     // Add timestamp to prevent caching
     authParams.append('t', Date.now().toString());
-    
+
     console.log('=== Instagram OAuth Authorize ===');
     console.log('Client ID:', instagramAppId);
     console.log('Redirect URI (exact):', redirectUri);
