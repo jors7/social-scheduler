@@ -91,12 +91,11 @@ export async function GET(request: NextRequest) {
               // Token is invalid or expired
               console.log('[Instagram Analytics] Token expired for account:', account.id);
               
-              // Mark the account as needing re-authentication
+              // Mark the account as inactive if token expired
               await supabase
                 .from('social_accounts')
-                .update({ 
-                  needs_reauth: true,
-                  last_error: 'Instagram token expired. Please reconnect your account.'
+                .update({
+                  is_active: false
                 })
                 .eq('id', account.id);
             }

@@ -310,14 +310,9 @@ export async function GET(request: NextRequest) {
         .from('social_accounts')
         .update({
           platform_user_id: platformUserId,
-          account_name: accountName,
           username: username,
-          profile_image_url: profileImageUrl,
           access_token: access_token, // Long-lived token
-          access_secret: token_type, // Store token type for debugging
           is_active: true,
-          needs_reauth: false,
-          last_error: null,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingAccount.id);
@@ -336,11 +331,8 @@ export async function GET(request: NextRequest) {
           user_id: user.id,
           platform: 'instagram',
           platform_user_id: platformUserId,
-          account_name: accountName,
           username: username,
-          profile_image_url: profileImageUrl,
           access_token: access_token, // Long-lived token
-          access_secret: token_type, // Store token type for debugging
           is_active: true
         });
 
