@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get('period') as 'day' | 'week' | 'days_28' || 'day';
     const type = searchParams.get('type') || 'media'; // 'media', 'user', or 'story'
     const accountId = searchParams.get('accountId');
+    const mediaType = searchParams.get('mediaType'); // Pass media type for proper metrics
 
     // Get Instagram account
     let query = supabase
@@ -77,7 +78,8 @@ export async function GET(request: NextRequest) {
             { status: 400 }
           );
         }
-        insights = await client.getMediaInsights(mediaId);
+        console.log(`Media type passed to insights API: ${mediaType} for media ${mediaId}`);
+        insights = await client.getMediaInsights(mediaId, undefined, mediaType || undefined);
         break;
     }
 

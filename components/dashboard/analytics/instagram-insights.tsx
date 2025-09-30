@@ -65,6 +65,7 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
   const [postsLimit, setPostsLimit] = useState(5)
   const [hasMorePosts, setHasMorePosts] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [tokenExpired, setTokenExpired] = useState(false)
 
   const fetchInstagramInsights = async (accountId?: string) => {
     try {
@@ -104,7 +105,10 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
       const userInsightsResponse = await fetch(`/api/instagram/insights?${queryParams}`)
       if (userInsightsResponse.ok) {
         const data = await userInsightsResponse.json()
+        console.log('User insights response:', data)
         setUserInsights(data.insights)
+      } else {
+        console.error('Failed to fetch user insights')
       }
 
       // Fetch recent posts directly from Instagram
@@ -115,9 +119,10 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
       const mediaResponse = await fetch(`/api/instagram/media?${mediaQueryParams}`)
       if (mediaResponse.ok) {
         const { media } = await mediaResponse.json()
-        
+
         // Check if there might be more posts available
         setHasMorePosts(media.length === postsLimit)
+        setTokenExpired(false)
         
         // Fetch insights for each Instagram post
         const postsWithInsights = await Promise.all(
@@ -137,17 +142,41 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
             
             try {
               // Fetch additional insights that aren't available on media object
-              const insightsResponse = await fetch(`/api/instagram/insights?mediaId=${post.id}&type=media&accountId=${selectedAccount?.id || ''}`)
+              // Pass media type to get the right metrics
+              console.log('Fetching insights for post:', post.id, 'type:', post.media_type)
+              const insightsResponse = await fetch(`/api/instagram/insights?mediaId=${post.id}&type=media&mediaType=${post.media_type}&accountId=${selectedAccount?.id || ''}`)
               if (insightsResponse.ok) {
                 const { insights } = await insightsResponse.json()
                 // Merge insights with existing metrics
-                metrics = {
-                  ...metrics,
-                  impressions: insights.impressions?.value || 0,
-                  reach: insights.reach?.value || 0,
-                  saves: insights.saved?.value || 0,
-                  shares: insights.shares?.value || 0,
-                  engagement: insights.total_interactions?.value || 0
+                // Handle different metric names based on media type
+                if (post.media_type === 'VIDEO' || post.media_type === 'REELS') {
+                  metrics = {
+                    ...metrics,
+                    impressions: insights.plays?.value || 0, // Use plays for videos
+                    reach: insights.reach?.value || 0,
+                    saves: insights.saved?.value || 0,
+                    shares: insights.shares?.value || 0,
+                    engagement: insights.total_interactions?.value || 0
+                  }
+                } else if (post.media_type === 'CAROUSEL_ALBUM') {
+                  metrics = {
+                    ...metrics,
+                    impressions: insights.carousel_album_impressions?.value || 0,
+                    reach: insights.carousel_album_reach?.value || 0,
+                    saves: insights.carousel_album_saved?.value || 0,
+                    shares: insights.carousel_album_engagement?.value || 0,
+                    engagement: insights.carousel_album_engagement?.value || 0
+                  }
+                } else {
+                  // For regular IMAGE posts
+                  metrics = {
+                    ...metrics,
+                    impressions: insights.impressions?.value || 0, // Don't use reach as fallback - they're different metrics
+                    reach: insights.reach?.value || 0,
+                    saves: insights.saved?.value || 0,
+                    shares: insights.shares?.value || 0,
+                    engagement: insights.total_interactions?.value || insights.engagement?.value || 0
+                  }
                 }
               }
             } catch (error) {
@@ -170,6 +199,13 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
         )
 
         setRecentPosts(postsWithInsights.filter(Boolean))
+      } else {
+        // Check if token expired
+        const errorData = await mediaResponse.json()
+        if (errorData.error?.includes('OAuth') || errorData.error?.includes('token')) {
+          setTokenExpired(true)
+          console.log('Instagram token expired, need to reconnect')
+        }
       }
     } catch (error) {
       console.error('Error fetching Instagram insights:', error)
@@ -236,6 +272,41 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
             </p>
             <Button variant="outline" size="sm" onClick={() => window.location.href = '/dashboard/settings'}>
               Connect Instagram
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (tokenExpired) {
+    return (
+      <Card className={cn("border-orange-200 bg-orange-50", className)}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-orange-900">
+            <Camera className="h-5 w-5" />
+            Instagram Token Expired
+          </CardTitle>
+          <CardDescription className="text-orange-700">
+            Your Instagram connection has expired and needs to be refreshed
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="mx-auto h-12 w-12 text-orange-400 mb-4 flex items-center justify-center">
+              <RefreshCw className="h-8 w-8" />
+            </div>
+            <p className="text-sm text-orange-700 mb-4">
+              Instagram requires periodic re-authentication for security.
+              Please reconnect your account to continue viewing insights.
+            </p>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => window.location.href = '/dashboard/settings'}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              Reconnect Instagram Account
             </Button>
           </div>
         </CardContent>

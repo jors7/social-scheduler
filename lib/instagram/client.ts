@@ -549,34 +549,68 @@ export class InstagramClient {
     }
   }
 
-  async getMediaInsights(mediaId: string, metrics?: string[]) {
+  async getMediaInsights(mediaId: string, metrics?: string[], mediaType?: string) {
     try {
-      // Default metrics if not specified - only use metrics available through insights API
-      // Note: likes and comments are fetched directly from media object, not insights
-      const defaultMetrics = [
-        'impressions',
-        'reach',
-        'saved',
-        'shares',
-        'total_interactions'
-      ];
-      
-      const metricsToFetch = metrics || defaultMetrics;
+      // For photos (IMAGE type), try individual metrics to avoid API errors
+      // Instagram API can be picky about which metrics are requested together
+      let metricsToTry: string[];
+
+      if (mediaType === 'REELS') {
+        // Metrics for Reels - comprehensive set
+        metricsToTry = ['plays', 'reach', 'likes', 'comments', 'shares', 'saves', 'total_interactions'];
+      } else if (mediaType === 'VIDEO') {
+        // Metrics for regular videos
+        metricsToTry = ['impressions', 'reach', 'saved'];
+      } else if (mediaType === 'CAROUSEL_ALBUM') {
+        // Metrics for Carousel posts
+        metricsToTry = ['carousel_album_impressions', 'carousel_album_reach', 'carousel_album_saved'];
+      } else {
+        // For IMAGE posts - use standard metrics
+        metricsToTry = ['impressions', 'reach', 'saved'];
+      }
+
+      // Use the metrics as specified or fallback to defaults
+      let metricsToFetch = metrics || metricsToTry;
       const metricsParam = metricsToFetch.join(',');
-      
+
       console.log(`Fetching insights for media ${mediaId}:`, metricsToFetch);
-      
+
       const response = await fetch(
         `${this.baseURL}/${mediaId}/insights?metric=${metricsParam}&access_token=${this.accessToken}`
       );
 
       if (!response.ok) {
         const error = await response.json();
+        const errorMessage = error.error?.message?.toLowerCase() || '';
+
         console.error('Failed to fetch media insights:', error);
-        
-        // Handle case where insights might not be available yet
+        console.log('Error message check:', {
+          errorMessage,
+          hasDoesNotSupport: errorMessage.includes('does not support'),
+          hasImpressions: errorMessage.includes('impressions'),
+          willTryIndividual: errorMessage.includes('does not support') && errorMessage.includes('impressions')
+        });
+
+        // Check if it's an impressions error - try individual metrics
+        if (errorMessage.includes('does not support') && errorMessage.includes('impressions')) {
+          console.log('🔄 Impressions not supported, trying individual metrics...');
+          return await this.getMediaInsightsIndividually(mediaId, metricsToFetch);
+        }
+
+        // Handle various Instagram API error codes
         if (error.error?.code === 100) {
-          console.log('Insights not yet available for this media');
+          // This can mean multiple things
+          if (errorMessage.includes('not supported for instagram business')) {
+            console.log('Account needs Instagram Business/Creator account for insights');
+          } else if (errorMessage.includes('invalid parameter') || errorMessage.includes('unsupported get request')) {
+            console.log('Insights API not available - may need Business account or proper permissions');
+          } else if (errorMessage.includes('media posted before')) {
+            console.log('Insights not available for old posts (before business account conversion)');
+          } else {
+            console.log('Insights not available:', errorMessage);
+          }
+
+          // Return empty data structure so the UI can still work
           return {
             data: metricsToFetch.map(metric => ({
               name: metric,
@@ -586,34 +620,134 @@ export class InstagramClient {
             })),
           };
         }
-        
+
+        // Handle permission errors
+        if (error.error?.code === 10) {
+          console.log('Permission denied for insights - app may need instagram_manage_insights permission');
+          return {
+            data: metricsToFetch.map(metric => ({
+              name: metric,
+              period: 'lifetime',
+              values: [{ value: 0 }],
+              description: `${metric} count`,
+            })),
+          };
+        }
+
+        // Handle rate limiting
+        if (error.error?.code === 4 || error.error?.code === 32) {
+          console.log('Rate limited by Instagram API');
+          return {
+            data: metricsToFetch.map(metric => ({
+              name: metric,
+              period: 'lifetime',
+              values: [{ value: 0 }],
+              description: `${metric} count`,
+            })),
+          };
+        }
+
         throw new Error(`Failed to fetch insights: ${JSON.stringify(error)}`);
       }
 
       const data = await response.json();
-      console.log('Media insights fetched:', data);
+      console.log('Media insights fetched:', {
+        mediaId,
+        metrics: data.data?.map((m: any) => ({
+          name: m.name,
+          value: m.values?.[0]?.value
+        }))
+      });
       return data;
     } catch (error: any) {
       console.error('Error fetching Instagram insights:', error);
-      throw new Error(`Failed to fetch insights: ${error.message}`);
+
+      // Check if error message contains "does not support the impressions metric"
+      if (error.message && error.message.includes('does not support') && error.message.includes('impressions')) {
+        console.log('Caught impressions error, trying individual metrics...');
+        const metricsToFetch = metrics || ['impressions', 'reach', 'saved', 'shares', 'total_interactions'];
+        return await this.getMediaInsightsIndividually(mediaId, metricsToFetch);
+      }
+
+      // Return empty structure instead of throwing to prevent UI breakage
+      console.log('Returning default empty insights due to error');
+      const defaultMetrics = metrics || [
+        'impressions',
+        'reach',
+        'saved',
+        'shares',
+        'total_interactions'
+      ];
+
+      return {
+        data: defaultMetrics.map(metric => ({
+          name: metric,
+          period: 'lifetime',
+          values: [{ value: 0 }],
+          description: `${metric} count`,
+        })),
+      };
     }
   }
 
-  async getUserInsights(period: 'day' | 'week' | 'days_28' = 'day', metrics?: string[]) {
+  private async getMediaInsightsIndividually(mediaId: string, metrics: string[]) {
+    console.log(`Fetching metrics individually for media ${mediaId}`);
+    const results: any[] = [];
+
+    // Try each metric individually
+    for (const metric of metrics) {
+      try {
+        const response = await fetch(
+          `${this.baseURL}/${mediaId}/insights?metric=${metric}&access_token=${this.accessToken}`
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.data && Array.isArray(data.data)) {
+            results.push(...data.data);
+            console.log(`✓ Fetched ${metric}:`, data.data[0]?.values?.[0]?.value || 0);
+          }
+        } else {
+          console.log(`✗ Metric ${metric} not available for this media`);
+          // Add zero value for unavailable metrics
+          results.push({
+            name: metric,
+            period: 'lifetime',
+            values: [{ value: 0 }],
+            description: `${metric} count`,
+          });
+        }
+      } catch (err) {
+        console.log(`✗ Error fetching ${metric}:`, err);
+        results.push({
+          name: metric,
+          period: 'lifetime',
+          values: [{ value: 0 }],
+          description: `${metric} count`,
+        });
+      }
+    }
+
+    return { data: results };
+  }
+
+  async getUserInsights(period: 'day' | 'week' | 'days_28' = 'days_28', metrics?: string[]) {
     try {
-      // User-level metrics - only use metrics that are valid for user insights
+      // Instagram Business account metrics
+      // Some metrics might not be available depending on account type and permissions
       const defaultMetrics = [
         'reach',
-        'follower_count',
+        'impressions',
         'profile_views',
+        'follower_count',
         'website_clicks'
       ];
-      
+
       const metricsToFetch = metrics || defaultMetrics;
       const metricsParam = metricsToFetch.join(',');
-      
+
       console.log(`Fetching user insights for period ${period}:`, metricsToFetch);
-      
+
       const response = await fetch(
         `${this.baseURL}/${this.userID}/insights?metric=${metricsParam}&period=${period}&access_token=${this.accessToken}`
       );
@@ -621,6 +755,41 @@ export class InstagramClient {
       if (!response.ok) {
         const error = await response.json();
         console.error('Failed to fetch user insights:', error);
+
+        // Handle various error cases
+        if (error.error?.code === 100) {
+          const errorMessage = error.error?.message?.toLowerCase() || '';
+
+          if (errorMessage.includes('not supported') || errorMessage.includes('business')) {
+            console.log('User insights require Instagram Business/Creator account');
+          } else {
+            console.log('User insights not available:', errorMessage);
+          }
+
+          // Return empty data structure
+          return {
+            data: metricsToFetch.map(metric => ({
+              name: metric,
+              period: period,
+              values: [{ value: 0 }],
+              description: `${metric} count`,
+            })),
+          };
+        }
+
+        // Handle permission errors
+        if (error.error?.code === 10) {
+          console.log('Permission denied for user insights - app needs instagram_manage_insights permission');
+          return {
+            data: metricsToFetch.map(metric => ({
+              name: metric,
+              period: period,
+              values: [{ value: 0 }],
+              description: `${metric} count`,
+            })),
+          };
+        }
+
         throw new Error(`Failed to fetch user insights: ${JSON.stringify(error)}`);
       }
 
@@ -629,7 +798,23 @@ export class InstagramClient {
       return data;
     } catch (error: any) {
       console.error('Error fetching Instagram user insights:', error);
-      throw new Error(`Failed to fetch user insights: ${error.message}`);
+
+      // Return empty structure instead of throwing
+      const defaultMetrics = metrics || [
+        'reach',
+        'follower_count',
+        'profile_views',
+        'website_clicks'
+      ];
+
+      return {
+        data: defaultMetrics.map(metric => ({
+          name: metric,
+          period: period,
+          values: [{ value: 0 }],
+          description: `${metric} count`,
+        })),
+      };
     }
   }
 
