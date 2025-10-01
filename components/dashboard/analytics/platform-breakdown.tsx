@@ -46,6 +46,9 @@ export function PlatformBreakdown({ analyticsData }: PlatformBreakdownProps) {
     )
   }
 
+  console.log('[PlatformBreakdown] analyticsData:', analyticsData)
+  console.log('[PlatformBreakdown] platformStats:', analyticsData.platformStats)
+
   const data = Object.entries(analyticsData.platformStats).map(([platform, stats]) => ({
     platform: platform.charAt(0).toUpperCase() + platform.slice(1),
     posts: stats.posts,
@@ -53,6 +56,8 @@ export function PlatformBreakdown({ analyticsData }: PlatformBreakdownProps) {
     reach: stats.reach,
     icon: platformIcons[platform] || '📱'
   })).sort((a, b) => b.engagement - a.engagement)
+
+  console.log('[PlatformBreakdown] data:', data)
   
   if (data.length === 0) {
     return (

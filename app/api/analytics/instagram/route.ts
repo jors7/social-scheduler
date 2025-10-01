@@ -34,6 +34,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    console.log('[Instagram Analytics] ========== NEW REQUEST ==========');
+    console.log('[Instagram Analytics] User ID:', user.id);
+
     // Get date range from query params (default to last 30 days)
     const searchParams = request.nextUrl.searchParams;
     const days = parseInt(searchParams.get('days') || '30');
@@ -48,7 +51,13 @@ export async function GET(request: NextRequest) {
       .eq('platform', 'instagram')
       .eq('is_active', true);
 
+    console.log('[Instagram Analytics] Query:', { user_id: user.id, platform: 'instagram', is_active: true });
     console.log('[Instagram Analytics] Found accounts:', accounts?.length || 0);
+    if (accounts && accounts.length > 0) {
+      accounts.forEach(acc => {
+        console.log(`[Instagram Analytics] Account: ${acc.id} - ${acc.username} - token: ${acc.access_token?.substring(0, 15)}...`);
+      });
+    }
 
     if (accountsError || !accounts || accounts.length === 0) {
       console.log('[Instagram Analytics] No active Instagram accounts found');
@@ -74,9 +83,10 @@ export async function GET(request: NextRequest) {
       if (!account.access_token) continue;
 
       try {
-        // Get Instagram media
-        const mediaUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/media?fields=id,caption,media_type,media_url,permalink,timestamp,like_count,comments_count&limit=100&access_token=${account.access_token}`;
+        // Get Instagram media using graph.instagram.com (not graph.facebook.com!)
+        const mediaUrl = `https://graph.instagram.com/${account.platform_user_id}/media?fields=id,caption,media_type,media_url,permalink,timestamp,like_count,comments_count&limit=100&access_token=${account.access_token}`;
         console.log('[Instagram Analytics] Fetching media for account:', account.username || account.platform_user_id);
+        console.log('[Instagram Analytics] Using URL:', mediaUrl.replace(account.access_token, 'TOKEN_HIDDEN'));
         
         const mediaResponse = await fetch(mediaUrl);
         
@@ -103,13 +113,23 @@ export async function GET(request: NextRequest) {
 
         const mediaData = await mediaResponse.json();
         console.log('[Instagram Analytics] Found posts:', mediaData.data?.length || 0);
-        
+
+        // Log post dates for debugging
+        if (mediaData.data && mediaData.data.length > 0) {
+          console.log('[Instagram Analytics] Post dates:');
+          mediaData.data.forEach((media: any, idx: number) => {
+            const postDate = new Date(media.timestamp);
+            console.log(`  Post ${idx + 1}: ${postDate.toISOString()} (${media.caption?.substring(0, 30) || 'No caption'}...)`);
+          });
+          console.log('[Instagram Analytics] Date filter cutoff:', since.toISOString());
+        }
+
         // Filter posts by date
         const postsInDateRange = (mediaData.data || []).filter((media: any) => {
           const postDate = new Date(media.timestamp);
           return postDate >= since;
         });
-        
+
         console.log('[Instagram Analytics] Posts in date range (last', days, 'days):', postsInDateRange.length);
         
         if (days <= 7) {
@@ -119,7 +139,7 @@ export async function GET(request: NextRequest) {
 
             // Try to get insights for all posts (impressions deprecated April 2025)
             try {
-              const insightsUrl = `https://graph.facebook.com/v21.0/${media.id}/insights?metric=reach,saved,total_interactions&access_token=${account.access_token}`;
+              const insightsUrl = `https://graph.instagram.com/${media.id}/insights?metric=reach,saved,total_interactions&access_token=${account.access_token}`;
               const insightsResponse = await fetch(insightsUrl);
 
               if (insightsResponse.ok) {
@@ -186,7 +206,7 @@ export async function GET(request: NextRequest) {
             // Get insights for top 5 posts only
             if (i < 5) {
               try {
-                const insightsUrl = `https://graph.facebook.com/v21.0/${media.id}/insights?metric=reach,saved,total_interactions&access_token=${account.access_token}`;
+                const insightsUrl = `https://graph.instagram.com/${media.id}/insights?metric=reach,saved,total_interactions&access_token=${account.access_token}`;
                 const insightsResponse = await fetch(insightsUrl);
 
                 if (insightsResponse.ok) {
@@ -260,6 +280,12 @@ export async function GET(request: NextRequest) {
         }
       }
     }
+
+    console.log('[Instagram Analytics] ========== FINAL METRICS ==========');
+    console.log('[Instagram Analytics] Total Posts:', allMetrics.totalPosts);
+    console.log('[Instagram Analytics] Total Engagement:', allMetrics.totalEngagement);
+    console.log('[Instagram Analytics] Total Reach:', allMetrics.totalReach);
+    console.log('[Instagram Analytics] Posts array length:', allMetrics.posts.length);
 
     return NextResponse.json({ metrics: allMetrics });
 

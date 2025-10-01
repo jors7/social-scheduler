@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils'
 interface AllPlatformsOverviewProps {
   connectedPlatforms: string[]
   className?: string
+  days?: number // Date range in days (default: 7)
 }
 
 interface PlatformMetrics {
@@ -51,7 +52,7 @@ const metricsCache = {
   platformData: new Map<string, { data: any, timestamp: number, error?: string }>()
 }
 
-export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatformsOverviewProps) {
+export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 }: AllPlatformsOverviewProps) {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [platformMetrics, setPlatformMetrics] = useState<PlatformMetrics[]>([])
@@ -68,7 +69,7 @@ export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatf
 
   useEffect(() => {
     fetchAllPlatformMetrics()
-  }, [connectedPlatforms.join(',')])
+  }, [connectedPlatforms.join(','), days])
 
   const fetchAllPlatformMetrics = async (isRefresh = false) => {
     try {
@@ -121,10 +122,10 @@ export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatf
       }
       
       const [facebookData, instagramData, threadsData, blueskyData] = await Promise.all([
-        fetchWithCache('facebook', '/api/analytics/facebook?days=7'),
-        fetchWithCache('instagram', '/api/analytics/instagram?days=7'),
-        fetchWithCache('threads', '/api/analytics/threads?days=7'),
-        fetchWithCache('bluesky', '/api/analytics/bluesky?days=7')
+        fetchWithCache('facebook', `/api/analytics/facebook?days=${days}`),
+        fetchWithCache('instagram', `/api/analytics/instagram?days=${days}`),
+        fetchWithCache('threads', `/api/analytics/threads?days=${days}`),
+        fetchWithCache('bluesky', `/api/analytics/bluesky?days=${days}`)
       ])
       
       // Track errors for display
@@ -406,7 +407,7 @@ export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatf
                 All Platforms Combined
               </CardTitle>
               <CardDescription className="mt-1">
-                Aggregated metrics across all your connected platforms
+                Aggregated metrics across all your connected platforms (Last 30 days)
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -509,7 +510,7 @@ export function AllPlatformsOverview({ connectedPlatforms, className }: AllPlatf
             Platform Performance
           </CardTitle>
           <CardDescription>
-            Posts published and reach by platform
+            Posts published and reach by platform (Last 30 days)
           </CardDescription>
         </CardHeader>
         <CardContent>

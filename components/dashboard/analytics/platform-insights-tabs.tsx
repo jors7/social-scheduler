@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils'
 interface PlatformInsightsTabsProps {
   className?: string
   connectedPlatforms?: string[]
+  days?: number // Date range in days to pass to AllPlatformsOverview
 }
 
 type TabType = 'all' | 'instagram' | 'threads' | 'facebook' | 'linkedin' | 'twitter' | 'bluesky'
@@ -38,7 +39,7 @@ interface TabConfig {
   available: boolean
 }
 
-export function PlatformInsightsTabs({ className, connectedPlatforms = [] }: PlatformInsightsTabsProps) {
+export function PlatformInsightsTabs({ className, connectedPlatforms = [], days = 30 }: PlatformInsightsTabsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('all')
   const [availablePlatforms, setAvailablePlatforms] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
@@ -126,7 +127,7 @@ export function PlatformInsightsTabs({ className, connectedPlatforms = [] }: Pla
   const renderTabContent = () => {
     switch (activeTab) {
       case 'all':
-        return <AllPlatformsOverview key="all-platforms" connectedPlatforms={availablePlatforms} />
+        return <AllPlatformsOverview key="all-platforms" connectedPlatforms={availablePlatforms} days={days} />
       case 'instagram':
         return availablePlatforms.includes('instagram') ? <InstagramInsights key="instagram-insights" /> : null
       case 'threads':

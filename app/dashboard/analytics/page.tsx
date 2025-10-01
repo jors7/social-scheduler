@@ -35,7 +35,7 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
-  const [dateRange, setDateRange] = useState('7') // Default to 7 days for faster load
+  const [dateRange, setDateRange] = useState('7') // Default to 7 days
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -100,8 +100,13 @@ export default function AnalyticsPage() {
       }
 
       // Process Instagram data
+      console.log('[Frontend] Instagram API response:', instagramData)
       if (instagramData.metrics) {
         const metrics = instagramData.metrics
+        console.log('[Frontend] Instagram metrics:', metrics)
+        console.log('[Frontend] Instagram totalPosts:', metrics.totalPosts)
+        console.log('[Frontend] Instagram totalEngagement:', metrics.totalEngagement)
+        console.log('[Frontend] Instagram totalReach:', metrics.totalReach)
         totalPosts += metrics.totalPosts
         totalEngagement += metrics.totalEngagement
         totalReach += metrics.totalReach
@@ -113,6 +118,7 @@ export default function AnalyticsPage() {
           reach: metrics.totalReach,
           impressions: 0 // Deprecated metric
         }
+        console.log('[Frontend] platformStats.instagram:', platformStats.instagram)
 
         // Add posts with platform tag
         metrics.posts.forEach((post: any) => {
