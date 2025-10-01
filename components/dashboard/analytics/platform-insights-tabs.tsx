@@ -10,15 +10,17 @@ import { FacebookInsights } from './facebook-insights'
 import { LinkedInInsights } from './linkedin-insights'
 import { TwitterInsights } from './twitter-insights'
 import { BlueskyInsights } from './bluesky-insights'
+import { PinterestInsights } from './pinterest-insights'
 import { AllPlatformsOverview } from './all-platforms-overview'
-import { 
+import {
   LayoutGrid,
-  Camera, 
-  AtSign, 
-  Facebook, 
-  Linkedin, 
+  Camera,
+  AtSign,
+  Facebook,
+  Linkedin,
   Twitter,
   Cloud,
+  Pin,
   Lock
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -29,7 +31,7 @@ interface PlatformInsightsTabsProps {
   days?: number // Date range in days to pass to AllPlatformsOverview
 }
 
-type TabType = 'all' | 'instagram' | 'threads' | 'facebook' | 'linkedin' | 'twitter' | 'bluesky'
+type TabType = 'all' | 'instagram' | 'threads' | 'facebook' | 'linkedin' | 'twitter' | 'bluesky' | 'pinterest'
 
 interface TabConfig {
   id: TabType
@@ -102,6 +104,20 @@ export function PlatformInsightsTabs({ className, connectedPlatforms = [], days 
       available: availablePlatforms.includes('facebook')
     },
     {
+      id: 'pinterest',
+      label: 'Pinterest',
+      icon: <Pin className="h-4 w-4" />,
+      color: 'bg-gradient-to-r from-red-500 to-red-600',
+      available: availablePlatforms.includes('pinterest')
+    },
+    {
+      id: 'bluesky',
+      label: 'Bluesky',
+      icon: <Cloud className="h-4 w-4" />,
+      color: 'bg-sky-500',
+      available: availablePlatforms.includes('bluesky')
+    },
+    {
       id: 'linkedin',
       label: 'LinkedIn',
       icon: <Linkedin className="h-4 w-4" />,
@@ -114,13 +130,6 @@ export function PlatformInsightsTabs({ className, connectedPlatforms = [], days 
       icon: <Twitter className="h-4 w-4" />,
       color: 'bg-black',
       available: availablePlatforms.includes('twitter')
-    },
-    {
-      id: 'bluesky',
-      label: 'Bluesky',
-      icon: <Cloud className="h-4 w-4" />,
-      color: 'bg-sky-500',
-      available: availablePlatforms.includes('bluesky')
     }
   ]
 
@@ -140,6 +149,8 @@ export function PlatformInsightsTabs({ className, connectedPlatforms = [], days 
         return availablePlatforms.includes('twitter') ? <TwitterInsights key="twitter-insights" /> : null
       case 'bluesky':
         return availablePlatforms.includes('bluesky') ? <BlueskyInsights key="bluesky-insights" /> : null
+      case 'pinterest':
+        return availablePlatforms.includes('pinterest') ? <PinterestInsights key="pinterest-insights" /> : null
       default:
         return null
     }

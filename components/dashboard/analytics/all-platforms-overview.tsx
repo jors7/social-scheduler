@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { 
-  Heart, 
-  MessageCircle, 
-  Share2, 
-  Eye, 
-  Users, 
+import {
+  Heart,
+  MessageCircle,
+  Share2,
+  Eye,
+  Users,
   TrendingUp,
   BarChart3,
   Camera,
@@ -82,7 +82,7 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
         setLoading(false)
         return
       }
-      
+
       if (isRefresh) {
         setRefreshing(true)
       } else {
@@ -121,11 +121,12 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
         }
       }
       
-      const [facebookData, instagramData, threadsData, blueskyData] = await Promise.all([
+      const [facebookData, instagramData, threadsData, blueskyData, pinterestData] = await Promise.all([
         fetchWithCache('facebook', `/api/analytics/facebook?days=${days}`),
         fetchWithCache('instagram', `/api/analytics/instagram?days=${days}`),
         fetchWithCache('threads', `/api/analytics/threads?days=${days}`),
-        fetchWithCache('bluesky', `/api/analytics/bluesky?days=${days}`)
+        fetchWithCache('bluesky', `/api/analytics/bluesky?days=${days}`),
+        fetchWithCache('pinterest', `/api/analytics/pinterest?days=${days}`)
       ])
       
       // Track errors for display
@@ -216,7 +217,7 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
         metrics.posts = m.totalPosts
         metrics.totalEngagement = m.totalEngagement
         metrics.totalReach = m.totalReach
-        
+
         // Aggregate metrics from posts
         m.posts.forEach((post: any) => {
           metrics.likes += post.likes || 0
@@ -224,12 +225,32 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
           metrics.reposts = (metrics.reposts || 0) + (post.reposts || 0)
           metrics.quotes = (metrics.quotes || 0) + (post.quotes || 0)
         })
-        
+
         // For Bluesky, comments are replies and shares are reposts
         metrics.comments = metrics.replies || 0
         metrics.shares = metrics.reposts || 0
       } else if (blueskyData.error) {
         errors.bluesky = 'Rate limited - try again later'
+      }
+
+      // Process Pinterest data
+      if (pinterestData.metrics) {
+        const metrics = metricsMap.get('pinterest')!
+        const m = pinterestData.metrics
+        metrics.posts = m.totalPosts
+        metrics.totalEngagement = m.totalEngagement
+        metrics.totalReach = m.totalReach
+
+        // Aggregate metrics from pins
+        m.posts.forEach((pin: any) => {
+          metrics.saves = (metrics.saves || 0) + (pin.saves || 0)
+          metrics.clicks = (metrics.clicks || 0) + (pin.pin_clicks || 0)
+          metrics.impressions = (metrics.impressions || 0) + (pin.impressions || 0)
+        })
+
+        // For Pinterest, engagement is saves + clicks
+        metrics.likes = metrics.saves || 0 // Saves are like "likes"
+        metrics.comments = metrics.clicks || 0 // Clicks show interest
       }
       
       const platformMetricsArray = Array.from(metricsMap.values())
@@ -278,10 +299,7 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
       case 'x':
         return <Twitter className="h-5 w-5" />
       case 'bluesky':
-        return <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8z"/>
-          <circle cx="12" cy="12" r="3"/>
-        </svg>
+        return '🦋'
       case 'pinterest':
         return <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 2C6.5 2 2 6.5 2 12c0 4.3 2.7 7.9 6.4 9.3-.1-.8-.2-2 0-2.9.2-.8 1.3-5.4 1.3-5.4s-.3-.7-.3-1.7c0-1.6.9-2.8 2.1-2.8.9 0 1.4.7 1.4 1.6 0 1-.6 2.4-.9 3.7-.3 1.1.6 2 1.7 2 2 0 3.5-2.1 3.5-5.2 0-2.7-2-4.6-4.8-4.6-3.3 0-5.2 2.5-5.2 5 0 1 .4 2.1.9 2.7.1.1.1.2.1.3-.1.4-.3 1.1-.3 1.3-.1.2-.2.3-.4.2-1.4-.7-2.3-2.7-2.3-4.4 0-3.6 2.6-6.9 7.5-6.9 3.9 0 7 2.8 7 6.6 0 3.9-2.5 7.1-5.9 7.1-1.2 0-2.3-.6-2.6-1.3l-.7 2.8c-.3 1-1 2.3-1.5 3.1 1.1.3 2.3.5 3.5.5 5.5 0 10-4.5 10-10S17.5 2 12 2z"/>
@@ -356,20 +374,32 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
               
               {/* Platform Icons */}
               <div className="flex space-x-3">
-                {['facebook', 'instagram', 'threads', 'bluesky'].map((platform, index) => (
-                  <div
-                    key={platform}
-                    className={cn(
-                      "w-10 h-10 rounded-lg flex items-center justify-center text-white animate-pulse",
-                      getPlatformColor(platform).replace('from-', 'bg-').split(' ')[0]
-                    )}
-                    style={{
-                      animationDelay: `${index * 200}ms`
-                    }}
-                  >
-                    {getPlatformIcon(platform)}
-                  </div>
-                ))}
+                {['facebook', 'instagram', 'threads', 'pinterest', 'bluesky'].map((platform, index) => {
+                  const icon = getPlatformIcon(platform)
+                  const color = getPlatformColor(platform)
+                  const bgClass = color.replace('from-', 'bg-').split(' ')[0]
+
+                  if (platform === 'bluesky') {
+                    console.log('🔍 Bluesky debug:', { color, bgClass })
+                  }
+
+                  return (
+                    <div
+                      key={platform}
+                      data-platform={platform}
+                      className={cn(
+                        "w-10 h-10 rounded-lg flex items-center justify-center text-white animate-pulse",
+                        bgClass
+                      )}
+                      style={{
+                        animationDelay: `${index * 200}ms`,
+                        ...(platform === 'bluesky' ? { backgroundColor: '#38bdf8' } : {})
+                      }}
+                    >
+                      {icon}
+                    </div>
+                  )
+                })}
               </div>
               
               {/* Progress Bar */}

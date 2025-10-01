@@ -56,18 +56,20 @@ export default function AnalyticsPage() {
       }
       
       // Fetch data from all platforms in parallel
-      const [facebookRes, instagramRes, threadsRes, blueskyRes] = await Promise.all([
+      const [facebookRes, instagramRes, threadsRes, blueskyRes, pinterestRes] = await Promise.all([
         fetch(`/api/analytics/facebook?days=${dateRange}`),
         fetch(`/api/analytics/instagram?days=${dateRange}`),
         fetch(`/api/analytics/threads?days=${dateRange}`),
-        fetch(`/api/analytics/bluesky?days=${dateRange}`)
+        fetch(`/api/analytics/bluesky?days=${dateRange}`),
+        fetch(`/api/analytics/pinterest?days=${dateRange}`)
       ])
 
-      const [facebookData, instagramData, threadsData, blueskyData] = await Promise.all([
+      const [facebookData, instagramData, threadsData, blueskyData, pinterestData] = await Promise.all([
         facebookRes.ok ? facebookRes.json() : { metrics: null },
         instagramRes.ok ? instagramRes.json() : { metrics: null },
         threadsRes.ok ? threadsRes.json() : { metrics: null },
-        blueskyRes.ok ? blueskyRes.json() : { metrics: null }
+        blueskyRes.ok ? blueskyRes.json() : { metrics: null },
+        pinterestRes.ok ? pinterestRes.json() : { metrics: null }
       ])
 
       // Aggregate all metrics
@@ -159,22 +161,52 @@ export default function AnalyticsPage() {
         totalPosts += metrics.totalPosts
         totalEngagement += metrics.totalEngagement
         totalReach += metrics.totalReach
-        
+
         platformStats.bluesky = {
           posts: metrics.totalPosts,
           engagement: metrics.totalEngagement,
           reach: metrics.totalReach,
           impressions: metrics.totalReach
         }
-        
+
         // Add posts with platform tag
         metrics.posts.forEach((post: any) => {
-          allPosts.push({ 
-            ...post, 
+          allPosts.push({
+            ...post,
             platform: 'bluesky',
             // Bluesky doesn't have real reach/impressions
             impressions: 0,
             reach: 0
+          })
+        })
+      }
+
+      // Process Pinterest data
+      if (pinterestData.metrics) {
+        const metrics = pinterestData.metrics
+        totalPosts += metrics.totalPosts
+        totalEngagement += metrics.totalEngagement
+        totalReach += metrics.totalReach
+        totalImpressions += metrics.totalImpressions
+
+        platformStats.pinterest = {
+          posts: metrics.totalPosts,
+          engagement: metrics.totalEngagement,
+          reach: metrics.totalReach,
+          impressions: metrics.totalImpressions
+        }
+
+        // Add posts with platform tag
+        metrics.posts.forEach((post: any) => {
+          allPosts.push({
+            ...post,
+            platform: 'pinterest',
+            // Normalize fields for consistency
+            likes: post.saves || 0,
+            comments: post.pin_clicks || 0,
+            shares: post.outbound_clicks || 0,
+            impressions: post.impressions || 0,
+            reach: post.impressions || 0
           })
         })
       }
@@ -261,6 +293,8 @@ export default function AnalyticsPage() {
           engagement = (post.likes || 0) + (post.replies || 0) + (post.reposts || 0) + (post.quotes || 0)
         } else if (post.platform === 'bluesky') {
           engagement = (post.likes || 0) + (post.replies || 0) + (post.reposts || 0)
+        } else if (post.platform === 'pinterest') {
+          engagement = (post.saves || 0) + (post.pin_clicks || 0) + (post.outbound_clicks || 0)
         }
         return { ...post, totalEngagement: engagement }
       })
@@ -269,16 +303,16 @@ export default function AnalyticsPage() {
     
     topPosts.forEach(post => {
       // Clean content for CSV (remove commas and limit length)
-      const content = (post.message || post.text || post.caption || '')
+      const content = (post.message || post.text || post.caption || post.title || post.description || '')
         .replace(/[\r\n]+/g, ' ')
         .replace(/,/g, ';')
         .substring(0, 100)
-      
-      const date = new Date(post.created_time || post.timestamp || post.createdAt).toLocaleDateString()
-      const shares = post.shares || post.reposts || 0
-      const views = post.views || post.reach || 0
-      
-      lines.push(`${post.platform},${content},${date},${post.likes || 0},${post.comments || post.replies || 0},${shares},${views},${post.totalEngagement}`)
+
+      const date = new Date(post.created_time || post.timestamp || post.createdAt || post.created_at).toLocaleDateString()
+      const shares = post.shares || post.reposts || post.outbound_clicks || 0
+      const views = post.views || post.reach || post.impressions || 0
+
+      lines.push(`${post.platform},${content},${date},${post.likes || post.saves || 0},${post.comments || post.replies || post.pin_clicks || 0},${shares},${views},${post.totalEngagement}`)
     })
     
     return lines.join('\n')
@@ -362,7 +396,8 @@ export default function AnalyticsPage() {
                   { name: 'facebook', color: 'bg-blue-500', emoji: '👥' },
                   { name: 'instagram', color: 'bg-purple-500', emoji: '📷' },
                   { name: 'threads', color: 'bg-gray-700', emoji: '🧵' },
-                  { name: 'bluesky', color: 'bg-sky-500', emoji: '🦋' }
+                  { name: 'bluesky', color: 'bg-sky-500', emoji: '🦋' },
+                  { name: 'pinterest', color: 'bg-red-500', emoji: '📌' }
                 ].map((platform, index) => (
                   <div
                     key={platform.name}
@@ -474,7 +509,7 @@ export default function AnalyticsPage() {
               <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
               <div className="text-xs text-blue-800">
                 <p className="font-medium">Platform Coverage</p>
-                <p className="mt-0.5">Analytics are currently available for Facebook, Instagram, Threads, and Bluesky. Longer date ranges may take more time to load as we fetch complete data from all your posts.</p>
+                <p className="mt-0.5">Analytics are currently available for Facebook, Instagram, Threads, Bluesky, and Pinterest. Longer date ranges may take more time to load as we fetch complete data from all your posts.</p>
               </div>
             </div>
           </Card>
