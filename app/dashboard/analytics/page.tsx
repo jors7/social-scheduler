@@ -352,9 +352,7 @@ export default function AnalyticsPage() {
               <div className="text-center space-y-2">
                 <h3 className="text-lg font-semibold text-gray-900">Loading Analytics</h3>
                 <p className="text-sm text-gray-500">
-                  {dateRange === '7' 
-                    ? 'Fetching complete data from all your posts...' 
-                    : 'Analyzing your top performing content...'}
+                  Fetching complete data from all your posts...
                 </p>
               </div>
               
@@ -441,7 +439,7 @@ export default function AnalyticsPage() {
                 {refreshing && (
                   <div className="flex items-center gap-2 text-xs text-gray-500">
                     <RefreshCw className="h-3 w-3 animate-spin" />
-                    <span>Loading {dateRange === '7' ? 'complete' : 'top posts'} data...</span>
+                    <span>Loading analytics data...</span>
                   </div>
                 )}
               </div>
