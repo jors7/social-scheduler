@@ -249,7 +249,7 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
         const m = pinterestData.metrics
         metrics.posts = m.totalPosts
         metrics.totalEngagement = m.totalEngagement
-        metrics.totalReach = m.totalReach
+        metrics.totalReach = m.totalImpressions || m.totalReach || 0 // Pinterest uses impressions as reach
 
         // Aggregate metrics from pins
         m.posts.forEach((pin: any) => {
@@ -473,9 +473,12 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5" />
                 All Platforms Combined
+                <Badge variant="outline" className="ml-1 text-xs font-normal bg-blue-50 text-blue-700 border-blue-200">
+                  Last 30 days
+                </Badge>
               </CardTitle>
               <CardDescription className="mt-1">
-                Aggregated metrics across all your connected platforms (Last 30 days)
+                Aggregated metrics across all your connected platforms
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -576,9 +579,12 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5" />
             Platform Performance
+            <Badge variant="outline" className="ml-1 text-xs font-normal bg-blue-50 text-blue-700 border-blue-200">
+              Last 30 days
+            </Badge>
           </CardTitle>
           <CardDescription>
-            Posts published and reach by platform (Last 30 days)
+            Posts published and reach by platform
           </CardDescription>
         </CardHeader>
         <CardContent>

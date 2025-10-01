@@ -359,18 +359,20 @@ export default function DashboardPage() {
     try {
       // Fetch data from all platforms in parallel (last 7 days for dashboard)
       console.log('[Dashboard] Fetching analytics from APIs...')
-      const [facebookRes, instagramRes, threadsRes, blueskyRes] = await Promise.all([
+      const [facebookRes, instagramRes, threadsRes, blueskyRes, pinterestRes] = await Promise.all([
         fetch(`/api/analytics/facebook?days=7`),
         fetch(`/api/analytics/instagram?days=7`),
         fetch(`/api/analytics/threads?days=7`),
-        fetch(`/api/analytics/bluesky?days=7`)
+        fetch(`/api/analytics/bluesky?days=7`),
+        fetch(`/api/analytics/pinterest?days=7`)
       ])
 
-      const [facebookData, instagramData, threadsData, blueskyData] = await Promise.all([
+      const [facebookData, instagramData, threadsData, blueskyData, pinterestData] = await Promise.all([
         facebookRes.ok ? facebookRes.json() : { metrics: null },
         instagramRes.ok ? instagramRes.json() : { metrics: null },
         threadsRes.ok ? threadsRes.json() : { metrics: null },
-        blueskyRes.ok ? blueskyRes.json() : { metrics: null }
+        blueskyRes.ok ? blueskyRes.json() : { metrics: null },
+        pinterestRes.ok ? pinterestRes.json() : { metrics: null }
       ])
 
       // Aggregate all metrics
@@ -416,6 +418,16 @@ export default function DashboardPage() {
         totalEngagement += metrics.totalEngagement
         totalReach += metrics.totalReach
         console.log('[Dashboard] Bluesky metrics:', metrics)
+      }
+
+      // Process Pinterest data
+      if (pinterestData.metrics) {
+        const metrics = pinterestData.metrics
+        totalPosts += metrics.totalPosts
+        totalEngagement += metrics.totalEngagement
+        totalReach += metrics.totalImpressions || metrics.totalReach || 0 // Pinterest uses impressions as reach
+        totalImpressions += metrics.totalImpressions || 0
+        console.log('[Dashboard] Pinterest metrics:', metrics)
       }
 
       const analyticsData = {
@@ -1282,6 +1294,9 @@ export default function DashboardPage() {
                   {fetchingAnalytics && (
                     <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />
                   )}
+                  <Badge variant="outline" className="ml-2 text-xs font-normal bg-blue-50 text-blue-700 border-blue-200">
+                    Last 7 days
+                  </Badge>
                 </h2>
                 <p className="text-sm text-gray-500 mt-0.5">
                   Your social media performance at a glance

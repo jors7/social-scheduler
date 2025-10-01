@@ -181,6 +181,8 @@ export async function GET(request: NextRequest) {
         console.log('[Pinterest Analytics] Total Posts:', allMetrics.totalPosts);
         console.log('[Pinterest Analytics] Total Engagement:', allMetrics.totalEngagement);
         console.log('[Pinterest Analytics] Total Impressions:', allMetrics.totalImpressions);
+        console.log('[Pinterest Analytics] Total Reach:', allMetrics.totalReach);
+        console.log('[Pinterest Analytics] Posts array length:', allMetrics.posts.length);
 
       } catch (error) {
         console.error(`[Pinterest Analytics] Error fetching data for account ${account.id}:`, error);
