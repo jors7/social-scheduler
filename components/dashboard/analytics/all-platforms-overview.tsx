@@ -51,6 +51,7 @@ interface PlatformMetrics {
 const metricsCache = {
   data: null as any,
   timestamp: 0,
+  days: 0, // Track which days parameter the cached data is for
   TTL: 30 * 60 * 1000, // 30 minutes cache for better performance
   platformData: new Map<string, { data: any, timestamp: number, error?: string }>()
 }
@@ -77,7 +78,13 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
   const fetchAllPlatformMetrics = async (isRefresh = false) => {
     try {
       // Check cache first (unless it's a manual refresh)
-      if (!isRefresh && metricsCache.data && (Date.now() - metricsCache.timestamp < metricsCache.TTL)) {
+      // Cache is only valid if TTL hasn't expired AND days parameter matches
+      const cacheValid = !isRefresh &&
+                        metricsCache.data &&
+                        (Date.now() - metricsCache.timestamp < metricsCache.TTL) &&
+                        metricsCache.days === days;
+
+      if (cacheValid) {
         // Use cached data
         setPlatformMetrics(metricsCache.data.platformMetrics)
         setTotalMetrics(metricsCache.data.totalMetrics)
@@ -272,12 +279,13 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
       
       setTotalMetrics(totals)
       
-      // Update cache
+      // Update cache with days parameter
       metricsCache.data = {
         platformMetrics: platformMetricsArray,
         totalMetrics: totals
       }
       metricsCache.timestamp = Date.now()
+      metricsCache.days = days // Store which days parameter this cache is for
       setLastUpdated(new Date())
       
     } catch (error) {
