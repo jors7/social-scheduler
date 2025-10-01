@@ -40,7 +40,6 @@ export async function GET(request: NextRequest) {
         'public_profile',
         'pages_show_list',
         'pages_read_engagement',
-        'pages_read_user_content',
         'read_insights',
         'pages_manage_posts',
         'business_management'

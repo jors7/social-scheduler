@@ -45,7 +45,6 @@ export async function GET(request: NextRequest) {
             pages_show_list: false,
             pages_read_engagement: false,
             pages_manage_posts: false,
-            pages_read_user_content: false,
             read_insights: false,
             ads_management: false,
             business_management: false
@@ -78,9 +77,6 @@ export async function GET(request: NextRequest) {
                       break;
                     case 'pages_manage_posts':
                       result.permissions.pages_manage_posts = true;
-                      break;
-                    case 'pages_read_user_content':
-                      result.permissions.pages_read_user_content = true;
                       break;
                     case 'read_insights':
                       result.permissions.read_insights = true;
