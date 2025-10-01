@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts'
 import { TrendingUp, TrendingDown, Calendar, Eye, Activity } from 'lucide-react'
 
@@ -17,15 +16,17 @@ interface AnalyticsData {
 
 interface ReachChartProps {
   analyticsData: AnalyticsData | null
+  dateRange?: string // Date range from parent component ('7', '30', or '90')
 }
 
-export function ReachChart({ analyticsData }: ReachChartProps) {
-  const [timePeriod, setTimePeriod] = useState<7 | 30 | 90>(30)
-  
+export function ReachChart({ analyticsData, dateRange = '30' }: ReachChartProps) {
+  // Use dateRange prop directly (no internal state needed)
+  const timePeriod = parseInt(dateRange) as 7 | 30 | 90
+
   if (!analyticsData) {
     return <div className="h-[500px] sm:h-[550px] animate-pulse bg-gray-200 rounded"></div>
   }
-  
+
   // Generate chart data from all posts - group by date
   const dataMap = new Map<string, any>()
   
@@ -132,28 +133,7 @@ export function ReachChart({ analyticsData }: ReachChartProps) {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Time Period Selector */}
-      <div className="flex justify-end space-x-2">
-        {[
-          { value: 7, label: '7 days' },
-          { value: 30, label: '30 days' },
-          { value: 90, label: '90 days' }
-        ].map((period) => (
-          <button
-            key={period.value}
-            onClick={() => setTimePeriod(period.value as 7 | 30 | 90)}
-            className={`px-3 py-1 text-xs rounded-md transition-colors ${
-              timePeriod === period.value
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {period.label}
-          </button>
-        ))}
-      </div>
-      
+    <div className="flex flex-col justify-center space-y-4 h-full">
       {/* Chart */}
       <div className="h-[380px] sm:h-[420px] w-full">
         <ResponsiveContainer width="100%" height="100%">

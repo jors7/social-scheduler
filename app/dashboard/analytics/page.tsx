@@ -524,7 +524,7 @@ export default function AnalyticsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="bg-white/50 backdrop-blur-sm p-3 sm:p-4 pb-4 flex-1 flex flex-col">
-                <ReachChart analyticsData={analyticsData} />
+                <ReachChart analyticsData={analyticsData} dateRange={dateRange} />
               </CardContent>
             </Card>
 

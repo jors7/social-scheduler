@@ -54,6 +54,10 @@ export async function GET(request: NextRequest) {
     const days = parseInt(searchParams.get('days') || '30');
     const limit = parseInt(searchParams.get('limit') || '50');
 
+    // Calculate date cutoff for filtering
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
     // Get Threads accounts
     const { data: accounts, error: accountsError } = await supabase
       .from('social_accounts')
@@ -98,13 +102,20 @@ export async function GET(request: NextRequest) {
 
         const threadsData = await threadsResponse.json();
         const allPosts = threadsData.data || [];
-        
-        console.log(`[Threads Analytics] Found ${allPosts.length} posts for ${days} day period`);
+
+        // Filter posts by date range
+        const postsInDateRange = allPosts.filter((post: any) => {
+          const postDate = new Date(post.timestamp);
+          return postDate >= since;
+        });
+
+        console.log(`[Threads Analytics] Found ${allPosts.length} total posts`);
+        console.log(`[Threads Analytics] Posts in date range (last ${days} days): ${postsInDateRange.length}/${allPosts.length}`);
         
         // For 7-day queries: process all posts with full insights
         if (days <= 7) {
           // Process all posts with full insights
-          const postPromises = allPosts.map(async (post: any) => {
+          const postPromises = postsInDateRange.map(async (post: any) => {
             try {
               let likes = 0, replies = 0, reposts = 0, quotes = 0, views = 0;
               
@@ -168,11 +179,11 @@ export async function GET(request: NextRequest) {
           });
         } else {
           // For 30/90 day queries: Two-pass approach
-          // Pass 1: Get basic metrics for ALL posts to find top performers
-          console.log(`[Threads Analytics] Pass 1: Getting metrics for all ${allPosts.length} posts`);
-          
+          // Pass 1: Get basic metrics for posts in date range to find top performers
+          console.log(`[Threads Analytics] Pass 1: Getting metrics for ${postsInDateRange.length} posts in date range`);
+
           const postsWithMetrics = await Promise.all(
-            allPosts.map(async (post: any) => {
+            postsInDateRange.map(async (post: any) => {
               try {
                 const insightsUrl = `https://graph.threads.net/v1.0/${post.id}/insights?metric=views,likes,replies,reposts,quotes&access_token=${account.access_token}`;
                 const insightsResponse = await fetchWithTimeout(insightsUrl, 2000); // Quick timeout for first pass
