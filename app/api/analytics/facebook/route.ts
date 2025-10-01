@@ -101,11 +101,9 @@ export async function GET(request: NextRequest) {
         const allPosts = postsData.data || [];
         
         console.log(`[Facebook Analytics] Found ${allPosts.length} posts for ${days} day period`);
-        
-        // For 7-day queries: process all posts with full insights
-        if (days <= 7) {
-          // Process all posts with full engagement and insights
-          const postPromises = allPosts.map(async (post: any) => {
+
+        // Process all posts with full engagement and insights regardless of date range
+        const postPromises = allPosts.map(async (post: any) => {
             try {
               // Get engagement data
               const engagementUrl = `https://graph.facebook.com/v21.0/${post.id}?fields=likes.summary(true),comments.summary(true),shares,reactions.summary(true)&access_token=${account.access_token}`;
@@ -173,103 +171,6 @@ export async function GET(request: NextRequest) {
               allMetrics.totalImpressions += postMetrics.impressions;
             }
           });
-        } else {
-          // For 30/90 day queries: Two-pass approach
-          // Pass 1: Get basic engagement for ALL posts
-          console.log(`[Facebook Analytics] Pass 1: Getting engagement for all ${allPosts.length} posts`);
-          
-          const postsWithEngagement = await Promise.all(
-            allPosts.map(async (post: any) => {
-              try {
-                const engagementUrl = `https://graph.facebook.com/v21.0/${post.id}?fields=likes.summary(true),comments.summary(true),shares,reactions.summary(true)&access_token=${account.access_token}`;
-                const engagementResponse = await fetchWithTimeout(engagementUrl, 3000); // Quick timeout
-                
-                let totalEngagement = 0;
-                if (engagementResponse.ok) {
-                  const engagementData = await engagementResponse.json();
-                  const likes = engagementData.likes?.summary?.total_count || 0;
-                  const comments = engagementData.comments?.summary?.total_count || 0;
-                  const shares = engagementData.shares?.count || 0;
-                  const reactions = engagementData.reactions?.summary?.total_count || 0;
-                  totalEngagement = likes + comments + shares + reactions;
-                  
-                  return {
-                    ...post,
-                    likes,
-                    comments,
-                    shares,
-                    reactions,
-                    totalEngagement
-                  };
-                }
-                return { ...post, totalEngagement: 0 };
-              } catch (error) {
-                console.log(`Failed to get engagement for post ${post.id}`);
-                return { ...post, totalEngagement: 0 };
-              }
-            })
-          );
-          
-          // Sort by engagement and take top 10
-          const topPosts = postsWithEngagement
-            .sort((a, b) => b.totalEngagement - a.totalEngagement)
-            .slice(0, 10);
-          
-          console.log(`[Facebook Analytics] Pass 2: Getting insights for top ${topPosts.length} posts by engagement`);
-          
-          // Pass 2: Get detailed insights only for top 10 posts
-          const detailedPostPromises = topPosts.map(async (post: any, index: number) => {
-            let reach = 0, impressions = 0;
-            
-            // Get insights for top 5 posts only
-            if (index < 5) {
-              try {
-                const insightsUrl = `https://graph.facebook.com/v21.0/${post.id}/insights?metric=post_impressions,post_impressions_unique&access_token=${account.access_token}`;
-                const insightsResponse = await fetchWithTimeout(insightsUrl, 3000);
-                
-                if (insightsResponse.ok) {
-                  const insightsData = await insightsResponse.json();
-                  if (insightsData.data && Array.isArray(insightsData.data)) {
-                    insightsData.data.forEach((metric: any) => {
-                      if (metric.name === 'post_impressions' && metric.values?.[0]) {
-                        impressions = metric.values[0].value || 0;
-                      }
-                      if (metric.name === 'post_impressions_unique' && metric.values?.[0]) {
-                        reach = metric.values[0].value || 0;
-                      }
-                    });
-                  }
-                }
-              } catch (insightsError) {
-                console.log(`Insights not available for post ${post.id}`);
-              }
-            }
-            
-            return {
-              id: post.id,
-              message: post.message,
-              created_time: post.created_time,
-              permalink_url: post.permalink_url,
-              likes: post.likes || 0,
-              comments: post.comments || 0,
-              shares: post.shares || 0,
-              reactions: post.reactions || 0,
-              reach,
-              impressions
-            };
-          });
-          
-          const detailedPosts = await Promise.all(detailedPostPromises);
-          detailedPosts.forEach(postMetrics => {
-            if (postMetrics) {
-              allMetrics.posts.push(postMetrics);
-              allMetrics.totalPosts++;
-              allMetrics.totalEngagement += postMetrics.likes + postMetrics.comments + postMetrics.shares;
-              allMetrics.totalReach += postMetrics.reach;
-              allMetrics.totalImpressions += postMetrics.impressions;
-            }
-          });
-        }
       } catch (error) {
         console.error(`Error fetching data for Facebook account ${account.id}:`, error);
       }

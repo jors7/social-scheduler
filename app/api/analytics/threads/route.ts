@@ -111,11 +111,9 @@ export async function GET(request: NextRequest) {
 
         console.log(`[Threads Analytics] Found ${allPosts.length} total posts`);
         console.log(`[Threads Analytics] Posts in date range (last ${days} days): ${postsInDateRange.length}/${allPosts.length}`);
-        
-        // For 7-day queries: process all posts with full insights
-        if (days <= 7) {
-          // Process all posts with full insights
-          const postPromises = postsInDateRange.map(async (post: any) => {
+
+        // Process all posts with full insights regardless of date range
+        const postPromises = postsInDateRange.map(async (post: any) => {
             try {
               let likes = 0, replies = 0, reposts = 0, quotes = 0, views = 0;
               
@@ -177,89 +175,6 @@ export async function GET(request: NextRequest) {
               allMetrics.totalViews += postMetrics.views;
             }
           });
-        } else {
-          // For 30/90 day queries: Two-pass approach
-          // Pass 1: Get basic metrics for posts in date range to find top performers
-          console.log(`[Threads Analytics] Pass 1: Getting metrics for ${postsInDateRange.length} posts in date range`);
-
-          const postsWithMetrics = await Promise.all(
-            postsInDateRange.map(async (post: any) => {
-              try {
-                const insightsUrl = `https://graph.threads.net/v1.0/${post.id}/insights?metric=views,likes,replies,reposts,quotes&access_token=${account.access_token}`;
-                const insightsResponse = await fetchWithTimeout(insightsUrl, 2000); // Quick timeout for first pass
-                
-                let totalEngagement = 0;
-                let views = 0;
-                
-                if (insightsResponse.ok) {
-                  const insightsData = await insightsResponse.json();
-                  if (insightsData.data && Array.isArray(insightsData.data)) {
-                    let likes = 0, replies = 0, reposts = 0, quotes = 0;
-                    
-                    insightsData.data.forEach((metric: any) => {
-                      if (metric.name && metric.values?.[0]) {
-                        const value = metric.values[0].value || 0;
-                        switch(metric.name) {
-                          case 'views': views = value; break;
-                          case 'likes': likes = value; break;
-                          case 'replies': replies = value; break;
-                          case 'reposts': reposts = value; break;
-                          case 'quotes': quotes = value; break;
-                        }
-                      }
-                    });
-                    
-                    totalEngagement = likes + replies + reposts + quotes;
-                    
-                    return {
-                      ...post,
-                      likes,
-                      replies,
-                      reposts,
-                      quotes,
-                      views,
-                      totalEngagement
-                    };
-                  }
-                }
-                return { ...post, totalEngagement: 0, views: 0 };
-              } catch (error) {
-                console.log(`Failed to get metrics for post ${post.id}`);
-                return { ...post, totalEngagement: 0, views: 0 };
-              }
-            })
-          );
-          
-          // Sort by engagement and take top 10
-          const topPosts = postsWithMetrics
-            .sort((a, b) => b.totalEngagement - a.totalEngagement)
-            .slice(0, 10);
-          
-          console.log(`[Threads Analytics] Pass 2: Processing top ${topPosts.length} posts by engagement`);
-          
-          // Pass 2: Add the top posts to metrics
-          topPosts.forEach(post => {
-            const postMetrics = {
-              id: post.id,
-              text: post.text,
-              permalink: post.permalink,
-              timestamp: post.timestamp,
-              media_type: post.media_type,
-              media_url: post.media_url,
-              likes: post.likes || 0,
-              replies: post.replies || 0,
-              reposts: post.reposts || 0,
-              quotes: post.quotes || 0,
-              views: post.views || 0
-            };
-            
-            allMetrics.posts.push(postMetrics);
-            allMetrics.totalPosts++;
-            allMetrics.totalEngagement += post.totalEngagement || 0;
-            allMetrics.totalReach += post.views || 0;
-            allMetrics.totalViews += post.views || 0;
-          });
-        }
       } catch (error) {
         console.error(`Error fetching data for Threads account ${account.id}:`, error);
       }

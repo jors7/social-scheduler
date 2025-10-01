@@ -470,18 +470,16 @@ export default function AnalyticsPage() {
             </div>
           </Card>
 
-          {/* Info message for longer date ranges */}
-          {dateRange !== '7' && (
-            <Card variant="elevated" className="p-3 bg-blue-50 border-blue-200">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div className="text-xs text-blue-800">
-                  <p className="font-medium">Performance Note</p>
-                  <p className="mt-0.5">For faster loading on longer date ranges, metrics are calculated from your top 10 performing posts. Switch to &quot;Last 7 days&quot; for complete data from all posts.</p>
-                </div>
+          {/* Platform Coverage Info */}
+          <Card variant="elevated" className="p-3 bg-blue-50 border-blue-200">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-blue-800">
+                <p className="font-medium">Platform Coverage</p>
+                <p className="mt-0.5">Analytics are currently available for Facebook, Instagram, Threads, and Bluesky. Longer date ranges may take more time to load as we fetch complete data from all your posts.</p>
               </div>
-            </Card>
-          )}
+            </div>
+          </Card>
           
           {/* Overview Cards */}
           <OverviewCards analyticsData={analyticsData} />

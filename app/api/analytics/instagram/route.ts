@@ -131,10 +131,9 @@ export async function GET(request: NextRequest) {
         });
 
         console.log('[Instagram Analytics] Posts in date range (last', days, 'days):', postsInDateRange.length);
-        
-        if (days <= 7) {
-          // For 7-day queries: Process all posts with full insights
-          for (const media of postsInDateRange) {
+
+        // Process all posts with full insights regardless of date range
+        for (const media of postsInDateRange) {
             let saves = 0, reach = 0, total_interactions = 0;
 
             // Try to get insights for all posts (impressions deprecated April 2025)
@@ -181,75 +180,6 @@ export async function GET(request: NextRequest) {
             allMetrics.totalEngagement += postMetrics.likes + postMetrics.comments + postMetrics.saves;
             allMetrics.totalReach += reach;
           }
-        } else {
-          // For 30/90 day queries: Two-pass approach
-          console.log('[Instagram Analytics] Pass 1: Calculating engagement for all posts');
-          
-          // Calculate engagement for all posts and sort
-          const postsWithEngagement = postsInDateRange.map((media: any) => ({
-            ...media,
-            totalEngagement: (media.like_count || 0) + (media.comments_count || 0)
-          }));
-          
-          // Sort by engagement and take top 10
-          const topPosts = postsWithEngagement
-            .sort((a: any, b: any) => b.totalEngagement - a.totalEngagement)
-            .slice(0, 10);
-          
-          console.log('[Instagram Analytics] Pass 2: Getting insights for top', topPosts.length, 'posts');
-          
-          // Process top posts with insights
-          for (let i = 0; i < topPosts.length; i++) {
-            const media = topPosts[i];
-            let saves = 0, reach = 0, total_interactions = 0;
-
-            // Get insights for top 5 posts only
-            if (i < 5) {
-              try {
-                const insightsUrl = `https://graph.instagram.com/${media.id}/insights?metric=reach,saved,total_interactions&access_token=${account.access_token}`;
-                const insightsResponse = await fetch(insightsUrl);
-
-                if (insightsResponse.ok) {
-                  const insightsData = await insightsResponse.json();
-                  if (insightsData.data && Array.isArray(insightsData.data)) {
-                    insightsData.data.forEach((metric: any) => {
-                      if (metric.name === 'reach' && metric.values?.[0]) {
-                        reach = metric.values[0].value || 0;
-                      }
-                      if (metric.name === 'saved' && metric.values?.[0]) {
-                        saves = metric.values[0].value || 0;
-                      }
-                      if (metric.name === 'total_interactions' && metric.values?.[0]) {
-                        total_interactions = metric.values[0].value || 0;
-                      }
-                    });
-                  }
-                }
-              } catch (insightsError) {
-                console.log(`Insights not available for media ${media.id}`);
-              }
-            }
-
-            const postMetrics = {
-              id: media.id,
-              caption: media.caption,
-              media_type: media.media_type,
-              media_url: media.media_url,
-              permalink: media.permalink,
-              timestamp: media.timestamp,
-              likes: media.like_count || 0,
-              comments: media.comments_count || 0,
-              saves,
-              reach,
-              total_interactions
-            };
-
-            allMetrics.posts.push(postMetrics);
-            allMetrics.totalPosts++;
-            allMetrics.totalEngagement += postMetrics.likes + postMetrics.comments + postMetrics.saves;
-            allMetrics.totalReach += reach;
-          }
-        }
         
         // Cache successful data
         if (postsInDateRange.length > 0) {

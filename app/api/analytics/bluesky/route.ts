@@ -35,8 +35,8 @@ export async function GET(request: NextRequest) {
     // Get date range from query params (default to last 30 days)
     const searchParams = request.nextUrl.searchParams;
     const days = parseInt(searchParams.get('days') || '30');
-    // For 7-day queries, fetch more posts for accuracy
-    const limit = days <= 7 ? 100 : parseInt(searchParams.get('limit') || '50');
+    // Always fetch 100 posts for accuracy regardless of date range
+    const limit = 100;
 
     // Get Bluesky accounts
     const { data: accounts, error: accountsError } = await supabase
