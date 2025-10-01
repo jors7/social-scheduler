@@ -42,6 +42,9 @@ interface PlatformMetrics {
   replies?: number
   reposts?: number
   quotes?: number
+  saves?: number
+  clicks?: number
+  impressions?: number
 }
 
 // Enhanced in-memory cache with platform-specific caching
@@ -299,7 +302,7 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
       case 'x':
         return <Twitter className="h-5 w-5" />
       case 'bluesky':
-        return '🦋'
+        return <span className="text-lg">🦋</span>
       case 'pinterest':
         return <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 2C6.5 2 2 6.5 2 12c0 4.3 2.7 7.9 6.4 9.3-.1-.8-.2-2 0-2.9.2-.8 1.3-5.4 1.3-5.4s-.3-.7-.3-1.7c0-1.6.9-2.8 2.1-2.8.9 0 1.4.7 1.4 1.6 0 1-.6 2.4-.9 3.7-.3 1.1.6 2 1.7 2 2 0 3.5-2.1 3.5-5.2 0-2.7-2-4.6-4.8-4.6-3.3 0-5.2 2.5-5.2 5 0 1 .4 2.1.9 2.7.1.1.1.2.1.3-.1.4-.3 1.1-.3 1.3-.1.2-.2.3-.4.2-1.4-.7-2.3-2.7-2.3-4.4 0-3.6 2.6-6.9 7.5-6.9 3.9 0 7 2.8 7 6.6 0 3.9-2.5 7.1-5.9 7.1-1.2 0-2.3-.6-2.6-1.3l-.7 2.8c-.3 1-1 2.3-1.5 3.1 1.1.3 2.3.5 3.5.5 5.5 0 10-4.5 10-10S17.5 2 12 2z"/>
@@ -342,6 +345,32 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
         return 'from-gray-500 to-gray-600'
     }
   }
+
+  const getPlatformBackgroundClass = (platform: string) => {
+    switch (platform.toLowerCase()) {
+      case 'instagram':
+        return 'bg-purple-500'
+      case 'threads':
+        return 'bg-gray-700'
+      case 'facebook':
+        return 'bg-blue-500'
+      case 'linkedin':
+        return 'bg-blue-600'
+      case 'twitter':
+      case 'x':
+        return 'bg-gray-600'
+      case 'bluesky':
+        return 'bg-sky-400'
+      case 'pinterest':
+        return 'bg-red-500'
+      case 'tiktok':
+        return 'bg-gray-900'
+      case 'youtube':
+        return 'bg-red-600'
+      default:
+        return 'bg-gray-500'
+    }
+  }
   
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
@@ -377,23 +406,24 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
                 {['facebook', 'instagram', 'threads', 'pinterest', 'bluesky'].map((platform, index) => {
                   const icon = getPlatformIcon(platform)
                   const color = getPlatformColor(platform)
-                  const bgClass = color.replace('from-', 'bg-').split(' ')[0]
 
-                  if (platform === 'bluesky') {
-                    console.log('🔍 Bluesky debug:', { color, bgClass })
+                  // Convert gradient color to solid background
+                  const bgColorMap: Record<string, string> = {
+                    'facebook': '#3b82f6',    // blue-500
+                    'instagram': '#a855f7',   // purple-500
+                    'threads': '#374151',     // gray-700
+                    'pinterest': '#ef4444',   // red-500
+                    'bluesky': '#38bdf8'      // sky-400
                   }
 
                   return (
                     <div
                       key={platform}
                       data-platform={platform}
-                      className={cn(
-                        "w-10 h-10 rounded-lg flex items-center justify-center text-white animate-pulse",
-                        bgClass
-                      )}
+                      className="w-10 h-10 rounded-lg flex items-center justify-center text-white animate-pulse"
                       style={{
                         animationDelay: `${index * 200}ms`,
-                        ...(platform === 'bluesky' ? { backgroundColor: '#38bdf8' } : {})
+                        backgroundColor: bgColorMap[platform] || '#6b7280'
                       }}
                     >
                       {icon}

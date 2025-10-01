@@ -9,7 +9,7 @@ import { PlatformBreakdown } from '@/components/dashboard/analytics/platform-bre
 import { TopPosts } from '@/components/dashboard/analytics/top-posts'
 import { ReachChart } from '@/components/dashboard/analytics/reach-chart'
 import { PlatformInsightsTabs } from '@/components/dashboard/analytics/platform-insights-tabs'
-import { CalendarDays, Download, Filter, BarChart3, RefreshCw, AlertCircle } from 'lucide-react'
+import { CalendarDays, Download, Filter, BarChart3, RefreshCw, AlertCircle, Camera, AtSign, Facebook } from 'lucide-react'
 import { toast } from 'sonner'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 
@@ -45,6 +45,25 @@ export default function AnalyticsPage() {
     { value: '30', label: 'Last 30 days' },
     { value: '90', label: 'Last 3 months' },
   ]
+
+  const getPlatformIcon = (platform: string) => {
+    switch (platform.toLowerCase()) {
+      case 'facebook':
+        return <Facebook className="h-5 w-5" />
+      case 'instagram':
+        return <Camera className="h-5 w-5" />
+      case 'threads':
+        return <AtSign className="h-5 w-5" />
+      case 'bluesky':
+        return <span className="text-lg">🦋</span>
+      case 'pinterest':
+        return <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.5 2 2 6.5 2 12c0 4.3 2.7 7.9 6.4 9.3-.1-.8-.2-2 0-2.9.2-.8 1.3-5.4 1.3-5.4s-.3-.7-.3-1.7c0-1.6.9-2.8 2.1-2.8.9 0 1.4.7 1.4 1.6 0 1-.6 2.4-.9 3.7-.3 1.1.6 2 1.7 2 2 0 3.5-2.1 3.5-5.2 0-2.7-2-4.6-4.8-4.6-3.3 0-5.2 2.5-5.2 5 0 1 .4 2.1.9 2.7.1.1.1.2.1.3-.1.4-.3 1.1-.3 1.3-.1.2-.2.3-.4.2-1.4-.7-2.3-2.7-2.3-4.4 0-3.6 2.6-6.9 7.5-6.9 3.9 0 7 2.8 7 6.6 0 3.9-2.5 7.1-5.9 7.1-1.2 0-2.3-.6-2.6-1.3l-.7 2.8c-.3 1-1 2.3-1.5 3.1 1.1.3 2.3.5 3.5.5 5.5 0 10-4.5 10-10S17.5 2 12 2z"/>
+        </svg>
+      default:
+        return <BarChart3 className="h-5 w-5" />
+    }
+  }
 
   const fetchRealAnalytics = async () => {
     try {
@@ -393,20 +412,21 @@ export default function AnalyticsPage() {
               {/* Platform Icons */}
               <div className="flex space-x-3">
                 {[
-                  { name: 'facebook', color: 'bg-blue-500', emoji: '👥' },
-                  { name: 'instagram', color: 'bg-purple-500', emoji: '📷' },
-                  { name: 'threads', color: 'bg-gray-700', emoji: '🧵' },
-                  { name: 'bluesky', color: 'bg-sky-500', emoji: '🦋' },
-                  { name: 'pinterest', color: 'bg-red-500', emoji: '📌' }
+                  { name: 'facebook', bgColor: '#3b82f6' },
+                  { name: 'instagram', bgColor: '#a855f7' },
+                  { name: 'threads', bgColor: '#374151' },
+                  { name: 'bluesky', bgColor: '#0ea5e9' },
+                  { name: 'pinterest', bgColor: '#ef4444' }
                 ].map((platform, index) => (
                   <div
                     key={platform.name}
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center text-white animate-pulse ${platform.color}`}
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white animate-pulse"
                     style={{
-                      animationDelay: `${index * 200}ms`
+                      animationDelay: `${index * 200}ms`,
+                      backgroundColor: platform.bgColor
                     }}
                   >
-                    <span className="text-lg">{platform.emoji}</span>
+                    {getPlatformIcon(platform.name)}
                   </div>
                 ))}
               </div>
