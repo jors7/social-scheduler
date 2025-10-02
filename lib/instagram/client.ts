@@ -335,48 +335,48 @@ export class InstagramClient {
       });
       console.log('Media container created with ID:', creationId);
 
-      // For videos, we need to wait for processing to complete
-      if (isVideo) {
-        console.log('Video detected, checking processing status...');
-        
-        if (onProgress) {
-          onProgress('Processing video... This may take a moment.');
-        }
-        
-        // Wait for video to be processed (check status)
-        let attempts = 0;
-        const maxAttempts = 120; // 120 attempts with 2 second delays = ~240 seconds (4 minutes) max
-        let isReady = false;
-        const startTime = Date.now();
-        
-        while (attempts < maxAttempts && !isReady) {
-          attempts++;
-          
-          // Check container status
-          const statusUrl = `${this.baseURL}/${creationId}?fields=status,status_code&access_token=${this.accessToken}`;
-          const statusResponse = await fetch(statusUrl);
-          
-          if (statusResponse.ok) {
-            const statusData = await statusResponse.json();
-            console.log(`Status check ${attempts}:`, statusData);
-            
-            if (statusData.status_code === 'FINISHED') {
-              isReady = true;
-              console.log('Video processing complete!');
-              if (onProgress) {
-                onProgress('Video processed! Publishing...');
-              }
-            } else if (statusData.status_code === 'ERROR') {
-              throw new Error(`Video processing failed: ${JSON.stringify(statusData)}`);
-            } else {
-              // Still processing, wait 2 seconds
-              console.log(`Video still processing... (${statusData.status_code || 'IN_PROGRESS'})`);
-              
-              // Calculate elapsed time and progress
-              const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-              const estimatedProgress = Math.min(90, (attempts / maxAttempts) * 90); // Cap at 90% until actually finished
-              
-              if (onProgress) {
+      // Wait for media processing to complete (both images and videos need time)
+      console.log('Checking media processing status...');
+
+      if (onProgress) {
+        onProgress(isVideo ? 'Processing video... This may take a moment.' : 'Processing image...');
+      }
+
+      // Wait for media to be processed (check status)
+      let attempts = 0;
+      const maxAttempts = isVideo ? 120 : 30; // 4 minutes for video, 1 minute for images
+      let isReady = false;
+      const startTime = Date.now();
+
+      while (attempts < maxAttempts && !isReady) {
+        attempts++;
+
+        // Check container status
+        const statusUrl = `${this.baseURL}/${creationId}?fields=status,status_code&access_token=${this.accessToken}`;
+        const statusResponse = await fetch(statusUrl);
+
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+          console.log(`Status check ${attempts}:`, statusData);
+
+          if (statusData.status_code === 'FINISHED') {
+            isReady = true;
+            console.log('Media processing complete!');
+            if (onProgress) {
+              onProgress(isVideo ? 'Video processed! Publishing...' : 'Image processed! Publishing...');
+            }
+          } else if (statusData.status_code === 'ERROR') {
+            throw new Error(`Media processing failed: ${JSON.stringify(statusData)}`);
+          } else {
+            // Still processing, wait 2 seconds
+            console.log(`Media still processing... (${statusData.status_code || 'IN_PROGRESS'})`);
+
+            // Calculate elapsed time and progress
+            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+            const estimatedProgress = Math.min(90, (attempts / maxAttempts) * 90); // Cap at 90% until actually finished
+
+            if (onProgress) {
+              if (isVideo) {
                 if (elapsedSeconds < 15) {
                   onProgress(`Processing video... (${elapsedSeconds}s)`, estimatedProgress);
                 } else if (elapsedSeconds < 30) {
@@ -390,21 +390,32 @@ export class InstagramClient {
                 } else {
                   onProgress(`Still processing... Almost done (${Math.floor(elapsedSeconds/60)}m ${elapsedSeconds%60}s)`, estimatedProgress);
                 }
+              } else {
+                // Image processing (usually faster)
+                if (elapsedSeconds < 10) {
+                  onProgress(`Processing image... (${elapsedSeconds}s)`, estimatedProgress);
+                } else if (elapsedSeconds < 30) {
+                  onProgress(`Processing image... Please wait (${elapsedSeconds}s)`, estimatedProgress);
+                } else {
+                  onProgress(`Processing image... Almost ready (${elapsedSeconds}s)`, estimatedProgress);
+                }
               }
-              
-              await new Promise(resolve => setTimeout(resolve, 2000));
             }
-          } else {
-            console.warn('Failed to check status, proceeding anyway');
-            break;
+
+            await new Promise(resolve => setTimeout(resolve, 2000));
           }
+        } else {
+          console.warn('Failed to check status, proceeding anyway');
+          break;
         }
-        
-        if (!isReady && attempts >= maxAttempts) {
-          console.warn('Video processing timeout after 4 minutes, attempting to publish anyway...');
-          if (onProgress) {
-            onProgress('Processing taking unusually long. Attempting to publish - this may still succeed.');
-          }
+      }
+
+      if (!isReady && attempts >= maxAttempts) {
+        const mediaType = isVideo ? 'Video' : 'Image';
+        const timeout = isVideo ? '4 minutes' : '1 minute';
+        console.warn(`${mediaType} processing timeout after ${timeout}, attempting to publish anyway...`);
+        if (onProgress) {
+          onProgress(`Processing taking unusually long. Attempting to publish - this may still succeed.`);
         }
       }
 
