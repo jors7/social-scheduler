@@ -276,9 +276,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // IMPORTANT: Use user_id from token exchange, NOT from profile API
-    // The token is tied to user_id from token exchange response
-    const platformUserId = user_id.toString();
+    // IMPORTANT: Use profile ID from /me endpoint, NOT token user_id
+    // The profile ID is the actual Instagram account ID that works with the API
+    // The token user_id may differ and cause 500 errors
+    const platformUserId = (profileData.id || user_id).toString();
     const accountName = profileData.username || `instagram_${user_id}`;
     const username = profileData.username || `instagram_${user_id}`;
     const profileImageUrl = profileData.profile_picture_url || null;
