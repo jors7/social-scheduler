@@ -1207,8 +1207,10 @@ function CreateNewPostPageContent() {
       // Clear form if all successful
       if (failed.length === 0) {
         // Clean up uploaded images from storage
-        // No need to preserve for TikTok sandbox mode since actual posting doesn't happen
-        if (mediaUrls.length > 0) {
+        // IMPORTANT: Don't cleanup if TikTok was posted to - TikTok needs time to download the video via PULL_FROM_URL
+        const postedToTikTok = supportedPlatforms.includes('tiktok');
+
+        if (mediaUrls.length > 0 && !postedToTikTok) {
           try {
             await fetch('/api/upload/cleanup', {
               method: 'POST',
