@@ -109,7 +109,17 @@ export class BlueskyClient {
       };
     } catch (error: any) {
       console.error('Error verifying Bluesky credentials:', error);
-      throw new Error(`Verification failed: ${error.message}`);
+
+      // Provide more specific error messages
+      if (error.error === 'RateLimitExceeded' || error.message?.includes('Rate Limit')) {
+        throw new Error('Rate limit exceeded. Please wait a few minutes and try again.');
+      }
+
+      if (error.error === 'AuthenticationRequired' || error.message?.includes('Invalid identifier or password')) {
+        throw new Error('Invalid username or app password. Please check your credentials.');
+      }
+
+      throw new Error(`Verification failed: ${error.message || 'Unknown error'}`);
     }
   }
 }

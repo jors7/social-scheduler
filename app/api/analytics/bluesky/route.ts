@@ -91,11 +91,12 @@ export async function GET(request: NextRequest) {
 
           try {
             // Login to Bluesky
+            // access_token stores the identifier, access_secret stores the app password
             await agent.login({
-              identifier: account.username || account.platform_user_id,
-              password: account.access_token
+              identifier: account.access_token,
+              password: account.access_secret
             });
-            
+
             // Cache the session
             sessionCache.set(cacheKey, { agent, timestamp: Date.now() });
           } catch (loginError: any) {

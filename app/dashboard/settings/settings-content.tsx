@@ -64,24 +64,24 @@ export default function SettingsContent() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
   
-  const fetchAccountLimits = async (userId: string, forceRefresh: boolean = false) => {
+  const fetchAccountLimits = useCallback(async (userId: string, forceRefresh: boolean = false) => {
     try {
       console.log('Fetching account limits for user:', userId, 'Force refresh:', forceRefresh)
-      
+
       // Get current count
       const { data: accounts, error: accountsError } = await supabase
         .from('social_accounts')
         .select('id')
         .eq('user_id', userId)
         .eq('is_active', true)
-      
+
       if (accountsError) {
         console.error('Error fetching accounts:', accountsError)
       }
-      
+
       const currentCount = accounts?.length || 0
       console.log('Current account count:', currentCount)
-      
+
       // Get subscription with proper join - use .maybeSingle() to handle no subscription case
       const { data: subscription, error: subError } = await supabase
         .from('user_subscriptions')
@@ -97,22 +97,22 @@ export default function SettingsContent() {
         .eq('user_id', userId)
         .in('status', ['active', 'trialing'])
         .maybeSingle()
-      
+
       if (subError && subError.code !== 'PGRST116') { // PGRST116 is "no rows found"
         console.error('Error fetching subscription:', subError)
       }
-      
+
       console.log('Subscription data:', subscription)
-      
+
       let maxAccounts = 1 // Free plan default
       let planName = 'Free'
       let isUnlimited = false
-      
+
       if (subscription && subscription.subscription_plans) {
         const plan = subscription.subscription_plans as any
         const limits = plan.limits as any
         planName = plan.name || planName
-        
+
         // Check for unlimited (-1) or get the actual limit
         if (limits?.connected_accounts === -1) {
           maxAccounts = -1 // Keep as -1 for unlimited
@@ -120,7 +120,7 @@ export default function SettingsContent() {
         } else {
           maxAccounts = limits?.connected_accounts || 1
         }
-        
+
         console.log(`Plan: ${planName}, Connected accounts limit:`, limits?.connected_accounts, 'Is unlimited:', isUnlimited)
       } else {
         // Get free plan limits as fallback
@@ -129,14 +129,14 @@ export default function SettingsContent() {
           .select('limits')
           .eq('id', 'free')
           .maybeSingle()
-        
+
         if (freePlan) {
           const limits = freePlan.limits as any
           maxAccounts = limits?.connected_accounts || 1
         }
         console.log('No active subscription, using free plan limits:', maxAccounts)
       }
-      
+
       console.log('Setting account limits:', {
         planName,
         maxAccounts: isUnlimited ? 'Unlimited' : maxAccounts,
@@ -144,7 +144,7 @@ export default function SettingsContent() {
         canAddMore: isUnlimited || currentCount < maxAccounts,
         isUnlimited
       })
-      
+
       setAccountLimits({
         maxAccounts: isUnlimited ? Infinity : maxAccounts,
         currentCount,
@@ -159,7 +159,7 @@ export default function SettingsContent() {
         canAddMore: false
       })
     }
-  }
+  }, [supabase])
 
   const fetchConnectedAccounts = useCallback(async (showSuccessToast = false) => {
     setRefreshing(true)

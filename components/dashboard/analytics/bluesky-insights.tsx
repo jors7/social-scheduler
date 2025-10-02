@@ -4,43 +4,38 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Heart, 
-  MessageCircle, 
-  Repeat2, 
-  Quote, 
-  Eye, 
-  Users, 
+import {
+  Heart,
+  MessageCircle,
+  Repeat2,
+  Quote,
+  Eye,
+  Users,
   TrendingUp,
-  TrendingDown,
   BarChart3,
-  Activity,
   RefreshCw,
-  Info,
   Cloud,
   AtSign
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
-interface BlueskyMetrics {
+interface BlueskyPost {
+  id: string
+  text?: string
+  uri: string
+  createdAt: string
   likes: number
   reposts: number
   replies: number
   quotes: number
-  views: number
-  bookmarks: number
 }
 
-interface BlueskyPost {
-  id: string
-  uri?: string
-  text: string
-  created_at: string
-  permalink_url: string
-  media_type: string
-  media_url?: string
-  metrics?: BlueskyMetrics
+interface BlueskyMetrics {
+  totalPosts: number
+  totalEngagement: number
+  totalReach: number
+  posts: BlueskyPost[]
 }
 
 interface BlueskyInsightsProps {
@@ -48,73 +43,33 @@ interface BlueskyInsightsProps {
 }
 
 export function BlueskyInsights({ className }: BlueskyInsightsProps) {
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [recentPosts, setRecentPosts] = useState<BlueskyPost[]>([])
+  const [metrics, setMetrics] = useState<BlueskyMetrics | null>(null)
   const [hasBlueskyAccount, setHasBlueskyAccount] = useState(false)
-  const [blueskyAccounts, setBlueskyAccounts] = useState<any[]>([])
-  const [selectedAccount, setSelectedAccount] = useState<any>(null)
-  const [totalMetrics, setTotalMetrics] = useState({
-    totalLikes: 0,
-    totalReposts: 0,
-    totalReplies: 0,
-    totalQuotes: 0
-  })
 
-  const fetchBlueskyInsights = async (accountId?: string) => {
+  const fetchBlueskyInsights = async () => {
     try {
       setLoading(true)
-      
-      // Check if Bluesky account is connected
-      const accountResponse = await fetch('/api/social-accounts')
-      if (accountResponse.ok) {
-        const accounts = await accountResponse.json()
-        const blueskyAccountsList = accounts.filter((acc: any) => acc.platform === 'bluesky' && acc.is_active)
-        
-        if (blueskyAccountsList.length === 0) {
+
+      // Fetch analytics from the working endpoint
+      const response = await fetch('/api/analytics/bluesky?days=30')
+
+      if (!response.ok) {
+        if (response.status === 401) {
           setHasBlueskyAccount(false)
           return
         }
-        
-        setHasBlueskyAccount(true)
-        setBlueskyAccounts(blueskyAccountsList)
-        
-        // Select account to use
-        const accountToUse = accountId 
-          ? blueskyAccountsList.find((acc: any) => acc.id === accountId) 
-          : selectedAccount 
-          || blueskyAccountsList[0]
-        
-        setSelectedAccount(accountToUse)
-      } else {
-        return
+        throw new Error('Failed to fetch Bluesky analytics')
       }
 
-      // Fetch recent posts from Bluesky
-      const postsQueryParams = new URLSearchParams({
-        limit: '10',
-        ...(selectedAccount?.id && { accountId: selectedAccount.id })
-      })
-      const postsResponse = await fetch(`/api/bluesky/posts?${postsQueryParams}`)
-      if (postsResponse.ok) {
-        const { media } = await postsResponse.json()
-        setRecentPosts(media || [])
-        
-        // Calculate total metrics
-        if (media && media.length > 0) {
-          const totals = media.reduce((acc: any, post: BlueskyPost) => ({
-            totalLikes: acc.totalLikes + (post.metrics?.likes || 0),
-            totalReposts: acc.totalReposts + (post.metrics?.reposts || 0),
-            totalReplies: acc.totalReplies + (post.metrics?.replies || 0),
-            totalQuotes: acc.totalQuotes + (post.metrics?.quotes || 0)
-          }), {
-            totalLikes: 0,
-            totalReposts: 0,
-            totalReplies: 0,
-            totalQuotes: 0
-          })
-          setTotalMetrics(totals)
-        }
+      const data = await response.json()
+
+      if (data.metrics && data.metrics.totalPosts > 0) {
+        setMetrics(data.metrics)
+        setHasBlueskyAccount(true)
+      } else {
+        setHasBlueskyAccount(false)
       }
     } catch (error) {
       console.error('Error fetching Bluesky insights:', error)
@@ -126,42 +81,15 @@ export function BlueskyInsights({ className }: BlueskyInsightsProps) {
   }
 
   useEffect(() => {
-    // Add a small delay to prevent rapid re-renders
-    const timer = setTimeout(() => {
-      fetchBlueskyInsights()
-    }, 100)
-    
-    return () => clearTimeout(timer)
+    fetchBlueskyInsights()
   }, [])
 
-  const handleRefresh = async () => {
+  const handleRefresh = () => {
     setRefreshing(true)
-    
-    // First update all Bluesky post metrics in the database
-    try {
-      const updateResponse = await fetch('/api/bluesky/update-metrics', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-      
-      if (updateResponse.ok) {
-        const result = await updateResponse.json()
-        console.log('Updated Bluesky metrics:', result)
-        if (result.updatedCount > 0) {
-          toast.success(`Updated metrics for ${result.updatedCount} posts`)
-        }
-      }
-    } catch (error) {
-      console.error('Error updating metrics:', error)
-    }
-    
-    // Then fetch the insights
     fetchBlueskyInsights()
   }
 
-  if (!hasBlueskyAccount) {
+  if (!hasBlueskyAccount && !loading) {
     return (
       <Card className={cn("", className)}>
         <CardHeader>
@@ -188,7 +116,7 @@ export function BlueskyInsights({ className }: BlueskyInsightsProps) {
     )
   }
 
-  if (loading && recentPosts.length === 0) {
+  if (loading && !metrics) {
     return (
       <Card className={cn("", className)}>
         <CardHeader>
@@ -199,7 +127,7 @@ export function BlueskyInsights({ className }: BlueskyInsightsProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="animate-pulse">
                 <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
                 <div className="h-8 bg-gray-200 rounded w-1/2"></div>
@@ -217,107 +145,174 @@ export function BlueskyInsights({ className }: BlueskyInsightsProps) {
     return num.toString()
   }
 
+  // Calculate total metrics
+  const totalLikes = metrics?.posts.reduce((sum, post) => sum + post.likes, 0) || 0
+  const totalReposts = metrics?.posts.reduce((sum, post) => sum + post.reposts, 0) || 0
+  const totalReplies = metrics?.posts.reduce((sum, post) => sum + post.replies, 0) || 0
+  const totalQuotes = metrics?.posts.reduce((sum, post) => sum + post.quotes, 0) || 0
+
   return (
     <div className={cn("space-y-6", className)}>
-
-      {/* Recent Posts Performance - Coming Soon */}
+      {/* Overview Metrics */}
       <Card>
         <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <AtSign className="h-5 w-5" />
+                Bluesky Overview
+                <Badge variant="outline" className="ml-2 text-xs font-normal">
+                  Last 30 days
+                </Badge>
+              </CardTitle>
+              <CardDescription>
+                Performance metrics for your Bluesky account
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              <RefreshCw className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")} />
+              Refresh
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Likes */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Heart className="h-4 w-4 text-red-500" />
+                <span>Likes</span>
+              </div>
+              <div className="text-2xl font-bold">{formatNumber(totalLikes)}</div>
+            </div>
+
+            {/* Reposts */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Repeat2 className="h-4 w-4 text-green-500" />
+                <span>Reposts</span>
+              </div>
+              <div className="text-2xl font-bold">{formatNumber(totalReposts)}</div>
+            </div>
+
+            {/* Replies */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <MessageCircle className="h-4 w-4 text-blue-500" />
+                <span>Replies</span>
+              </div>
+              <div className="text-2xl font-bold">{formatNumber(totalReplies)}</div>
+            </div>
+
+            {/* Quotes */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Quote className="h-4 w-4 text-purple-500" />
+                <span>Quotes</span>
+              </div>
+              <div className="text-2xl font-bold">{formatNumber(totalQuotes)}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Posts Performance */}
+      <Card>
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
             Recent Posts Performance
-            {selectedAccount && (
-              <Badge variant="outline" className="ml-2 text-xs">
-                @{selectedAccount.username}.bsky.social
-              </Badge>
-            )}
-            <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
           </CardTitle>
           <CardDescription>
-            Advanced analytics for your Bluesky posts
+            Your top performing Bluesky posts from the last 30 days
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {/* Coming Soon Message */}
-            <div className="text-center py-8 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
-              <AtSign className="mx-auto h-16 w-16 text-blue-700 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Bluesky Analytics Coming Soon!</h3>
-              <p className="text-sm text-gray-600 mb-4 max-w-md mx-auto">
-                We&apos;re working on bringing you comprehensive Bluesky analytics.
+        <CardContent className="pt-6">
+          {metrics && metrics.posts.length > 0 ? (
+            <div className="grid gap-4">
+              {metrics.posts.slice(0, 10).map((post) => {
+                const totalEngagement = post.likes + post.reposts + post.replies + post.quotes
+                const postText = post.text || 'No text content'
+                const truncatedText = postText.length > 80 ? postText.substring(0, 80) + '...' : postText
+                const postDate = new Date(post.createdAt).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                })
+
+                return (
+                  <div
+                    key={post.id}
+                    className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                        <AtSign className="h-8 w-8 text-blue-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium line-clamp-2 mb-1">{truncatedText}</p>
+                        <p className="text-xs text-gray-500">{postDate}</p>
+                      </div>
+                      <div className="ml-2 flex items-center gap-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-3 py-1 rounded-full">
+                        <TrendingUp className="h-3 w-3" />
+                        <span className="text-xs font-semibold">{formatNumber(totalEngagement)}</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-3">
+                      {/* Likes */}
+                      <div className="text-center">
+                        <div className="flex justify-center mb-1">
+                          <Heart className="h-4 w-4 text-red-500" />
+                        </div>
+                        <div className="text-sm font-semibold">{formatNumber(post.likes)}</div>
+                        <div className="text-xs text-gray-500">Likes</div>
+                      </div>
+
+                      {/* Reposts */}
+                      <div className="text-center">
+                        <div className="flex justify-center mb-1">
+                          <Repeat2 className="h-4 w-4 text-green-500" />
+                        </div>
+                        <div className="text-sm font-semibold">{formatNumber(post.reposts)}</div>
+                        <div className="text-xs text-gray-500">Reposts</div>
+                      </div>
+
+                      {/* Replies */}
+                      <div className="text-center">
+                        <div className="flex justify-center mb-1">
+                          <MessageCircle className="h-4 w-4 text-blue-500" />
+                        </div>
+                        <div className="text-sm font-semibold">{formatNumber(post.replies)}</div>
+                        <div className="text-xs text-gray-500">Replies</div>
+                      </div>
+
+                      {/* Quotes */}
+                      <div className="text-center">
+                        <div className="flex justify-center mb-1">
+                          <Quote className="h-4 w-4 text-purple-500" />
+                        </div>
+                        <div className="text-sm font-semibold">{formatNumber(post.quotes)}</div>
+                        <div className="text-xs text-gray-500">Quotes</div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <AtSign className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+              <p className="text-sm text-gray-500">
+                No posts found in the last 30 days
               </p>
             </div>
-
-            {/* What to Expect */}
-            <div className="border rounded-lg p-6">
-              <h4 className="font-semibold mb-4 flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-blue-600" />
-                What Analytics Will Be Available
-              </h4>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <Eye className="h-4 w-4 text-gray-500 mt-1" />
-                    <div>
-                      <p className="font-medium text-sm">Post Impressions</p>
-                      <p className="text-xs text-gray-500">Track your post reach</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Heart className="h-4 w-4 text-gray-500 mt-1" />
-                    <div>
-                      <p className="font-medium text-sm">Engagement Metrics</p>
-                      <p className="text-xs text-gray-500">Likes, reposts, quotes</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Users className="h-4 w-4 text-gray-500 mt-1" />
-                    <div>
-                      <p className="font-medium text-sm">Follower Analytics</p>
-                      <p className="text-xs text-gray-500">Growth and demographics</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <Activity className="h-4 w-4 text-gray-500 mt-1" />
-                    <div>
-                      <p className="font-medium text-sm">Profile Performance</p>
-                      <p className="text-xs text-gray-500">Profile visits and interactions</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <MessageCircle className="h-4 w-4 text-gray-500 mt-1" />
-                    <div>
-                      <p className="font-medium text-sm">Thread Analytics</p>
-                      <p className="text-xs text-gray-500">Conversation engagement</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Quote className="h-4 w-4 text-gray-500 mt-1" />
-                    <div>
-                      <p className="font-medium text-sm">Quote Post Insights</p>
-                      <p className="text-xs text-gray-500">Track quoted engagement</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Info Box */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex gap-3">
-                <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm">
-                  <p className="font-medium text-blue-900 mb-1">Why is this feature pending?</p>
-                  <p className="text-blue-700">
-                    Bluesky&apos;s AT Protocol is still evolving. We&apos;re working on implementing 
-                    analytics as the platform&apos;s API capabilities expand to include detailed metrics.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

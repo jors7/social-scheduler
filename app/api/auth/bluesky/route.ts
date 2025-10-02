@@ -153,8 +153,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Bluesky authentication error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', JSON.stringify(error, null, 2));
     return NextResponse.json(
-      { error: 'Failed to connect Bluesky account', details: error.message },
+      { error: 'Failed to connect Bluesky account', details: error.message || String(error) },
       { status: 500 }
     );
   }
