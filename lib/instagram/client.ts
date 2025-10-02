@@ -31,13 +31,49 @@ export class InstagramClient {
       console.warn('No app secret provided, skipping appsecret_proof');
       return undefined;
     }
-    
+
     const hmac = crypto.createHmac('sha256', this.appSecret);
     hmac.update(this.accessToken);
     const proof = hmac.digest('hex');
-    
+
     console.log('Generated appsecret_proof:', proof.substring(0, 10) + '...');
     return proof;
+  }
+
+  /**
+   * Retry helper for transient API errors
+   */
+  private async retryWithBackoff<T>(
+    fn: () => Promise<T>,
+    maxRetries: number = 3,
+    baseDelay: number = 1000
+  ): Promise<T> {
+    let lastError: any;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error: any) {
+        lastError = error;
+
+        // Check if error is transient
+        const errorMessage = error.message || '';
+        const isTransient = errorMessage.includes('"is_transient":true') ||
+                           errorMessage.includes('Please retry your request later');
+
+        // Only retry on transient errors
+        if (!isTransient || attempt === maxRetries - 1) {
+          throw error;
+        }
+
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = baseDelay * Math.pow(2, attempt);
+        console.log(`Transient error detected, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
+    throw lastError;
   }
 
   async getProfile() {
@@ -268,32 +304,35 @@ export class InstagramClient {
 
       console.log('Container API call to:', `${this.baseURL}/${this.userID}/media`);
       console.log('Media type:', isVideo ? 'REELS' : 'IMAGE');
-      
+
       // Report progress
       if (onProgress) {
         onProgress(isVideo ? 'Uploading video to Instagram...' : 'Uploading image to Instagram...');
       }
-      
-      const containerResponse = await fetch(
-        `${this.baseURL}/${this.userID}/media`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: containerParams.toString(),
+
+      // Use retry logic for container creation (handles transient errors)
+      const { id: creationId } = await this.retryWithBackoff(async () => {
+        const containerResponse = await fetch(
+          `${this.baseURL}/${this.userID}/media`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: containerParams.toString(),
+          }
+        );
+
+        console.log('Container response status:', containerResponse.status);
+
+        if (!containerResponse.ok) {
+          const error = await containerResponse.json();
+          console.error('Container creation failed:', error);
+          throw new Error(`Failed to create media container: ${JSON.stringify(error)}`);
         }
-      );
 
-      console.log('Container response status:', containerResponse.status);
-
-      if (!containerResponse.ok) {
-        const error = await containerResponse.json();
-        console.error('Container creation failed:', error);
-        throw new Error(`Failed to create media container: ${JSON.stringify(error)}`);
-      }
-
-      const { id: creationId } = await containerResponse.json();
+        return containerResponse.json();
+      });
       console.log('Media container created with ID:', creationId);
 
       // For videos, we need to wait for processing to complete
@@ -378,31 +417,34 @@ export class InstagramClient {
       // Do NOT add appsecret_proof for graph.instagram.com calls
 
       console.log('Publishing media container...');
-      
+
       if (onProgress) {
         onProgress(isVideo ? 'Publishing your reel...' : 'Publishing your post...', 95);
       }
-      
-      const publishResponse = await fetch(
-        `${this.baseURL}/${this.userID}/media_publish`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: publishParams.toString(),
+
+      // Use retry logic for publish step (handles transient errors)
+      const result = await this.retryWithBackoff(async () => {
+        const publishResponse = await fetch(
+          `${this.baseURL}/${this.userID}/media_publish`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: publishParams.toString(),
+          }
+        );
+
+        console.log('Publish response status:', publishResponse.status);
+
+        if (!publishResponse.ok) {
+          const error = await publishResponse.json();
+          console.error('Media publish failed:', error);
+          throw new Error(`Failed to publish media: ${JSON.stringify(error)}`);
         }
-      );
 
-      console.log('Publish response status:', publishResponse.status);
-
-      if (!publishResponse.ok) {
-        const error = await publishResponse.json();
-        console.error('Media publish failed:', error);
-        throw new Error(`Failed to publish media: ${JSON.stringify(error)}`);
-      }
-
-      const result = await publishResponse.json();
+        return publishResponse.json();
+      });
       console.log('Instagram post published successfully:', result);
       return result;
     } catch (error: any) {
