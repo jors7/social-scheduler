@@ -26,6 +26,8 @@ export interface PostResult {
   error?: string;
   data?: {
     id?: string;
+    isDraft?: boolean; // For TikTok draft posting
+    message?: string; // Custom success message (e.g., for drafts)
     metrics?: {
       likes?: number;
       comments?: number;
@@ -145,7 +147,9 @@ export class PostingService {
           
           // Update progress tracker - success or error
           if (result.success) {
-            progressTracker?.updatePlatform(platform, 'success');
+            // Check if this is a TikTok draft
+            const customMessage = result.data?.isDraft ? result.data.message : undefined;
+            progressTracker?.updatePlatform(platform, 'success', customMessage);
           } else {
             progressTracker?.updatePlatform(platform, 'error', undefined, result.error);
           }
@@ -552,12 +556,18 @@ export class PostingService {
         throw new Error(data.error || 'TikTok posting failed');
       }
 
-      // Check if this is a sandbox response
-      if (data.sandbox) {
+      // Check if this is a draft posting (sandbox/unaudited mode)
+      if (data.sandbox && isDraft) {
+        // Draft posting is intentional and successful
         return {
           platform: 'tiktok',
-          success: false,
-          error: data.message || 'TikTok is in sandbox mode. App approval required for actual posting.',
+          success: true,
+          postId: data.publishId,
+          data: {
+            id: data.publishId,
+            isDraft: true,
+            message: 'Video saved as draft in your TikTok app'
+          }
         };
       }
 

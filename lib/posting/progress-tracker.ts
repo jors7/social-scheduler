@@ -92,8 +92,12 @@ export class PostingProgressTracker {
         })
         break
       case 'success':
-        toast.success(`${emoji} Posted to ${platformName}!`, {
-          duration: 2000
+        // Use custom message if provided (e.g., for TikTok drafts)
+        const successMessage = message
+          ? `${emoji} ${message}`
+          : `${emoji} Posted to ${platformName}!`;
+        toast.success(successMessage, {
+          duration: message ? 3000 : 2000 // Show custom messages a bit longer
         })
         break
       case 'error':
