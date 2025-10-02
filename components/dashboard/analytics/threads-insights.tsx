@@ -413,9 +413,9 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {/* Views */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Eye className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-500">Views</p>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Eye className="h-4 w-4 text-purple-500" />
+                <span>Views</span>
               </div>
               <p className="text-2xl font-bold">
                 {formatNumber(totalMetrics.views)}
@@ -425,9 +425,9 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
 
             {/* Likes */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Heart className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-500">Likes</p>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Heart className="h-4 w-4 text-red-500" />
+                <span>Likes</span>
               </div>
               <p className="text-2xl font-bold">
                 {formatNumber(totalMetrics.likes)}
@@ -437,9 +437,9 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
 
             {/* Replies */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <MessageCircle className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-500">Replies</p>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <MessageCircle className="h-4 w-4 text-blue-500" />
+                <span>Replies</span>
               </div>
               <p className="text-2xl font-bold">
                 {formatNumber(totalMetrics.replies)}
@@ -449,9 +449,9 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
 
             {/* Reposts */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Repeat2 className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-500">Reposts</p>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Repeat2 className="h-4 w-4 text-orange-500" />
+                <span>Reposts</span>
               </div>
               <p className="text-2xl font-bold">
                 {formatNumber(totalMetrics.reposts)}
@@ -461,9 +461,9 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
 
             {/* Quotes */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Quote className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-500">Quotes</p>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Quote className="h-4 w-4 text-indigo-500" />
+                <span>Quotes</span>
               </div>
               <p className="text-2xl font-bold">
                 {formatNumber(totalMetrics.quotes)}
@@ -473,9 +473,9 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
 
             {/* Engagement */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-500">Engagement</p>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Activity className="h-4 w-4 text-green-500" />
+                <span>Engagement</span>
               </div>
               <p className="text-2xl font-bold">
                 {formatNumber(totalMetrics.likes + totalMetrics.replies + totalMetrics.reposts + totalMetrics.quotes)}
@@ -605,100 +605,104 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
             </div>
           ) : (
             <div className="space-y-4">
-              {recentPosts.map((post) => (
-                <div key={post.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-all duration-200 bg-white">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-700 line-clamp-2">
-                        {stripHtml(post.text).slice(0, 100)}...
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
-                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        {new Date(post.timestamp).toLocaleDateString()}
-                      </p>
-                    </div>
-                    {(post.media_url || post.thumbnail_url) ? (
-                      <div className="ml-3 flex-shrink-0">
-                        {post.media_type === 'VIDEO' ? (
-                          post.thumbnail_url ? (
-                            <img
-                              src={post.thumbnail_url}
-                              alt="Video thumbnail"
-                              className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                            />
+              {recentPosts.map((post) => {
+                const totalEngagement = (post.metrics?.likes || 0) + (post.metrics?.replies || 0) + (post.metrics?.reposts || 0)
+
+                return (
+                  <div
+                    key={post.id}
+                    className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start gap-3 mb-3">
+                      {/* Post Thumbnail - 64x64px */}
+                      <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+                        {post.media_url || post.thumbnail_url ? (
+                          post.media_type === 'VIDEO' ? (
+                            post.thumbnail_url ? (
+                              <img
+                                src={post.thumbnail_url}
+                                alt="Video thumbnail"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <video
+                                src={post.media_url}
+                                className="w-full h-full object-cover"
+                                muted
+                                preload="metadata"
+                              />
+                            )
                           ) : (
-                            <video
+                            <img
                               src={post.media_url}
-                              className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                              muted
-                              preload="metadata"
+                              alt="Post media"
+                              className="w-full h-full object-cover"
                             />
                           )
-                        ) : post.media_url ? (
-                          <img
-                            src={post.media_url}
-                            alt="Post media"
-                            className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                          />
-                        ) : null}
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                            <AtSign className="h-8 w-8 text-gray-400" />
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="ml-3 flex-shrink-0">
-                        <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
-                          <FileText className="h-8 w-8 text-gray-400" />
+
+                      {/* Post Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-1">
+                          <h4 className="font-semibold text-sm line-clamp-2 flex-1">
+                            {stripHtml(post.text).slice(0, 80) || 'Untitled Post'}
+                          </h4>
+                          <div className="ml-2 flex items-center gap-1 bg-gradient-to-r from-gray-700 to-gray-800 text-white px-3 py-1 rounded-full">
+                            <TrendingUp className="h-3 w-3" />
+                            <span className="text-xs font-semibold">{formatNumber(totalEngagement)}</span>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-                    <div className="flex items-center gap-2">
-                      <Eye className="h-3 w-3 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">Views</p>
-                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.views || 0)}</p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(post.timestamp).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Heart className="h-3 w-3 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">Likes</p>
-                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.likes || 0)}</p>
+
+                    <div className="grid grid-cols-4 gap-3">
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 text-red-600 mb-1">
+                          <Heart className="h-3 w-3" />
+                          <span className="text-xs font-semibold">{formatNumber(post.metrics?.likes || 0)}</span>
+                        </div>
+                        <p className="text-[10px] text-gray-500">Likes</p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MessageCircle className="h-3 w-3 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">Replies</p>
-                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.replies || 0)}</p>
+
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
+                          <MessageCircle className="h-3 w-3" />
+                          <span className="text-xs font-semibold">{formatNumber(post.metrics?.replies || 0)}</span>
+                        </div>
+                        <p className="text-[10px] text-gray-500">Replies</p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Repeat2 className="h-3 w-3 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">Reposts</p>
-                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.reposts || 0)}</p>
+
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 text-purple-600 mb-1">
+                          <Repeat2 className="h-3 w-3" />
+                          <span className="text-xs font-semibold">{formatNumber(post.metrics?.reposts || 0)}</span>
+                        </div>
+                        <p className="text-[10px] text-gray-500">Reposts</p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Quote className="h-3 w-3 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">Quotes</p>
-                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.quotes || 0)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Share2 className="h-3 w-3 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">Shares</p>
-                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.shares || 0)}</p>
+
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 text-green-600 mb-1">
+                          <Eye className="h-3 w-3" />
+                          <span className="text-xs font-semibold">{formatNumber(post.metrics?.views || 0)}</span>
+                        </div>
+                        <p className="text-[10px] text-gray-500">Views</p>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
           {hasMorePosts && (

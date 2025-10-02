@@ -1,6 +1,6 @@
 'use client'
 
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 interface AnalyticsData {
   totalPosts: number
@@ -19,7 +19,7 @@ interface PlatformBreakdownProps {
 
 const platformIcons: Record<string, string> = {
   facebook: '📘',
-  instagram: '📷', 
+  instagram: '📷',
   twitter: '🐦',
   linkedin: '💼',
   youtube: '📹',
@@ -27,6 +27,18 @@ const platformIcons: Record<string, string> = {
   bluesky: '🦋',
   threads: '🧵',
   pinterest: '📌'
+}
+
+const platformColors: Record<string, string> = {
+  facebook: '#1877f2',
+  instagram: '#e4405f',
+  twitter: '#1da1f2',
+  linkedin: '#0a66c2',
+  youtube: '#ff0000',
+  tiktok: '#000000',
+  bluesky: '#0085ff',
+  threads: '#000000',
+  pinterest: '#e60023'
 }
 
 export function PlatformBreakdown({ analyticsData }: PlatformBreakdownProps) {
@@ -54,7 +66,8 @@ export function PlatformBreakdown({ analyticsData }: PlatformBreakdownProps) {
     posts: stats.posts,
     engagement: stats.engagement,
     reach: stats.reach,
-    icon: platformIcons[platform] || '📱'
+    icon: platformIcons[platform] || '📱',
+    color: platformColors[platform] || '#8884d8'
   })).sort((a, b) => b.engagement - a.engagement)
 
   console.log('[PlatformBreakdown] data:', data)
@@ -121,11 +134,14 @@ export function PlatformBreakdown({ analyticsData }: PlatformBreakdownProps) {
                 return null
               }}
             />
-            <Bar 
-              dataKey="engagement" 
-              fill="#8884d8" 
+            <Bar
+              dataKey="engagement"
               radius={[4, 4, 0, 0]}
-            />
+            >
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>

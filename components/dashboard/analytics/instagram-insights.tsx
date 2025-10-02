@@ -438,9 +438,9 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {/* Reach */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-500">Reach</p>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Users className="h-4 w-4 text-blue-500" />
+                <span>Reach</span>
               </div>
               <p className="text-2xl font-bold">
                 {formatNumber(userInsights?.reach?.value || 0)}
@@ -450,9 +450,9 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
 
             {/* Profile Views */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Eye className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-500">Profile Views</p>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Eye className="h-4 w-4 text-purple-500" />
+                <span>Profile Views</span>
               </div>
               <p className="text-2xl font-bold">
                 {formatNumber(userInsights?.profile_views?.value || 0)}
@@ -462,9 +462,9 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
 
             {/* Total Interactions */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-500">Total Interactions</p>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Activity className="h-4 w-4 text-green-500" />
+                <span>Total Interactions</span>
               </div>
               <p className="text-2xl font-bold">
                 {formatNumber(userInsights?.total_interactions?.value || 0)}
@@ -474,9 +474,9 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
 
             {/* Accounts Engaged */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-500">Accounts Engaged</p>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Users className="h-4 w-4 text-orange-500" />
+                <span>Accounts Engaged</span>
               </div>
               <p className="text-2xl font-bold">
                 {formatNumber(userInsights?.accounts_engaged?.value || 0)}
@@ -486,9 +486,9 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
 
             {/* Engagement */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Heart className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-500">Engagement</p>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Heart className="h-4 w-4 text-red-500" />
+                <span>Engagement</span>
               </div>
               <p className="text-2xl font-bold">
                 {formatNumber((userInsights?.likes?.value || 0) + (userInsights?.comments?.value || 0))}
@@ -501,9 +501,9 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
 
             {/* Followers */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-gray-500" />
-                <p className="text-xs font-medium text-gray-500">Followers</p>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Users className="h-4 w-4 text-indigo-500" />
+                <span>Followers</span>
               </div>
               <p className="text-2xl font-bold">
                 {formatNumber(userInsights?.follower_count?.value || 0)}
@@ -647,100 +647,104 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
             </div>
           ) : (
             <div className="space-y-4">
-              {recentPosts.map((post) => (
-                <div key={post.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-all duration-200 bg-white">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-700 line-clamp-2">
-                        {post.caption.replace(/<[^>]*>/g, '').slice(0, 100)}...
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
-                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        {new Date(post.timestamp).toLocaleDateString()}
-                      </p>
-                    </div>
-                    {post.media_url ? (
-                      <div className="ml-3 flex-shrink-0">
-                        {post.media_type === 'VIDEO' ? (
-                          post.thumbnail_url ? (
-                            <img
-                              src={post.thumbnail_url}
-                              alt="Video thumbnail"
-                              className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                            />
+              {recentPosts.map((post) => {
+                const totalEngagement = (post.metrics?.likes || 0) + (post.metrics?.comments || 0) + (post.metrics?.saves || 0)
+
+                return (
+                  <div
+                    key={post.id}
+                    className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start gap-3 mb-3">
+                      {/* Post Thumbnail - 64x64px */}
+                      <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+                        {post.media_url ? (
+                          post.media_type === 'VIDEO' ? (
+                            post.thumbnail_url ? (
+                              <img
+                                src={post.thumbnail_url}
+                                alt="Video thumbnail"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <video
+                                src={post.media_url}
+                                className="w-full h-full object-cover"
+                                muted
+                                preload="metadata"
+                              />
+                            )
                           ) : (
-                            <video
+                            <img
                               src={post.media_url}
-                              className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                              muted
-                              preload="metadata"
+                              alt="Post media"
+                              className="w-full h-full object-cover"
                             />
                           )
                         ) : (
-                          <img
-                            src={post.media_url}
-                            alt="Post media"
-                            className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                          />
+                          <div className="w-full h-full bg-gradient-to-br from-purple-100 to-pink-200 flex items-center justify-center">
+                            <Camera className="h-8 w-8 text-purple-400" />
+                          </div>
                         )}
                       </div>
-                    ) : (
-                      <div className="ml-3 flex-shrink-0">
-                        <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
-                          <FileText className="h-8 w-8 text-gray-400" />
+
+                      {/* Post Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-1">
+                          <h4 className="font-semibold text-sm line-clamp-2 flex-1">
+                            {post.caption.replace(/<[^>]*>/g, '').slice(0, 80) || 'Untitled Post'}
+                          </h4>
+                          <div className="ml-2 flex items-center gap-1 bg-gradient-to-r from-purple-500 to-pink-600 text-white px-3 py-1 rounded-full">
+                            <TrendingUp className="h-3 w-3" />
+                            <span className="text-xs font-semibold">{formatNumber(totalEngagement)}</span>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-3 w-3 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">Reach</p>
-                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.reach || 0)}</p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(post.timestamp).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Heart className="h-3 w-3 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">Likes</p>
-                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.likes || 0)}</p>
+
+                    <div className="grid grid-cols-4 gap-3">
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 text-red-600 mb-1">
+                          <Heart className="h-3 w-3" />
+                          <span className="text-xs font-semibold">{formatNumber(post.metrics?.likes || 0)}</span>
+                        </div>
+                        <p className="text-[10px] text-gray-500">Likes</p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MessageCircle className="h-3 w-3 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">Comments</p>
-                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.comments || 0)}</p>
+
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
+                          <MessageCircle className="h-3 w-3" />
+                          <span className="text-xs font-semibold">{formatNumber(post.metrics?.comments || 0)}</span>
+                        </div>
+                        <p className="text-[10px] text-gray-500">Comments</p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Share2 className="h-3 w-3 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">Shares</p>
-                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.shares || 0)}</p>
+
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 text-purple-600 mb-1">
+                          <Bookmark className="h-3 w-3" />
+                          <span className="text-xs font-semibold">{formatNumber(post.metrics?.saves || 0)}</span>
+                        </div>
+                        <p className="text-[10px] text-gray-500">Saves</p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Bookmark className="h-3 w-3 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">Saves</p>
-                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.saves || 0)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Activity className="h-3 w-3 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-500">Total Interactions</p>
-                        <p className="text-sm font-semibold text-gray-900">{formatNumber(post.metrics?.total_interactions || 0)}</p>
+
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 text-green-600 mb-1">
+                          <Eye className="h-3 w-3" />
+                          <span className="text-xs font-semibold">{formatNumber(post.metrics?.reach || 0)}</span>
+                        </div>
+                        <p className="text-[10px] text-gray-500">Reach</p>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
           {hasMorePosts && (
