@@ -58,38 +58,105 @@ This permission is essential for users to select which Facebook Pages they want 
 - Users control which pages are connected
 
 ### 3. pages_read_engagement
-**Permission Scope**: `pages_read_engagement`  
+**Permission Scope**: `pages_read_engagement`
 **Access Level**: Advanced Access
 
 **Use Case**:
-Analytics and engagement metrics are crucial for social media managers to understand their content performance and optimize their strategy.
+This permission allows us to read posts published on the user's Facebook Pages, including engagement metrics like likes, comments, and shares. This is essential for displaying post history and basic engagement data.
 
 **User Flow**:
 1. User publishes content to Facebook Page through SocialCal
-2. User navigates to Analytics dashboard
-3. We fetch engagement metrics (likes, comments, shares, reach)
-4. User sees performance data in charts and tables
-5. User makes data-driven decisions for future content
+2. User navigates to Posted Posts page
+3. We fetch the list of posts published to their pages
+4. User sees their post history with basic engagement counts
+5. User can track which posts were published and their initial performance
 
-**Specific Metrics We Display**:
-- Post reach and impressions
-- Engagement rate
-- Like, comment, and share counts
-- Best performing posts
-- Audience growth trends
+**Specific Data We Access**:
+- Published post content and metadata
+- Like, comment, and share counts on posts
+- Post timestamps and status
+- Post type (text, image, video, link)
 
 **Why This Is Essential**:
-- Social media managers need to track ROI
-- Content strategy requires performance data
-- Clients expect engagement reports
-- A/B testing requires metrics comparison
+- Users need to see their posting history
+- Basic engagement metrics help track post performance
+- Content audit requires access to published posts
+- Post verification after scheduled publishing
 
 **Data Handling**:
-- Metrics are fetched on-demand, not stored permanently
-- Aggregated data may be cached for performance
-- Users can delete all analytics data
+- Post data fetched on-demand when viewing post history
+- Basic engagement metrics cached temporarily for performance
+- Users can delete all post history data
 
-### 4. pages_manage_posts
+### 4. read_insights
+**Permission Scope**: `read_insights`
+**Access Level**: Advanced Access
+
+**Use Case**:
+Page Insights provide comprehensive analytics that go beyond basic engagement metrics. This permission gives us access to demographic data, reach metrics, page views, and detailed performance analytics that are critical for professional social media management.
+
+**User Flow**:
+1. User connects their Facebook Page
+2. User navigates to Analytics Dashboard
+3. We fetch Page Insights data using the Insights API
+4. User sees comprehensive analytics including:
+   - Page performance over time
+   - Audience demographics (age, gender, location)
+   - Post reach and impressions
+   - Page views and engagement trends
+   - Best time to post analysis
+5. User makes data-driven decisions for content strategy
+
+**Specific Insights We Display**:
+- **Page Metrics**:
+  - Total page views
+  - Page engagement rate
+  - Fan adds/removes (follower growth)
+  - Daily active users
+- **Post Insights**:
+  - Organic vs paid reach
+  - Post impressions by type
+  - Click-through rates
+  - Video view metrics
+- **Audience Demographics**:
+  - Age and gender breakdown
+  - Geographic location data
+  - Device usage statistics
+  - Peak activity times
+- **Engagement Analytics**:
+  - Engagement rate trends
+  - Content type performance comparison
+  - Best performing post times
+  - Audience response patterns
+
+**Why This Is Essential**:
+- Professional social media management requires detailed analytics
+- Clients and businesses need demographic insights for targeting
+- Content strategy optimization requires historical performance data
+- ROI tracking needs comprehensive metrics beyond basic engagement
+- Audience understanding requires demographic breakdowns
+- Competitive analysis and benchmarking
+
+**How It Differs from pages_read_engagement**:
+- `pages_read_engagement` provides **post-level data** (likes, comments, shares on individual posts)
+- `read_insights` provides **page-level analytics** (demographics, trends, aggregated metrics)
+- Both are needed for complete social media analytics
+
+**Implementation Details**:
+- Use Facebook Graph API `/insights` endpoint
+- Fetch metrics for custom date ranges
+- Display visual charts and trend graphs
+- Compare performance across time periods
+- Export analytics reports for clients
+
+**Data Handling**:
+- Insights are fetched on-demand, not stored permanently
+- Aggregated data cached for 1 hour for performance
+- Historical trends calculated from real-time API data
+- Users can delete all analytics data
+- All data encrypted in transit and at rest
+
+### 5. pages_manage_posts
 **Permission Scope**: `pages_manage_posts`  
 **Access Level**: Advanced Access
 
@@ -130,7 +197,7 @@ This is our core functionality - allowing users to create, schedule, and publish
 - Posted content metadata retained for analytics
 - Failed posts are retried with user notification
 
-### 5. pages_read_user_content (FUTURE FEATURE - NOT CURRENTLY IMPLEMENTED)
+### 6. pages_read_user_content (FUTURE FEATURE - NOT CURRENTLY IMPLEMENTED)
 **Permission Scope**: `pages_read_user_content`  
 **Access Level**: Advanced Access
 **Status**: NOT REQUESTED - This permission was initially included but is not currently used in the application
@@ -159,7 +226,7 @@ This permission would allow us to show users their published content history and
 - Cached temporarily for performance
 - Users control data retention period
 
-### 6. business_management
+### 7. business_management
 **Permission Scope**: `business_management`  
 **Access Level**: Advanced Access
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { BskyAgent } from '@atproto/api';
 
 export async function GET(request: NextRequest) {
   try {
@@ -133,14 +134,14 @@ export async function GET(request: NextRequest) {
                           }
                         }
                       );
-                      
+
                       if (pinterestResponse.ok) {
                         const pinData = await pinterestResponse.json();
                         // Pinterest API returns media in a specific structure
                         if (pinData.media) {
                           if (pinData.media.images) {
                             // Get the best available image size
-                            const imageUrl = 
+                            const imageUrl =
                               pinData.media.images['1200x']?.url ||
                               pinData.media.images['600x']?.url ||
                               pinData.media.images['400x300']?.url ||
@@ -152,6 +153,47 @@ export async function GET(request: NextRequest) {
                       }
                     } catch (pinError) {
                       console.error('Error fetching Pinterest pin:', pinError);
+                    }
+                  } else if (platform === 'bluesky') {
+                    // Fetch Bluesky post with media
+                    try {
+                      const agent = new BskyAgent({
+                        service: 'https://bsky.social'
+                      });
+
+                      // Login to Bluesky
+                      await agent.login({
+                        identifier: account.access_token, // identifier stored in access_token
+                        password: account.access_secret   // app password stored in access_secret
+                      });
+
+                      // The postId for Bluesky is the URI
+                      const postUri = result.postId;
+
+                      // Parse the URI to get the post
+                      const uriParts = postUri.split('/');
+                      const did = uriParts[2];
+                      const rkey = uriParts[uriParts.length - 1];
+
+                      // Fetch the post
+                      const postResponse = await agent.getPostThread({
+                        uri: postUri,
+                        depth: 0
+                      });
+
+                      if (postResponse.success && postResponse.data.thread.post) {
+                        const post = postResponse.data.thread.post;
+
+                        // Extract media URL from embed
+                        if (post.embed?.images && post.embed.images.length > 0) {
+                          // Use fullsize or thumb
+                          platformMediaUrl = post.embed.images[0].fullsize || post.embed.images[0].thumb;
+                        }
+
+                        console.log('Bluesky media URL extracted for', result.postId, ':', platformMediaUrl);
+                      }
+                    } catch (blueskyError) {
+                      console.error('Error fetching Bluesky post:', blueskyError);
                     }
                   }
                 } catch (error) {
