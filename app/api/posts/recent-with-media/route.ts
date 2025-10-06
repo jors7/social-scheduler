@@ -181,16 +181,21 @@ export async function GET(request: NextRequest) {
                         depth: 0
                       });
 
-                      if (postResponse.success && postResponse.data.thread.post) {
-                        const post = postResponse.data.thread.post;
+                      if (postResponse.success && postResponse.data.thread) {
+                        const thread = postResponse.data.thread;
 
-                        // Extract media URL from embed
-                        if (post.embed?.images && post.embed.images.length > 0) {
-                          // Use fullsize or thumb
-                          platformMediaUrl = post.embed.images[0].fullsize || post.embed.images[0].thumb;
+                        // Check if it's a ThreadViewPost (has the post property)
+                        if ('post' in thread && thread.post) {
+                          const post = thread.post as any;
+
+                          // Extract media URL from embed
+                          if (post.embed?.images && post.embed.images.length > 0) {
+                            // Use fullsize or thumb
+                            platformMediaUrl = post.embed.images[0].fullsize || post.embed.images[0].thumb;
+                          }
+
+                          console.log('Bluesky media URL extracted for', result.postId, ':', platformMediaUrl);
                         }
-
-                        console.log('Bluesky media URL extracted for', result.postId, ':', platformMediaUrl);
                       }
                     } catch (blueskyError) {
                       console.error('Error fetching Bluesky post:', blueskyError);
