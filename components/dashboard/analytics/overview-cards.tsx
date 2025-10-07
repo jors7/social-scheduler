@@ -44,7 +44,11 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
       change: 'Active',
       changeType: analyticsData.totalPosts > 0 ? 'positive' as const : 'neutral' as const,
       icon: BarChart3,
-      description: `${analyticsData.totalPosts} created`
+      description: `${analyticsData.totalPosts} created`,
+      color: '#3b82f6', // blue
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-500',
+      iconColor: 'text-blue-600'
     },
     {
       title: 'Engagement',
@@ -52,7 +56,11 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
       change: 'Growing',
       changeType: analyticsData.totalEngagement > 0 ? 'positive' as const : 'neutral' as const,
       icon: Heart,
-      description: 'interactions'
+      description: 'interactions',
+      color: '#ef4444', // red
+      bgColor: 'bg-red-50',
+      borderColor: 'border-red-500',
+      iconColor: 'text-red-600'
     },
     {
       title: 'Reach',
@@ -60,7 +68,11 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
       change: 'Expanding',
       changeType: analyticsData.totalReach > 0 ? 'positive' as const : 'neutral' as const,
       icon: Users,
-      description: 'unique accounts'
+      description: 'unique accounts',
+      color: '#8b5cf6', // purple
+      bgColor: 'bg-purple-50',
+      borderColor: 'border-purple-500',
+      iconColor: 'text-purple-600'
     },
     {
       title: 'Impressions',
@@ -68,7 +80,11 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
       change: 'Tracking',
       changeType: analyticsData.totalImpressions > 0 ? 'positive' as const : 'neutral' as const,
       icon: Eye,
-      description: 'views'
+      description: 'views',
+      color: '#10b981', // green
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-500',
+      iconColor: 'text-green-600'
     },
     {
       title: 'Engagement',
@@ -76,7 +92,11 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
       change: 'Measuring',
       changeType: analyticsData.engagementRate > 2 ? 'positive' as const : 'neutral' as const,
       icon: TrendingUp,
-      description: 'avg. rate'
+      description: 'avg. rate',
+      color: '#f59e0b', // orange
+      bgColor: 'bg-orange-50',
+      borderColor: 'border-orange-500',
+      iconColor: 'text-orange-600'
     },
     {
       title: 'Top Platform',
@@ -84,7 +104,11 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
       change: 'Leading',
       changeType: analyticsData.topPlatform !== 'N/A' ? 'positive' as const : 'neutral' as const,
       icon: MessageCircle,
-      description: 'best performer'
+      description: 'best performer',
+      color: '#14b8a6', // teal
+      bgColor: 'bg-teal-50',
+      borderColor: 'border-teal-500',
+      iconColor: 'text-teal-600'
     }
   ]
 
@@ -93,12 +117,15 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
       {cards.map((card, index) => {
         const Icon = card.icon
         return (
-          <Card key={index}>
+          <Card
+            key={index}
+            className={`border-l-4 ${card.borderColor} transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group cursor-pointer`}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-4">
               <CardTitle className="text-xs sm:text-sm font-medium">
                 {card.title}
               </CardTitle>
-              <Icon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+              <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.iconColor} transition-transform duration-300 group-hover:scale-110`} />
             </CardHeader>
             <CardContent className="px-3 sm:px-4">
               <div className="text-lg sm:text-2xl font-bold">{card.value}</div>
