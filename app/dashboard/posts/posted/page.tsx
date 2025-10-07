@@ -6,8 +6,8 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { 
-  Search, 
+import {
+  Search,
   Filter,
   MoreHorizontal,
   Edit,
@@ -17,11 +17,13 @@ import {
   ExternalLink,
   Clock,
   X,
-  FileText
+  FileText,
+  MessageCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
+import { ThreadsReplyDialog } from '@/components/threads/reply-dialog'
 
 interface PostedPost {
   id: string
@@ -72,6 +74,8 @@ export default function PostedPostsPage() {
   const [loadingInsights, setLoadingInsights] = useState<Record<string, boolean>>({})
   const [postInsights, setPostInsights] = useState<Record<string, InstagramInsights>>({})
   const [showInsightsModal, setShowInsightsModal] = useState<string | null>(null)
+  const [replyDialogOpen, setReplyDialogOpen] = useState(false)
+  const [replyToPost, setReplyToPost] = useState<{ id: string; text: string; accountId?: string } | null>(null)
 
   const fetchPostedPosts = async () => {
     try {
@@ -284,14 +288,32 @@ export default function PostedPostsPage() {
 
   const handleBulkViewOriginal = () => {
     if (selectedPosts.length === 0) return
-    
+
     // For now, show a message about viewing original posts
     // In a real app, this would open the original social media posts
     const selectedPostsData = postedPosts.filter(p => selectedPosts.includes(p.id))
     const platformsSet = new Set(selectedPostsData.flatMap(p => p.platforms))
     const platforms = Array.from(platformsSet)
-    
+
     toast.info(`Selected posts were published on: ${platforms.join(', ')}. Original post viewing will be implemented when platform APIs provide post URLs.`)
+  }
+
+  // TEMPORARY FEATURE FOR META APP REVIEW - THREADS REPLY FUNCTIONALITY
+  // This will be removed after threads_manage_replies permission is approved
+  const handleReplyToThreads = (postId: string, postText: string) => {
+    setReplyToPost({ id: postId, text: postText })
+    setReplyDialogOpen(true)
+  }
+
+  const getThreadsPostId = (post: PostedPost): string | null => {
+    // Extract Threads post ID from post_results
+    if (post.post_results && Array.isArray(post.post_results)) {
+      const threadsResult = post.post_results.find((result: any) =>
+        result.platform === 'threads' && result.success && result.data?.id
+      )
+      return threadsResult?.data?.id || null
+    }
+    return null
   }
 
   return (
@@ -528,6 +550,22 @@ export default function PostedPostsPage() {
                                 }
                                 return null
                               })}
+                              {/* TEMPORARY: Threads Reply Button for App Review */}
+                              {post.platforms.includes('threads') && post.status === 'posted' && (() => {
+                                const threadsPostId = getThreadsPostId(post)
+                                if (threadsPostId) {
+                                  return (
+                                    <button
+                                      onClick={() => handleReplyToThreads(threadsPostId, stripHtml(displayContent))}
+                                      className="inline-flex items-center gap-1 px-2 py-1 bg-black hover:bg-gray-800 text-white rounded-md text-xs transition-colors"
+                                    >
+                                      <MessageCircle className="h-3 w-3" />
+                                      Reply on Threads
+                                    </button>
+                                  )
+                                }
+                                return null
+                              })()}
                             </div>
                           )}
                         </div>
@@ -580,6 +618,20 @@ export default function PostedPostsPage() {
           </div>
         </div>
       </SubscriptionGate>
+
+      {/* TEMPORARY: Threads Reply Dialog for App Review */}
+      {replyToPost && (
+        <ThreadsReplyDialog
+          open={replyDialogOpen}
+          onOpenChange={setReplyDialogOpen}
+          postId={replyToPost.id}
+          postText={replyToPost.text}
+          accountId={replyToPost.accountId}
+          onSuccess={() => {
+            toast.success('Reply posted! Check Threads to see your reply.')
+          }}
+        />
+      )}
     </div>
   )
 }
