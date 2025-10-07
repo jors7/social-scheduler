@@ -29,6 +29,7 @@ interface BlueskyPost {
   reposts: number
   replies: number
   quotes: number
+  media_url?: string
 }
 
 interface BlueskyMetrics {
@@ -252,7 +253,22 @@ export function BlueskyInsights({ className }: BlueskyInsightsProps) {
                   >
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                        <AtSign className="h-8 w-8 text-blue-600" />
+                        {post.media_url ? (
+                          <img
+                            src={post.media_url}
+                            alt="Post media"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Replace image with placeholder on error
+                              const placeholder = document.createElement('div')
+                              placeholder.className = 'w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center'
+                              placeholder.innerHTML = '<svg class="h-8 w-8 text-blue-600" stroke="currentColor" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12l-4-4m0 0l-4 4m4-4v9"/></svg>'
+                              e.currentTarget.parentNode?.replaceChild(placeholder, e.currentTarget)
+                            }}
+                          />
+                        ) : (
+                          <AtSign className="h-8 w-8 text-blue-600" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium line-clamp-2 mb-1">{truncatedText}</p>

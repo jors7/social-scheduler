@@ -19,6 +19,7 @@ interface BlueskyMetrics {
     reposts: number;
     replies: number;
     quotes: number;
+    media_url?: string;
   }>;
 }
 
@@ -132,6 +133,12 @@ export async function GET(request: NextRequest) {
             
             postsInDateRange++;
 
+            // Extract media URL if present
+            let mediaUrl: string | undefined;
+            if ((post as any).embed?.images && (post as any).embed.images.length > 0) {
+              mediaUrl = (post as any).embed.images[0].thumb || (post as any).embed.images[0].fullsize;
+            }
+
             const postMetrics = {
               id: post.cid,
               text: (post.record as any).text,
@@ -140,7 +147,8 @@ export async function GET(request: NextRequest) {
               likes: post.likeCount || 0,
               reposts: post.repostCount || 0,
               replies: post.replyCount || 0,
-              quotes: post.quoteCount || 0
+              quotes: post.quoteCount || 0,
+              media_url: mediaUrl
             };
 
             allMetrics.posts.push(postMetrics);
