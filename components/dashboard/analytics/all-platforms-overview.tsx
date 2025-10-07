@@ -573,7 +573,7 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
         </CardContent>
       </Card>
 
-      {/* Enhanced Platform Performance Grid */}
+      {/* Compact Platform Performance Grid */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -584,140 +584,77 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
             </Badge>
           </CardTitle>
           <CardDescription>
-            Posts published and engagement by platform
+            Posts published and reach by platform
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {platformMetrics
-              .sort((a, b) => {
-                // Sort by total engagement for better visual hierarchy
-                if (b.totalEngagement !== a.totalEngagement) return b.totalEngagement - a.totalEngagement
-                return b.posts - a.posts
-              })
-              .filter(pm => pm.posts > 0 || connectedPlatforms.includes(pm.platform))
-              .map((pm) => {
-                const maxEngagement = Math.max(...platformMetrics.map(p => p.totalEngagement), 1)
-                const engagementPercentage = (pm.totalEngagement / maxEngagement) * 100
-
-                return (
-                  <div
-                    key={pm.platform}
-                    className="relative group"
-                  >
-                    {/* Error indicator */}
-                    {platformErrors[pm.platform] && (
-                      <div className="absolute -top-2 -right-2 z-10">
-                        <div className="relative group/tooltip">
-                          <div className="bg-red-500 rounded-full p-1">
-                            <AlertCircle className="h-4 w-4 text-white animate-pulse" />
-                          </div>
-                          <div className="absolute bottom-full right-0 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none shadow-lg">
-                            {platformErrors[pm.platform]}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className={cn(
-                      "relative overflow-hidden rounded-xl border-2 transition-all duration-300",
-                      "hover:shadow-xl hover:-translate-y-1",
-                      platformErrors[pm.platform] ? "border-red-200 bg-red-50/30" : "border-gray-200 bg-white hover:border-gray-300"
-                    )}>
-                      {/* Header with Platform Icon and Name */}
-                      <div className="flex items-center gap-3 p-4 pb-3">
-                        <div className={cn(
-                          "w-12 h-12 rounded-xl bg-gradient-to-br text-white flex items-center justify-center shadow-md transition-all duration-200 group-hover:scale-110",
-                          getPlatformColor(pm.platform),
-                          platformErrors[pm.platform] && "opacity-60"
-                        )}>
-                          {getPlatformIcon(pm.platform)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-base font-semibold text-gray-900 capitalize truncate">
-                            {pm.platform}
-                          </h3>
-                          <p className="text-xs text-gray-500">
-                            {pm.posts === 0 ? 'No posts yet' : `${pm.posts} post${pm.posts !== 1 ? 's' : ''}`}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Metrics Grid */}
-                      <div className="px-4 pb-4 space-y-3">
-                        {/* Engagement Bar */}
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-medium text-gray-600">Engagement</span>
-                            <span className="text-sm font-bold text-gray-900">
-                              {formatNumber(pm.totalEngagement)}
-                            </span>
-                          </div>
-                          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div
-                              className={cn(
-                                "h-full rounded-full transition-all duration-500 bg-gradient-to-r",
-                                getPlatformColor(pm.platform)
-                              )}
-                              style={{ width: `${Math.max(engagementPercentage, pm.totalEngagement > 0 ? 5 : 0)}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Reach Metric */}
-                        <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <Eye className="h-4 w-4 text-gray-500" />
-                            <span className="text-xs font-medium text-gray-600">Reach</span>
-                          </div>
-                          <span className="text-sm font-bold text-gray-900">
-                            {pm.totalReach > 0 ? formatNumber(pm.totalReach) : '-'}
-                          </span>
-                        </div>
-
-                        {/* Detailed Metrics Row */}
-                        <div className="grid grid-cols-3 gap-2 pt-2">
-                          <div className="text-center">
-                            <div className="flex items-center justify-center gap-1 mb-1">
-                              <Heart className="h-3 w-3 text-red-500" />
-                            </div>
-                            <p className="text-sm font-semibold text-gray-900">
-                              {formatNumber(pm.likes)}
-                            </p>
-                            <p className="text-[10px] text-gray-500 uppercase tracking-wide">
-                              Likes
-                            </p>
-                          </div>
-
-                          <div className="text-center">
-                            <div className="flex items-center justify-center gap-1 mb-1">
-                              <MessageCircle className="h-3 w-3 text-blue-500" />
-                            </div>
-                            <p className="text-sm font-semibold text-gray-900">
-                              {formatNumber(pm.comments)}
-                            </p>
-                            <p className="text-[10px] text-gray-500 uppercase tracking-wide">
-                              Comments
-                            </p>
-                          </div>
-
-                          <div className="text-center">
-                            <div className="flex items-center justify-center gap-1 mb-1">
-                              <Share2 className="h-3 w-3 text-green-500" />
-                            </div>
-                            <p className="text-sm font-semibold text-gray-900">
-                              {formatNumber(pm.shares)}
-                            </p>
-                            <p className="text-[10px] text-gray-500 uppercase tracking-wide">
-                              Shares
-                            </p>
-                          </div>
+          <div className="overflow-x-auto">
+            <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-3 min-w-max md:min-w-0">
+              {platformMetrics.sort((a, b) => {
+                // Sort by posts first, then by platform name for consistency
+                if (b.posts !== a.posts) return b.posts - a.posts
+                return a.platform.localeCompare(b.platform)
+              }).map((pm) => (
+                <div 
+                  key={pm.platform} 
+                  className="flex flex-col items-center group relative"
+                >
+                  {/* Error indicator */}
+                  {platformErrors[pm.platform] && (
+                    <div className="absolute -top-1 -right-1 z-10">
+                      <div className="relative group/tooltip">
+                        <AlertCircle className="h-4 w-4 text-red-500 animate-pulse" />
+                        <div className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none">
+                          {platformErrors[pm.platform]}
                         </div>
                       </div>
                     </div>
+                  )}
+                  
+                  {/* Platform Icon */}
+                  <div className={cn(
+                    "p-2.5 rounded-lg bg-gradient-to-br text-white mb-2 transition-all duration-200 group-hover:scale-110 group-hover:shadow-lg",
+                    getPlatformColor(pm.platform),
+                    platformErrors[pm.platform] && "opacity-60"
+                  )}>
+                    {getPlatformIcon(pm.platform)}
                   </div>
-                )
-              })}
+                  
+                  {/* Platform Name */}
+                  <p className="text-[11px] font-medium text-gray-700 capitalize mb-1.5">
+                    {pm.platform}
+                  </p>
+                  
+                  {/* Metrics Row */}
+                  <div className="flex items-center gap-3 bg-gray-50 rounded-md px-2 py-1">
+                    {/* Posts */}
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-gray-900">
+                        {pm.posts || 0}
+                      </p>
+                      <p className="text-[9px] text-gray-500 uppercase tracking-wider">
+                        Posts
+                      </p>
+                    </div>
+                    
+                    {/* Divider */}
+                    <div className="w-px h-6 bg-gray-300"></div>
+                    
+                    {/* Reach */}
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-gray-900">
+                        {pm.totalReach > 0 
+                          ? formatNumber(pm.totalReach) 
+                          : '-'}
+                      </p>
+                      <p className="text-[9px] text-gray-500 uppercase tracking-wider">
+                        Reach
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
