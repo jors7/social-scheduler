@@ -1,6 +1,7 @@
 'use client'
 
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Facebook, Instagram, Twitter, Linkedin, Youtube, Camera, AtSign } from 'lucide-react'
 
 interface AnalyticsData {
   totalPosts: number
@@ -17,16 +18,34 @@ interface PlatformBreakdownProps {
   analyticsData: AnalyticsData | null
 }
 
-const platformIcons: Record<string, string> = {
-  facebook: '📘',
-  instagram: '📷',
-  twitter: '🐦',
-  linkedin: '💼',
-  youtube: '📹',
-  tiktok: '🎵',
-  bluesky: '🦋',
-  threads: '🧵',
-  pinterest: '📌'
+const getPlatformIcon = (platform: string) => {
+  switch (platform.toLowerCase()) {
+    case 'facebook':
+      return <Facebook className="h-5 w-5" />
+    case 'instagram':
+      return <Camera className="h-5 w-5" />
+    case 'twitter':
+    case 'x':
+      return <Twitter className="h-5 w-5" />
+    case 'linkedin':
+      return <Linkedin className="h-5 w-5" />
+    case 'youtube':
+      return <Youtube className="h-5 w-5" />
+    case 'tiktok':
+      return <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19 3a3.5 3.5 0 0 1-3.5 3.5A3.5 3.5 0 0 1 12 3v8.5a4.5 4.5 0 1 1-3-4.24v3.1a1.5 1.5 0 1 0 0 2.14V3h3a6.5 6.5 0 0 0 6.5 6.5V6.5A3.5 3.5 0 0 0 19 3z"/>
+      </svg>
+    case 'bluesky':
+      return <span className="text-xl">🦋</span>
+    case 'threads':
+      return <AtSign className="h-5 w-5" />
+    case 'pinterest':
+      return <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.5 2 2 6.5 2 12c0 4.3 2.7 7.9 6.4 9.3-.1-.8-.2-2 0-2.9.2-.8 1.3-5.4 1.3-5.4s-.3-.7-.3-1.7c0-1.6.9-2.8 2.1-2.8.9 0 1.4.7 1.4 1.6 0 1-.6 2.4-.9 3.7-.3 1.1.6 2 1.7 2 2 0 3.5-2.1 3.5-5.2 0-2.7-2-4.6-4.8-4.6-3.3 0-5.2 2.5-5.2 5 0 1 .4 2.1.9 2.7.1.1.1.2.1.3-.1.4-.3 1.1-.3 1.3-.1.2-.2.3-.4.2-1.4-.7-2.3-2.7-2.3-4.4 0-3.6 2.6-6.9 7.5-6.9 3.9 0 7 2.8 7 6.6 0 3.9-2.5 7.1-5.9 7.1-1.2 0-2.3-.6-2.6-1.3l-.7 2.8c-.3 1-1 2.3-1.5 3.1 1.1.3 2.3.5 3.5.5 5.5 0 10-4.5 10-10S17.5 2 12 2z"/>
+      </svg>
+    default:
+      return <Camera className="h-5 w-5" />
+  }
 }
 
 const platformColors: Record<string, string> = {
@@ -63,10 +82,10 @@ export function PlatformBreakdown({ analyticsData }: PlatformBreakdownProps) {
 
   const data = Object.entries(analyticsData.platformStats).map(([platform, stats]) => ({
     platform: platform.charAt(0).toUpperCase() + platform.slice(1),
+    platformKey: platform,
     posts: stats.posts,
     engagement: stats.engagement,
     reach: stats.reach,
-    icon: platformIcons[platform] || '📱',
     color: platformColors[platform] || '#8884d8'
   })).sort((a, b) => b.engagement - a.engagement)
 
@@ -87,46 +106,76 @@ export function PlatformBreakdown({ analyticsData }: PlatformBreakdownProps) {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4">
-      {/* Chart Container */}
-      <div className="h-[180px] sm:h-[200px] w-full flex items-center justify-center">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Chart Container with better sizing */}
+      <div className="h-[220px] sm:h-[260px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 10, right: 5, left: 0, bottom: 5 }}>
-            <XAxis 
-              dataKey="platform" 
-              stroke="#888888"
-              fontSize={10}
+          <BarChart
+            data={data}
+            margin={{ top: 20, right: 10, left: -10, bottom: 0 }}
+            barGap={8}
+          >
+            <defs>
+              {data.map((entry, index) => (
+                <linearGradient key={`gradient-${index}`} id={`colorGradient-${index}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={entry.color} stopOpacity={1}/>
+                  <stop offset="100%" stopColor={entry.color} stopOpacity={0.7}/>
+                </linearGradient>
+              ))}
+            </defs>
+            <XAxis
+              dataKey="platform"
+              stroke="#6b7280"
+              fontSize={12}
               tickLine={false}
-              axisLine={false}
-              tick={{ fontSize: 10 }}
+              axisLine={{ stroke: '#e5e7eb', strokeWidth: 1 }}
+              tick={{ fill: '#4b5563', fontSize: 12, fontWeight: 500 }}
               interval={0}
-              angle={-45}
+              angle={-35}
               textAnchor="end"
-              height={60}
+              height={70}
             />
             <YAxis
-              stroke="#888888"
-              fontSize={10}
+              stroke="#6b7280"
+              fontSize={12}
               tickLine={false}
-              axisLine={false}
-              tickFormatter={(value) => `${value}`}
-              width={35}
-              tick={{ fontSize: 10 }}
+              axisLine={{ stroke: '#e5e7eb', strokeWidth: 1 }}
+              tickFormatter={(value) => {
+                if (value >= 1000) return `${(value / 1000).toFixed(1)}k`
+                return value.toString()
+              }}
+              width={45}
+              tick={{ fill: '#4b5563', fontSize: 12 }}
             />
             <Tooltip
-              content={({ active, payload, label }) => {
+              cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
+              content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const data = payload[0].payload
                   return (
-                    <div className="rounded-lg border bg-background p-3 shadow-md">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className="text-lg">{data.icon}</span>
-                        <span className="font-medium">{label}</span>
+                    <div className="rounded-xl border-2 bg-white p-4 shadow-2xl">
+                      <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gray-100">
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center text-white shadow-md"
+                          style={{ backgroundColor: data.color }}
+                        >
+                          {getPlatformIcon(data.platformKey)}
+                        </div>
+                        <span className="font-semibold text-base text-gray-900">{data.platform}</span>
                       </div>
-                      <div className="grid grid-cols-1 gap-1 text-sm">
-                        <div>Posts: {data.posts}</div>
-                        <div>Engagement: {data.engagement.toLocaleString()}</div>
-                        <div>Reach: {data.reach.toLocaleString()}</div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Posts:</span>
+                          <span className="font-semibold text-sm text-gray-900">{data.posts}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Engagement:</span>
+                          <span className="font-semibold text-sm text-gray-900">{data.engagement.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Reach:</span>
+                          <span className="font-semibold text-sm text-gray-900">{data.reach.toLocaleString()}</span>
+                        </div>
                       </div>
                     </div>
                   )
@@ -136,25 +185,40 @@ export function PlatformBreakdown({ analyticsData }: PlatformBreakdownProps) {
             />
             <Bar
               dataKey="engagement"
-              radius={[4, 4, 0, 0]}
+              radius={[8, 8, 0, 0]}
+              maxBarSize={60}
             >
               {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
+                <Cell
+                  key={`cell-${index}`}
+                  fill={`url(#colorGradient-${index})`}
+                  className="hover:opacity-80 transition-opacity cursor-pointer"
+                />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
-      
-      {/* Platform Legend */}
-      <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
-        {data.map((platform) => (
-          <div key={platform.platform} className="flex items-center space-x-1 sm:space-x-2">
-            <span className="text-base sm:text-lg">{platform.icon}</span>
+
+      {/* Enhanced Platform Legend */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {data.map((platformData) => (
+          <div
+            key={platformData.platform}
+            className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gradient-to-br from-white to-gray-50 hover:shadow-md hover:border-gray-300 transition-all duration-200 group"
+          >
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform"
+              style={{ backgroundColor: platformData.color }}
+            >
+              {getPlatformIcon(platformData.platformKey)}
+            </div>
             <div className="flex-1 min-w-0">
-              <div className="font-medium text-xs sm:text-sm truncate">{platform.platform}</div>
-              <div className="text-muted-foreground text-[10px] sm:text-xs">
-                {platform.posts} post{platform.posts !== 1 ? 's' : ''} • {platform.engagement.toLocaleString()} eng
+              <div className="font-semibold text-sm text-gray-900 truncate">{platformData.platform}</div>
+              <div className="flex items-center gap-2 text-xs text-gray-600 mt-0.5">
+                <span className="font-medium">{platformData.posts} post{platformData.posts !== 1 ? 's' : ''}</span>
+                <span className="text-gray-400">•</span>
+                <span>{platformData.engagement.toLocaleString()} eng</span>
               </div>
             </div>
           </div>
