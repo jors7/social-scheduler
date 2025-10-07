@@ -200,25 +200,27 @@ export function PlatformBreakdown({ analyticsData }: PlatformBreakdownProps) {
         </ResponsiveContainer>
       </div>
 
-      {/* Enhanced Platform Legend */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Compact Platform Legend */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
         {data.map((platformData) => (
           <div
             key={platformData.platform}
-            className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gradient-to-br from-white to-gray-50 hover:shadow-md hover:border-gray-300 transition-all duration-200 group"
+            className="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gradient-to-br from-white to-gray-50 hover:shadow-md hover:border-gray-300 transition-all duration-200 group"
           >
             <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform flex-shrink-0"
               style={{ backgroundColor: platformData.color }}
             >
-              {getPlatformIcon(platformData.platformKey)}
+              <div className="scale-75">
+                {getPlatformIcon(platformData.platformKey)}
+              </div>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-sm text-gray-900 truncate">{platformData.platform}</div>
-              <div className="flex items-center gap-2 text-xs text-gray-600 mt-0.5">
-                <span className="font-medium">{platformData.posts} post{platformData.posts !== 1 ? 's' : ''}</span>
+              <div className="font-semibold text-xs text-gray-900 truncate">{platformData.platform}</div>
+              <div className="flex items-center gap-1.5 text-[10px] text-gray-600">
+                <span className="font-medium">{platformData.posts}p</span>
                 <span className="text-gray-400">•</span>
-                <span>{platformData.engagement.toLocaleString()} eng</span>
+                <span>{platformData.engagement > 1000 ? `${(platformData.engagement / 1000).toFixed(1)}k` : platformData.engagement}</span>
               </div>
             </div>
           </div>
