@@ -119,7 +119,7 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
         return (
           <Card
             key={index}
-            className={`border-l-4 ${card.borderColor} transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group cursor-pointer`}
+            className="transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group cursor-pointer"
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-4">
               <CardTitle className="text-xs sm:text-sm font-medium">
