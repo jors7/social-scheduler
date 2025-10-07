@@ -510,47 +510,47 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <BarChart3 className="h-4 w-4" />
+                <BarChart3 className="h-4 w-4 text-blue-600" />
                 <span>Total Posts</span>
               </div>
               <p className="text-2xl font-bold">{formatNumber(totalMetrics.posts)}</p>
             </div>
-            
+
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <TrendingUp className="h-4 w-4" />
+                <TrendingUp className="h-4 w-4 text-orange-600" />
                 <span>Engagement</span>
               </div>
               <p className="text-2xl font-bold">{formatNumber(totalMetrics.engagement)}</p>
             </div>
-            
+
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Eye className="h-4 w-4" />
+                <Eye className="h-4 w-4 text-green-600" />
                 <span>Reach</span>
               </div>
               <p className="text-2xl font-bold">{formatNumber(totalMetrics.reach)}</p>
             </div>
-            
+
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Heart className="h-4 w-4" />
+                <Heart className="h-4 w-4 text-red-600" />
                 <span>Likes</span>
               </div>
               <p className="text-2xl font-bold">{formatNumber(totalMetrics.likes)}</p>
             </div>
-            
+
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <MessageCircle className="h-4 w-4" />
+                <MessageCircle className="h-4 w-4 text-purple-600" />
                 <span>Comments</span>
               </div>
               <p className="text-2xl font-bold">{formatNumber(totalMetrics.comments)}</p>
             </div>
-            
+
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Share2 className="h-4 w-4" />
+                <Share2 className="h-4 w-4 text-teal-600" />
                 <span>Shares</span>
               </div>
               <p className="text-2xl font-bold">{formatNumber(totalMetrics.shares)}</p>
