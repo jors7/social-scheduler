@@ -139,7 +139,26 @@ export function ThreadsReplyDialog({
         throw new Error(data.error || 'Failed to post reply')
       }
 
-      toast.success('Reply posted successfully!')
+      // Show success with link to view on Threads
+      if (data.permalink) {
+        toast.success(
+          <div className="flex flex-col gap-2">
+            <p>Reply posted successfully!</p>
+            <a
+              href={data.permalink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-700 underline text-sm font-medium"
+            >
+              View Reply on Threads →
+            </a>
+          </div>,
+          { duration: 8000 }
+        )
+      } else {
+        toast.success('Reply posted successfully!')
+      }
+
       setReplyText('')
       setMediaFile(null)
       setMediaPreview(null)

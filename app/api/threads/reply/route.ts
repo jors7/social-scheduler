@@ -197,9 +197,21 @@ export async function POST(request: NextRequest) {
     const replyId = publishData.id;
     console.log('Reply published successfully:', replyId);
 
+    // Fetch the reply details to get the permalink
+    const replyDetailsUrl = `https://graph.threads.net/v1.0/${replyId}?fields=id,permalink&access_token=${accessToken}`;
+    const replyDetailsResponse = await fetch(replyDetailsUrl);
+
+    let permalink = null;
+    if (replyDetailsResponse.ok) {
+      const replyDetails = await replyDetailsResponse.json();
+      permalink = replyDetails.permalink;
+      console.log('Reply permalink:', permalink);
+    }
+
     return NextResponse.json({
       success: true,
       replyId,
+      permalink,
       message: 'Reply posted successfully'
     });
 
