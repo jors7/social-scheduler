@@ -551,7 +551,7 @@ export default function PostedPostsPage() {
                                 return null
                               })}
                               {/* TEMPORARY: Threads Reply Button for App Review */}
-                              {post.platforms.includes('threads') && post.status === 'posted' && (() => {
+                              {post.platforms.includes('threads') && post.status === 'posted' && post.post_results && (() => {
                                 const threadsPostId = getThreadsPostId(post)
                                 if (threadsPostId) {
                                   return (
