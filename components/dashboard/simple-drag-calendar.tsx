@@ -386,10 +386,23 @@ export function SimpleDragCalendar({
                           className={cn(
                             "group text-xs px-1.5 py-1 rounded text-white cursor-move transition-all hover:shadow-md",
                             getPostColor(post),
-                            draggedPostId === post.id ? "opacity-50" : ""
+                            draggedPostId === post.id ? "opacity-50" : "",
+                            isPostSelected(post.id) ? "ring-2 ring-blue-400 ring-offset-1" : ""
                           )}
                       >
                         <div className="flex items-start justify-between gap-1">
+                          {onPostSelect && (
+                            <input
+                              type="checkbox"
+                              checked={isPostSelected(post.id)}
+                              onChange={(e) => {
+                                e.stopPropagation()
+                                togglePostSelection(post.id)
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex-shrink-0 mt-0.5 h-3 w-3 rounded border-white/50 cursor-pointer"
+                            />
+                          )}
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-[11px]">
                               {formatTime(post.scheduled_for)}
@@ -449,14 +462,41 @@ export function SimpleDragCalendar({
           <Card className="relative z-10 w-full max-w-2xl max-h-[80vh] overflow-hidden">
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">
-                  Posts for {selectedDate.toLocaleDateString('en-US', { 
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </CardTitle>
+                <div className="flex items-center gap-3">
+                  <CardTitle className="text-lg">
+                    Posts for {selectedDate.toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </CardTitle>
+                  {onPostSelect && getPostsForDate(selectedDate).length > 0 && (
+                    <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={getPostsForDate(selectedDate).every(post => isPostSelected(post.id))}
+                        onChange={(e) => {
+                          const posts = getPostsForDate(selectedDate)
+                          if (e.target.checked) {
+                            const newSelected = [...selectedPosts]
+                            posts.forEach(post => {
+                              if (!newSelected.includes(post.id)) {
+                                newSelected.push(post.id)
+                              }
+                            })
+                            onPostSelect(newSelected)
+                          } else {
+                            const postIds = posts.map(p => p.id)
+                            onPostSelect(selectedPosts.filter(id => !postIds.includes(id)))
+                          }
+                        }}
+                        className="h-4 w-4 rounded border-gray-300 cursor-pointer"
+                      />
+                      Select All
+                    </label>
+                  )}
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -482,10 +522,27 @@ export function SimpleDragCalendar({
                       className={cn(
                         "group p-4 rounded-lg text-white cursor-move transition-all hover:shadow-lg",
                         getPostColor(post),
-                        draggedPostId === post.id ? "opacity-50" : ""
+                        draggedPostId === post.id ? "opacity-50" : "",
+                        isPostSelected(post.id) ? "ring-2 ring-blue-400 ring-offset-2" : ""
                       )}
                     >
                       <div className="flex items-start gap-4">
+                        {/* Checkbox */}
+                        {onPostSelect && (
+                          <div className="flex-shrink-0 pt-1">
+                            <input
+                              type="checkbox"
+                              checked={isPostSelected(post.id)}
+                              onChange={(e) => {
+                                e.stopPropagation()
+                                togglePostSelection(post.id)
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="h-4 w-4 rounded border-white/50 cursor-pointer"
+                            />
+                          </div>
+                        )}
+
                         {/* Media thumbnail or platform icon */}
                         <div className="flex-shrink-0">
                           {mediaUrl ? (
