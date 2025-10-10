@@ -34,6 +34,9 @@ const RichTextEditor = dynamic(
 import { AISuggestionsModal } from '@/components/dashboard/ai-suggestions-modal'
 import { SubscriptionGateNoSuspense as SubscriptionGate } from '@/components/subscription/subscription-gate-no-suspense'
 import { PreviewPanel } from '@/components/create/preview/PreviewPanel'
+import { TimePickerVisual } from '@/components/scheduling/TimePickerVisual'
+import { DatePickerCalendar } from '@/components/scheduling/DatePickerCalendar'
+import { QuickScheduleButtons } from '@/components/scheduling/QuickScheduleButtons'
 import { createBrowserClient } from '@supabase/ssr'
 
 // Dynamically import platform-specific components to avoid hydration issues
@@ -2600,11 +2603,20 @@ function CreateNewPostPageContent() {
               <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Schedule</CardTitle>
               <CardDescription className="text-sm sm:text-base text-gray-600">When to publish</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium">Schedule Options</Label>
-                </div>
+            <CardContent className="space-y-6">
+              {/* Quick Schedule Buttons */}
+              <QuickScheduleButtons
+                onSelect={(date, time) => {
+                  setScheduledDate(date)
+                  setScheduledTime(time)
+                }}
+                currentDate={scheduledDate}
+                currentTime={scheduledTime}
+              />
+
+              {/* Smart Schedule Button */}
+              <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                <span className="text-sm font-medium text-gray-700">Or customize your schedule:</span>
                 <Button
                   type="button"
                   variant="outline"
@@ -2614,38 +2626,25 @@ function CreateNewPostPageContent() {
                   className="text-xs"
                 >
                   <Brain className="mr-1 h-3 w-3" />
-                  {loadingSuggestions ? 'Analyzing...' : 'Smart Schedule'}
+                  {loadingSuggestions ? 'Analyzing...' : 'AI Suggestions'}
                 </Button>
               </div>
 
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="date">Date</Label>
-                  <div className="relative">
-                    <Input
-                      id="date"
-                      type="date"
-                      value={scheduledDate}
-                      onChange={(e) => setScheduledDate(e.target.value)}
-                      className="pl-10"
-                    />
-                    <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="time">Time</Label>
-                  <div className="relative">
-                    <Input
-                      id="time"
-                      type="time"
-                      value={scheduledTime}
-                      onChange={(e) => setScheduledTime(e.target.value)}
-                      className="pl-10"
-                    />
-                    <Clock className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-                  </div>
-                </div>
-              </div>
+              {/* Date Picker */}
+              <DatePickerCalendar
+                value={scheduledDate}
+                onChange={setScheduledDate}
+                label="Select Date"
+                scheduledPosts={[]}
+              />
+
+              {/* Time Picker */}
+              <TimePickerVisual
+                value={scheduledTime}
+                onChange={setScheduledTime}
+                label="Select Time"
+                optimalTimes={['09:00', '12:00', '15:00', '18:00', '21:00']}
+              />
 
               {/* Smart Suggestions */}
               {showSmartSuggestions && smartSuggestions.length > 0 && (
