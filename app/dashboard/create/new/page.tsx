@@ -56,6 +56,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { useAutoSave } from '@/hooks/useAutoSave'
 
 const platforms = [
   { id: 'twitter', name: 'X (Twitter)', icon: '𝕏', charLimit: 280, gradient: 'from-gray-50 to-slate-50', borderColor: 'border-gray-200' },
@@ -90,7 +91,11 @@ function CreateNewPostPageContent() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploadedMediaUrls, setUploadedMediaUrls] = useState<string[]>([])
   const [loadingDraft, setLoadingDraft] = useState(false)
-  
+  const [editingScheduledPost, setEditingScheduledPost] = useState(false)
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
+  const [shouldAutoPublish, setShouldAutoPublish] = useState(false)
+  const [shouldAutoSchedule, setShouldAutoSchedule] = useState(false)
+
   // Memoize file preview URLs to prevent re-creation on every render
   const filePreviewUrls = useMemo(() => {
     const urls = selectedFiles.map(file => ({
@@ -142,7 +147,54 @@ function CreateNewPostPageContent() {
     
     fetchAccounts()
   }, [])
-  
+
+  // Load scheduled post for editing if scheduledPostId is in query params
+  useEffect(() => {
+    const scheduledPostId = searchParams.get('scheduledPostId')
+
+    if (scheduledPostId && !editingScheduledPost) {
+      const loadScheduledPost = async () => {
+        try {
+          setLoadingDraft(true)
+          setEditingScheduledPost(true)
+
+          const response = await fetch(`/api/posts/scheduled/${scheduledPostId}`)
+
+          if (!response.ok) {
+            throw new Error('Failed to load scheduled post')
+          }
+
+          const { post } = await response.json()
+
+          // Populate form with post data
+          setPostContent(post.content || '')
+          setSelectedPlatforms(post.platforms || [])
+          setPlatformContent(post.platform_content || {})
+          setUploadedMediaUrls(post.media_urls || [])
+
+          // Set schedule time
+          if (post.scheduled_for) {
+            const scheduledDate = new Date(post.scheduled_for)
+            const dateStr = scheduledDate.toISOString().split('T')[0] // YYYY-MM-DD
+            const timeStr = scheduledDate.toTimeString().slice(0, 5) // HH:MM
+            setScheduledDate(dateStr)
+            setScheduledTime(timeStr)
+          }
+
+          toast.success('Scheduled post loaded for editing')
+        } catch (error) {
+          console.error('Error loading scheduled post:', error)
+          toast.error('Failed to load scheduled post')
+          router.push('/dashboard/create/new') // Remove query param
+        } finally {
+          setLoadingDraft(false)
+        }
+      }
+
+      loadScheduledPost()
+    }
+  }, [searchParams, editingScheduledPost, router])
+
   // Threads-specific state
   const [threadsMode, setThreadsMode] = useState<'single' | 'thread'>('single')
   const [threadPosts, setThreadPosts] = useState<string[]>([''])
@@ -162,11 +214,7 @@ function CreateNewPostPageContent() {
     }
   }, [enableTwitterThreads, twitterMode])
 
-  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
   const loadedDraftRef = useRef<string | null>(null)
-  const [shouldAutoPublish, setShouldAutoPublish] = useState(false)
-  const [shouldAutoSchedule, setShouldAutoSchedule] = useState(false)
-  const [editingScheduledPost, setEditingScheduledPost] = useState(false)
   const [smartSuggestions, setSmartSuggestions] = useState<any[]>([])
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
   const [showSmartSuggestions, setShowSmartSuggestions] = useState(false)
@@ -197,6 +245,47 @@ function CreateNewPostPageContent() {
   // TikTok states
   const [tiktokPrivacyLevel, setTiktokPrivacyLevel] = useState<'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY'>('PUBLIC_TO_EVERYONE')
   const [tiktokSaveAsDraft, setTiktokSaveAsDraft] = useState(false)
+
+  // Auto-save hook - automatically saves draft every 30 seconds
+  const { lastSaved, isSaving, error: autoSaveError, timeAgo, currentDraftId: autoSaveDraftId } = useAutoSave(
+    {
+      content: postContent,
+      platforms: selectedPlatforms,
+      platformContent,
+      mediaUrls: uploadedMediaUrls
+    },
+    currentDraftId,
+    {
+      enabled: !editingScheduledPost && !shouldAutoPublish && !shouldAutoSchedule // Don't auto-save when editing scheduled posts
+    }
+  )
+
+  // Update currentDraftId when auto-save creates a new draft
+  useEffect(() => {
+    if (autoSaveDraftId && !currentDraftId) {
+      setCurrentDraftId(autoSaveDraftId)
+    }
+  }, [autoSaveDraftId, currentDraftId])
+
+  // Warn user before leaving page with unsaved changes
+  useEffect(() => {
+    const hasUnsavedChanges = postContent.trim() !== '' || selectedPlatforms.length > 0 || uploadedMediaUrls.length > 0
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && !isSaving) {
+        e.preventDefault()
+        e.returnValue = '' // Chrome requires returnValue to be set
+      }
+    }
+
+    if (hasUnsavedChanges) {
+      window.addEventListener('beforeunload', handleBeforeUnload)
+    }
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [postContent, selectedPlatforms, uploadedMediaUrls, isSaving])
 
   const togglePlatform = (platformId: string) => {
     setSelectedPlatforms(prev => {
@@ -1577,22 +1666,19 @@ function CreateNewPostPageContent() {
       
       // Update existing scheduled post or create new one
       let response
-      if (editingScheduledPost && currentDraftId) {
-        // Update existing scheduled post
-        response = await fetch('/api/posts/schedule', {
+      const scheduledPostId = searchParams.get('scheduledPostId')
+
+      if (editingScheduledPost && scheduledPostId) {
+        // Update existing scheduled post using new API endpoint
+        response = await fetch(`/api/posts/scheduled/${scheduledPostId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            postId: currentDraftId,
             content: requestData.content,
             platforms: requestData.platforms,
-            platformContent: requestData.platformContent,
-            mediaUrls: requestData.mediaUrls,
-            scheduledFor: requestData.scheduledFor,
-            pinterestBoardId: requestData.pinterestBoardId,
-            pinterestTitle: requestData.pinterestTitle,
-            pinterestDescription: requestData.pinterestDescription,
-            pinterestLink: requestData.pinterestLink
+            platform_content: requestData.platformContent,
+            media_urls: requestData.mediaUrls,
+            scheduled_for: requestData.scheduledFor
           }),
         })
       } else {
@@ -1612,7 +1698,7 @@ function CreateNewPostPageContent() {
 
       const successMessage = editingScheduledPost ? 'Scheduled post updated successfully!' : 'Post scheduled successfully!'
       toast.success(successMessage)
-      
+
       // Delete draft if this was scheduled from a draft (not when editing scheduled post)
       if (!editingScheduledPost && currentDraftId) {
         try {
@@ -1624,7 +1710,13 @@ function CreateNewPostPageContent() {
           console.error('Failed to delete draft after scheduling:', error)
         }
       }
-      
+
+      // If editing scheduled post, redirect to scheduled posts page
+      if (editingScheduledPost) {
+        router.push('/dashboard/posts/scheduled')
+        return
+      }
+
       // Clear form
       setPostContent('')
       setPlatformContent({})
@@ -2066,6 +2158,32 @@ function CreateNewPostPageContent() {
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full">
             <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
             <span className="text-blue-700 text-sm font-medium">Loading draft...</span>
+          </div>
+        )}
+        {/* Auto-save status indicator */}
+        {!editingScheduledPost && (
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 rounded-full">
+            {isSaving ? (
+              <>
+                <div className="w-3 h-3 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-gray-700 text-sm">Saving...</span>
+              </>
+            ) : autoSaveError ? (
+              <>
+                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                <span className="text-red-700 text-sm">Save failed - data backed up locally</span>
+              </>
+            ) : lastSaved ? (
+              <>
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span className="text-gray-700 text-sm">Saved {timeAgo}</span>
+              </>
+            ) : (
+              <>
+                <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                <span className="text-gray-600 text-sm">Auto-save enabled</span>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -2622,7 +2740,7 @@ function CreateNewPostPageContent() {
                     onClick={handleSchedulePost}
                   >
                     <Calendar className="mr-2 h-4 w-4" />
-                    {isPosting ? 'Scheduling...' : 'Schedule Post'}
+                    {isPosting ? (editingScheduledPost ? 'Updating...' : 'Scheduling...') : (editingScheduledPost ? 'Update Scheduled Post' : 'Schedule Post')}
                   </Button>
                   <Button 
                     variant="outline" 

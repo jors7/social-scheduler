@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { PostingService } from '@/lib/posting/service';
-import { postToFacebookDirect, postToBlueskyDirect } from '@/lib/posting/cron-service';
+import {
+  postToFacebookDirect,
+  postToBlueskyDirect,
+  postToInstagramDirect,
+  postToLinkedInDirect,
+  postToTwitterDirect,
+  postToThreadsDirect,
+  postToPinterestDirect,
+  postToTikTokDirect
+} from '@/lib/posting/cron-service';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -167,27 +176,56 @@ export async function GET(request: NextRequest) {
           try {
             const rawContent = post.platform_content?.[platform] || post.content;
             const content = cleanHtmlContent(rawContent);
-            
+
             console.log(`=== ${platform.toUpperCase()} CONTENT DEBUG ===`);
             console.log('Raw content:', JSON.stringify(rawContent));
             console.log('Cleaned content:', JSON.stringify(content));
             console.log('Content length:', content.length);
             console.log('First 10 chars:', JSON.stringify(content.substring(0, 10)));
-            
+
             let result;
 
             // Post to platform using direct function calls (no HTTP)
-            if (platform === 'facebook') {
-              result = await postToFacebookDirect(content, account, post.media_urls);
-            } else if (platform === 'bluesky') {
-              result = await postToBlueskyDirect(content, account, post.media_urls);
-            } else {
-              postResults.push({
-                platform,
-                success: false,
-                error: `${platform} posting not implemented yet`
-              });
-              continue;
+            switch (platform) {
+              case 'facebook':
+                result = await postToFacebookDirect(content, account, post.media_urls);
+                break;
+
+              case 'bluesky':
+                result = await postToBlueskyDirect(content, account, post.media_urls);
+                break;
+
+              case 'instagram':
+                result = await postToInstagramDirect(content, account, post.media_urls);
+                break;
+
+              case 'linkedin':
+                result = await postToLinkedInDirect(content, account, post.media_urls);
+                break;
+
+              case 'twitter':
+                result = await postToTwitterDirect(content, account, post.media_urls);
+                break;
+
+              case 'threads':
+                result = await postToThreadsDirect(content, account, post.media_urls);
+                break;
+
+              case 'pinterest':
+                result = await postToPinterestDirect(content, account, post.media_urls);
+                break;
+
+              case 'tiktok':
+                result = await postToTikTokDirect(content, account, post.media_urls);
+                break;
+
+              default:
+                postResults.push({
+                  platform,
+                  success: false,
+                  error: `${platform} posting not implemented yet`
+                });
+                continue;
             }
 
             postResults.push({

@@ -1,191 +1,187 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
+// GET /api/posts/scheduled/[id] - Fetch a specific scheduled post
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-        },
-      }
-    )
+    const supabase = await createClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data, error } = await supabase
+    // Fetch the scheduled post
+    const { data: post, error } = await supabase
       .from('scheduled_posts')
       .select('*')
       .eq('id', params.id)
       .eq('user_id', user.id)
-      .single()
+      .single();
 
     if (error) {
-      return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+      console.error('Error fetching scheduled post:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch scheduled post' },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json(data)
+    if (!post) {
+      return NextResponse.json(
+        { error: 'Scheduled post not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ post });
   } catch (error) {
-    console.error('Get scheduled post error:', error)
+    console.error('Error in GET /api/posts/scheduled/[id]:', error);
     return NextResponse.json(
-      { error: 'Failed to get scheduled post' },
+      { error: 'Internal server error' },
       { status: 500 }
-    )
+    );
   }
 }
 
+// PATCH /api/posts/scheduled/[id] - Update a scheduled post
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-        },
-      }
-    )
+    const supabase = await createClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const updates = await request.json()
+    // Parse request body
+    const body = await request.json();
+    const {
+      content,
+      platforms,
+      platform_content,
+      media_urls,
+      scheduled_for
+    } = body;
 
-    // Don't allow updating certain fields
-    delete updates.id
-    delete updates.user_id
-    delete updates.created_at
-
-    // Only allow editing if status is 'pending'
-    const { data: post } = await supabase
-      .from('scheduled_posts')
-      .select('status')
-      .eq('id', params.id)
-      .eq('user_id', user.id)
-      .single()
-
-    if (!post) {
-      return NextResponse.json({ error: 'Post not found' }, { status: 404 })
-    }
-
-    if (post.status !== 'pending') {
+    // Validate required fields
+    if (!content || !platforms || platforms.length === 0) {
       return NextResponse.json(
-        { error: 'Can only edit pending posts' },
+        { error: 'Content and at least one platform are required' },
         { status: 400 }
-      )
+      );
     }
 
-    const { data, error } = await supabase
+    // Validate scheduled time (must be in the future)
+    if (scheduled_for) {
+      const scheduledDate = new Date(scheduled_for);
+      const now = new Date();
+
+      // Allow 5 minute tolerance for rescheduling
+      const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+
+      if (scheduledDate < fiveMinutesAgo) {
+        return NextResponse.json(
+          { error: 'Scheduled time must be in the future' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Update the scheduled post
+    const { data: updatedPost, error: updateError } = await supabase
       .from('scheduled_posts')
       .update({
-        ...updates,
+        content,
+        platforms,
+        platform_content: platform_content || null,
+        media_urls: media_urls || [],
+        scheduled_for,
         updated_at: new Date().toISOString()
       })
       .eq('id', params.id)
-      .eq('user_id', user.id)
+      .eq('user_id', user.id) // Ensure user owns this post
       .select()
-      .single()
+      .single();
 
-    if (error) {
-      console.error('Update error:', error)
+    if (updateError) {
+      console.error('Error updating scheduled post:', updateError);
       return NextResponse.json(
-        { error: 'Failed to update post' },
+        { error: 'Failed to update scheduled post' },
         { status: 500 }
-      )
+      );
     }
 
-    return NextResponse.json(data)
+    if (!updatedPost) {
+      return NextResponse.json(
+        { error: 'Scheduled post not found or you do not have permission to edit it' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      post: updatedPost,
+      message: 'Scheduled post updated successfully'
+    });
   } catch (error) {
-    console.error('Update scheduled post error:', error)
+    console.error('Error in PATCH /api/posts/scheduled/[id]:', error);
     return NextResponse.json(
-      { error: 'Failed to update scheduled post' },
+      { error: 'Internal server error' },
       { status: 500 }
-    )
+    );
   }
 }
 
+// DELETE /api/posts/scheduled/[id] - Delete a scheduled post
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-        },
-      }
-    )
+    const supabase = await createClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Only allow deleting if status is 'pending' or 'failed'
-    const { data: post } = await supabase
-      .from('scheduled_posts')
-      .select('status')
-      .eq('id', params.id)
-      .eq('user_id', user.id)
-      .single()
-
-    if (!post) {
-      return NextResponse.json({ error: 'Post not found' }, { status: 404 })
-    }
-
-    if (!['pending', 'failed', 'cancelled'].includes(post.status)) {
-      return NextResponse.json(
-        { error: 'Can only delete pending, failed, or cancelled posts' },
-        { status: 400 }
-      )
-    }
-
-    const { error } = await supabase
+    // Delete the scheduled post
+    const { error: deleteError } = await supabase
       .from('scheduled_posts')
       .delete()
       .eq('id', params.id)
-      .eq('user_id', user.id)
+      .eq('user_id', user.id);
 
-    if (error) {
-      console.error('Delete error:', error)
+    if (deleteError) {
+      console.error('Error deleting scheduled post:', deleteError);
       return NextResponse.json(
-        { error: 'Failed to delete post' },
+        { error: 'Failed to delete scheduled post' },
         { status: 500 }
-      )
+      );
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({
+      success: true,
+      message: 'Scheduled post deleted successfully'
+    });
   } catch (error) {
-    console.error('Delete scheduled post error:', error)
+    console.error('Error in DELETE /api/posts/scheduled/[id]:', error);
     return NextResponse.json(
-      { error: 'Failed to delete scheduled post' },
+      { error: 'Internal server error' },
       { status: 500 }
-    )
+    );
   }
 }
