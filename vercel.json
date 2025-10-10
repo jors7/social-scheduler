@@ -1,7 +1,20 @@
 {
+  "crons": [
+    {
+      "path": "/api/cron/process-scheduled-posts",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/snapshot-analytics",
+      "schedule": "0 0 * * *"
+    }
+  ],
   "functions": {
     "app/api/cron/process-scheduled-posts/route.ts": {
       "maxDuration": 60
+    },
+    "app/api/cron/snapshot-analytics/route.ts": {
+      "maxDuration": 300
     }
   }
 }

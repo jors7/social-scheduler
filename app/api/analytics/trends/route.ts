@@ -36,43 +36,96 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const days = parseInt(searchParams.get('days') || '7');
 
-    // For demo purposes, generate realistic-looking trend data
-    // In production, this would fetch actual historical data from the database
-    const generateDemoTrends = (days: number): TrendData => {
-      // Simulate different growth patterns based on time period
-      const growthFactor = days === 7 ? 1.15 : days === 30 ? 1.08 : 1.05;
-      const variance = Math.random() * 0.2 - 0.1; // -10% to +10% variance
+    // Calculate date ranges
+    const today = new Date();
+    const currentPeriodStart = new Date(today);
+    currentPeriodStart.setDate(currentPeriodStart.getDate() - days);
 
-      return {
-        totalPosts: {
-          current: 44,
-          previous: Math.floor(44 / (growthFactor + variance)),
-          change: ((growthFactor + variance - 1) * 100)
-        },
-        totalEngagement: {
-          current: 14,
-          previous: Math.floor(14 / (growthFactor + variance * 0.8)),
-          change: ((growthFactor + variance * 0.8 - 1) * 100)
-        },
-        totalReach: {
-          current: 74,
-          previous: Math.floor(74 / (growthFactor + variance * 1.2)),
-          change: ((growthFactor + variance * 1.2 - 1) * 100)
-        },
-        totalImpressions: {
-          current: 72,
-          previous: Math.floor(72 / (growthFactor + variance * 0.9)),
-          change: ((growthFactor + variance * 0.9 - 1) * 100)
-        },
-        engagementRate: {
-          current: 18.9,
-          previous: 18.9 / (growthFactor + variance * 0.5),
-          change: ((growthFactor + variance * 0.5 - 1) * 100)
-        }
-      };
+    const previousPeriodStart = new Date(currentPeriodStart);
+    previousPeriodStart.setDate(previousPeriodStart.getDate() - days);
+    const previousPeriodEnd = currentPeriodStart;
+
+    // Fetch current period snapshot (most recent snapshot within the period)
+    const { data: currentSnapshot, error: currentError } = await supabase
+      .from('analytics_snapshots')
+      .select('*')
+      .eq('user_id', user.id)
+      .gte('snapshot_date', currentPeriodStart.toISOString().split('T')[0])
+      .lte('snapshot_date', today.toISOString().split('T')[0])
+      .order('snapshot_date', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (currentError && currentError.code !== 'PGRST116') {
+      console.error('Error fetching current snapshot:', currentError);
+    }
+
+    // Fetch previous period snapshot (most recent snapshot within the previous period)
+    const { data: previousSnapshot, error: previousError } = await supabase
+      .from('analytics_snapshots')
+      .select('*')
+      .eq('user_id', user.id)
+      .gte('snapshot_date', previousPeriodStart.toISOString().split('T')[0])
+      .lt('snapshot_date', previousPeriodEnd.toISOString().split('T')[0])
+      .order('snapshot_date', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (previousError && previousError.code !== 'PGRST116') {
+      console.error('Error fetching previous snapshot:', previousError);
+    }
+
+    // If we don't have enough historical data, return null (UI will handle gracefully)
+    if (!currentSnapshot || !previousSnapshot) {
+      return NextResponse.json({
+        trends: null,
+        message: 'Not enough historical data yet. Trends will appear after collecting data for multiple periods.'
+      });
+    }
+
+    // Calculate trends from real historical data
+    const trends: TrendData = {
+      totalPosts: {
+        current: currentSnapshot.total_posts || 0,
+        previous: previousSnapshot.total_posts || 0,
+        change: calculateChange(
+          currentSnapshot.total_posts || 0,
+          previousSnapshot.total_posts || 0
+        )
+      },
+      totalEngagement: {
+        current: currentSnapshot.total_engagement || 0,
+        previous: previousSnapshot.total_engagement || 0,
+        change: calculateChange(
+          currentSnapshot.total_engagement || 0,
+          previousSnapshot.total_engagement || 0
+        )
+      },
+      totalReach: {
+        current: currentSnapshot.total_reach || 0,
+        previous: previousSnapshot.total_reach || 0,
+        change: calculateChange(
+          currentSnapshot.total_reach || 0,
+          previousSnapshot.total_reach || 0
+        )
+      },
+      totalImpressions: {
+        current: currentSnapshot.total_impressions || 0,
+        previous: previousSnapshot.total_impressions || 0,
+        change: calculateChange(
+          currentSnapshot.total_impressions || 0,
+          previousSnapshot.total_impressions || 0
+        )
+      },
+      engagementRate: {
+        current: parseFloat(currentSnapshot.engagement_rate?.toString() || '0'),
+        previous: parseFloat(previousSnapshot.engagement_rate?.toString() || '0'),
+        change: calculateChange(
+          parseFloat(currentSnapshot.engagement_rate?.toString() || '0'),
+          parseFloat(previousSnapshot.engagement_rate?.toString() || '0')
+        )
+      }
     };
-
-    const trends = generateDemoTrends(days);
 
     return NextResponse.json({ trends });
 
