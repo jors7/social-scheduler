@@ -34,8 +34,6 @@ const RichTextEditor = dynamic(
 import { AISuggestionsModal } from '@/components/dashboard/ai-suggestions-modal'
 import { SubscriptionGateNoSuspense as SubscriptionGate } from '@/components/subscription/subscription-gate-no-suspense'
 import { PreviewPanel } from '@/components/create/preview/PreviewPanel'
-import { TimePickerVisual } from '@/components/scheduling/TimePickerVisual'
-import { DatePickerCalendar } from '@/components/scheduling/DatePickerCalendar'
 import { QuickScheduleButtons } from '@/components/scheduling/QuickScheduleButtons'
 import { CompactDateTimeInput } from '@/components/scheduling/CompactDateTimeInput'
 import { createBrowserClient } from '@supabase/ssr'
@@ -95,7 +93,6 @@ function CreateNewPostPageContent() {
   const [scheduledTime, setScheduledTime] = useState('')
   const [showAISuggestions, setShowAISuggestions] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
-  const [showAdvancedScheduling, setShowAdvancedScheduling] = useState(false)
   const [isPosting, setIsPosting] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploadedMediaUrls, setUploadedMediaUrls] = useState<string[]>([])
@@ -2616,21 +2613,12 @@ function CreateNewPostPageContent() {
                 currentTime={scheduledTime}
               />
 
-              {/* Compact Date/Time Input with AI Button */}
+              {/* Timezone Display and Date/Time Input */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-700">Or set custom date & time:</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleSmartSchedule}
-                    disabled={loadingSuggestions || selectedPlatforms.length === 0}
-                    className="text-xs h-7 px-2"
-                  >
-                    <Brain className="mr-1 h-3 w-3" />
-                    {loadingSuggestions ? 'Analyzing...' : 'AI'}
-                  </Button>
+                <div className="flex items-center justify-end">
+                  <span className="text-xs text-gray-500">
+                    {Intl.DateTimeFormat().resolvedOptions().timeZone}
+                  </span>
                 </div>
 
                 <CompactDateTimeInput
@@ -2638,54 +2626,8 @@ function CreateNewPostPageContent() {
                   time={scheduledTime}
                   onDateChange={setScheduledDate}
                   onTimeChange={setScheduledTime}
-                  onExpandClick={() => setShowAdvancedScheduling(true)}
                 />
               </div>
-
-              {/* Expand Advanced Scheduling Button */}
-              {!showAdvancedScheduling && (
-                <button
-                  type="button"
-                  onClick={() => setShowAdvancedScheduling(true)}
-                  className="w-full flex items-center justify-center gap-2 p-2 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg border border-blue-200 transition-colors"
-                >
-                  <Calendar className="h-3.5 w-3.5" />
-                  Show Calendar & Time Options
-                  <ChevronDown className="h-3.5 w-3.5" />
-                </button>
-              )}
-
-              {/* Advanced Scheduling Options (Collapsible) */}
-              {showAdvancedScheduling && (
-                <div className="space-y-4 pt-4 border-t border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-gray-700">Advanced Scheduling</span>
-                    <button
-                      type="button"
-                      onClick={() => setShowAdvancedScheduling(false)}
-                      className="text-xs text-gray-500 hover:text-gray-700"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-
-                  {/* Date Picker */}
-                  <DatePickerCalendar
-                    value={scheduledDate}
-                    onChange={setScheduledDate}
-                    label="Select Date"
-                    scheduledPosts={[]}
-                  />
-
-                  {/* Time Picker */}
-                  <TimePickerVisual
-                    value={scheduledTime}
-                    onChange={setScheduledTime}
-                    label="Select Time"
-                    optimalTimes={['09:00', '12:00', '15:00', '18:00', '21:00']}
-                  />
-                </div>
-              )}
 
               {/* Smart Suggestions */}
               {showSmartSuggestions && smartSuggestions.length > 0 && (
