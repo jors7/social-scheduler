@@ -4,11 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { 
-  BarChart3, 
-  Calendar, 
-  FileText, 
-  TrendingUp, 
+import {
+  BarChart3,
+  Calendar,
+  FileText,
+  TrendingUp,
   Users,
   Clock,
   PlusCircle,
@@ -17,6 +17,7 @@ import {
   Zap,
   Info,
   ChevronRight,
+  ChevronLeft,
   Sparkles as SparklesIcon,
   Command,
   ArrowUp,
@@ -109,6 +110,59 @@ export default function DashboardPage() {
   const [analyticsStats, setAnalyticsStats] = useState<DashboardStats | null>(null)
   const activityOverviewRef = useRef<HTMLDivElement>(null)
   const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes in milliseconds
+  const [currentTipIndex, setCurrentTipIndex] = useState(0)
+
+  // Array of rotating pro tips
+  const proTips = [
+    {
+      title: "Peak Posting Times",
+      text: "Schedule your posts during peak hours (9-10 AM or 7-9 PM) for maximum engagement"
+    },
+    {
+      title: "Use AI Wisely",
+      text: "Try different AI tones to find what resonates with your audience - Professional for LinkedIn, Casual for Twitter"
+    },
+    {
+      title: "Visual Content Wins",
+      text: "Posts with images get 2.3x more engagement. Always include eye-catching visuals"
+    },
+    {
+      title: "Consistency is Key",
+      text: "Post regularly at the same times each week to build audience expectations and loyalty"
+    },
+    {
+      title: "Platform-Specific Content",
+      text: "Customize your message for each platform - what works on Instagram may not work on LinkedIn"
+    },
+    {
+      title: "Track Your Analytics",
+      text: "Check your analytics weekly to understand what content performs best and adjust your strategy"
+    },
+    {
+      title: "Hashtag Strategy",
+      text: "Use 3-5 relevant hashtags per post. Mix popular and niche tags for better reach"
+    },
+    {
+      title: "Engage Back",
+      text: "Respond to comments within the first hour of posting to boost algorithmic visibility"
+    },
+    {
+      title: "Video Content Boost",
+      text: "Video posts get 48% more views on average. Try mixing in short videos with your image posts"
+    },
+    {
+      title: "Content Batching",
+      text: "Create and schedule multiple posts at once to save time and maintain consistency"
+    },
+    {
+      title: "Weekend Planning",
+      text: "Weekends often see higher engagement. Don't forget to schedule content for Saturday and Sunday"
+    },
+    {
+      title: "A/B Test Your Content",
+      text: "Try different posting times, formats, and styles to discover what works best for your audience"
+    }
+  ]
 
   // Get time-based greeting
   const getGreeting = () => {
@@ -468,6 +522,26 @@ export default function DashboardPage() {
     fetchDashboardData()
   }, [])
 
+  // Auto-rotate tips every 15 seconds
+  useEffect(() => {
+    if (!showTip) return
+
+    const interval = setInterval(() => {
+      setCurrentTipIndex((prevIndex) => (prevIndex + 1) % proTips.length)
+    }, 15000) // 15 seconds
+
+    return () => clearInterval(interval)
+  }, [showTip, proTips.length])
+
+  // Navigation functions for tips
+  const nextTip = () => {
+    setCurrentTipIndex((prevIndex) => (prevIndex + 1) % proTips.length)
+  }
+
+  const previousTip = () => {
+    setCurrentTipIndex((prevIndex) => (prevIndex - 1 + proTips.length) % proTips.length)
+  }
+
   // Trigger analytics loading immediately when component mounts
   useEffect(() => {
     // Always fetch analytics after a short delay
@@ -641,24 +715,50 @@ export default function DashboardPage() {
               </div>
             </div>
             
-            {/* Quick Tip Section - Now full width */}
+            {/* Quick Tip Section - Now full width with rotation */}
             {showTip && (
-              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 border border-purple-100 flex items-start gap-3 mt-4">
-                <div className="p-1.5 bg-purple-100 rounded-lg">
-                  <Lightbulb className="h-4 w-4 text-purple-600" />
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 border border-purple-100 mt-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-1.5 bg-purple-100 rounded-lg flex-shrink-0">
+                    <Lightbulb className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-medium text-gray-900">
+                        Pro Tip: {proTips[currentTipIndex].title}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={previousTip}
+                          className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all"
+                          aria-label="Previous tip"
+                        >
+                          <ChevronLeft className="h-3.5 w-3.5" />
+                        </button>
+                        <span className="text-[10px] text-gray-400 font-medium px-1">
+                          {currentTipIndex + 1}/{proTips.length}
+                        </span>
+                        <button
+                          onClick={nextTip}
+                          className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all"
+                          aria-label="Next tip"
+                        >
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-600">
+                      {proTips[currentTipIndex].text}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowTip(false)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                    aria-label="Close tip"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Pro Tip</p>
-                  <p className="text-xs text-gray-600 mt-0.5">
-                    Schedule your posts during peak hours (9-10 AM or 7-9 PM) for maximum engagement
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowTip(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
               </div>
             )}
           </div>
