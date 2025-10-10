@@ -45,7 +45,7 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
     {
       id: 'welcome',
       title: 'Welcome to SocialCal! 🎉',
-      description: 'Let&apos;s take a quick tour of your new social media command center',
+      description: "Let's take a quick tour of your new social media command center",
       icon: Sparkles,
       position: 'center',
       content: (
