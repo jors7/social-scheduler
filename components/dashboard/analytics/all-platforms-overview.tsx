@@ -131,12 +131,13 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
         }
       }
       
-      const [facebookData, instagramData, threadsData, blueskyData, pinterestData] = await Promise.all([
+      const [facebookData, instagramData, threadsData, blueskyData, pinterestData, tiktokData] = await Promise.all([
         fetchWithCache('facebook', `/api/analytics/facebook?days=${days}`),
         fetchWithCache('instagram', `/api/analytics/instagram?days=${days}`),
         fetchWithCache('threads', `/api/analytics/threads?days=${days}`),
         fetchWithCache('bluesky', `/api/analytics/bluesky?days=${days}`),
-        fetchWithCache('pinterest', `/api/analytics/pinterest?days=${days}`)
+        fetchWithCache('pinterest', `/api/analytics/pinterest?days=${days}`),
+        fetchWithCache('tiktok', `/api/analytics/tiktok?days=${days}`)
       ])
       
       // Track errors for display
@@ -262,7 +263,26 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
         metrics.likes = metrics.saves || 0 // Saves are like "likes"
         metrics.comments = metrics.clicks || 0 // Clicks show interest
       }
-      
+
+      // Process TikTok data
+      if (tiktokData.metrics) {
+        const metrics = metricsMap.get('tiktok')!
+        const m = tiktokData.metrics
+        metrics.posts = m.totalPosts
+        metrics.totalEngagement = m.totalEngagement
+        metrics.totalReach = m.totalReach
+        metrics.views = m.totalViews
+
+        // Aggregate metrics from videos
+        m.posts.forEach((video: any) => {
+          metrics.likes += video.likes || 0
+          metrics.comments += video.comments || 0
+          metrics.shares += video.shares || 0
+        })
+      } else if (tiktokData.error) {
+        errors.tiktok = 'Unable to load TikTok data'
+      }
+
       const platformMetricsArray = Array.from(metricsMap.values())
       setPlatformMetrics(platformMetricsArray)
       setPlatformErrors(errors)

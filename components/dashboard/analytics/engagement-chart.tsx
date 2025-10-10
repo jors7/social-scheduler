@@ -53,8 +53,13 @@ export function EngagementChart({ analyticsData }: EngagementChartProps) {
       likes = post.likes || 0
       comments = post.replies || 0
       shares = post.reposts || 0
+    } else if (post.platform === 'tiktok') {
+      dateStr = post.created_time || post.timestamp || ''
+      likes = post.likes || 0
+      comments = post.comments || 0
+      shares = post.shares || 0
     }
-    
+
     if (!dateStr) return // Skip posts without date
     
     const date = new Date(dateStr)

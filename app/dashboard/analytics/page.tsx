@@ -75,20 +75,22 @@ export default function AnalyticsPage() {
       }
       
       // Fetch data from all platforms in parallel
-      const [facebookRes, instagramRes, threadsRes, blueskyRes, pinterestRes] = await Promise.all([
+      const [facebookRes, instagramRes, threadsRes, blueskyRes, pinterestRes, tiktokRes] = await Promise.all([
         fetch(`/api/analytics/facebook?days=${dateRange}`),
         fetch(`/api/analytics/instagram?days=${dateRange}`),
         fetch(`/api/analytics/threads?days=${dateRange}`),
         fetch(`/api/analytics/bluesky?days=${dateRange}`),
-        fetch(`/api/analytics/pinterest?days=${dateRange}`)
+        fetch(`/api/analytics/pinterest?days=${dateRange}`),
+        fetch(`/api/analytics/tiktok?days=${dateRange}`)
       ])
 
-      const [facebookData, instagramData, threadsData, blueskyData, pinterestData] = await Promise.all([
+      const [facebookData, instagramData, threadsData, blueskyData, pinterestData, tiktokData] = await Promise.all([
         facebookRes.ok ? facebookRes.json() : { metrics: null },
         instagramRes.ok ? instagramRes.json() : { metrics: null },
         threadsRes.ok ? threadsRes.json() : { metrics: null },
         blueskyRes.ok ? blueskyRes.json() : { metrics: null },
-        pinterestRes.ok ? pinterestRes.json() : { metrics: null }
+        pinterestRes.ok ? pinterestRes.json() : { metrics: null },
+        tiktokRes.ok ? tiktokRes.json() : { metrics: null }
       ])
 
       // Aggregate all metrics
@@ -230,6 +232,36 @@ export default function AnalyticsPage() {
         })
       }
 
+      // Process TikTok data
+      if (tiktokData.metrics) {
+        const metrics = tiktokData.metrics
+        totalPosts += metrics.totalPosts
+        totalEngagement += metrics.totalEngagement
+        totalReach += metrics.totalViews
+        totalImpressions += metrics.totalViews
+
+        platformStats.tiktok = {
+          posts: metrics.totalPosts,
+          engagement: metrics.totalEngagement,
+          reach: metrics.totalViews,
+          impressions: metrics.totalViews
+        }
+
+        // Add posts with platform tag
+        metrics.posts.forEach((post: any) => {
+          allPosts.push({
+            ...post,
+            platform: 'tiktok',
+            // Normalize fields for consistency
+            created_time: post.created_time,
+            timestamp: post.created_time,
+            message: post.title || post.description,
+            impressions: post.views || 0,
+            reach: post.views || 0
+          })
+        })
+      }
+
       // Find top platform by engagement
       let topPlatform = 'N/A'
       let maxEngagement = 0
@@ -314,6 +346,8 @@ export default function AnalyticsPage() {
           engagement = (post.likes || 0) + (post.replies || 0) + (post.reposts || 0)
         } else if (post.platform === 'pinterest') {
           engagement = (post.saves || 0) + (post.pin_clicks || 0) + (post.outbound_clicks || 0)
+        } else if (post.platform === 'tiktok') {
+          engagement = (post.likes || 0) + (post.comments || 0) + (post.shares || 0)
         }
         return { ...post, totalEngagement: engagement }
       })
@@ -529,7 +563,7 @@ export default function AnalyticsPage() {
               <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
               <div className="text-xs text-blue-800">
                 <p className="font-medium">Platform Coverage</p>
-                <p className="mt-0.5">Analytics are currently available for Facebook, Instagram, Threads, Bluesky, and Pinterest. Longer date ranges may take more time to load as we fetch complete data from all your posts.</p>
+                <p className="mt-0.5">Analytics are currently available for Facebook, Instagram, Threads, Bluesky, Pinterest, and TikTok. Longer date ranges may take more time to load as we fetch complete data from all your posts.</p>
               </div>
             </div>
           </Card>
