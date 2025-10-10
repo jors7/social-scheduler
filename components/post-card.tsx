@@ -201,26 +201,51 @@ export function PostCard({
   const timeUntil = variant === 'scheduled' ? formatScheduledDate((post as ScheduledPost).scheduled_for) : ''
   const isOverdue = timeUntil === 'Overdue'
 
+  // Check if the media URL is a video
+  const isVideo = imageUrl && (
+    imageUrl.includes('.mp4') ||
+    imageUrl.includes('.mov') ||
+    imageUrl.includes('.webm') ||
+    imageUrl.includes('.avi')
+  )
+
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow group h-full flex flex-col">
       {/* Always show thumbnail area for consistency */}
       <div className="relative aspect-video bg-gray-100">
         {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt="Post thumbnail"
-            className="absolute inset-0 w-full h-full object-cover"
-            onError={(e) => {
-              // Hide broken image and show placeholder instead
-              e.currentTarget.style.display = 'none'
-              const placeholder = e.currentTarget.nextElementSibling
-              if (placeholder) {
-                (placeholder as HTMLElement).style.display = 'flex'
-              }
-            }}
-          />
+          isVideo ? (
+            <video
+              src={imageUrl}
+              className="absolute inset-0 w-full h-full object-cover"
+              muted
+              preload="metadata"
+              onError={(e) => {
+                // Hide broken video and show placeholder instead
+                e.currentTarget.style.display = 'none'
+                const placeholder = e.currentTarget.nextElementSibling
+                if (placeholder) {
+                  (placeholder as HTMLElement).style.display = 'flex'
+                }
+              }}
+            />
+          ) : (
+            <img
+              src={imageUrl}
+              alt="Post thumbnail"
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={(e) => {
+                // Hide broken image and show placeholder instead
+                e.currentTarget.style.display = 'none'
+                const placeholder = e.currentTarget.nextElementSibling
+                if (placeholder) {
+                  (placeholder as HTMLElement).style.display = 'flex'
+                }
+              }}
+            />
+          )
         ) : null}
-        <div 
+        <div
           className="w-full h-full flex items-center justify-center bg-gray-50"
           style={{ display: imageUrl ? 'none' : 'flex' }}
         >
