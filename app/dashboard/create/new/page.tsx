@@ -33,6 +33,7 @@ const RichTextEditor = dynamic(
 )
 import { AISuggestionsModal } from '@/components/dashboard/ai-suggestions-modal'
 import { SubscriptionGateNoSuspense as SubscriptionGate } from '@/components/subscription/subscription-gate-no-suspense'
+import { PreviewPanel } from '@/components/create/preview/PreviewPanel'
 import { createBrowserClient } from '@supabase/ssr'
 
 // Dynamically import platform-specific components to avoid hydration issues
@@ -41,7 +42,7 @@ const VideoMetadata = dynamic(() => import('@/components/youtube/video-metadata'
 const VideoUpload = dynamic(() => import('@/components/youtube/video-upload'), { ssr: false })
 const TikTokVideoSettings = dynamic(() => import('@/components/tiktok/video-settings').then(mod => ({ default: mod.TikTokVideoSettings })), { ssr: false })
 const ThreadComposer = dynamic(() => import('@/components/threads/thread-composer').then(mod => ({ default: mod.ThreadComposer })), { ssr: false })
-import { 
+import {
   Calendar,
   Clock,
   Image as ImageIcon,
@@ -52,7 +53,8 @@ import {
   ChevronDown,
   Zap,
   Brain,
-  Loader2
+  Loader2,
+  Eye
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -82,11 +84,13 @@ function CreateNewPostPageContent() {
   const [connectedAccounts, setConnectedAccounts] = useState<any[]>([])
   const [selectedAccounts, setSelectedAccounts] = useState<Record<string, string[]>>({})
   const [instagramAsStory, setInstagramAsStory] = useState(false)
+  const [instagramFormat, setInstagramFormat] = useState<'feed-square' | 'feed-portrait' | 'feed-landscape' | 'story' | 'reel'>('feed-portrait')
   const [platformContent, setPlatformContent] = useState<Record<string, string>>({})
   const [showPlatformCustomization, setShowPlatformCustomization] = useState(false)
   const [scheduledDate, setScheduledDate] = useState('')
   const [scheduledTime, setScheduledTime] = useState('')
   const [showAISuggestions, setShowAISuggestions] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
   const [isPosting, setIsPosting] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploadedMediaUrls, setUploadedMediaUrls] = useState<string[]>([])
@@ -102,17 +106,26 @@ function CreateNewPostPageContent() {
       file,
       url: URL.createObjectURL(file)
     }));
-    
+
     // Cleanup function to revoke URLs when files change
     return urls;
   }, [selectedFiles])
-  
+
   // Cleanup blob URLs when component unmounts or files change
   useEffect(() => {
     return () => {
       filePreviewUrls.forEach(({ url }) => URL.revokeObjectURL(url));
     };
   }, [filePreviewUrls])
+
+  // Combine uploaded URLs and file blob URLs for preview
+  const previewMediaUrls = useMemo(() => {
+    if (uploadedMediaUrls.length > 0) {
+      return uploadedMediaUrls // Use uploaded URLs if available
+    }
+    // Otherwise use blob URLs from selected files
+    return filePreviewUrls.map(({ url }) => url)
+  }, [uploadedMediaUrls, filePreviewUrls])
   
   // Fetch connected accounts on mount
   useEffect(() => {
@@ -2200,16 +2213,33 @@ function CreateNewPostPageContent() {
                   <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Post Content</CardTitle>
                   <CardDescription className="text-sm sm:text-base text-gray-600">Write your message</CardDescription>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowAISuggestions(true)}
-                  disabled={selectedPlatforms.length === 0}
-                  className="bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 border-purple-200 hover:border-purple-300 w-full sm:w-auto"
-                >
-                  <Sparkles className="mr-2 h-4 w-4 text-purple-600" />
-                  AI Suggestions
-                </Button>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPreview(!showPreview)}
+                    disabled={selectedPlatforms.length === 0}
+                    className={cn(
+                      "flex-1 sm:flex-initial transition-colors",
+                      showPreview
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                        : "bg-gray-50 hover:bg-gray-100"
+                    )}
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    Preview
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAISuggestions(true)}
+                    disabled={selectedPlatforms.length === 0}
+                    className="bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 border-purple-200 hover:border-purple-300 flex-1 sm:flex-initial"
+                  >
+                    <Sparkles className="mr-2 h-4 w-4 text-purple-600" />
+                    AI Suggestions
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -2789,7 +2819,19 @@ function CreateNewPostPageContent() {
         </div>
 
         {/* Right Column - Sidebar */}
-        <div className="col-span-1 lg:col-span-1 order-1 lg:order-2">
+        <div className="col-span-1 lg:col-span-1 order-1 lg:order-2 space-y-4">
+          {/* Preview Panel - Show when preview is enabled */}
+          {showPreview && selectedPlatforms.length > 0 && (
+            <PreviewPanel
+              selectedPlatforms={selectedPlatforms}
+              content={postContent}
+              platformContent={platformContent}
+              mediaUrls={previewMediaUrls}
+              instagramFormat={instagramFormat}
+              onClose={() => setShowPreview(false)}
+            />
+          )}
+
           {/* Platform Selection */}
           <Card variant="elevated" className="lg:sticky lg:top-6 hover:shadow-xl transition-all duration-300">
             <CardHeader className="pb-4">
@@ -2854,37 +2896,122 @@ function CreateNewPostPageContent() {
                               multiSelect={platformAccounts.length > 1}
                             />
                             
-                            {/* Instagram Story Toggle */}
+                            {/* Instagram Options */}
                             {platform.id === 'instagram' && (
-                              <div className="mt-3 pt-3 border-t border-purple-200/50">
-                                <div className="flex items-center justify-between">
-                                  <Label className="text-xs font-medium text-purple-700">
-                                    Post as Story
+                              <div className="mt-3 pt-3 border-t border-purple-200/50 space-y-3">
+                                {/* Format Selector */}
+                                <div>
+                                  <Label className="text-xs font-medium text-purple-700 mb-2 block">
+                                    Content Format
                                   </Label>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      console.log('Toggle Instagram Story:', !instagramAsStory)
-                                      setInstagramAsStory(!instagramAsStory)
-                                    }}
-                                    className={cn(
-                                      "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
-                                      instagramAsStory ? "bg-purple-600" : "bg-gray-300"
-                                    )}
-                                  >
-                                    <span
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setInstagramFormat('feed-portrait')
+                                        setInstagramAsStory(false)
+                                      }}
                                       className={cn(
-                                        "inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform",
-                                        instagramAsStory ? "translate-x-4" : "translate-x-1"
+                                        "flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all",
+                                        instagramFormat === 'feed-portrait'
+                                          ? "border-purple-600 bg-purple-50"
+                                          : "border-gray-200 bg-white hover:border-purple-300"
                                       )}
-                                    />
-                                  </button>
+                                    >
+                                      <div className={cn(
+                                        "w-6 h-8 border-2 rounded mb-1",
+                                        instagramFormat === 'feed-portrait' ? "border-purple-600" : "border-gray-400"
+                                      )} />
+                                      <span className="text-[10px] font-medium">Portrait</span>
+                                      <span className="text-[9px] text-gray-500">4:5</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setInstagramFormat('feed-square')
+                                        setInstagramAsStory(false)
+                                      }}
+                                      className={cn(
+                                        "flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all",
+                                        instagramFormat === 'feed-square'
+                                          ? "border-purple-600 bg-purple-50"
+                                          : "border-gray-200 bg-white hover:border-purple-300"
+                                      )}
+                                    >
+                                      <div className={cn(
+                                        "w-6 h-6 border-2 rounded mb-1",
+                                        instagramFormat === 'feed-square' ? "border-purple-600" : "border-gray-400"
+                                      )} />
+                                      <span className="text-[10px] font-medium">Square</span>
+                                      <span className="text-[9px] text-gray-500">1:1</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setInstagramFormat('feed-landscape')
+                                        setInstagramAsStory(false)
+                                      }}
+                                      className={cn(
+                                        "flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all",
+                                        instagramFormat === 'feed-landscape'
+                                          ? "border-purple-600 bg-purple-50"
+                                          : "border-gray-200 bg-white hover:border-purple-300"
+                                      )}
+                                    >
+                                      <div className={cn(
+                                        "w-8 h-4 border-2 rounded mb-1",
+                                        instagramFormat === 'feed-landscape' ? "border-purple-600" : "border-gray-400"
+                                      )} />
+                                      <span className="text-[10px] font-medium">Landscape</span>
+                                      <span className="text-[9px] text-gray-500">1.91:1</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setInstagramFormat('story')
+                                        setInstagramAsStory(true)
+                                      }}
+                                      className={cn(
+                                        "flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all",
+                                        instagramFormat === 'story'
+                                          ? "border-purple-600 bg-purple-50"
+                                          : "border-gray-200 bg-white hover:border-purple-300"
+                                      )}
+                                    >
+                                      <div className={cn(
+                                        "w-4 h-8 border-2 rounded mb-1",
+                                        instagramFormat === 'story' ? "border-purple-600" : "border-gray-400"
+                                      )} />
+                                      <span className="text-[10px] font-medium">Story</span>
+                                      <span className="text-[9px] text-gray-500">9:16</span>
+                                    </button>
+                                  </div>
+
+                                  {/* Format hints */}
+                                  {instagramFormat === 'feed-portrait' && (
+                                    <p className="text-[10px] text-purple-600 mt-1.5">
+                                      ⭐ Portrait (4:5) is recommended for best engagement in 2025
+                                    </p>
+                                  )}
+                                  {instagramFormat === 'feed-square' && (
+                                    <p className="text-[10px] text-purple-600 mt-1.5">
+                                      📐 Classic square format (1:1) - Still supported
+                                    </p>
+                                  )}
+                                  {instagramFormat === 'feed-landscape' && (
+                                    <p className="text-[10px] text-purple-600 mt-1.5">
+                                      🌄 Landscape (1.91:1) - Good for wide photos
+                                    </p>
+                                  )}
+                                  {instagramFormat === 'story' && (
+                                    <p className="text-[10px] text-purple-600 mt-1.5">
+                                      📸 Stories disappear after 24 hours. Vertical 9:16 format.
+                                    </p>
+                                  )}
                                 </div>
-                                {instagramAsStory && (
-                                  <p className="text-[10px] text-purple-600 mt-1.5">
-                                    📸 Stories disappear after 24 hours. Aspect ratio 9:16 recommended.
-                                  </p>
-                                )}
                               </div>
                             )}
                           </div>
