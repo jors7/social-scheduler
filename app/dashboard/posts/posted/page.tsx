@@ -308,10 +308,20 @@ export default function PostedPostsPage() {
   const getThreadsPostId = (post: PostedPost): string | null => {
     // Extract Threads post ID from post_results
     if (post.post_results && Array.isArray(post.post_results)) {
+      console.log('Checking post_results for Threads ID:', post.post_results)
+
       const threadsResult = post.post_results.find((result: any) =>
-        result.platform === 'threads' && result.success && result.data?.id
+        result.platform === 'threads' && result.success
       )
-      return threadsResult?.data?.id || null
+
+      console.log('Found threads result:', threadsResult)
+
+      // Try multiple possible locations for the ID
+      const postId = threadsResult?.data?.id || threadsResult?.postId || threadsResult?.id
+
+      console.log('Extracted post ID:', postId)
+
+      return postId || null
     }
     return null
   }
