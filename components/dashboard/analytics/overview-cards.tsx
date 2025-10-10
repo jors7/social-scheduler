@@ -1,7 +1,7 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { BarChart3, Eye, Heart, MessageCircle, TrendingUp, Users } from 'lucide-react'
+import { BarChart3, Eye, Heart, MessageCircle, TrendingUp, Users, ArrowUp, ArrowDown } from 'lucide-react'
 
 interface AnalyticsData {
   totalPosts: number
@@ -14,11 +14,27 @@ interface AnalyticsData {
   platformStats: Record<string, any>
 }
 
-interface OverviewCardsProps {
-  analyticsData: AnalyticsData | null
+interface TrendComparison {
+  current: number
+  previous: number
+  change: number
 }
 
-export function OverviewCards({ analyticsData }: OverviewCardsProps) {
+interface TrendData {
+  totalPosts: TrendComparison
+  totalEngagement: TrendComparison
+  totalReach: TrendComparison
+  totalImpressions: TrendComparison
+  engagementRate: TrendComparison
+}
+
+interface OverviewCardsProps {
+  analyticsData: AnalyticsData | null
+  trendData?: TrendData | null
+  dateRange?: string
+}
+
+export function OverviewCards({ analyticsData, trendData, dateRange = '7' }: OverviewCardsProps) {
   if (!analyticsData) {
     return (
       <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
@@ -37,6 +53,20 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
     )
   }
 
+  // Helper function to get trend info
+  const getTrendInfo = (metricKey: keyof TrendData) => {
+    if (!trendData || !trendData[metricKey]) {
+      return null;
+    }
+    const trend = trendData[metricKey];
+    return {
+      change: trend.change,
+      isPositive: trend.change > 0,
+      isNegative: trend.change < 0,
+      isNeutral: trend.change === 0
+    };
+  };
+
   const cards = [
     {
       title: 'Total Posts',
@@ -48,7 +78,8 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
       color: '#3b82f6', // blue
       bgColor: 'bg-blue-50',
       borderColor: 'border-blue-500',
-      iconColor: 'text-blue-600'
+      iconColor: 'text-blue-600',
+      trendKey: 'totalPosts' as keyof TrendData
     },
     {
       title: 'Engagement',
@@ -60,7 +91,8 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
       color: '#ef4444', // red
       bgColor: 'bg-red-50',
       borderColor: 'border-red-500',
-      iconColor: 'text-red-600'
+      iconColor: 'text-red-600',
+      trendKey: 'totalEngagement' as keyof TrendData
     },
     {
       title: 'Reach',
@@ -72,7 +104,8 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
       color: '#8b5cf6', // purple
       bgColor: 'bg-purple-50',
       borderColor: 'border-purple-500',
-      iconColor: 'text-purple-600'
+      iconColor: 'text-purple-600',
+      trendKey: 'totalReach' as keyof TrendData
     },
     {
       title: 'Impressions',
@@ -84,10 +117,11 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
       color: '#10b981', // green
       bgColor: 'bg-green-50',
       borderColor: 'border-green-500',
-      iconColor: 'text-green-600'
+      iconColor: 'text-green-600',
+      trendKey: 'totalImpressions' as keyof TrendData
     },
     {
-      title: 'Engagement',
+      title: 'Engagement Rate',
       value: analyticsData.engagementRate > 0 ? `${analyticsData.engagementRate.toFixed(1)}%` : '—',
       change: 'Measuring',
       changeType: analyticsData.engagementRate > 2 ? 'positive' as const : 'neutral' as const,
@@ -96,7 +130,8 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
       color: '#f59e0b', // orange
       bgColor: 'bg-orange-50',
       borderColor: 'border-orange-500',
-      iconColor: 'text-orange-600'
+      iconColor: 'text-orange-600',
+      trendKey: 'engagementRate' as keyof TrendData
     },
     {
       title: 'Top Platform',
@@ -108,7 +143,8 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
       color: '#14b8a6', // teal
       bgColor: 'bg-teal-50',
       borderColor: 'border-teal-500',
-      iconColor: 'text-teal-600'
+      iconColor: 'text-teal-600',
+      trendKey: null // Top platform doesn't have a trend
     }
   ]
 
@@ -116,6 +152,8 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
     <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
       {cards.map((card, index) => {
         const Icon = card.icon
+        const trendInfo = card.trendKey ? getTrendInfo(card.trendKey) : null
+
         return (
           <Card
             key={index}
@@ -132,7 +170,28 @@ export function OverviewCards({ analyticsData }: OverviewCardsProps) {
               <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
                 {card.description}
               </p>
-              {card.changeType === 'positive' && (
+
+              {/* Trend Indicator */}
+              {trendInfo && !trendInfo.isNeutral && (
+                <div className="flex items-center gap-1 mt-2">
+                  {trendInfo.isPositive ? (
+                    <ArrowUp className="h-3 w-3 text-green-600" />
+                  ) : (
+                    <ArrowDown className="h-3 w-3 text-red-600" />
+                  )}
+                  <span className={`text-[10px] sm:text-xs font-medium ${
+                    trendInfo.isPositive ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {Math.abs(trendInfo.change).toFixed(1)}%
+                  </span>
+                  <span className="text-[9px] sm:text-[10px] text-gray-500">
+                    vs last {dateRange} days
+                  </span>
+                </div>
+              )}
+
+              {/* Fallback for no trend data */}
+              {!trendInfo && card.changeType === 'positive' && (
                 <div className="flex items-center gap-1 mt-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   <span className="text-[10px] sm:text-xs text-green-600 font-medium">

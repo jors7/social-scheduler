@@ -34,9 +34,24 @@ interface AnalyticsData {
   postedPosts: any[]
 }
 
+interface TrendComparison {
+  current: number
+  previous: number
+  change: number
+}
+
+interface TrendData {
+  totalPosts: TrendComparison
+  totalEngagement: TrendComparison
+  totalReach: TrendComparison
+  totalImpressions: TrendComparison
+  engagementRate: TrendComparison
+}
+
 export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState('7') // Default to 7 days
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
+  const [trendData, setTrendData] = useState<TrendData | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -77,24 +92,26 @@ export default function AnalyticsPage() {
       } else {
         setRefreshing(true)
       }
-      
-      // Fetch data from all platforms in parallel
-      const [facebookRes, instagramRes, threadsRes, blueskyRes, pinterestRes, tiktokRes] = await Promise.all([
+
+      // Fetch data from all platforms in parallel (including trends)
+      const [facebookRes, instagramRes, threadsRes, blueskyRes, pinterestRes, tiktokRes, trendsRes] = await Promise.all([
         fetch(`/api/analytics/facebook?days=${dateRange}`),
         fetch(`/api/analytics/instagram?days=${dateRange}`),
         fetch(`/api/analytics/threads?days=${dateRange}`),
         fetch(`/api/analytics/bluesky?days=${dateRange}`),
         fetch(`/api/analytics/pinterest?days=${dateRange}`),
-        fetch(`/api/analytics/tiktok?days=${dateRange}`)
+        fetch(`/api/analytics/tiktok?days=${dateRange}`),
+        fetch(`/api/analytics/trends?days=${dateRange}`)
       ])
 
-      const [facebookData, instagramData, threadsData, blueskyData, pinterestData, tiktokData] = await Promise.all([
+      const [facebookData, instagramData, threadsData, blueskyData, pinterestData, tiktokData, trendsDataRes] = await Promise.all([
         facebookRes.ok ? facebookRes.json() : { metrics: null },
         instagramRes.ok ? instagramRes.json() : { metrics: null },
         threadsRes.ok ? threadsRes.json() : { metrics: null },
         blueskyRes.ok ? blueskyRes.json() : { metrics: null },
         pinterestRes.ok ? pinterestRes.json() : { metrics: null },
-        tiktokRes.ok ? tiktokRes.json() : { metrics: null }
+        tiktokRes.ok ? tiktokRes.json() : { metrics: null },
+        trendsRes.ok ? trendsRes.json() : { trends: null }
       ])
 
       // Aggregate all metrics
@@ -289,6 +306,11 @@ export default function AnalyticsPage() {
         allPosts,
         postedPosts: allPosts // Use allPosts for postedPosts as well
       })
+
+      // Set trend data if available
+      if (trendsDataRes && trendsDataRes.trends) {
+        setTrendData(trendsDataRes.trends)
+      }
 
     } catch (error) {
       console.error('Error fetching analytics:', error)
@@ -574,7 +596,7 @@ export default function AnalyticsPage() {
           </Card>
           
           {/* Overview Cards */}
-          <OverviewCards analyticsData={analyticsData} />
+          <OverviewCards analyticsData={analyticsData} trendData={trendData} dateRange={dateRange} />
 
           <div className="grid gap-4 sm:gap-8 grid-cols-1 md:grid-cols-2">
             {/* Engagement Chart */}
