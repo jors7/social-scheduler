@@ -433,7 +433,7 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
               
               {/* Platform Icons */}
               <div className="flex space-x-3">
-                {['facebook', 'instagram', 'threads', 'pinterest', 'bluesky'].map((platform, index) => {
+                {['facebook', 'instagram', 'threads', 'pinterest', 'bluesky', 'tiktok'].map((platform, index) => {
                   const icon = getPlatformIcon(platform)
                   const color = getPlatformColor(platform)
 
@@ -443,7 +443,8 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
                     'instagram': '#a855f7',   // purple-500
                     'threads': '#374151',     // gray-700
                     'pinterest': '#ef4444',   // red-500
-                    'bluesky': '#38bdf8'      // sky-400
+                    'bluesky': '#38bdf8',     // sky-400
+                    'tiktok': '#000000'       // black
                   }
 
                   return (

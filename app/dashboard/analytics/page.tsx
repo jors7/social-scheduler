@@ -60,6 +60,10 @@ export default function AnalyticsPage() {
         return <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 2C6.5 2 2 6.5 2 12c0 4.3 2.7 7.9 6.4 9.3-.1-.8-.2-2 0-2.9.2-.8 1.3-5.4 1.3-5.4s-.3-.7-.3-1.7c0-1.6.9-2.8 2.1-2.8.9 0 1.4.7 1.4 1.6 0 1-.6 2.4-.9 3.7-.3 1.1.6 2 1.7 2 2 0 3.5-2.1 3.5-5.2 0-2.7-2-4.6-4.8-4.6-3.3 0-5.2 2.5-5.2 5 0 1 .4 2.1.9 2.7.1.1.1.2.1.3-.1.4-.3 1.1-.3 1.3-.1.2-.2.3-.4.2-1.4-.7-2.3-2.7-2.3-4.4 0-3.6 2.6-6.9 7.5-6.9 3.9 0 7 2.8 7 6.6 0 3.9-2.5 7.1-5.9 7.1-1.2 0-2.3-.6-2.6-1.3l-.7 2.8c-.3 1-1 2.3-1.5 3.1 1.1.3 2.3.5 3.5.5 5.5 0 10-4.5 10-10S17.5 2 12 2z"/>
         </svg>
+      case 'tiktok':
+        return <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 3a3.5 3.5 0 0 1-3.5 3.5A3.5 3.5 0 0 1 12 3v8.5a4.5 4.5 0 1 1-3-4.24v3.1a1.5 1.5 0 1 0 0 2.14V3h3a6.5 6.5 0 0 0 6.5 6.5V6.5A3.5 3.5 0 0 0 19 3z"/>
+        </svg>
       default:
         return <BarChart3 className="h-5 w-5" />
     }
@@ -450,7 +454,8 @@ export default function AnalyticsPage() {
                   { name: 'instagram', bgColor: '#a855f7' },
                   { name: 'threads', bgColor: '#374151' },
                   { name: 'bluesky', bgColor: '#0ea5e9' },
-                  { name: 'pinterest', bgColor: '#ef4444' }
+                  { name: 'pinterest', bgColor: '#ef4444' },
+                  { name: 'tiktok', bgColor: '#000000' }
                 ].map((platform, index) => (
                   <div
                     key={platform.name}
