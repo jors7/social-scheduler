@@ -21,6 +21,7 @@ import Link from 'next/link'
 import { ScheduledPostsList } from '@/components/scheduled-posts-list'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 import { Card, CardContent } from '@/components/ui/card'
+import { Pagination } from '@/components/ui/pagination'
 
 interface ScheduledPost {
   id: string
@@ -39,6 +40,8 @@ export default function ScheduledPostsPage() {
   const [filterStatus, setFilterStatus] = useState('all')
   const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(12)
 
   const fetchScheduledPosts = async () => {
     try {
@@ -177,12 +180,17 @@ export default function ScheduledPostsPage() {
   }
 
   const toggleAllPosts = () => {
-    if (selectedPosts.length === filteredPosts.length) {
+    if (selectedPosts.length === paginatedPosts.length) {
       setSelectedPosts([])
     } else {
-      setSelectedPosts(filteredPosts.map(post => post.id))
+      setSelectedPosts(paginatedPosts.map(post => post.id))
     }
   }
+
+  // Paginate the filtered posts
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedPosts = filteredPosts.slice(startIndex, endIndex)
 
   const handleBulkDelete = async () => {
     if (selectedPosts.length === 0) return
@@ -282,7 +290,7 @@ export default function ScheduledPostsPage() {
 
           {/* Posts Grid */}
           <ScheduledPostsList
-            posts={filteredPosts}
+            posts={paginatedPosts}
             selectedPosts={selectedPosts}
             onTogglePostSelection={togglePostSelection}
             onToggleAllPosts={toggleAllPosts}
@@ -292,6 +300,18 @@ export default function ScheduledPostsPage() {
             onEditPost={handleEditPost}
             loading={loading}
           />
+
+          {/* Pagination */}
+          {!loading && filteredPosts.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredPosts.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+              itemLabel="posts"
+            />
+          )}
         </div>
       </SubscriptionGate>
     </div>

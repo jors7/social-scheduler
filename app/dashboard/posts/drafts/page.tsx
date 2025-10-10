@@ -19,6 +19,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 import { PostCard } from '@/components/post-card'
+import { Pagination } from '@/components/ui/pagination'
 
 interface Draft {
   id: string
@@ -53,6 +54,8 @@ export default function DraftPostsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedDrafts, setSelectedDrafts] = useState<string[]>([])
   const [sortBy, setSortBy] = useState('modified')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(12)
 
   const fetchDrafts = async () => {
     try {
@@ -154,12 +157,17 @@ export default function DraftPostsPage() {
   }
 
   const toggleAllDrafts = () => {
-    if (selectedDrafts.length === filteredDrafts.length) {
+    if (selectedDrafts.length === paginatedDrafts.length) {
       setSelectedDrafts([])
     } else {
-      setSelectedDrafts(filteredDrafts.map(draft => draft.id))
+      setSelectedDrafts(paginatedDrafts.map(draft => draft.id))
     }
   }
+
+  // Paginate the filtered drafts
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedDrafts = filteredDrafts.slice(startIndex, endIndex)
 
   return (
     <div className="space-y-8">
@@ -253,16 +261,16 @@ export default function DraftPostsPage() {
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  checked={selectedDrafts.length === filteredDrafts.length && filteredDrafts.length > 0}
+                  checked={selectedDrafts.length === paginatedDrafts.length && paginatedDrafts.length > 0}
                   onChange={toggleAllDrafts}
                   className="rounded border-gray-300"
                 />
-                <span className="text-sm text-gray-600">Select all ({filteredDrafts.length} drafts)</span>
+                <span className="text-sm text-gray-600">Select all on this page ({paginatedDrafts.length} drafts)</span>
               </div>
-              
+
               {/* Grid of draft cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredDrafts.map(draft => (
+                {paginatedDrafts.map(draft => (
                   <PostCard
                     key={draft.id}
                     post={draft}
@@ -275,6 +283,16 @@ export default function DraftPostsPage() {
                   />
                 ))}
               </div>
+
+              {/* Pagination */}
+              <Pagination
+                currentPage={currentPage}
+                totalItems={filteredDrafts.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={setItemsPerPage}
+                itemLabel="drafts"
+              />
             </div>
           )}
         </div>

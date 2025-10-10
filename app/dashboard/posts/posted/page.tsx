@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 import { ThreadsReplyDialog } from '@/components/threads/reply-dialog'
+import { Pagination } from '@/components/ui/pagination'
 
 interface PostedPost {
   id: string
@@ -76,6 +77,8 @@ export default function PostedPostsPage() {
   const [showInsightsModal, setShowInsightsModal] = useState<string | null>(null)
   const [replyDialogOpen, setReplyDialogOpen] = useState(false)
   const [replyToPost, setReplyToPost] = useState<{ id: string; text: string; accountId?: string } | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(18)
 
   const fetchPostedPosts = async () => {
     try {
@@ -128,12 +131,17 @@ export default function PostedPostsPage() {
   }
 
   const toggleAllPosts = () => {
-    if (selectedPosts.length === filteredPosts.length) {
+    if (selectedPosts.length === paginatedPosts.length) {
       setSelectedPosts([])
     } else {
-      setSelectedPosts(filteredPosts.map(post => post.id))
+      setSelectedPosts(paginatedPosts.map(post => post.id))
     }
   }
+
+  // Paginate the filtered posts
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedPosts = filteredPosts.slice(startIndex, endIndex)
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
@@ -419,15 +427,15 @@ export default function PostedPostsPage() {
             <div className="flex items-center gap-2 px-4 mb-6">
               <input
                 type="checkbox"
-                checked={selectedPosts.length === filteredPosts.length && filteredPosts.length > 0}
+                checked={selectedPosts.length === paginatedPosts.length && paginatedPosts.length > 0}
                 onChange={toggleAllPosts}
                 className="rounded border-gray-300"
               />
-              <span className="text-sm text-gray-600">Select all</span>
+              <span className="text-sm text-gray-600">Select all on this page</span>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredPosts.map(post => {
+              {paginatedPosts.map(post => {
                 // Helper function to get media URL (prioritize platform-fetched media URL)
                 const getMediaUrl = () => {
                   // Use platform-fetched media URL if available (includes Pinterest)
@@ -623,6 +631,16 @@ export default function PostedPostsPage() {
                 )
               })}
             </div>
+
+            {/* Pagination */}
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredPosts.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+              itemLabel="posts"
+            />
           </>
         )}
           </div>
