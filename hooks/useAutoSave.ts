@@ -12,6 +12,19 @@ interface AutoSaveData {
   mediaUrls: string[]
 }
 
+// Helper function to strip HTML tags for clean titles
+const stripHtml = (html: string) => {
+  return html
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim()
+}
+
 export function useAutoSave(
   data: AutoSaveData,
   draftId: string | null,
@@ -45,22 +58,31 @@ export function useAutoSave(
         setError(null)
 
         const currentDraftId = draftIdRef.current
-        const endpoint = currentDraftId
-          ? `/api/drafts?id=${currentDraftId}`
-          : '/api/drafts'
-
+        const endpoint = '/api/drafts'
         const method = currentDraftId ? 'PATCH' : 'POST'
+
+        // Strip HTML from content to create clean title
+        const cleanContent = stripHtml(data.content)
+        const title = cleanContent.slice(0, 50) || 'Untitled'
+
+        // Build request body
+        const requestBody: any = {
+          title,
+          content: data.content,
+          platforms: data.platforms,
+          platform_content: data.platformContent,
+          media_urls: data.mediaUrls
+        }
+
+        // Add draftId to body for PATCH requests (API expects it there, not in URL)
+        if (currentDraftId) {
+          requestBody.draftId = currentDraftId
+        }
 
         const response = await fetch(endpoint, {
           method,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: data.content.slice(0, 50) || 'Untitled',
-            content: data.content,
-            platforms: data.platforms,
-            platform_content: data.platformContent,
-            media_urls: data.mediaUrls
-          })
+          body: JSON.stringify(requestBody)
         })
 
         if (!response.ok) {
