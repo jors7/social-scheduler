@@ -589,7 +589,7 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
               <p className="text-sm text-blue-900 leading-relaxed">
                 <span className="font-medium">Why are some metrics limited?</span>
                 <br />
-                These numbers represent aggregated data from platforms with available analytics APIs. Currently, Facebook, Instagram, and Threads provide reach metrics, while other platforms are still developing their analytics capabilities.
+                These numbers represent aggregated data from platforms with available analytics APIs. Currently, Facebook, Instagram, Threads, Pinterest, TikTok, and Bluesky provide reach metrics, while other platforms are still developing their analytics capabilities.
               </p>
             </div>
           </div>
