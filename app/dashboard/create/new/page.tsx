@@ -343,12 +343,70 @@ function CreateNewPostPageContent() {
     }
   }
 
+  // Upload files immediately when selected (for autosave functionality)
+  const uploadFilesImmediately = async (files: File[]): Promise<string[]> => {
+    if (files.length === 0) return []
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      toast.error('Please sign in to upload files')
+      return []
+    }
+
+    const uploadedUrls: string[] = []
+    const hasVideos = files.some(file => file.type.startsWith('video/'))
+
+    toast.info(`Uploading ${files.length} file(s)...`, { duration: 2000 })
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      try {
+        // Generate unique filename
+        const timestamp = Date.now()
+        const randomString = Math.random().toString(36).substring(2, 8)
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${user.id}/${timestamp}-${randomString}.${fileExt}`
+
+        // Always upload directly to Supabase Storage for consistency
+        const { data, error } = await supabase.storage
+          .from('post-media')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          })
+
+        if (error) throw error
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('post-media')
+          .getPublicUrl(fileName)
+
+        uploadedUrls.push(publicUrl)
+      } catch (error) {
+        console.error('Upload error for file:', file.name, error)
+        toast.error(`Failed to upload ${file.name}`)
+      }
+    }
+
+    if (uploadedUrls.length > 0) {
+      toast.success(`Uploaded ${uploadedUrls.length} file(s) successfully`)
+    }
+
+    return uploadedUrls
+  }
+
   const uploadFiles = async (): Promise<string[]> => {
+    // If files are already uploaded, return those URLs
+    if (uploadedMediaUrls.length > 0) {
+      return uploadedMediaUrls
+    }
+
     if (selectedFiles.length === 0) return []
-    
+
     // Check if we have video files
     const hasVideos = selectedFiles.some(file => file.type.startsWith('video/'))
-    
+
     // For videos or mixed media, use direct upload to avoid Vercel size limits
     if (hasVideos) {
       const { data: { user } } = await supabase.auth.getUser()
@@ -356,10 +414,10 @@ function CreateNewPostPageContent() {
         toast.error('Please sign in to upload files')
         return []
       }
-      
+
       const uploadedUrls: string[] = []
       toast.info(`Uploading ${selectedFiles.length} file(s)...`)
-      
+
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i]
         try {
@@ -368,7 +426,7 @@ function CreateNewPostPageContent() {
           const randomString = Math.random().toString(36).substring(2, 8)
           const fileExt = file.name.split('.').pop()
           const fileName = `${user.id}/${timestamp}-${randomString}.${fileExt}`
-          
+
           // Upload directly to Supabase Storage
           const { data, error } = await supabase.storage
             .from('post-media')
@@ -376,14 +434,14 @@ function CreateNewPostPageContent() {
               cacheControl: '3600',
               upsert: false
             })
-          
+
           if (error) throw error
-          
+
           // Get public URL
           const { data: { publicUrl } } = supabase.storage
             .from('post-media')
             .getPublicUrl(fileName)
-          
+
           uploadedUrls.push(publicUrl)
           toast.success(`Uploaded ${i + 1} of ${selectedFiles.length}`)
         } catch (error) {
@@ -391,7 +449,7 @@ function CreateNewPostPageContent() {
           toast.error(`Failed to upload ${file.name}`)
         }
       }
-      
+
       return uploadedUrls
     } else {
       // For images only, use the API route (smaller files)
@@ -399,17 +457,17 @@ function CreateNewPostPageContent() {
       selectedFiles.forEach(file => {
         formData.append('files', file)
       })
-      
+
       try {
         const response = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
         })
-        
+
         if (!response.ok) {
           throw new Error('Upload failed')
         }
-        
+
         const data = await response.json()
         return data.files.map((file: any) => file.url)
       } catch (error) {
@@ -1839,41 +1897,60 @@ function CreateNewPostPageContent() {
     }
   }
 
-  const handleFileSelect = (files: FileList | null) => {
+  const handleFileSelect = async (files: FileList | null) => {
     if (!files) return
-    
+
     const fileArray = Array.from(files)
-    
+
     // Check Instagram carousel limit (including already selected files)
     const totalFiles = selectedFiles.length + fileArray.length;
     if (selectedPlatforms.includes('instagram') && totalFiles > 10) {
       toast.error(`Instagram supports maximum 10 items in a carousel. You have ${selectedFiles.length} selected and trying to add ${fileArray.length} more.`)
       return
     }
-    
+
     const validFiles = fileArray.filter(file => {
       const isImage = file.type.startsWith('image/')
       const isVideo = file.type.startsWith('video/')
       const sizeLimit = isImage ? 50 * 1024 * 1024 : 500 * 1024 * 1024 // 50MB for images, 500MB for videos
-      
+
       if (!isImage && !isVideo) {
         toast.error(`${file.name}: Only images and videos are supported`)
         return false
       }
-      
+
       if (file.size > sizeLimit) {
         toast.error(`${file.name}: File too large (max ${isImage ? '50MB' : '500MB'})`)
         return false
       }
-      
+
       return true
     })
-    
-    setSelectedFiles(prev => [...prev, ...validFiles])
+
+    if (validFiles.length === 0) return
+
+    // Upload files immediately for autosave
+    const newUrls = await uploadFilesImmediately(validFiles)
+
+    if (newUrls.length > 0) {
+      // Add new URLs to existing uploaded media URLs
+      setUploadedMediaUrls(prev => [...prev, ...newUrls])
+      // Clear selectedFiles since we have uploaded URLs now
+      setSelectedFiles([])
+    } else {
+      // If upload failed, still keep files in selectedFiles for retry
+      setSelectedFiles(prev => [...prev, ...validFiles])
+    }
   }
 
   const removeFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+    // Remove from uploadedMediaUrls if using that, otherwise from selectedFiles
+    if (uploadedMediaUrls.length > 0) {
+      setUploadedMediaUrls(prev => prev.filter((_, i) => i !== index))
+      toast.info('Media removed from post')
+    } else {
+      setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+    }
   }
 
   const handleDrop = (e: React.DragEvent) => {
