@@ -387,6 +387,20 @@ export function SimpleDragCalendar({
                               {post.platforms.join(' · ')}
                             </div>
                           </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              e.preventDefault()
+                              onPostEdit(post.id)
+                            }}
+                            onMouseDown={(e) => {
+                              e.stopPropagation()
+                            }}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/20 rounded p-0.5 flex-shrink-0"
+                            title="Edit post"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </button>
                         </div>
                       </div>
                     ))}

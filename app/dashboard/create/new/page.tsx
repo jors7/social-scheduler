@@ -1920,9 +1920,27 @@ function CreateNewPostPageContent() {
         // Note: We can&apos;t restore the actual File objects, just the URLs
         toast.info('Media files from draft have been loaded')
       }
-      
+
+      // Load Pinterest-specific fields if present
+      if (draft.pinterest_title) {
+        setPinterestTitle(draft.pinterest_title)
+        console.log('Loaded Pinterest title from draft:', draft.pinterest_title)
+      }
+      if (draft.pinterest_description) {
+        setPinterestDescription(draft.pinterest_description)
+        console.log('Loaded Pinterest description from draft:', draft.pinterest_description)
+      }
+      if (draft.pinterest_board_id) {
+        setSelectedPinterestBoard(draft.pinterest_board_id)
+        console.log('Loaded Pinterest board ID from draft:', draft.pinterest_board_id)
+      }
+      if (draft.pinterest_link) {
+        setPinterestLink(draft.pinterest_link)
+        console.log('Loaded Pinterest link from draft:', draft.pinterest_link)
+      }
+
       console.log('Draft data set successfully')
-      
+
       // Handle schedule/publish actions
       if (openSchedule) {
         // Set a default schedule time (e.g., 1 hour from now)
@@ -1997,7 +2015,25 @@ function CreateNewPostPageContent() {
         setScheduledDate(dateStr)
         setScheduledTime(timeStr)
       }
-      
+
+      // Load Pinterest-specific fields if present
+      if (scheduledPost.pinterest_title) {
+        setPinterestTitle(scheduledPost.pinterest_title)
+        console.log('Loaded Pinterest title:', scheduledPost.pinterest_title)
+      }
+      if (scheduledPost.pinterest_description) {
+        setPinterestDescription(scheduledPost.pinterest_description)
+        console.log('Loaded Pinterest description:', scheduledPost.pinterest_description)
+      }
+      if (scheduledPost.pinterest_board_id) {
+        setSelectedPinterestBoard(scheduledPost.pinterest_board_id)
+        console.log('Loaded Pinterest board ID:', scheduledPost.pinterest_board_id)
+      }
+      if (scheduledPost.pinterest_link) {
+        setPinterestLink(scheduledPost.pinterest_link)
+        console.log('Loaded Pinterest link:', scheduledPost.pinterest_link)
+      }
+
       // Store the original post ID for updating
       setCurrentDraftId(postId) // Reuse the same state for tracking the post being edited
       setEditingScheduledPost(true) // Mark that we're editing a scheduled post
