@@ -97,13 +97,13 @@ export function QuickScheduleButtons({
   const options = getQuickOptions()
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <Zap className="h-4 w-4 text-blue-600" />
-        <span className="text-sm font-medium text-gray-700">Quick Schedule</span>
+        <Zap className="h-3.5 w-3.5 text-blue-600" />
+        <span className="text-xs font-medium text-gray-700">Quick Schedule</span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         {options.map((option) => {
           const selected = isSelected(option)
 
@@ -113,39 +113,29 @@ export function QuickScheduleButtons({
               type="button"
               onClick={() => onSelect(option.date, option.time)}
               className={cn(
-                "relative p-3 rounded-lg border-2 transition-all text-left group",
+                "relative p-2 rounded-lg border-2 transition-all text-center group",
                 selected
                   ? "border-blue-500 bg-blue-50"
                   : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
               )}
             >
-              <div className="flex flex-col gap-1">
-                <span className="text-2xl">{option.icon}</span>
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="text-lg">{option.icon}</span>
                 <span className={cn(
-                  "text-xs font-semibold",
+                  "text-[10px] font-semibold leading-tight",
                   selected ? "text-blue-700" : "text-gray-900"
                 )}>
                   {option.label}
                 </span>
-                <span className={cn(
-                  "text-[10px]",
-                  selected ? "text-blue-600" : "text-gray-500"
-                )}>
-                  {option.description}
-                </span>
               </div>
 
               {selected && (
-                <div className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full" />
+                <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-500 rounded-full" />
               )}
             </button>
           )
         })}
       </div>
-
-      <p className="text-xs text-gray-500 italic">
-        💡 Click any option to instantly set date & time
-      </p>
     </div>
   )
 }
