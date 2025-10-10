@@ -45,7 +45,7 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
     {
       id: 'welcome',
       title: 'Welcome to SocialCal! 🎉',
-      description: 'Let\'s take a quick tour of your new social media command center',
+      description: 'Let&apos;s take a quick tour of your new social media command center',
       icon: Sparkles,
       position: 'center',
       content: (
@@ -176,7 +176,7 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
           <div className="bg-green-50 border border-green-200 rounded-lg p-3">
             <p className="text-xs text-green-900 flex items-center gap-2">
               <ArrowRight className="h-3 w-3" />
-              Click "Create Post" in the top section to get started!
+              Click &quot;Create Post&quot; in the top section to get started!
             </p>
           </div>
         </div>
@@ -239,7 +239,7 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
       content: (
         <div className="space-y-4">
           <p className="text-gray-600">
-            Schedule your posts to go live at the perfect time, even when you're away.
+            Schedule your posts to go live at the perfect time, even when you&apos;re away.
           </p>
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
@@ -282,7 +282,7 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
       content: (
         <div className="space-y-4">
           <p className="text-gray-600">
-            Understand what's working with detailed analytics and insights across all your platforms.
+            Understand what&apos;s working with detailed analytics and insights across all your platforms.
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
@@ -327,7 +327,7 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
     },
     {
       id: 'complete',
-      title: 'You\'re All Set! 🚀',
+      title: 'You&apos;re All Set! 🚀',
       description: 'Start creating amazing content for your audience',
       icon: CheckCircle2,
       position: 'center',
@@ -364,7 +364,7 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
               Need help? You can restart this tour anytime!
             </p>
             <p className="text-xs text-purple-700">
-              Click the "Tour" button at the top of your dashboard
+              Click the &quot;Tour&quot; button at the top of your dashboard
             </p>
           </div>
         </div>

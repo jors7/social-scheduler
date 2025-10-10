@@ -610,19 +610,45 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Dashboard</h1>
-            <p className="text-gray-600 mt-2 text-lg">Welcome back! Here&apos;s your social media overview.</p>
+      <div className="space-y-6">
+        {/* Loading skeleton matching the final layout */}
+        <div className="bg-gradient-to-br from-purple-50 via-white to-blue-50 rounded-2xl p-6 border border-purple-100 shadow-sm animate-pulse">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="w-full">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-3">
+                    {/* Greeting skeleton */}
+                    <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-64"></div>
+                    {/* Badge skeleton */}
+                    <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-24"></div>
+                  </div>
+                  {/* Subtitle skeleton */}
+                  <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-80 max-w-full"></div>
+                </div>
+
+                {/* Button skeletons */}
+                <div className="flex gap-3">
+                  <div className="h-12 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg w-32"></div>
+                  <div className="h-12 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg w-28"></div>
+                </div>
+              </div>
+
+              {/* Pro Tip skeleton */}
+              <div className="bg-white/80 rounded-lg p-3 border border-purple-100 mt-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg flex-shrink-0"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-48 mb-2"></div>
+                    <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-full"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <Link href="/dashboard/create/new">
-            <Button variant="gradient" size="lg" className="mt-6 sm:mt-0">
-              <PlusCircle className="mr-2 h-5 w-5" />
-              Create Post
-            </Button>
-          </Link>
         </div>
+
+        {/* Stats cards skeleton */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i} variant="elevated" className="animate-pulse">
