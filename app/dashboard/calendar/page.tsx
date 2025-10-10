@@ -5,12 +5,14 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Plus, Clock, Calendar } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Plus, Clock, Calendar, Search, Filter, X } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { SimpleDragCalendar } from '@/components/dashboard/simple-drag-calendar'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
+import { CustomSelect } from '@/components/ui/custom-select'
 
 interface ScheduledPost {
   id: string
@@ -29,6 +31,10 @@ export default function CalendarPage() {
   const router = useRouter()
   const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [platformFilter, setPlatformFilter] = useState<string[]>([])
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [selectedPosts, setSelectedPosts] = useState<string[]>([])
 
   const fetchScheduledPosts = async () => {
     try {
@@ -37,10 +43,8 @@ export default function CalendarPage() {
       
       const data = await response.json()
       const posts = data.posts || []
-      
-      // Filter to only show pending posts
-      const pendingPosts = posts.filter((post: ScheduledPost) => post.status === 'pending')
-      setScheduledPosts(pendingPosts)
+
+      setScheduledPosts(posts)
     } catch (error) {
       console.error('Error fetching scheduled posts:', error)
       toast.error('Failed to load scheduled posts')
@@ -102,12 +106,83 @@ export default function CalendarPage() {
       }
 
       toast.success('Post deleted successfully')
+      setSelectedPosts(prev => prev.filter(id => id !== postId))
       fetchScheduledPosts()
     } catch (error) {
       console.error('Error deleting post:', error)
       toast.error('Failed to delete post')
     }
   }
+
+  const handleBulkDelete = async () => {
+    if (selectedPosts.length === 0) return
+
+    if (!confirm(`Are you sure you want to delete ${selectedPosts.length} post${selectedPosts.length > 1 ? 's' : ''}?`)) {
+      return
+    }
+
+    try {
+      const deletePromises = selectedPosts.map(postId =>
+        fetch(`/api/posts/schedule?id=${postId}`, { method: 'DELETE' })
+      )
+      await Promise.all(deletePromises)
+
+      toast.success(`Deleted ${selectedPosts.length} post${selectedPosts.length > 1 ? 's' : ''}`)
+      setSelectedPosts([])
+      fetchScheduledPosts()
+    } catch (error) {
+      console.error('Bulk delete error:', error)
+      toast.error('Failed to delete posts')
+    }
+  }
+
+  // Filter posts based on search query, platform, and status
+  const stripHtml = (html: string) => {
+    return html
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .trim()
+  }
+
+  const filteredPosts = scheduledPosts.filter(post => {
+    // Search filter
+    if (searchQuery) {
+      const content = stripHtml(post.content).toLowerCase()
+      const platforms = post.platforms.join(' ').toLowerCase()
+      const query = searchQuery.toLowerCase()
+      if (!content.includes(query) && !platforms.includes(query)) {
+        return false
+      }
+    }
+
+    // Platform filter
+    if (platformFilter.length > 0) {
+      const hasMatchingPlatform = post.platforms.some(p => platformFilter.includes(p))
+      if (!hasMatchingPlatform) return false
+    }
+
+    // Status filter
+    if (statusFilter !== 'all' && post.status !== statusFilter) {
+      return false
+    }
+
+    return true
+  })
+
+  const hasActiveFilters = searchQuery || platformFilter.length > 0 || statusFilter !== 'all'
+
+  const clearFilters = () => {
+    setSearchQuery('')
+    setPlatformFilter([])
+    setStatusFilter('all')
+  }
+
+  const availablePlatforms = Array.from(new Set(scheduledPosts.flatMap(p => p.platforms)))
 
   if (loading) {
     return (
@@ -157,14 +232,92 @@ export default function CalendarPage() {
       </div>
 
       <SubscriptionGate feature="calendar scheduling">
+        {/* Search and Filter Bar */}
+        <Card className="p-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search posts by content or platform..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            {/* Status Filter */}
+            <CustomSelect
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'posting', label: 'Posting' },
+                { value: 'posted', label: 'Posted' },
+                { value: 'failed', label: 'Failed' },
+                { value: 'cancelled', label: 'Cancelled' }
+              ]}
+              className="min-w-[150px] h-10"
+            />
+
+            {/* Clear Filters */}
+            {hasActiveFilters && (
+              <Button variant="outline" size="sm" onClick={clearFilters} className="h-10">
+                <X className="mr-2 h-4 w-4" />
+                Clear Filters
+              </Button>
+            )}
+          </div>
+
+          {/* Filter Result Count */}
+          {hasActiveFilters && (
+            <div className="mt-3 text-sm text-gray-600">
+              Showing {filteredPosts.length} of {scheduledPosts.length} posts
+            </div>
+          )}
+        </Card>
+
         <Card variant="glass" className="p-6 min-h-[600px]">
           <SimpleDragCalendar
-            scheduledPosts={scheduledPosts}
+            scheduledPosts={filteredPosts}
             onPostUpdate={handlePostUpdate}
             onPostEdit={handleEditPost}
             onPostDelete={handleDeletePost}
+            selectedPosts={selectedPosts}
+            onPostSelect={setSelectedPosts}
           />
         </Card>
+
+        {/* Bulk Actions Bar */}
+        {selectedPosts.length > 0 && (
+          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+            <Card className="shadow-2xl border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
+              <CardContent className="flex items-center gap-4 py-4 px-6">
+                <span className="text-sm font-medium text-purple-900">
+                  {selectedPosts.length} post{selectedPosts.length > 1 ? 's' : ''} selected
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                    className="hover:bg-red-50 hover:border-red-300"
+                  >
+                    Delete Selected
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedPosts([])}
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </SubscriptionGate>
     </div>
   )

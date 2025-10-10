@@ -24,6 +24,8 @@ interface DragDropCalendarProps {
   onPostUpdate: (postId: string, newDate: Date) => Promise<void>
   onPostEdit: (postId: string) => void
   onPostDelete: (postId: string) => void
+  selectedPosts?: string[]
+  onPostSelect?: (selectedPosts: string[]) => void
 }
 
 const platformColors = {
@@ -63,11 +65,13 @@ const platformIcons: Record<string, string> = {
   pinterest: '📌'
 }
 
-export function SimpleDragCalendar({ 
-  scheduledPosts, 
-  onPostUpdate, 
-  onPostEdit, 
-  onPostDelete 
+export function SimpleDragCalendar({
+  scheduledPosts,
+  onPostUpdate,
+  onPostEdit,
+  onPostDelete,
+  selectedPosts = [],
+  onPostSelect
 }: DragDropCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -271,6 +275,18 @@ export function SimpleDragCalendar({
       return newDate
     })
   }
+
+  const togglePostSelection = (postId: string) => {
+    if (!onPostSelect) return
+
+    if (selectedPosts.includes(postId)) {
+      onPostSelect(selectedPosts.filter(id => id !== postId))
+    } else {
+      onPostSelect([...selectedPosts, postId])
+    }
+  }
+
+  const isPostSelected = (postId: string) => selectedPosts.includes(postId)
 
   return (
     <div className="space-y-6">
