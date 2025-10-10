@@ -42,9 +42,11 @@ import { useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { getClientSubscription } from '@/lib/subscription/client'
-import { Crown, Sparkles, RefreshCw } from 'lucide-react'
+import { Crown, Sparkles, RefreshCw, Play } from 'lucide-react'
 import { SUBSCRIPTION_PLANS } from '@/lib/subscription/plans'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
+import { useOnboarding } from '@/providers/onboarding-provider'
+import { OnboardingWizard } from '@/components/onboarding/onboarding-wizard'
 
 interface PostData {
   id: string
@@ -111,6 +113,17 @@ export default function DashboardPage() {
   const activityOverviewRef = useRef<HTMLDivElement>(null)
   const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes in milliseconds
   const [currentTipIndex, setCurrentTipIndex] = useState(0)
+
+  // Onboarding integration
+  const {
+    isOnboardingOpen,
+    hasCompletedOnboarding,
+    isLoading: isLoadingOnboarding,
+    startOnboarding,
+    completeOnboarding,
+    skipOnboarding,
+    closeOnboarding
+  } = useOnboarding()
 
   // Array of rotating pro tips
   const proTips = [
@@ -554,7 +567,19 @@ export default function DashboardPage() {
       clearTimeout(timeoutId)
     }
   }, [])
-  
+
+  // Auto-trigger onboarding for first-time users
+  useEffect(() => {
+    if (!isLoadingOnboarding && !hasCompletedOnboarding && !loading) {
+      // Delay by 2 seconds to let the dashboard load first
+      const timer = setTimeout(() => {
+        startOnboarding()
+      }, 2000)
+
+      return () => clearTimeout(timer)
+    }
+  }, [isLoadingOnboarding, hasCompletedOnboarding, loading, startOnboarding])
+
   const stripHtml = (html: string) => {
     return html
       .replace(/<[^>]*>/g, '')
@@ -662,9 +687,10 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Section with Greeting and Tips */}
-      <div className="bg-gradient-to-br from-purple-50 via-white to-blue-50 rounded-2xl p-6 border border-purple-100 shadow-sm">
+    <>
+      <div className="space-y-6">
+        {/* Welcome Section with Greeting and Tips */}
+        <div className="bg-gradient-to-br from-purple-50 via-white to-blue-50 rounded-2xl p-6 border border-purple-100 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="w-full">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -698,12 +724,27 @@ export default function DashboardPage() {
               </div>
               
               <div className="flex gap-3">
-                <Link href="/dashboard/create/new">
-                  <Button variant="gradient" size="lg" className="shadow-md hover:shadow-lg transition-all">
-                    <PlusCircle className="mr-2 h-5 w-5" />
-                    Create Post
+                {/* Show Start Tour button for new users, Tour button for returning users */}
+                {!hasCompletedOnboarding ? (
+                  <Button
+                    variant="gradient"
+                    size="lg"
+                    onClick={startOnboarding}
+                    className="shadow-md hover:shadow-lg transition-all"
+                  >
+                    <Play className="mr-2 h-5 w-5" />
+                    Start Tour
                   </Button>
-                </Link>
+                ) : (
+                  <Button
+                    size="lg"
+                    onClick={startOnboarding}
+                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white shadow-md hover:shadow-lg transition-all"
+                  >
+                    <Play className="mr-2 h-5 w-5" />
+                    Tour
+                  </Button>
+                )}
                 {subscription && !subscription.hasSubscription && (
                   <Link href="/#pricing">
                     <Button variant="outline" size="lg" className="hover:bg-purple-50">
@@ -1538,6 +1579,15 @@ export default function DashboardPage() {
           </div>
         </div>
       </SubscriptionGate>
-    </div>
+      </div>
+
+      {/* Onboarding Wizard */}
+      <OnboardingWizard
+        isOpen={isOnboardingOpen}
+        onClose={closeOnboarding}
+        onComplete={completeOnboarding}
+        onSkip={skipOnboarding}
+      />
+    </>
   )
 }
