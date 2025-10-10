@@ -1401,15 +1401,43 @@ export default function DashboardPage() {
                       {/* Media thumbnails */}
                       {day.media_urls.length > 0 && (
                         <div className="flex gap-1">
-                          {day.media_urls.map((url, index) => (
-                            <div key={index} className="flex-shrink-0">
-                              <img
-                                src={url}
-                                alt="Scheduled post media"
-                                className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                              />
-                            </div>
-                          ))}
+                          {day.media_urls.map((url, index) => {
+                            // Check if this is a video URL
+                            const isVideo = url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') || url.includes('.avi'))
+
+                            return (
+                              <div key={index} className="flex-shrink-0">
+                                {isVideo ? (
+                                  <video
+                                    src={url}
+                                    className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                                    muted
+                                    preload="metadata"
+                                    onError={(e) => {
+                                      // Replace video with placeholder on error
+                                      const placeholder = document.createElement('div')
+                                      placeholder.className = 'w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center'
+                                      placeholder.innerHTML = '<svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>'
+                                      e.currentTarget.parentNode?.replaceChild(placeholder, e.currentTarget)
+                                    }}
+                                  />
+                                ) : (
+                                  <img
+                                    src={url}
+                                    alt="Scheduled post media"
+                                    className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                                    onError={(e) => {
+                                      // Replace image with placeholder on error
+                                      const placeholder = document.createElement('div')
+                                      placeholder.className = 'w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center'
+                                      placeholder.innerHTML = '<svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>'
+                                      e.currentTarget.parentNode?.replaceChild(placeholder, e.currentTarget)
+                                    }}
+                                  />
+                                )}
+                              </div>
+                            )
+                          })}
                           {day.posts > day.media_urls.length && (
                             <div className="flex-shrink-0">
                               <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">

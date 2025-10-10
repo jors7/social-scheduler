@@ -200,6 +200,23 @@ export async function GET(request: NextRequest) {
                     } catch (blueskyError) {
                       console.error('Error fetching Bluesky post:', blueskyError);
                     }
+                  } else if (platform === 'tiktok') {
+                    // TikTok handling
+                    // Note: TikTok's sandbox API doesn't provide video listing or media URLs
+                    // We'll fallback to using the original media_urls from the post
+                    // The video URL itself can be used - browsers will display it as video
+                    try {
+                      if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
+                        // Use the first media URL (the video that was uploaded)
+                        const videoUrl = post.media_urls[0];
+                        if (typeof videoUrl === 'string' && videoUrl.trim() !== '') {
+                          platformMediaUrl = videoUrl;
+                          console.log('TikTok video URL from database for', result.postId, ':', platformMediaUrl);
+                        }
+                      }
+                    } catch (tiktokError) {
+                      console.error('Error handling TikTok video:', tiktokError);
+                    }
                   }
                 } catch (error) {
                   console.error(`Error fetching media for ${platform} post ${result.postId}:`, error);
