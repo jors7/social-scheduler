@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       // For image posts
       formData.append('media_type', 'IMAGE');
       formData.append('image_url', mediaUrl);
-      formData.append('caption', text); // Use 'caption' for image posts
+      formData.append('text', text); // Use 'text' for both text and image posts
     } else {
       // For text-only posts
       formData.append('media_type', 'TEXT');
