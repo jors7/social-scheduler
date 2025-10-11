@@ -343,13 +343,43 @@ export class FacebookService {
 
       console.log('Video bytes uploaded successfully');
 
+      // Wait for upload processing to complete before publishing
+      console.log('Waiting for video upload to be processed...');
+      let uploadComplete = false;
+      let attempts = 0;
+      const maxAttempts = 30; // 30 seconds max
+
+      while (!uploadComplete && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+        attempts++;
+
+        const checkUrl = `${this.baseUrl}/${videoId}`;
+        const checkParams = new URLSearchParams({
+          fields: 'status',
+          access_token: pageAccessToken
+        });
+
+        const checkResponse = await fetch(`${checkUrl}?${checkParams.toString()}`);
+        const checkData = await checkResponse.json();
+
+        console.log(`Upload check ${attempts}/${maxAttempts}:`, checkData.status);
+
+        if (checkData.status?.uploading_phase?.status === 'complete') {
+          uploadComplete = true;
+          console.log('Upload processing complete');
+        }
+      }
+
+      if (!uploadComplete) {
+        console.log('Upload still processing, proceeding to publish anyway...');
+      }
+
       // Phase 3: Finish and publish the Reel
       console.log('Phase 3: Publishing Reel...');
       const finishParams = new URLSearchParams({
         upload_phase: 'finish',
         video_id: videoId,
         description: message,
-        share_to_feed: 'true',
         access_token: pageAccessToken
       });
 
@@ -370,15 +400,9 @@ export class FacebookService {
 
       console.log('Facebook Reel publish response:', finishData);
 
-      // The FINISH response might return { success: true } without an ID
-      // In that case, use the video_id from the START phase
-      const reelId = finishData.id || finishData.video_id || (finishData.success ? videoId : null);
-
-      if (!reelId) {
-        console.error('No Reel ID in response, using video_id from START phase:', videoId);
-      }
-
-      console.log('Facebook Reel published successfully with ID:', reelId || videoId);
+      // Use post_id if available, otherwise fall back to video_id
+      const reelId = finishData.post_id || finishData.id || finishData.video_id || videoId;
+      console.log('Facebook Reel published successfully with ID:', reelId);
 
       // Optional: Poll for upload completion status
       console.log('Verifying upload status...');
