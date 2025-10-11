@@ -1,11 +1,13 @@
 'use client'
 
-import { Zap } from 'lucide-react'
+import { Zap, Sunrise, Sun, Sparkles, LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface QuickScheduleOption {
   label: string
-  icon: string
+  icon: LucideIcon
+  iconColor: string
+  gradient: string
   date: string // YYYY-MM-DD
   time: string // HH:MM
   description: string
@@ -31,7 +33,9 @@ export function QuickScheduleButtons({
     const in1Hour = new Date(now.getTime() + 60 * 60 * 1000)
     options.push({
       label: 'In 1 Hour',
-      icon: '⚡',
+      icon: Zap,
+      iconColor: 'text-purple-600',
+      gradient: 'from-purple-100 to-indigo-100',
       date: formatDate(in1Hour),
       time: formatTime(in1Hour),
       description: 'Quick post'
@@ -43,7 +47,9 @@ export function QuickScheduleButtons({
     tomorrow9AM.setHours(9, 0, 0, 0)
     options.push({
       label: 'Tomorrow 9 AM',
-      icon: '🌅',
+      icon: Sunrise,
+      iconColor: 'text-orange-600',
+      gradient: 'from-orange-100 to-amber-100',
       date: formatDate(tomorrow9AM),
       time: formatTime(tomorrow9AM),
       description: 'Morning post'
@@ -55,7 +61,9 @@ export function QuickScheduleButtons({
     tomorrow12PM.setHours(12, 0, 0, 0)
     options.push({
       label: 'Tomorrow Noon',
-      icon: '☀️',
+      icon: Sun,
+      iconColor: 'text-yellow-600',
+      gradient: 'from-yellow-100 to-amber-100',
       date: formatDate(tomorrow12PM),
       time: formatTime(tomorrow12PM),
       description: 'Lunch time'
@@ -68,7 +76,9 @@ export function QuickScheduleButtons({
     thisWeekend.setHours(10, 0, 0, 0)
     options.push({
       label: 'This Weekend',
-      icon: '🎉',
+      icon: Sparkles,
+      iconColor: 'text-pink-600',
+      gradient: 'from-pink-100 to-purple-100',
       date: formatDate(thisWeekend),
       time: formatTime(thisWeekend),
       description: 'Saturday morning'
@@ -106,6 +116,7 @@ export function QuickScheduleButtons({
       <div className="grid grid-cols-4 gap-2">
         {options.map((option) => {
           const selected = isSelected(option)
+          const IconComponent = option.icon
 
           return (
             <button
@@ -113,24 +124,37 @@ export function QuickScheduleButtons({
               type="button"
               onClick={() => onSelect(option.date, option.time)}
               className={cn(
-                "relative p-2 rounded-lg border-2 transition-all text-center group",
+                "relative p-3 rounded-lg border-2 transition-all text-center group overflow-hidden",
                 selected
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+                  ? "border-blue-500 shadow-md"
+                  : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
               )}
             >
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="text-lg">{option.icon}</span>
+              <div className={cn(
+                "absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity",
+                option.gradient,
+                selected ? "opacity-100" : "group-hover:opacity-50"
+              )} />
+
+              <div className="relative flex flex-col items-center gap-1">
+                <div className={cn(
+                  "p-1.5 rounded-lg transition-colors",
+                  selected
+                    ? cn("bg-white/80", option.iconColor)
+                    : "bg-gray-100 text-gray-600 group-hover:bg-white/80"
+                )}>
+                  <IconComponent className="h-4 w-4" />
+                </div>
                 <span className={cn(
                   "text-[10px] font-semibold leading-tight",
-                  selected ? "text-blue-700" : "text-gray-900"
+                  selected ? "text-gray-900" : "text-gray-700"
                 )}>
                   {option.label}
                 </span>
               </div>
 
               {selected && (
-                <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-blue-500 rounded-full shadow-sm" />
               )}
             </button>
           )
