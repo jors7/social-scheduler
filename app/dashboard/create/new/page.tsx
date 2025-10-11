@@ -391,9 +391,6 @@ function CreateNewPostPageContent() {
 
     if (uploadedUrls.length > 0) {
       toast.success(`Uploaded ${uploadedUrls.length} file(s) successfully`)
-      console.log('[Upload] Files uploaded successfully:', uploadedUrls)
-    } else {
-      console.log('[Upload] No files were uploaded')
     }
 
     return uploadedUrls
@@ -1937,16 +1934,10 @@ function CreateNewPostPageContent() {
 
     if (newUrls.length > 0) {
       // Add new URLs to existing uploaded media URLs
-      console.log('[FileSelect] Setting uploaded media URLs:', newUrls)
-      setUploadedMediaUrls(prev => {
-        const updated = [...prev, ...newUrls]
-        console.log('[FileSelect] Updated uploadedMediaUrls:', updated)
-        return updated
-      })
+      setUploadedMediaUrls(prev => [...prev, ...newUrls])
       // Clear selectedFiles since we have uploaded URLs now
       setSelectedFiles([])
     } else {
-      console.log('[FileSelect] Upload failed, keeping files in selectedFiles')
       // If upload failed, still keep files in selectedFiles for retry
       setSelectedFiles(prev => [...prev, ...validFiles])
     }

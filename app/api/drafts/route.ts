@@ -38,16 +38,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch drafts' }, { status: 500 });
     }
 
-    console.log('[API GET] Fetched drafts:', {
-      count: data?.length || 0,
-      drafts: data?.map(d => ({
-        id: d.id,
-        title: d.title,
-        mediaUrlsCount: d.media_urls?.length || 0,
-        mediaUrls: d.media_urls
-      }))
-    });
-
     return NextResponse.json({
       success: true,
       drafts: data || []
@@ -87,14 +77,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { title, content, platforms, platformContent, media_urls, pinterest_title, pinterest_description } = body;
 
-    // Debug logging
-    console.log('[API POST] Received draft data:', {
-      title,
-      platforms,
-      mediaUrlsCount: media_urls?.length || 0,
-      mediaUrls: media_urls
-    });
-
     // Validate inputs
     if (!content || !platforms || platforms.length === 0) {
       return NextResponse.json({
@@ -115,12 +97,6 @@ export async function POST(request: NextRequest) {
       media_urls: media_urls || []
     };
 
-    console.log('[API POST] Inserting to database:', {
-      title: insertData.title,
-      mediaUrlsCount: insertData.media_urls?.length || 0,
-      mediaUrls: insertData.media_urls
-    });
-
     // Add Pinterest fields if provided
     if (pinterest_title) {
       insertData.pinterest_title = pinterest_title;
@@ -139,12 +115,6 @@ export async function POST(request: NextRequest) {
       console.error('[API POST] Database error:', error);
       return NextResponse.json({ error: 'Failed to save draft' }, { status: 500 });
     }
-
-    console.log('[API POST] Draft saved successfully:', {
-      id: data?.id,
-      mediaUrlsCount: data?.media_urls?.length || 0,
-      mediaUrls: data?.media_urls
-    });
 
     return NextResponse.json({
       success: true,
