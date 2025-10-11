@@ -436,26 +436,47 @@ export default function PostedPostsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {paginatedPosts.map(post => {
+                // Helper function to detect if this is a story post
+                const isStoryPost = () => {
+                  if (!post.post_results || !Array.isArray(post.post_results)) return false
+
+                  return post.post_results.some((result: any) => {
+                    if (!result.success) return false
+
+                    // Check for Instagram stories
+                    if (result.platform === 'instagram' && result.data) {
+                      return result.data.type === 'story' || result.type === 'story'
+                    }
+
+                    // Check for Facebook stories
+                    if (result.platform === 'facebook' && result.data) {
+                      return result.data.isStory === true || result.isStory === true
+                    }
+
+                    return false
+                  })
+                }
+
                 // Helper function to get media URL (prioritize platform-fetched media URL)
                 const getMediaUrl = () => {
                   // Use platform-fetched media URL if available (includes Pinterest)
                   if (post.platform_media_url) {
                     return post.platform_media_url
                   }
-                  
+
                   // Fallback to pinterest_media_url for backwards compatibility
                   if (post.pinterest_media_url) {
                     return post.pinterest_media_url
                   }
-                  
+
                   // Otherwise use the first media URL from the array
                   if (post.media_urls && post.media_urls.length > 0) {
                     return post.media_urls[0]
                   }
-                  
+
                   return null
                 }
-                
+
                 // Helper function to get display content (prioritize Pinterest title)
                 const getDisplayContent = () => {
                   // For Pinterest posts, use title if available
@@ -463,7 +484,7 @@ export default function PostedPostsPage() {
                     if (post.pinterest_title) {
                       return post.pinterest_title
                     }
-                    
+
                     // Check platform_content for Pinterest-specific content
                     if (post.platform_content?.pinterest) {
                       // Extract title from "title: description" format
@@ -475,7 +496,27 @@ export default function PostedPostsPage() {
                       return content
                     }
                   }
-                  
+
+                  // Check if content is empty or just whitespace
+                  const trimmedContent = post.content?.trim() || ''
+
+                  // If content is empty and it's a story, show platform-specific label
+                  if (!trimmedContent && isStoryPost()) {
+                    // Determine which platform the story is from
+                    if (post.platforms.includes('instagram')) {
+                      return 'Instagram Story'
+                    }
+                    if (post.platforms.includes('facebook')) {
+                      return 'Facebook Story'
+                    }
+                    return 'Story'
+                  }
+
+                  // If content is empty but not a story, show generic placeholder
+                  if (!trimmedContent) {
+                    return 'Untitled Post'
+                  }
+
                   // Otherwise return regular content
                   return post.content
                 }

@@ -1179,13 +1179,34 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 recentPosts.map((post) => {
+                  // Helper function to detect if this is a story post
+                  const isStoryPost = () => {
+                    if (!post.post_results || !Array.isArray(post.post_results)) return false
+
+                    return post.post_results.some((result: any) => {
+                      if (!result.success) return false
+
+                      // Check for Instagram stories
+                      if (result.platform === 'instagram' && result.data) {
+                        return result.data.type === 'story' || result.type === 'story'
+                      }
+
+                      // Check for Facebook stories
+                      if (result.platform === 'facebook' && result.data) {
+                        return result.data.isStory === true || result.isStory === true
+                      }
+
+                      return false
+                    })
+                  }
+
                   // Helper function to extract media URL from various sources
                   const getMediaUrl = () => {
                     // First check for platform_media_url from the API
                     if (post.platform_media_url && typeof post.platform_media_url === 'string') {
                       return post.platform_media_url.trim()
                     }
-                    
+
                     // Then check post_results for successfully posted content with media URLs
                     if (post.post_results && Array.isArray(post.post_results)) {
                       for (const result of post.post_results) {
@@ -1201,19 +1222,19 @@ export default function DashboardPage() {
                         }
                       }
                     }
-                    
+
                     // Fall back to checking the media_urls field directly
                     if (post.media_urls) {
                       // Handle different possible formats of media_urls
                       if (Array.isArray(post.media_urls) && post.media_urls.length > 0) {
                         const firstMedia = post.media_urls[0]
-                        
+
                         // If it's a string URL, return it directly
                         if (typeof firstMedia === 'string' && firstMedia.trim() !== '') {
                           // Ensure the URL is properly formatted
                           return firstMedia.trim()
                         }
-                        
+
                         // If it's an object with a url property
                         if (firstMedia && typeof firstMedia === 'object') {
                           // Check for various possible property names
@@ -1223,29 +1244,29 @@ export default function DashboardPage() {
                           if (firstMedia.secure_url && typeof firstMedia.secure_url === 'string') return firstMedia.secure_url.trim()
                         }
                       }
-                      
+
                       // If media_urls is a single string
                       if (typeof post.media_urls === 'string' && post.media_urls.trim() !== '') {
                         return post.media_urls.trim()
                       }
                     }
-                    
+
                     return null
                   }
-                  
+
                   const firstMediaUrl = getMediaUrl()
-                  
+
                   // Simple check if URL is likely a video based on extension
                   const isVideo = firstMediaUrl && (firstMediaUrl.includes('.mp4') || firstMediaUrl.includes('.mov') || firstMediaUrl.includes('.webm'))
-                  
-                  
+
+
                   // Get display content - use Pinterest-specific fields if available
                   const getDisplayContent = () => {
                     // Check if this is a Pinterest post with specific content
                     if (post.platforms.includes('pinterest')) {
                       // Type assertion to access Pinterest fields
                       const pinterestPost = post as any
-                      
+
                       // First check if Pinterest fields exist as separate columns
                       if (pinterestPost.pinterest_title || pinterestPost.pinterest_description) {
                         const title = pinterestPost.pinterest_title || ''
@@ -1253,7 +1274,7 @@ export default function DashboardPage() {
                         // Return only the title, fallback to description if no title
                         return title || description
                       }
-                      
+
                       // Check platform_content JSONB field for Pinterest content
                       if (pinterestPost.platform_content?.pinterest) {
                         // Extract just the title part (before the colon) if it's in "title: description" format
@@ -1265,7 +1286,7 @@ export default function DashboardPage() {
                         return content
                       }
                     }
-                    
+
                     // Check if there's platform-specific content for the first platform
                     const postWithPlatformContent = post as any
                     if (postWithPlatformContent.platform_content && post.platforms.length > 0) {
@@ -1274,7 +1295,27 @@ export default function DashboardPage() {
                         return postWithPlatformContent.platform_content[firstPlatform]
                       }
                     }
-                    
+
+                    // Check if content is empty or just whitespace
+                    const trimmedContent = post.content?.trim() || ''
+
+                    // If content is empty and it's a story, show platform-specific label
+                    if (!trimmedContent && isStoryPost()) {
+                      // Determine which platform the story is from
+                      if (post.platforms.includes('instagram')) {
+                        return 'Instagram Story'
+                      }
+                      if (post.platforms.includes('facebook')) {
+                        return 'Facebook Story'
+                      }
+                      return 'Story'
+                    }
+
+                    // If content is empty but not a story, show generic placeholder
+                    if (!trimmedContent) {
+                      return 'Untitled Post'
+                    }
+
                     // Fall back to regular content
                     return post.content || ''
                   }
