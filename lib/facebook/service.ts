@@ -417,7 +417,7 @@ export class FacebookService {
 
         const statusUrl = `${this.baseUrl}/${videoId}`;
         const statusParams = new URLSearchParams({
-          fields: 'status,permalink_url',
+          fields: 'status,permalink_url,is_published,published,backdated_time',
           access_token: pageAccessToken
         });
 
@@ -428,9 +428,15 @@ export class FacebookService {
         const processingStatus = statusData.status?.processing_phase?.status;
         const publishingStatus = statusData.status?.publishing_phase?.status;
         const copyrightStatus = statusData.status?.copyright_check_status?.status;
+        const videoStatus = statusData.status?.video_status;
         const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
 
-        console.log(`Poll ${elapsedSeconds}s: processing=${processingStatus}, publishing=${publishingStatus}, copyright=${copyrightStatus}`);
+        console.log(`Poll ${elapsedSeconds}s: processing=${processingStatus}, publishing=${publishingStatus}, copyright=${copyrightStatus}, video_status=${videoStatus}`);
+
+        // Log full status object for debugging
+        if (elapsedSeconds === 7 || (processingStatus === 'complete' && publishingStatus === 'complete')) {
+          console.log('Full status response:', JSON.stringify(statusData, null, 2));
+        }
 
         // Check for copyright blocks
         if (copyrightStatus === 'blocked' || copyrightStatus === 'requires_review') {
