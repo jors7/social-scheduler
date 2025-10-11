@@ -448,6 +448,7 @@ export class PostingService {
           postId: data.id,
           data: {
             id: data.id,
+            type: data.type, // Include type (story or post)
             thumbnailUrl: data.thumbnailUrl, // Include thumbnail URL if present
             metrics: data.metrics || {
               likes: 0,
