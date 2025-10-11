@@ -131,7 +131,9 @@ export class PostingService {
           const isVideo = postData.mediaUrls?.some(url =>
             ['.mp4', '.mov', '.avi', '.webm'].some(ext => url.toLowerCase().includes(ext))
           );
-          if (platform === 'instagram' && isVideo) {
+          if (platform === 'instagram' && postData.instagramAsStory) {
+            progressTracker?.updatePlatform(platform, 'processing', 'story');
+          } else if (platform === 'instagram' && isVideo) {
             progressTracker?.updatePlatform(platform, 'processing', 'reel');
           } else if (platform === 'facebook' && postData.facebookAsStory) {
             progressTracker?.updatePlatform(platform, 'processing', 'story');
