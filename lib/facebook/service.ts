@@ -311,37 +311,17 @@ export class FacebookService {
       const videoId = initData.video_id;
       console.log('Reel upload initialized, video_id:', videoId);
 
-      // Phase 2: Upload video from URL
-      console.log('Phase 2: Uploading video from URL...');
-      const uploadParams = new URLSearchParams({
-        upload_phase: 'transfer',
-        video_id: videoId,
-        file_url: videoUrl,
-        access_token: pageAccessToken
-      });
-
-      const uploadResponse = await fetch(initUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: uploadParams.toString()
-      });
-
-      const uploadData = await uploadResponse.json();
-
-      if (!uploadResponse.ok) {
-        console.error('Failed to upload video for Reel:', uploadData);
-        throw new Error(uploadData.error?.message || 'Failed to upload video for Facebook Reel');
-      }
-
-      console.log('Video uploaded successfully');
+      // Phase 2: Let Facebook fetch and process the video
+      // Note: With file_url, Facebook fetches the video asynchronously
+      // We can proceed directly to Phase 3
+      console.log('Phase 2: Video URL provided, proceeding to publish...');
 
       // Phase 3: Publish the Reel
-      console.log('Phase 3: Publishing Reel...');
+      console.log('Phase 3: Publishing Reel with video URL...');
       const publishParams = new URLSearchParams({
         video_id: videoId,
         upload_phase: 'finish',
+        file_url: videoUrl,
         description: message,
         access_token: pageAccessToken
       });
