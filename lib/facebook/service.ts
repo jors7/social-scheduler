@@ -374,12 +374,13 @@ export class FacebookService {
         console.log('Upload still processing, proceeding to publish anyway...');
       }
 
-      // Phase 3: Finish and publish the Reel
-      console.log('Phase 3: Publishing Reel...');
+      // Phase 3: Finish and publish the Reel (not as draft)
+      console.log('Phase 3: Publishing Reel as public (not draft)...');
       const finishParams = new URLSearchParams({
         upload_phase: 'finish',
         video_id: videoId,
         description: message,
+        published: 'true', // Explicitly publish as public, not draft
         access_token: pageAccessToken
       });
 
@@ -445,12 +446,18 @@ export class FacebookService {
 
         // Check if truly published - need ALL three phases complete
         // processing, publishing, AND copyright check must all be done
+        // ALSO check that publish_status is NOT "draft"
         const copyrightPassed = copyrightStatus === 'passed' || copyrightStatus === 'complete';
-        if (processingStatus === 'complete' && publishingStatus === 'complete' && copyrightPassed) {
+        const publishStatus = statusData.status?.publishing_phase?.publish_status;
+        const isNotDraft = publishStatus !== 'draft';
+
+        if (processingStatus === 'complete' && publishingStatus === 'complete' && copyrightPassed && isNotDraft) {
           isPublished = true;
           permalink = statusData.permalink_url || '';
-          console.log('Reel is live! (all checks passed)', permalink);
+          console.log('Reel is live! (all checks passed, not draft)', permalink);
           break;
+        } else if (processingStatus === 'complete' && publishingStatus === 'complete' && copyrightPassed && publishStatus === 'draft') {
+          console.log(`Poll ${elapsedSeconds}s: WARNING - Reel marked as DRAFT, continuing to poll...`);
         }
       }
 
