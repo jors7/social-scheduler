@@ -79,6 +79,16 @@ export function useAutoSave(
           requestBody.draftId = currentDraftId
         }
 
+        // Debug logging
+        console.log('[AutoSave] Saving draft:', {
+          method,
+          draftId: currentDraftId,
+          title,
+          platforms: data.platforms,
+          mediaUrlsCount: data.mediaUrls?.length || 0,
+          mediaUrls: data.mediaUrls
+        })
+
         const response = await fetch(endpoint, {
           method,
           headers: { 'Content-Type': 'application/json' },
