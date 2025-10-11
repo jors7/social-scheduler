@@ -417,7 +417,7 @@ export class FacebookService {
 
         const statusUrl = `${this.baseUrl}/${videoId}`;
         const statusParams = new URLSearchParams({
-          fields: 'status,permalink_url,is_published,published,backdated_time',
+          fields: 'status,permalink_url',
           access_token: pageAccessToken
         });
 
