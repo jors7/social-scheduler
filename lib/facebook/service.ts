@@ -329,8 +329,8 @@ export class FacebookService {
         method: 'POST',
         headers: {
           'Authorization': `OAuth ${pageAccessToken}`,
-          'Content-Type': 'application/octet-stream',
-          'Content-Length': videoBuffer.byteLength.toString()
+          'offset': '0',
+          'file_size': videoBuffer.byteLength.toString()
         },
         body: videoBuffer
       });
