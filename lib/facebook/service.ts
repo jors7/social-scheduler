@@ -203,6 +203,75 @@ export class FacebookService {
   }
 
   /**
+   * Create a story post on a Facebook page (photo or video)
+   */
+  async createStoryPost(
+    pageId: string,
+    pageAccessToken: string,
+    mediaUrl: string,
+    mediaType: 'photo' | 'video'
+  ): Promise<{ id: string }> {
+    try {
+      console.log(`Creating Facebook ${mediaType} story...`);
+
+      // Step 1: Upload media without publishing
+      const uploadEndpoint = mediaType === 'photo' ? 'photos' : 'videos';
+      const uploadUrl = `${this.baseUrl}/${pageId}/${uploadEndpoint}`;
+      const uploadParams = new URLSearchParams({
+        url: mediaUrl,
+        published: 'false', // Don't publish yet
+        access_token: pageAccessToken
+      });
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: uploadParams.toString()
+      });
+
+      const uploadData = await uploadResponse.json();
+
+      if (!uploadResponse.ok) {
+        console.error(`Failed to upload ${mediaType} for story:`, uploadData);
+        throw new Error(uploadData.error?.message || `Failed to upload ${mediaType} for story`);
+      }
+
+      const mediaId = uploadData.id;
+      console.log(`${mediaType} uploaded for story:`, mediaId);
+
+      // Step 2: Publish to Stories endpoint
+      const storyUrl = `${this.baseUrl}/${pageId}/stories`;
+      const storyParams = new URLSearchParams({
+        [mediaType === 'photo' ? 'photo_id' : 'video_id']: mediaId,
+        access_token: pageAccessToken
+      });
+
+      const storyResponse = await fetch(storyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: storyParams.toString()
+      });
+
+      const storyData = await storyResponse.json();
+
+      if (!storyResponse.ok) {
+        console.error('Failed to create story:', storyData);
+        throw new Error(storyData.error?.message || 'Failed to create Facebook story');
+      }
+
+      console.log('Facebook story created:', storyData.id);
+      return { id: storyData.id };
+    } catch (error) {
+      console.error('Facebook story posting error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get page insights (analytics)
    */
   async getPageInsights(

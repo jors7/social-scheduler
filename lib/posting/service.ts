@@ -17,6 +17,7 @@ export interface PostData {
   pinterestLink?: string; // Pinterest specific - destination URL
   tiktokPrivacyLevel?: 'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY'; // TikTok specific - privacy/draft setting
   instagramAsStory?: boolean; // Instagram specific - post as story instead of feed post
+  facebookAsStory?: boolean; // Facebook specific - post as story instead of feed post
 }
 
 export interface PostResult {
@@ -196,12 +197,17 @@ export class PostingService {
 
     switch (platform) {
       case 'facebook':
-        return await this.postToFacebook(textContent, account, mediaUrls);
-      
+        return await this.postToFacebook(
+          textContent,
+          account,
+          mediaUrls,
+          postData?.facebookAsStory
+        );
+
       case 'instagram':
         return await this.postToInstagram(
-          textContent, 
-          account, 
+          textContent,
+          account,
           mediaUrls,
           onProgress ? (status) => onProgress('instagram', status) : undefined,
           postData?.instagramAsStory
@@ -235,11 +241,21 @@ export class PostingService {
   }
 
 
-  private async postToFacebook(content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
+  private async postToFacebook(
+    content: string,
+    account: any,
+    mediaUrls?: string[],
+    isStory?: boolean
+  ): Promise<PostResult> {
     try {
       // Facebook requires a page ID (stored in platform_user_id)
       if (!account.platform_user_id) {
         throw new Error('Facebook page ID not found');
+      }
+
+      // Facebook Stories require media
+      if (isStory && (!mediaUrls || mediaUrls.length === 0)) {
+        throw new Error('Facebook Stories require an image or video');
       }
 
       const response = await fetch('/api/post/facebook', {
@@ -252,6 +268,7 @@ export class PostingService {
           accessToken: account.access_token,
           text: content,
           mediaUrls: mediaUrls,
+          isStory: isStory,
         }),
       });
 

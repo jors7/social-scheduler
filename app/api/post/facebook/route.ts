@@ -4,25 +4,55 @@ import { FacebookService } from '@/lib/facebook/service';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { pageId, accessToken, text, mediaUrls } = body;
+    const { pageId, accessToken, text, mediaUrls, isStory } = body;
 
-    if (!pageId || !accessToken || !text) {
+    if (!pageId || !accessToken) {
       return NextResponse.json(
-        { error: 'Missing required fields: pageId, accessToken, and text are required' },
+        { error: 'Missing required fields: pageId and accessToken are required' },
+        { status: 400 }
+      );
+    }
+
+    // Stories require media, feed posts require text
+    if (isStory && (!mediaUrls || mediaUrls.length === 0)) {
+      return NextResponse.json(
+        { error: 'Facebook Stories require an image or video' },
+        { status: 400 }
+      );
+    }
+
+    if (!isStory && !text) {
+      return NextResponse.json(
+        { error: 'Facebook feed posts require text content' },
         { status: 400 }
       );
     }
 
     console.log('=== Facebook Post Request ===');
     console.log('Page ID:', pageId);
+    console.log('Is Story:', isStory);
     console.log('Has media:', !!mediaUrls && mediaUrls.length > 0);
     console.log('Media count:', mediaUrls?.length || 0);
 
     const facebookService = new FacebookService();
     let result;
 
-    // Determine post type based on media
-    if (!mediaUrls || mediaUrls.length === 0) {
+    // Handle Story posts
+    if (isStory) {
+      const mediaUrl = mediaUrls[0];
+      const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
+      const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
+
+      console.log(`Creating Facebook ${isVideo ? 'video' : 'photo'} story`);
+      result = await facebookService.createStoryPost(
+        pageId,
+        accessToken,
+        mediaUrl,
+        isVideo ? 'video' : 'photo'
+      );
+    }
+    // Handle regular feed posts
+    else if (!mediaUrls || mediaUrls.length === 0) {
       // Text-only post
       console.log('Creating text-only Facebook post');
       result = await facebookService.createPost(pageId, accessToken, text);
@@ -43,7 +73,7 @@ export async function POST(request: NextRequest) {
       // Multiple photos (carousel post)
       // Filter out videos for carousel (Facebook doesn't support mixed media carousels)
       const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
-      const imageUrls = mediaUrls.filter((url: string) => 
+      const imageUrls = mediaUrls.filter((url: string) =>
         !videoExtensions.some(ext => url.toLowerCase().includes(ext))
       );
 
@@ -63,7 +93,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       id: result.id,
-      message: 'Posted to Facebook successfully'
+      message: isStory ? 'Posted to Facebook Story successfully' : 'Posted to Facebook successfully'
     });
 
   } catch (error) {

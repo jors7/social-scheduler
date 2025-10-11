@@ -87,6 +87,7 @@ function CreateNewPostPageContent() {
   const [selectedAccounts, setSelectedAccounts] = useState<Record<string, string[]>>({})
   const [instagramAsStory, setInstagramAsStory] = useState(false)
   const [instagramFormat, setInstagramFormat] = useState<'feed-square' | 'feed-portrait' | 'feed-landscape' | 'story' | 'reel'>('feed-portrait')
+  const [facebookAsStory, setFacebookAsStory] = useState(false)
   const [platformContent, setPlatformContent] = useState<Record<string, string>>({})
   const [showPlatformCustomization, setShowPlatformCustomization] = useState(false)
   const [scheduledDate, setScheduledDate] = useState('')
@@ -1260,6 +1261,7 @@ function CreateNewPostPageContent() {
         pinterestLink: pinterestLink || undefined,
         tiktokPrivacyLevel: selectedPlatforms.includes('tiktok') ? (tiktokSaveAsDraft ? 'SELF_ONLY' : tiktokPrivacyLevel) : undefined,
         instagramAsStory: selectedPlatforms.includes('instagram') ? instagramAsStory : undefined,
+        facebookAsStory: selectedPlatforms.includes('facebook') ? facebookAsStory : undefined,
       }
       
       console.log('Posting with data:', {
@@ -2549,9 +2551,14 @@ function CreateNewPostPageContent() {
                 </p>
                 {selectedPlatforms.includes('instagram') && (
                   <p className="text-xs text-blue-600 font-medium mt-2">
-                    💡 Instagram: {instagramAsStory 
-                      ? 'Stories require 9:16 aspect ratio (vertical) media' 
+                    💡 Instagram: {instagramAsStory
+                      ? 'Stories require 9:16 aspect ratio (vertical) media'
                       : 'Select 2-10 files to create a carousel post'}
+                  </p>
+                )}
+                {selectedPlatforms.includes('facebook') && facebookAsStory && (
+                  <p className="text-xs text-blue-600 font-medium mt-2">
+                    💡 Facebook Stories: Vertical format (9:16) recommended. Videos up to 120s.
                   </p>
                 )}
               </div>
@@ -3057,6 +3064,47 @@ function CreateNewPostPageContent() {
                                     </p>
                                   )}
                                 </div>
+                              </div>
+                            )}
+
+                            {/* Facebook Options */}
+                            {platform.id === 'facebook' && (
+                              <div className="mt-3 pt-3 border-t border-blue-200/50 space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <Label className="text-xs font-medium text-blue-700">
+                                    Post Type
+                                  </Label>
+                                  <button
+                                    type="button"
+                                    onClick={() => setFacebookAsStory(!facebookAsStory)}
+                                    className={cn(
+                                      "px-3 py-1.5 rounded-lg border-2 transition-all text-[10px] font-medium",
+                                      facebookAsStory
+                                        ? "border-blue-600 bg-blue-50 text-blue-700"
+                                        : "border-gray-200 bg-white text-gray-600 hover:border-blue-300"
+                                    )}
+                                  >
+                                    {facebookAsStory ? '📸 Story (24h)' : '📰 Feed Post'}
+                                  </button>
+                                </div>
+
+                                {/* Story hint */}
+                                {facebookAsStory && (
+                                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                                    <p className="text-[10px] text-blue-700 leading-relaxed">
+                                      📸 Stories disappear after 24 hours<br/>
+                                      📐 Vertical format (9:16) recommended<br/>
+                                      🎥 Videos: up to 120s (ideally under 15s)
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Feed hint */}
+                                {!facebookAsStory && (
+                                  <p className="text-[10px] text-blue-600 mt-1.5">
+                                    📰 Regular post will appear on your page feed
+                                  </p>
+                                )}
                               </div>
                             )}
                           </div>
