@@ -482,9 +482,19 @@ export default function PostedPostsPage() {
                 
                 const firstMediaUrl = getMediaUrl()
                 const displayContent = getDisplayContent()
-                const isVideo = firstMediaUrl ? (
-                  firstMediaUrl.includes('.mp4') || 
-                  firstMediaUrl.includes('.mov') || 
+
+                // Check if we have a platform media URL (thumbnail) for video content
+                const hasPlatformThumbnail = post.platform_media_url && (
+                  post.platform_media_url.includes('.jpg') ||
+                  post.platform_media_url.includes('.jpeg') ||
+                  post.platform_media_url.includes('.png')
+                )
+
+                // If we have a platform thumbnail, always show it as an image
+                // Otherwise check if the media URL is a video
+                const isVideo = !hasPlatformThumbnail && firstMediaUrl ? (
+                  firstMediaUrl.includes('.mp4') ||
+                  firstMediaUrl.includes('.mov') ||
                   firstMediaUrl.includes('.webm') ||
                   firstMediaUrl.includes('video')
                 ) : false
