@@ -274,7 +274,7 @@ export class FacebookService {
 
   /**
    * Create a Reel post on a Facebook page
-   * Uses 2-phase upload process: start with file_url, then finish
+   * Uses 2-phase upload process: start with file_url, wait for processing, then finish
    */
   async createReelPost(
     pageId: string,
@@ -312,8 +312,46 @@ export class FacebookService {
       const videoId = startData.video_id;
       console.log('Reel upload initialized with video_id:', videoId);
 
-      // Phase 2: Finish and publish the Reel
-      console.log('Phase 2: Publishing Reel...');
+      // Phase 2: Wait for Facebook to fetch and process the video
+      console.log('Phase 2: Waiting for video to be processed...');
+      const maxAttempts = 30; // Wait up to 60 seconds (30 * 2s)
+      let attempts = 0;
+      let isReady = false;
+
+      while (attempts < maxAttempts && !isReady) {
+        // Wait 2 seconds before checking
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        attempts++;
+
+        // Check video status
+        const statusUrl = `${this.baseUrl}/${videoId}`;
+        const statusParams = new URLSearchParams({
+          fields: 'status',
+          access_token: pageAccessToken
+        });
+
+        try {
+          const statusResponse = await fetch(`${statusUrl}?${statusParams.toString()}`);
+          const statusData = await statusResponse.json();
+
+          console.log(`Check ${attempts}/${maxAttempts}: Video status:`, statusData);
+
+          if (statusData.status?.video_status === 'ready') {
+            isReady = true;
+            console.log('Video is ready for publishing');
+          }
+        } catch (error) {
+          console.log(`Status check ${attempts} failed:`, error);
+          // Continue checking
+        }
+      }
+
+      if (!isReady) {
+        console.log('Video processing timeout, attempting to publish anyway...');
+      }
+
+      // Phase 3: Finish and publish the Reel
+      console.log('Phase 3: Publishing Reel...');
       const finishParams = new URLSearchParams({
         video_id: videoId,
         upload_phase: 'finish',
