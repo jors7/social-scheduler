@@ -544,10 +544,21 @@ function CreateNewPostPageContent() {
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
     
     // Check if Instagram Story is selected (even with other platforms)
-    const hasInstagramStory = selectedPlatforms.includes('instagram') && 
-      instagramAsStory && 
+    const hasInstagramStory = selectedPlatforms.includes('instagram') &&
+      instagramAsStory &&
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
-    
+
+    // Special handling for Facebook Stories - no caption required
+    const isFacebookStoryOnly = selectedPlatforms.length === 1 &&
+      selectedPlatforms[0] === 'facebook' &&
+      facebookAsStory &&
+      (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
+
+    // Check if Facebook Story is selected (even with other platforms)
+    const hasFacebookStory = selectedPlatforms.includes('facebook') &&
+      facebookAsStory &&
+      (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
+
     // Debug logging for Instagram Story
     console.log('Instagram Story Debug:', {
       selectedPlatforms,
@@ -597,6 +608,15 @@ function CreateNewPostPageContent() {
       }
       console.log('Instagram Story validation passed')
       // Instagram Story validation passed - skip all other content checks
+    } else if (isFacebookStoryOnly) {
+      console.log('Facebook Story Only path')
+      // Facebook Stories only need media, not captions
+      if (selectedFiles.length === 0 && uploadedMediaUrls.length === 0) {
+        toast.error('Please select an image or video for your Facebook story')
+        return
+      }
+      console.log('Facebook Story validation passed')
+      // Facebook Story validation passed - skip all other content checks
     } else if (isYouTubeOnly) {
       // YouTube-only posts need video and title
       if (!youtubeVideoFile) {
@@ -618,13 +638,29 @@ function CreateNewPostPageContent() {
       const otherPlatforms = selectedPlatforms.filter(p => p !== 'instagram')
       // Instagram Story only needs media (already checked in hasInstagramStory)
       // Check if other platforms have content
-      const otherPlatformsHaveContent = hasMainContent || hasPlatformContent || 
+      const otherPlatformsHaveContent = hasMainContent || hasPlatformContent ||
         otherPlatforms.some(p => p === 'pinterest' && hasPinterestContent) ||
         otherPlatforms.some(p => p === 'youtube' && hasYouTubeContent) ||
-        otherPlatforms.some(p => p === 'tiktok' && hasTikTokContent)
-      
+        otherPlatforms.some(p => p === 'tiktok' && hasTikTokContent) ||
+        otherPlatforms.some(p => p === 'facebook' && hasFacebookStory)
+
       if (!otherPlatformsHaveContent) {
         toast.error('Please enter content for non-Instagram platforms')
+        return
+      }
+    } else if (hasFacebookStory && selectedPlatforms.length > 1) {
+      // Mixed platforms including Facebook Story
+      const otherPlatforms = selectedPlatforms.filter(p => p !== 'facebook')
+      // Facebook Story only needs media (already checked in hasFacebookStory)
+      // Check if other platforms have content
+      const otherPlatformsHaveContent = hasMainContent || hasPlatformContent ||
+        otherPlatforms.some(p => p === 'pinterest' && hasPinterestContent) ||
+        otherPlatforms.some(p => p === 'youtube' && hasYouTubeContent) ||
+        otherPlatforms.some(p => p === 'tiktok' && hasTikTokContent) ||
+        otherPlatforms.some(p => p === 'instagram' && hasInstagramStory)
+
+      if (!otherPlatformsHaveContent) {
+        toast.error('Please enter content for non-Facebook platforms')
         return
       }
     } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode && !isTwitterThreadMode) {
@@ -1481,10 +1517,21 @@ function CreateNewPostPageContent() {
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
     
     // Check if Instagram Story is selected (even with other platforms)
-    const hasInstagramStory = selectedPlatforms.includes('instagram') && 
-      instagramAsStory && 
+    const hasInstagramStory = selectedPlatforms.includes('instagram') &&
+      instagramAsStory &&
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
-    
+
+    // Special handling for Facebook Stories - no caption required
+    const isFacebookStoryOnly = selectedPlatforms.length === 1 &&
+      selectedPlatforms[0] === 'facebook' &&
+      facebookAsStory &&
+      (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
+
+    // Check if Facebook Story is selected (even with other platforms)
+    const hasFacebookStory = selectedPlatforms.includes('facebook') &&
+      facebookAsStory &&
+      (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
+
     // Debug logging for Instagram Story
     console.log('Instagram Story Debug:', {
       selectedPlatforms,
@@ -1534,6 +1581,15 @@ function CreateNewPostPageContent() {
       }
       console.log('Instagram Story validation passed')
       // Instagram Story validation passed - skip all other content checks
+    } else if (isFacebookStoryOnly) {
+      console.log('Facebook Story Only path')
+      // Facebook Stories only need media, not captions
+      if (selectedFiles.length === 0 && uploadedMediaUrls.length === 0) {
+        toast.error('Please select an image or video for your Facebook story')
+        return
+      }
+      console.log('Facebook Story validation passed')
+      // Facebook Story validation passed - skip all other content checks
     } else if (isYouTubeOnly) {
       // YouTube-only posts need video and title
       if (!youtubeVideoFile) {
@@ -1555,13 +1611,29 @@ function CreateNewPostPageContent() {
       const otherPlatforms = selectedPlatforms.filter(p => p !== 'instagram')
       // Instagram Story only needs media (already checked in hasInstagramStory)
       // Check if other platforms have content
-      const otherPlatformsHaveContent = hasMainContent || hasPlatformContent || 
+      const otherPlatformsHaveContent = hasMainContent || hasPlatformContent ||
         otherPlatforms.some(p => p === 'pinterest' && hasPinterestContent) ||
         otherPlatforms.some(p => p === 'youtube' && hasYouTubeContent) ||
-        otherPlatforms.some(p => p === 'tiktok' && hasTikTokContent)
-      
+        otherPlatforms.some(p => p === 'tiktok' && hasTikTokContent) ||
+        otherPlatforms.some(p => p === 'facebook' && hasFacebookStory)
+
       if (!otherPlatformsHaveContent) {
         toast.error('Please enter content for non-Instagram platforms')
+        return
+      }
+    } else if (hasFacebookStory && selectedPlatforms.length > 1) {
+      // Mixed platforms including Facebook Story
+      const otherPlatforms = selectedPlatforms.filter(p => p !== 'facebook')
+      // Facebook Story only needs media (already checked in hasFacebookStory)
+      // Check if other platforms have content
+      const otherPlatformsHaveContent = hasMainContent || hasPlatformContent ||
+        otherPlatforms.some(p => p === 'pinterest' && hasPinterestContent) ||
+        otherPlatforms.some(p => p === 'youtube' && hasYouTubeContent) ||
+        otherPlatforms.some(p => p === 'tiktok' && hasTikTokContent) ||
+        otherPlatforms.some(p => p === 'instagram' && hasInstagramStory)
+
+      if (!otherPlatformsHaveContent) {
+        toast.error('Please enter content for non-Facebook platforms')
         return
       }
     } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode && !isTwitterThreadMode) {
@@ -3070,22 +3142,37 @@ function CreateNewPostPageContent() {
                             {/* Facebook Options */}
                             {platform.id === 'facebook' && (
                               <div className="mt-3 pt-3 border-t border-blue-200/50 space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <Label className="text-xs font-medium text-blue-700">
+                                <div>
+                                  <Label className="text-xs font-medium text-blue-700 mb-2 block">
                                     Post Type
                                   </Label>
-                                  <button
-                                    type="button"
-                                    onClick={() => setFacebookAsStory(!facebookAsStory)}
-                                    className={cn(
-                                      "px-3 py-1.5 rounded-lg border-2 transition-all text-[10px] font-medium",
-                                      facebookAsStory
-                                        ? "border-blue-600 bg-blue-50 text-blue-700"
-                                        : "border-gray-200 bg-white text-gray-600 hover:border-blue-300"
-                                    )}
-                                  >
-                                    {facebookAsStory ? '📸 Story (24h)' : '📰 Feed Post'}
-                                  </button>
+                                  {/* Toggle Group */}
+                                  <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
+                                    <button
+                                      type="button"
+                                      onClick={() => setFacebookAsStory(false)}
+                                      className={cn(
+                                        "flex-1 px-3 py-2 rounded-md text-[11px] font-medium transition-all",
+                                        !facebookAsStory
+                                          ? "bg-white text-blue-700 shadow-sm"
+                                          : "text-gray-600 hover:text-gray-900"
+                                      )}
+                                    >
+                                      📰 Feed
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setFacebookAsStory(true)}
+                                      className={cn(
+                                        "flex-1 px-3 py-2 rounded-md text-[11px] font-medium transition-all",
+                                        facebookAsStory
+                                          ? "bg-white text-blue-700 shadow-sm"
+                                          : "text-gray-600 hover:text-gray-900"
+                                      )}
+                                    >
+                                      📸 Story
+                                    </button>
+                                  </div>
                                 </div>
 
                                 {/* Story hint */}
