@@ -313,8 +313,8 @@ export class FacebookService {
       console.log('Reel upload initialized with video_id:', videoId);
 
       // Phase 2: Wait for Facebook to fetch and process the video
-      console.log('Phase 2: Waiting for video to be processed...');
-      const maxAttempts = 30; // Wait up to 60 seconds (30 * 2s)
+      console.log('Phase 2: Waiting for video to be uploaded and processed...');
+      const maxAttempts = 60; // Wait up to 2 minutes (60 * 2s)
       let attempts = 0;
       let isReady = false;
 
@@ -336,9 +336,17 @@ export class FacebookService {
 
           console.log(`Check ${attempts}/${maxAttempts}: Video status:`, statusData);
 
-          if (statusData.status?.video_status === 'ready') {
+          // Check if both uploading and processing phases are complete
+          const uploadingComplete = statusData.status?.uploading_phase?.status === 'complete';
+          const processingComplete = statusData.status?.processing_phase?.status === 'complete';
+
+          if (uploadingComplete && processingComplete) {
             isReady = true;
-            console.log('Video is ready for publishing');
+            console.log('Video upload and processing complete - ready for publishing');
+          } else if (uploadingComplete) {
+            console.log('Video uploaded, waiting for processing to complete...');
+          } else {
+            console.log('Video still uploading...');
           }
         } catch (error) {
           console.log(`Status check ${attempts} failed:`, error);
@@ -347,7 +355,7 @@ export class FacebookService {
       }
 
       if (!isReady) {
-        console.log('Video processing timeout, attempting to publish anyway...');
+        throw new Error('Video upload/processing timeout - video is not ready after 2 minutes. Please try with a smaller video file.');
       }
 
       // Phase 3: Finish and publish the Reel
