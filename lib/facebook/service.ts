@@ -274,7 +274,7 @@ export class FacebookService {
 
   /**
    * Create a Reel post on a Facebook page
-   * Uses 3-phase upload process: initialize, upload, publish
+   * Uses 2-phase upload process: start with file_url, then finish
    */
   async createReelPost(
     pageId: string,
@@ -283,66 +283,61 @@ export class FacebookService {
     videoUrl: string
   ): Promise<{ id: string }> {
     try {
-      console.log('Creating Facebook Reel with 3-phase process...');
+      console.log('Creating Facebook Reel...');
 
-      // Phase 1: Initialize upload session - get video_id
-      console.log('Phase 1: Initializing Reel upload...');
-      const initUrl = `${this.baseUrl}/${pageId}/video_reels`;
-      const initParams = new URLSearchParams({
+      // Phase 1: Initialize upload with file_url
+      console.log('Phase 1: Initializing Reel upload with video URL...');
+      const url = `${this.baseUrl}/${pageId}/video_reels`;
+      const startParams = new URLSearchParams({
         upload_phase: 'start',
+        file_url: videoUrl, // Provide URL in START phase
         access_token: pageAccessToken
       });
 
-      const initResponse = await fetch(initUrl, {
+      const startResponse = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: initParams.toString()
+        body: startParams.toString()
       });
 
-      const initData = await initResponse.json();
+      const startData = await startResponse.json();
 
-      if (!initResponse.ok) {
-        console.error('Failed to initialize Reel upload:', initData);
-        throw new Error(initData.error?.message || 'Failed to initialize Facebook Reel upload');
+      if (!startResponse.ok) {
+        console.error('Failed to initialize Reel upload:', startData);
+        throw new Error(startData.error?.message || 'Failed to initialize Facebook Reel upload');
       }
 
-      const videoId = initData.video_id;
-      console.log('Reel upload initialized, video_id:', videoId);
+      const videoId = startData.video_id;
+      console.log('Reel upload initialized with video_id:', videoId);
 
-      // Phase 2: Let Facebook fetch and process the video
-      // Note: With file_url, Facebook fetches the video asynchronously
-      // We can proceed directly to Phase 3
-      console.log('Phase 2: Video URL provided, proceeding to publish...');
-
-      // Phase 3: Publish the Reel
-      console.log('Phase 3: Publishing Reel with video URL...');
-      const publishParams = new URLSearchParams({
+      // Phase 2: Finish and publish the Reel
+      console.log('Phase 2: Publishing Reel...');
+      const finishParams = new URLSearchParams({
         video_id: videoId,
         upload_phase: 'finish',
-        file_url: videoUrl,
         description: message,
         access_token: pageAccessToken
       });
 
-      const publishResponse = await fetch(initUrl, {
+      const finishResponse = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: publishParams.toString()
+        body: finishParams.toString()
       });
 
-      const publishData = await publishResponse.json();
+      const finishData = await finishResponse.json();
 
-      if (!publishResponse.ok) {
-        console.error('Failed to publish Reel:', publishData);
-        throw new Error(publishData.error?.message || 'Failed to publish Facebook Reel');
+      if (!finishResponse.ok) {
+        console.error('Failed to publish Reel:', finishData);
+        throw new Error(finishData.error?.message || 'Failed to publish Facebook Reel');
       }
 
-      console.log('Facebook Reel created successfully:', publishData.id);
-      return { id: publishData.id };
+      console.log('Facebook Reel created successfully:', finishData.id);
+      return { id: finishData.id };
     } catch (error) {
       console.error('Facebook Reel posting error:', error);
       throw error;
