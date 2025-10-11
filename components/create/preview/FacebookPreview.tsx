@@ -1,5 +1,6 @@
 'use client'
 
+import { ThumbsUp, MessageCircle, Share2 } from 'lucide-react'
 import { stripHtml, truncateText, getAllEntities } from './preview-utils'
 
 interface FacebookPreviewProps {
@@ -131,16 +132,16 @@ export function FacebookPreview({ content, mediaUrls = [] }: FacebookPreviewProp
 
       {/* Action buttons */}
       <div className="px-4 py-2 border-t border-gray-200 flex items-center justify-around">
-        <button className="flex items-center gap-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md transition-colors">
-          <span>👍</span>
+        <button className="flex items-center gap-2 text-gray-600 hover:bg-gray-100 px-4 py-2 rounded-md transition-colors">
+          <ThumbsUp className="w-5 h-5" strokeWidth={1.5} />
           <span className="text-sm font-medium">Like</span>
         </button>
-        <button className="flex items-center gap-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md transition-colors">
-          <span>💬</span>
+        <button className="flex items-center gap-2 text-gray-600 hover:bg-gray-100 px-4 py-2 rounded-md transition-colors">
+          <MessageCircle className="w-5 h-5" strokeWidth={1.5} />
           <span className="text-sm font-medium">Comment</span>
         </button>
-        <button className="flex items-center gap-2 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-md transition-colors">
-          <span>↗️</span>
+        <button className="flex items-center gap-2 text-gray-600 hover:bg-gray-100 px-4 py-2 rounded-md transition-colors">
+          <Share2 className="w-5 h-5" strokeWidth={1.5} />
           <span className="text-sm font-medium">Share</span>
         </button>
       </div>

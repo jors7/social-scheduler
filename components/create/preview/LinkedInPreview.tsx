@@ -1,5 +1,6 @@
 'use client'
 
+import { ThumbsUp, MessageSquare, Repeat2, Send } from 'lucide-react'
 import { stripHtml, truncateText, getAllEntities } from './preview-utils'
 
 interface LinkedInPreviewProps {
@@ -111,32 +112,20 @@ export function LinkedInPreview({ content, mediaUrls = [] }: LinkedInPreviewProp
 
       {/* Action buttons */}
       <div className="px-4 py-2 border-t border-gray-200 flex items-center justify-around">
-        <button className="flex items-center gap-2 text-gray-600 hover:bg-gray-50 px-3 py-2 rounded transition-colors">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
-          </svg>
+        <button className="flex items-center gap-2 text-gray-600 hover:bg-gray-100 px-3 py-2 rounded transition-colors">
+          <ThumbsUp className="w-5 h-5" strokeWidth={1.5} />
           <span className="text-sm font-medium">Like</span>
         </button>
-        <button className="flex items-center gap-2 text-gray-600 hover:bg-gray-50 px-3 py-2 rounded transition-colors">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-          </svg>
+        <button className="flex items-center gap-2 text-gray-600 hover:bg-gray-100 px-3 py-2 rounded transition-colors">
+          <MessageSquare className="w-5 h-5" strokeWidth={1.5} />
           <span className="text-sm font-medium">Comment</span>
         </button>
-        <button className="flex items-center gap-2 text-gray-600 hover:bg-gray-50 px-3 py-2 rounded transition-colors">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <polyline points="17 1 21 5 17 9"></polyline>
-            <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-            <polyline points="7 23 3 19 7 15"></polyline>
-            <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-          </svg>
+        <button className="flex items-center gap-2 text-gray-600 hover:bg-gray-100 px-3 py-2 rounded transition-colors">
+          <Repeat2 className="w-5 h-5" strokeWidth={1.5} />
           <span className="text-sm font-medium">Repost</span>
         </button>
-        <button className="flex items-center gap-2 text-gray-600 hover:bg-gray-50 px-3 py-2 rounded transition-colors">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-          </svg>
+        <button className="flex items-center gap-2 text-gray-600 hover:bg-gray-100 px-3 py-2 rounded transition-colors">
+          <Send className="w-5 h-5" strokeWidth={1.5} />
           <span className="text-sm font-medium">Send</span>
         </button>
       </div>

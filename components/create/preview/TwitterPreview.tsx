@@ -1,5 +1,6 @@
 'use client'
 
+import { MessageCircle, Repeat2, Heart, BarChart3, Share } from 'lucide-react'
 import { stripHtml, truncateText, getAllEntities, getCharacterStatus } from './preview-utils'
 
 interface TwitterPreviewProps {
@@ -110,22 +111,25 @@ export function TwitterPreview({ content, mediaUrls = [] }: TwitterPreviewProps)
 
           {/* Engagement buttons */}
           <div className="flex items-center justify-between mt-3 text-gray-500 max-w-md">
-            <div className="flex items-center gap-1 text-[13px]">
-              <div className="w-5 h-5 flex items-center justify-center">💬</div>
-              <span>0</span>
-            </div>
-            <div className="flex items-center gap-1 text-[13px]">
-              <div className="w-5 h-5 flex items-center justify-center">🔁</div>
-              <span>0</span>
-            </div>
-            <div className="flex items-center gap-1 text-[13px]">
-              <div className="w-5 h-5 flex items-center justify-center">❤️</div>
-              <span>0</span>
-            </div>
-            <div className="flex items-center gap-1 text-[13px]">
-              <div className="w-5 h-5 flex items-center justify-center">📊</div>
-              <span>0</span>
-            </div>
+            <button className="flex items-center gap-1 text-[13px] hover:text-blue-500 transition-colors group">
+              <MessageCircle className="w-[18px] h-[18px]" strokeWidth={1.5} />
+              <span className="group-hover:text-blue-500">0</span>
+            </button>
+            <button className="flex items-center gap-1 text-[13px] hover:text-green-500 transition-colors group">
+              <Repeat2 className="w-[18px] h-[18px]" strokeWidth={1.5} />
+              <span className="group-hover:text-green-500">0</span>
+            </button>
+            <button className="flex items-center gap-1 text-[13px] hover:text-pink-500 transition-colors group">
+              <Heart className="w-[18px] h-[18px]" strokeWidth={1.5} />
+              <span className="group-hover:text-pink-500">0</span>
+            </button>
+            <button className="flex items-center gap-1 text-[13px] hover:text-blue-500 transition-colors group">
+              <BarChart3 className="w-[18px] h-[18px]" strokeWidth={1.5} />
+              <span className="group-hover:text-blue-500">0</span>
+            </button>
+            <button className="flex items-center gap-1 text-[13px] hover:text-blue-500 transition-colors">
+              <Share className="w-[18px] h-[18px]" strokeWidth={1.5} />
+            </button>
           </div>
         </div>
       </div>
