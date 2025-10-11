@@ -483,12 +483,26 @@ export default function PostedPostsPage() {
                 const firstMediaUrl = getMediaUrl()
                 const displayContent = getDisplayContent()
 
+                // Debug logging for Reel posts
+                if (post.platforms.includes('facebook') && post.media_urls?.some(url => url.includes('.mp4'))) {
+                  console.log('🎬 Facebook Reel detected:', {
+                    postId: post.id,
+                    platform_media_url: post.platform_media_url,
+                    media_urls: post.media_urls,
+                    firstMediaUrl
+                  });
+                }
+
                 // Check if we have a platform media URL (thumbnail) for video content
                 const hasPlatformThumbnail = post.platform_media_url && (
                   post.platform_media_url.includes('.jpg') ||
                   post.platform_media_url.includes('.jpeg') ||
                   post.platform_media_url.includes('.png')
                 )
+
+                if (hasPlatformThumbnail) {
+                  console.log('🖼️ Using platform thumbnail:', post.platform_media_url);
+                }
 
                 // If we have a platform thumbnail, always show it as an image
                 // Otherwise check if the media URL is a video
@@ -620,7 +634,17 @@ export default function PostedPostsPage() {
                                 src={firstMediaUrl}
                                 alt="Post media"
                                 className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                                onLoad={() => {
+                                  console.log('✅ Image loaded successfully:', firstMediaUrl);
+                                }}
                                 onError={(e) => {
+                                  console.error('❌ Image failed to load:', firstMediaUrl);
+                                  console.error('Error details:', e);
+                                  console.log('Post data:', {
+                                    platform_media_url: post.platform_media_url,
+                                    media_urls: post.media_urls,
+                                    hasPlatformThumbnail
+                                  });
                                   // Replace image with placeholder on error
                                   const placeholder = document.createElement('div')
                                   placeholder.className = 'w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center'
