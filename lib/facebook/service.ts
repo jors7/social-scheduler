@@ -437,11 +437,13 @@ export class FacebookService {
           throw new Error(`Reel blocked by copyright check (${copyrightStatus}). Please use original content without copyrighted music.`);
         }
 
-        // Check if truly published
-        if (processingStatus === 'complete' && publishingStatus === 'complete') {
+        // Check if truly published - need ALL three phases complete
+        // processing, publishing, AND copyright check must all be done
+        const copyrightPassed = copyrightStatus === 'passed' || copyrightStatus === 'complete';
+        if (processingStatus === 'complete' && publishingStatus === 'complete' && copyrightPassed) {
           isPublished = true;
           permalink = statusData.permalink_url || '';
-          console.log('Reel is live!', permalink);
+          console.log('Reel is live! (all checks passed)', permalink);
           break;
         }
       }
