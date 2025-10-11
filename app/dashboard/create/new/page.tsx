@@ -88,6 +88,7 @@ function CreateNewPostPageContent() {
   const [instagramAsStory, setInstagramAsStory] = useState(false)
   const [instagramFormat, setInstagramFormat] = useState<'feed-square' | 'feed-portrait' | 'feed-landscape' | 'story' | 'reel'>('feed-portrait')
   const [facebookAsStory, setFacebookAsStory] = useState(false)
+  const [facebookAsReel, setFacebookAsReel] = useState(false)
   const [platformContent, setPlatformContent] = useState<Record<string, string>>({})
   const [showPlatformCustomization, setShowPlatformCustomization] = useState(false)
   const [scheduledDate, setScheduledDate] = useState('')
@@ -554,9 +555,19 @@ function CreateNewPostPageContent() {
       facebookAsStory &&
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
 
-    // Check if Facebook Story is selected (even with other platforms)
+    // Special handling for Facebook Reels - caption optional
+    const isFacebookReelOnly = selectedPlatforms.length === 1 &&
+      selectedPlatforms[0] === 'facebook' &&
+      facebookAsReel &&
+      (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
+
+    // Check if Facebook Story or Reel is selected (even with other platforms)
     const hasFacebookStory = selectedPlatforms.includes('facebook') &&
       facebookAsStory &&
+      (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
+
+    const hasFacebookReel = selectedPlatforms.includes('facebook') &&
+      facebookAsReel &&
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
 
     // Debug logging for Instagram Story
@@ -617,6 +628,15 @@ function CreateNewPostPageContent() {
       }
       console.log('Facebook Story validation passed')
       // Facebook Story validation passed - skip all other content checks
+    } else if (isFacebookReelOnly) {
+      console.log('Facebook Reel Only path')
+      // Facebook Reels only need video, caption is optional
+      if (selectedFiles.length === 0 && uploadedMediaUrls.length === 0) {
+        toast.error('Please select a video for your Facebook reel')
+        return
+      }
+      console.log('Facebook Reel validation passed')
+      // Facebook Reel validation passed - skip all other content checks
     } else if (isYouTubeOnly) {
       // YouTube-only posts need video and title
       if (!youtubeVideoFile) {
@@ -642,7 +662,8 @@ function CreateNewPostPageContent() {
         otherPlatforms.some(p => p === 'pinterest' && hasPinterestContent) ||
         otherPlatforms.some(p => p === 'youtube' && hasYouTubeContent) ||
         otherPlatforms.some(p => p === 'tiktok' && hasTikTokContent) ||
-        otherPlatforms.some(p => p === 'facebook' && hasFacebookStory)
+        otherPlatforms.some(p => p === 'facebook' && hasFacebookStory) ||
+        otherPlatforms.some(p => p === 'facebook' && hasFacebookReel)
 
       if (!otherPlatformsHaveContent) {
         toast.error('Please enter content for non-Instagram platforms')
@@ -652,6 +673,21 @@ function CreateNewPostPageContent() {
       // Mixed platforms including Facebook Story
       const otherPlatforms = selectedPlatforms.filter(p => p !== 'facebook')
       // Facebook Story only needs media (already checked in hasFacebookStory)
+      // Check if other platforms have content
+      const otherPlatformsHaveContent = hasMainContent || hasPlatformContent ||
+        otherPlatforms.some(p => p === 'pinterest' && hasPinterestContent) ||
+        otherPlatforms.some(p => p === 'youtube' && hasYouTubeContent) ||
+        otherPlatforms.some(p => p === 'tiktok' && hasTikTokContent) ||
+        otherPlatforms.some(p => p === 'instagram' && hasInstagramStory)
+
+      if (!otherPlatformsHaveContent) {
+        toast.error('Please enter content for non-Facebook platforms')
+        return
+      }
+    } else if (hasFacebookReel && selectedPlatforms.length > 1) {
+      // Mixed platforms including Facebook Reel
+      const otherPlatforms = selectedPlatforms.filter(p => p !== 'facebook')
+      // Facebook Reel only needs video (already checked in hasFacebookReel)
       // Check if other platforms have content
       const otherPlatformsHaveContent = hasMainContent || hasPlatformContent ||
         otherPlatforms.some(p => p === 'pinterest' && hasPinterestContent) ||
@@ -1298,6 +1334,7 @@ function CreateNewPostPageContent() {
         tiktokPrivacyLevel: selectedPlatforms.includes('tiktok') ? (tiktokSaveAsDraft ? 'SELF_ONLY' : tiktokPrivacyLevel) : undefined,
         instagramAsStory: selectedPlatforms.includes('instagram') ? instagramAsStory : undefined,
         facebookAsStory: selectedPlatforms.includes('facebook') ? facebookAsStory : undefined,
+        facebookAsReel: selectedPlatforms.includes('facebook') ? facebookAsReel : undefined,
       }
       
       console.log('Posting with data:', {
@@ -1527,9 +1564,19 @@ function CreateNewPostPageContent() {
       facebookAsStory &&
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
 
-    // Check if Facebook Story is selected (even with other platforms)
+    // Special handling for Facebook Reels - caption optional
+    const isFacebookReelOnly = selectedPlatforms.length === 1 &&
+      selectedPlatforms[0] === 'facebook' &&
+      facebookAsReel &&
+      (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
+
+    // Check if Facebook Story or Reel is selected (even with other platforms)
     const hasFacebookStory = selectedPlatforms.includes('facebook') &&
       facebookAsStory &&
+      (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
+
+    const hasFacebookReel = selectedPlatforms.includes('facebook') &&
+      facebookAsReel &&
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
 
     // Debug logging for Instagram Story
@@ -1590,6 +1637,15 @@ function CreateNewPostPageContent() {
       }
       console.log('Facebook Story validation passed')
       // Facebook Story validation passed - skip all other content checks
+    } else if (isFacebookReelOnly) {
+      console.log('Facebook Reel Only path')
+      // Facebook Reels only need video, caption is optional
+      if (selectedFiles.length === 0 && uploadedMediaUrls.length === 0) {
+        toast.error('Please select a video for your Facebook reel')
+        return
+      }
+      console.log('Facebook Reel validation passed')
+      // Facebook Reel validation passed - skip all other content checks
     } else if (isYouTubeOnly) {
       // YouTube-only posts need video and title
       if (!youtubeVideoFile) {
@@ -1615,7 +1671,8 @@ function CreateNewPostPageContent() {
         otherPlatforms.some(p => p === 'pinterest' && hasPinterestContent) ||
         otherPlatforms.some(p => p === 'youtube' && hasYouTubeContent) ||
         otherPlatforms.some(p => p === 'tiktok' && hasTikTokContent) ||
-        otherPlatforms.some(p => p === 'facebook' && hasFacebookStory)
+        otherPlatforms.some(p => p === 'facebook' && hasFacebookStory) ||
+        otherPlatforms.some(p => p === 'facebook' && hasFacebookReel)
 
       if (!otherPlatformsHaveContent) {
         toast.error('Please enter content for non-Instagram platforms')
@@ -1625,6 +1682,21 @@ function CreateNewPostPageContent() {
       // Mixed platforms including Facebook Story
       const otherPlatforms = selectedPlatforms.filter(p => p !== 'facebook')
       // Facebook Story only needs media (already checked in hasFacebookStory)
+      // Check if other platforms have content
+      const otherPlatformsHaveContent = hasMainContent || hasPlatformContent ||
+        otherPlatforms.some(p => p === 'pinterest' && hasPinterestContent) ||
+        otherPlatforms.some(p => p === 'youtube' && hasYouTubeContent) ||
+        otherPlatforms.some(p => p === 'tiktok' && hasTikTokContent) ||
+        otherPlatforms.some(p => p === 'instagram' && hasInstagramStory)
+
+      if (!otherPlatformsHaveContent) {
+        toast.error('Please enter content for non-Facebook platforms')
+        return
+      }
+    } else if (hasFacebookReel && selectedPlatforms.length > 1) {
+      // Mixed platforms including Facebook Reel
+      const otherPlatforms = selectedPlatforms.filter(p => p !== 'facebook')
+      // Facebook Reel only needs video (already checked in hasFacebookReel)
       // Check if other platforms have content
       const otherPlatformsHaveContent = hasMainContent || hasPlatformContent ||
         otherPlatforms.some(p => p === 'pinterest' && hasPinterestContent) ||
@@ -3151,10 +3223,13 @@ function CreateNewPostPageContent() {
                                   <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
                                     <button
                                       type="button"
-                                      onClick={() => setFacebookAsStory(false)}
+                                      onClick={() => {
+                                        setFacebookAsStory(false)
+                                        setFacebookAsReel(false)
+                                      }}
                                       className={cn(
-                                        "flex-1 px-3 py-2 rounded-md text-[11px] font-medium transition-all",
-                                        !facebookAsStory
+                                        "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
+                                        !facebookAsStory && !facebookAsReel
                                           ? "bg-white text-blue-700 shadow-sm"
                                           : "text-gray-600 hover:text-gray-900"
                                       )}
@@ -3163,21 +3238,39 @@ function CreateNewPostPageContent() {
                                     </button>
                                     <button
                                       type="button"
-                                      onClick={() => setFacebookAsStory(true)}
+                                      onClick={() => {
+                                        setFacebookAsStory(true)
+                                        setFacebookAsReel(false)
+                                      }}
                                       className={cn(
-                                        "flex-1 px-3 py-2 rounded-md text-[11px] font-medium transition-all",
-                                        facebookAsStory
+                                        "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
+                                        facebookAsStory && !facebookAsReel
                                           ? "bg-white text-blue-700 shadow-sm"
                                           : "text-gray-600 hover:text-gray-900"
                                       )}
                                     >
                                       📸 Story
                                     </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setFacebookAsStory(false)
+                                        setFacebookAsReel(true)
+                                      }}
+                                      className={cn(
+                                        "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
+                                        facebookAsReel
+                                          ? "bg-white text-blue-700 shadow-sm"
+                                          : "text-gray-600 hover:text-gray-900"
+                                      )}
+                                    >
+                                      🎬 Reel
+                                    </button>
                                   </div>
                                 </div>
 
                                 {/* Story hint */}
-                                {facebookAsStory && (
+                                {facebookAsStory && !facebookAsReel && (
                                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
                                     <p className="text-[10px] text-blue-700 leading-relaxed">
                                       📸 Stories disappear after 24 hours<br/>
@@ -3187,8 +3280,19 @@ function CreateNewPostPageContent() {
                                   </div>
                                 )}
 
+                                {/* Reel hint */}
+                                {facebookAsReel && (
+                                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                                    <p className="text-[10px] text-blue-700 leading-relaxed">
+                                      🎬 Short-form vertical video content<br/>
+                                      📐 Vertical format (9:16) required<br/>
+                                      ⏱️ Duration: 5-90 seconds
+                                    </p>
+                                  </div>
+                                )}
+
                                 {/* Feed hint */}
-                                {!facebookAsStory && (
+                                {!facebookAsStory && !facebookAsReel && (
                                   <p className="text-[10px] text-blue-600 mt-1.5">
                                     📰 Regular post will appear on your page feed
                                   </p>

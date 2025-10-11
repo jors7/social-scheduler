@@ -4,7 +4,7 @@ import { FacebookService } from '@/lib/facebook/service';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { pageId, accessToken, text, mediaUrls, isStory } = body;
+    const { pageId, accessToken, text, mediaUrls, isStory, isReel } = body;
 
     if (!pageId || !accessToken) {
       return NextResponse.json(
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Stories require media, feed posts require text
+    // Stories and Reels require media, feed posts require text
     if (isStory && (!mediaUrls || mediaUrls.length === 0)) {
       return NextResponse.json(
         { error: 'Facebook Stories require an image or video' },
@@ -21,7 +21,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!isStory && !text) {
+    if (isReel && (!mediaUrls || mediaUrls.length === 0)) {
+      return NextResponse.json(
+        { error: 'Facebook Reels require a video' },
+        { status: 400 }
+      );
+    }
+
+    if (!isStory && !isReel && !text) {
       return NextResponse.json(
         { error: 'Facebook feed posts require text content' },
         { status: 400 }
@@ -31,14 +38,26 @@ export async function POST(request: NextRequest) {
     console.log('=== Facebook Post Request ===');
     console.log('Page ID:', pageId);
     console.log('Is Story:', isStory);
+    console.log('Is Reel:', isReel);
     console.log('Has media:', !!mediaUrls && mediaUrls.length > 0);
     console.log('Media count:', mediaUrls?.length || 0);
 
     const facebookService = new FacebookService();
     let result;
 
+    // Handle Reel posts
+    if (isReel) {
+      const videoUrl = mediaUrls[0];
+      console.log('Creating Facebook Reel');
+      result = await facebookService.createReelPost(
+        pageId,
+        accessToken,
+        text,
+        videoUrl
+      );
+    }
     // Handle Story posts
-    if (isStory) {
+    else if (isStory) {
       const mediaUrl = mediaUrls[0];
       const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
       const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
@@ -90,10 +109,18 @@ export async function POST(request: NextRequest) {
 
     console.log('Facebook post successful:', result);
 
+    // Determine success message based on post type
+    let successMessage = 'Posted to Facebook successfully';
+    if (isReel) {
+      successMessage = 'Posted to Facebook Reel successfully';
+    } else if (isStory) {
+      successMessage = 'Posted to Facebook Story successfully';
+    }
+
     return NextResponse.json({
       success: true,
       id: result.id,
-      message: isStory ? 'Posted to Facebook Story successfully' : 'Posted to Facebook successfully'
+      message: successMessage
     });
 
   } catch (error) {

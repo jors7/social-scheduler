@@ -18,6 +18,7 @@ export interface PostData {
   tiktokPrivacyLevel?: 'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY'; // TikTok specific - privacy/draft setting
   instagramAsStory?: boolean; // Instagram specific - post as story instead of feed post
   facebookAsStory?: boolean; // Facebook specific - post as story instead of feed post
+  facebookAsReel?: boolean; // Facebook specific - post as reel instead of feed post
 }
 
 export interface PostResult {
@@ -135,6 +136,8 @@ export class PostingService {
             progressTracker?.updatePlatform(platform, 'processing', 'story');
           } else if (platform === 'instagram' && isVideo) {
             progressTracker?.updatePlatform(platform, 'processing', 'reel');
+          } else if (platform === 'facebook' && postData.facebookAsReel) {
+            progressTracker?.updatePlatform(platform, 'processing', 'reel');
           } else if (platform === 'facebook' && postData.facebookAsStory) {
             progressTracker?.updatePlatform(platform, 'processing', 'story');
           } else if (postData.mediaUrls && postData.mediaUrls.length > 0) {
@@ -205,7 +208,8 @@ export class PostingService {
           textContent,
           account,
           mediaUrls,
-          postData?.facebookAsStory
+          postData?.facebookAsStory,
+          postData?.facebookAsReel
         );
 
       case 'instagram':
@@ -249,7 +253,8 @@ export class PostingService {
     content: string,
     account: any,
     mediaUrls?: string[],
-    isStory?: boolean
+    isStory?: boolean,
+    isReel?: boolean
   ): Promise<PostResult> {
     try {
       // Facebook requires a page ID (stored in platform_user_id)
@@ -260,6 +265,11 @@ export class PostingService {
       // Facebook Stories require media
       if (isStory && (!mediaUrls || mediaUrls.length === 0)) {
         throw new Error('Facebook Stories require an image or video');
+      }
+
+      // Facebook Reels require a video
+      if (isReel && (!mediaUrls || mediaUrls.length === 0)) {
+        throw new Error('Facebook Reels require a video');
       }
 
       const response = await fetch('/api/post/facebook', {
@@ -273,6 +283,7 @@ export class PostingService {
           text: content,
           mediaUrls: mediaUrls,
           isStory: isStory,
+          isReel: isReel,
         }),
       });
 

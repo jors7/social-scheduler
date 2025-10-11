@@ -273,6 +273,50 @@ export class FacebookService {
   }
 
   /**
+   * Create a Reel post on a Facebook page
+   */
+  async createReelPost(
+    pageId: string,
+    pageAccessToken: string,
+    message: string,
+    videoUrl: string
+  ): Promise<{ id: string }> {
+    try {
+      console.log('Creating Facebook Reel...');
+
+      // Facebook Reels use the video_reels endpoint
+      const url = `${this.baseUrl}/${pageId}/video_reels`;
+      const params = new URLSearchParams({
+        description: message,
+        video_url: videoUrl, // Facebook will fetch the video from this URL
+        upload_phase: 'finish',
+        access_token: pageAccessToken
+      });
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString()
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('Facebook Reel post error:', data);
+        throw new Error(data.error?.message || 'Failed to create Facebook Reel');
+      }
+
+      console.log('Facebook Reel created:', data.id);
+      return { id: data.id };
+    } catch (error) {
+      console.error('Facebook Reel posting error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get page insights (analytics)
    */
   async getPageInsights(
