@@ -1385,7 +1385,15 @@ function CreateNewPostPageContent() {
 
             // Extract thumbnail URL from results if available (for videos/reels/stories)
             let platformMediaUrl = null;
+            console.log('=== THUMBNAIL EXTRACTION DEBUG ===');
+            console.log('Results array:', JSON.stringify(results, null, 2));
             for (const result of results) {
+              console.log(`Checking result for ${result.platform}:`, {
+                hasData: !!result.data,
+                dataKeys: result.data ? Object.keys(result.data) : [],
+                hasThumbnailUrl: !!(result.data as any)?.thumbnailUrl,
+                thumbnailValue: (result.data as any)?.thumbnailUrl
+              });
               // Check if result has data property and thumbnailUrl
               if (result.data && (result.data as any).thumbnailUrl) {
                 platformMediaUrl = (result.data as any).thumbnailUrl;
@@ -1393,6 +1401,7 @@ function CreateNewPostPageContent() {
                 break; // Use first thumbnail found
               }
             }
+            console.log('Final platformMediaUrl:', platformMediaUrl);
 
             // Build platform_content with Pinterest data if needed
             const enrichedPlatformContent = { ...platformContent }
