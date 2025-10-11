@@ -297,11 +297,13 @@ export class PostingService {
 
       const data = await response.json();
 
+      console.log('📥 Facebook API response received:', JSON.stringify(data, null, 2));
+
       if (!response.ok) {
         throw new Error(data.error || 'Facebook posting failed');
       }
 
-      return {
+      const result = {
         platform: 'facebook',
         success: true,
         postId: data.id,
@@ -310,6 +312,9 @@ export class PostingService {
           thumbnailUrl: data.thumbnailUrl // Include thumbnail URL if present
         }
       };
+
+      console.log('🔄 Returning PostResult:', JSON.stringify(result, null, 2));
+      return result;
     } catch (error) {
       return {
         platform: 'facebook',

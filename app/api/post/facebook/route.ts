@@ -139,8 +139,12 @@ export async function POST(request: NextRequest) {
     const resultWithThumbnail = result as any;
     if (resultWithThumbnail.thumbnailUrl) {
       response.thumbnailUrl = resultWithThumbnail.thumbnailUrl;
+      console.log('✅ Including thumbnail URL in response:', response.thumbnailUrl);
+    } else {
+      console.log('⚠️ No thumbnail URL found in result');
     }
 
+    console.log('📤 Final API response:', JSON.stringify(response, null, 2));
     return NextResponse.json(response);
 
   } catch (error) {
