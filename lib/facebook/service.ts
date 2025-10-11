@@ -314,6 +314,7 @@ export class FacebookService {
       // Phase 2: Upload video from URL
       console.log('Phase 2: Uploading video from URL...');
       const uploadParams = new URLSearchParams({
+        upload_phase: 'transfer',
         video_id: videoId,
         file_url: videoUrl,
         access_token: pageAccessToken
