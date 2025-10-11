@@ -1,6 +1,6 @@
 'use client'
 
-import { ThumbsUp, MessageSquare, Repeat2, Send } from 'lucide-react'
+import { ThumbsUp, MessageSquare, Repeat2 } from 'lucide-react'
 import { stripHtml, truncateText, getAllEntities } from './preview-utils'
 
 interface LinkedInPreviewProps {
@@ -123,10 +123,6 @@ export function LinkedInPreview({ content, mediaUrls = [] }: LinkedInPreviewProp
         <button className="flex items-center gap-2 text-gray-600 hover:bg-gray-100 px-3 py-2 rounded transition-colors">
           <Repeat2 className="w-5 h-5" strokeWidth={1.5} />
           <span className="text-sm font-medium">Repost</span>
-        </button>
-        <button className="flex items-center gap-2 text-gray-600 hover:bg-gray-100 px-3 py-2 rounded transition-colors">
-          <Send className="w-5 h-5" strokeWidth={1.5} />
-          <span className="text-sm font-medium">Send</span>
         </button>
       </div>
 
