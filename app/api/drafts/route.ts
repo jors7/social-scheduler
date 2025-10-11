@@ -34,13 +34,23 @@ export async function GET(request: NextRequest) {
       .order('updated_at', { ascending: false });
 
     if (error) {
-      console.error('Database error:', error);
+      console.error('[API GET] Database error:', error);
       return NextResponse.json({ error: 'Failed to fetch drafts' }, { status: 500 });
     }
 
-    return NextResponse.json({ 
+    console.log('[API GET] Fetched drafts:', {
+      count: data?.length || 0,
+      drafts: data?.map(d => ({
+        id: d.id,
+        title: d.title,
+        mediaUrlsCount: d.media_urls?.length || 0,
+        mediaUrls: d.media_urls
+      }))
+    });
+
+    return NextResponse.json({
       success: true,
-      drafts: data || [] 
+      drafts: data || []
     });
 
   } catch (error) {
@@ -77,9 +87,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { title, content, platforms, platformContent, mediaUrls, pinterest_title, pinterest_description } = body;
 
+    // Debug logging
+    console.log('[API POST] Received draft data:', {
+      title,
+      platforms,
+      mediaUrlsCount: mediaUrls?.length || 0,
+      mediaUrls
+    });
+
     // Validate inputs
     if (!content || !platforms || platforms.length === 0) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Missing required fields'
       }, { status: 400 });
     }
@@ -97,6 +115,12 @@ export async function POST(request: NextRequest) {
       media_urls: mediaUrls || []
     };
 
+    console.log('[API POST] Inserting to database:', {
+      title: insertData.title,
+      mediaUrlsCount: insertData.media_urls?.length || 0,
+      mediaUrls: insertData.media_urls
+    });
+
     // Add Pinterest fields if provided
     if (pinterest_title) {
       insertData.pinterest_title = pinterest_title;
@@ -112,13 +136,19 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Database error:', error);
+      console.error('[API POST] Database error:', error);
       return NextResponse.json({ error: 'Failed to save draft' }, { status: 500 });
     }
 
-    return NextResponse.json({ 
+    console.log('[API POST] Draft saved successfully:', {
+      id: data?.id,
+      mediaUrlsCount: data?.media_urls?.length || 0,
+      mediaUrls: data?.media_urls
+    });
+
+    return NextResponse.json({
       success: true,
-      draft: data 
+      draft: data
     });
 
   } catch (error) {

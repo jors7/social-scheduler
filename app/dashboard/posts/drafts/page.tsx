@@ -61,8 +61,17 @@ export default function DraftPostsPage() {
     try {
       const response = await fetch('/api/drafts')
       if (!response.ok) throw new Error('Failed to fetch')
-      
+
       const data = await response.json()
+      console.log('[Drafts Page] Received drafts from API:', {
+        count: data.drafts?.length || 0,
+        drafts: data.drafts?.map((d: Draft) => ({
+          id: d.id,
+          title: d.title,
+          mediaUrlsCount: d.media_urls?.length || 0,
+          mediaUrls: d.media_urls
+        }))
+      })
       setDrafts(data.drafts || [])
     } catch (error) {
       console.error('Error fetching drafts:', error)
