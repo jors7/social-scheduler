@@ -375,12 +375,12 @@ export class FacebookService {
       }
 
       // Phase 3: Finish and publish the Reel (not as draft)
-      console.log('Phase 3: Publishing Reel as public (not draft)...');
+      console.log('Phase 3: Publishing Reel as PUBLISHED (not DRAFT)...');
       const finishParams = new URLSearchParams({
         upload_phase: 'finish',
         video_id: videoId,
+        video_state: 'PUBLISHED', // PUBLISHED, DRAFT, or SCHEDULED
         description: message,
-        published: 'true', // Explicitly publish as public, not draft
         access_token: pageAccessToken
       });
 
