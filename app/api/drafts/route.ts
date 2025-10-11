@@ -85,14 +85,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, content, platforms, platformContent, mediaUrls, pinterest_title, pinterest_description } = body;
+    const { title, content, platforms, platformContent, media_urls, pinterest_title, pinterest_description } = body;
 
     // Debug logging
     console.log('[API POST] Received draft data:', {
       title,
       platforms,
-      mediaUrlsCount: mediaUrls?.length || 0,
-      mediaUrls
+      mediaUrlsCount: media_urls?.length || 0,
+      mediaUrls: media_urls
     });
 
     // Validate inputs
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       content,
       platforms,
       platform_content: platformContent || {},
-      media_urls: mediaUrls || []
+      media_urls: media_urls || []
     };
 
     console.log('[API POST] Inserting to database:', {
@@ -183,7 +183,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { draftId, title, content, platforms, platformContent, mediaUrls, pinterest_title, pinterest_description } = body;
+    const { draftId, title, content, platforms, platformContent, media_urls, pinterest_title, pinterest_description } = body;
 
     if (!draftId) {
       return NextResponse.json({ error: 'Draft ID is required' }, { status: 400 });
@@ -195,7 +195,7 @@ export async function PATCH(request: NextRequest) {
       content,
       platforms,
       platform_content: platformContent,
-      media_urls: mediaUrls
+      media_urls: media_urls
     };
 
     // Add Pinterest fields if provided
