@@ -2909,17 +2909,18 @@ function CreateNewPostPageContent() {
                   </Button>
                 </>
               ) : (
-                <Button 
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg" 
+                <Button
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
                   disabled={
-                    selectedPlatforms.length === 0 || 
-                    isPosting || 
+                    selectedPlatforms.length === 0 ||
+                    isPosting ||
                     loadingDraft ||
-                    (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) && 
+                    (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) &&
                       !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()) &&
                       !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
                       !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(url => url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')))) &&
                       !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'instagram' && instagramAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
+                      !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && facebookAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
                       !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'threads' && threadsMode === 'thread' && threadPosts.some(p => p.trim())) &&
                       !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'twitter' && twitterMode === 'thread' && twitterThreadPosts.some(p => p.trim())))
                   }
