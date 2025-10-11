@@ -2252,32 +2252,6 @@ function CreateNewPostPageContent() {
             <span className="text-blue-700 text-sm font-medium">Loading draft...</span>
           </div>
         )}
-        {/* Auto-save status indicator */}
-        {!editingScheduledPost && (
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 rounded-full">
-            {isSaving ? (
-              <>
-                <div className="w-3 h-3 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-gray-700 text-sm">Saving...</span>
-              </>
-            ) : autoSaveError ? (
-              <>
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span className="text-red-700 text-sm">Save failed - data backed up locally</span>
-              </>
-            ) : lastSaved ? (
-              <>
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-gray-700 text-sm">Saved {timeAgo}</span>
-              </>
-            ) : (
-              <>
-                <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                <span className="text-gray-600 text-sm">Auto-save enabled</span>
-              </>
-            )}
-          </div>
-        )}
       </div>
 
       <SubscriptionGate feature="post scheduling">
@@ -2292,32 +2266,44 @@ function CreateNewPostPageContent() {
                   <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Post Content</CardTitle>
                   <CardDescription className="text-sm sm:text-base text-gray-600">Write your message</CardDescription>
                 </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowPreview(!showPreview)}
-                    disabled={selectedPlatforms.length === 0}
-                    className={cn(
-                      "flex-1 sm:flex-initial transition-colors",
-                      showPreview
-                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                        : "bg-gray-50 hover:bg-gray-100"
-                    )}
-                  >
-                    <Eye className="mr-2 h-4 w-4" />
-                    Preview
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowAISuggestions(true)}
-                    disabled={selectedPlatforms.length === 0}
-                    className="bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 border-purple-200 hover:border-purple-300 flex-1 sm:flex-initial"
-                  >
-                    <Sparkles className="mr-2 h-4 w-4 text-purple-600" />
-                    AI Suggestions
-                  </Button>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  {/* Subtle autosave indicator */}
+                  {!editingScheduledPost && (isSaving || (lastSaved && timeAgo)) && (
+                    <span className={cn(
+                      "text-xs transition-opacity duration-300",
+                      isSaving ? "text-gray-600 animate-pulse" : "text-gray-500"
+                    )}>
+                      {isSaving ? 'Saving...' : `Saved ${timeAgo}`}
+                    </span>
+                  )}
+
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowPreview(!showPreview)}
+                      disabled={selectedPlatforms.length === 0}
+                      className={cn(
+                        "flex-1 sm:flex-initial transition-colors",
+                        showPreview
+                          ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                          : "bg-gray-50 hover:bg-gray-100"
+                      )}
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      Preview
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAISuggestions(true)}
+                      disabled={selectedPlatforms.length === 0}
+                      className="bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 border-purple-200 hover:border-purple-300 flex-1 sm:flex-initial"
+                    >
+                      <Sparkles className="mr-2 h-4 w-4 text-purple-600" />
+                      AI Suggestions
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardHeader>
