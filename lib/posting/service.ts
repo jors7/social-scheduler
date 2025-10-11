@@ -128,11 +128,13 @@ export class PostingService {
           }
           
           // Update progress tracker - processing
-          const isVideo = postData.mediaUrls?.some(url => 
+          const isVideo = postData.mediaUrls?.some(url =>
             ['.mp4', '.mov', '.avi', '.webm'].some(ext => url.toLowerCase().includes(ext))
           );
           if (platform === 'instagram' && isVideo) {
             progressTracker?.updatePlatform(platform, 'processing', 'reel');
+          } else if (platform === 'facebook' && postData.facebookAsStory) {
+            progressTracker?.updatePlatform(platform, 'processing', 'story');
           } else if (postData.mediaUrls && postData.mediaUrls.length > 0) {
             progressTracker?.updatePlatform(platform, 'processing');
           }

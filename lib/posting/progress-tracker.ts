@@ -84,9 +84,12 @@ export class PostingProgressTracker {
         })
         break
       case 'processing':
-        const processingMsg = platform.toLowerCase() === 'instagram' && message?.includes('reel') 
-          ? `${emoji} Processing ${platformName} reel (this may take up to 2 minutes)...`
-          : `${emoji} Processing ${platformName} post...`
+        let processingMsg = `${emoji} Processing ${platformName} post...`
+        if (platform.toLowerCase() === 'instagram' && message?.includes('reel')) {
+          processingMsg = `${emoji} Processing ${platformName} reel (this may take up to 2 minutes)...`
+        } else if (platform.toLowerCase() === 'facebook' && message?.includes('story')) {
+          processingMsg = `${emoji} Processing ${platformName} story...`
+        }
         toast.info(processingMsg, {
           duration: 3000
         })
