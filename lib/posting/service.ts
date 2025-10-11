@@ -30,6 +30,7 @@ export interface PostResult {
     id?: string;
     isDraft?: boolean; // For TikTok draft posting
     message?: string; // Custom success message (e.g., for drafts)
+    thumbnailUrl?: string; // Thumbnail URL from platform (for videos)
     metrics?: {
       likes?: number;
       comments?: number;
@@ -297,6 +298,10 @@ export class PostingService {
         platform: 'facebook',
         success: true,
         postId: data.id,
+        data: {
+          id: data.id,
+          thumbnailUrl: data.thumbnailUrl // Include thumbnail URL if present
+        }
       };
     } catch (error) {
       return {

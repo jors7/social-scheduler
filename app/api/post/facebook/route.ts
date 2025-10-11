@@ -117,11 +117,20 @@ export async function POST(request: NextRequest) {
       successMessage = 'Posted to Facebook Story successfully';
     }
 
-    return NextResponse.json({
+    // Prepare response with thumbnail URL if available
+    const response: any = {
       success: true,
       id: result.id,
       message: successMessage
-    });
+    };
+
+    // Include thumbnail URL if present (for Reels and video Stories)
+    const resultWithThumbnail = result as any;
+    if (resultWithThumbnail.thumbnailUrl) {
+      response.thumbnailUrl = resultWithThumbnail.thumbnailUrl;
+    }
+
+    return NextResponse.json(response);
 
   } catch (error) {
     console.error('Facebook posting error:', error);

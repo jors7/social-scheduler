@@ -69,9 +69,11 @@ export async function postToFacebookDirect(content: string, account: any, mediaU
       );
     }
 
+    const resultWithThumbnail = result as any;
     return {
       success: true,
       id: result.id,
+      thumbnailUrl: resultWithThumbnail.thumbnailUrl, // Include thumbnail URL if available
       message: 'Posted to Facebook successfully'
     };
   } catch (error) {

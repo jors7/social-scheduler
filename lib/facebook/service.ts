@@ -265,7 +265,18 @@ export class FacebookService {
       }
 
       console.log('Facebook story created:', storyData.id);
-      return { id: storyData.id };
+
+      // Fetch thumbnail URL for video stories
+      let thumbnailUrl: string | null = null;
+      if (mediaType === 'video') {
+        console.log('Fetching Story thumbnail...');
+        thumbnailUrl = await this.getVideoThumbnail(mediaId, pageAccessToken);
+      }
+
+      return {
+        id: storyData.id,
+        thumbnailUrl: thumbnailUrl
+      } as { id: string; thumbnailUrl?: string | null };
     } catch (error) {
       console.error('Facebook story posting error:', error);
       throw error;
@@ -466,13 +477,55 @@ export class FacebookService {
         throw new Error('Reel processing timeout (15 minutes). The Reel may still publish later - check your Facebook page.');
       }
 
+      // Fetch thumbnail URL for the published Reel
+      console.log('Fetching Reel thumbnail...');
+      const thumbnailUrl = await this.getVideoThumbnail(videoId, pageAccessToken);
+
       return {
         id: videoId,
-        permalink: permalink
-      };
+        permalink: permalink,
+        thumbnailUrl: thumbnailUrl
+      } as { id: string; permalink?: string; thumbnailUrl?: string | null };
     } catch (error) {
       console.error('Facebook Reel posting error:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Get video thumbnail URL from Facebook API
+   */
+  async getVideoThumbnail(
+    videoId: string,
+    pageAccessToken: string
+  ): Promise<string | null> {
+    try {
+      console.log(`Fetching thumbnail for video ${videoId}...`);
+      const url = `${this.baseUrl}/${videoId}`;
+      const params = new URLSearchParams({
+        fields: 'thumbnails',
+        access_token: pageAccessToken
+      });
+
+      const response = await fetch(`${url}?${params.toString()}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('Failed to fetch video thumbnail:', data);
+        return null;
+      }
+
+      const thumbnailUrl = data.thumbnails?.data?.[0]?.uri || null;
+      if (thumbnailUrl) {
+        console.log('Thumbnail URL retrieved:', thumbnailUrl);
+      } else {
+        console.log('No thumbnail found for video');
+      }
+
+      return thumbnailUrl;
+    } catch (error) {
+      console.error('Error fetching video thumbnail:', error);
+      return null;
     }
   }
 

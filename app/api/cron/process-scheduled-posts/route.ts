@@ -259,13 +259,32 @@ export async function GET(request: NextRequest) {
 
         if (successful.length > 0 && failed.length === 0) {
           // All successful - mark as posted
+          // Extract thumbnail URL from results if available (for videos/reels/stories)
+          let platformMediaUrl = null;
+          for (const result of postResults) {
+            // Check if result has data property and thumbnailUrl (type-safe check)
+            const resultData = result.data as any;
+            if (resultData && resultData.thumbnailUrl) {
+              platformMediaUrl = resultData.thumbnailUrl;
+              console.log(`Found thumbnail URL for ${result.platform}:`, platformMediaUrl);
+              break; // Use first thumbnail found
+            }
+          }
+
+          const updateData: any = {
+            status: 'posted',
+            posted_at: new Date().toISOString(),
+            post_results: postResults
+          };
+
+          // Add platform_media_url if thumbnail was found
+          if (platformMediaUrl) {
+            updateData.platform_media_url = platformMediaUrl;
+          }
+
           await supabase
             .from('scheduled_posts')
-            .update({
-              status: 'posted',
-              posted_at: new Date().toISOString(),
-              post_results: postResults
-            })
+            .update(updateData)
             .eq('id', post.id);
 
           // Increment posts usage counter
