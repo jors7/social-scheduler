@@ -1382,7 +1382,18 @@ function CreateNewPostPageContent() {
               postId: r.postId || null,
               error: r.error || null
             }))
-            
+
+            // Extract thumbnail URL from results if available (for videos/reels/stories)
+            let platformMediaUrl = null;
+            for (const result of results) {
+              // Check if result has data property and thumbnailUrl
+              if (result.data && (result.data as any).thumbnailUrl) {
+                platformMediaUrl = (result.data as any).thumbnailUrl;
+                console.log(`Found thumbnail URL for ${result.platform}:`, platformMediaUrl);
+                break; // Use first thumbnail found
+              }
+            }
+
             // Build platform_content with Pinterest data if needed
             const enrichedPlatformContent = { ...platformContent }
             if (supportedPlatforms.includes('pinterest') && (pinterestTitle || pinterestDescription)) {
@@ -1400,22 +1411,30 @@ function CreateNewPostPageContent() {
                 enrichedPlatformContent.pinterest = pinterestContent.join('')
               }
             }
-            
+
+            // Build the insert data object
+            const insertData: any = {
+              user_id: user.id,
+              content: postContent,
+              platforms: supportedPlatforms,
+              platform_content: Object.keys(enrichedPlatformContent).length > 0 ? enrichedPlatformContent : {},
+              media_urls: mediaUrls.length > 0 ? mediaUrls : [],
+              status: successful.length > 0 && failed.length === 0 ? 'posted' :
+                      successful.length > 0 && failed.length > 0 ? 'partial' : 'failed',
+              scheduled_for: postedTime, // Set this so posts appear in queries that order by scheduled_for
+              posted_at: postedTime,
+              post_results: postResults
+            };
+
+            // Add platform_media_url if thumbnail was found
+            if (platformMediaUrl) {
+              insertData.platform_media_url = platformMediaUrl;
+            }
+
             // Store in scheduled_posts table
             await supabase
               .from('scheduled_posts')
-              .insert({
-                user_id: user.id,
-                content: postContent,
-                platforms: supportedPlatforms,
-                platform_content: Object.keys(enrichedPlatformContent).length > 0 ? enrichedPlatformContent : {},
-                media_urls: mediaUrls.length > 0 ? mediaUrls : [],
-                status: successful.length > 0 && failed.length === 0 ? 'posted' : 
-                        successful.length > 0 && failed.length > 0 ? 'partial' : 'failed',
-                scheduled_for: postedTime, // Set this so posts appear in queries that order by scheduled_for
-                posted_at: postedTime,
-                post_results: postResults
-              })
+              .insert(insertData)
           }
         } catch (error) {
           console.error('Failed to store post results in database:', error)
