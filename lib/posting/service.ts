@@ -28,6 +28,7 @@ export interface PostResult {
   error?: string;
   data?: {
     id?: string;
+    type?: string; // Post type (e.g., 'story' or 'post')
     isDraft?: boolean; // For TikTok draft posting
     message?: string; // Custom success message (e.g., for drafts)
     thumbnailUrl?: string; // Thumbnail URL from platform (for videos)
