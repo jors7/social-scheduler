@@ -274,7 +274,7 @@ export class FacebookService {
 
   /**
    * Create a Reel post on a Facebook page
-   * Uses 2-phase upload process: start with file_url, wait for processing, then finish
+   * Uses 3-phase resumable binary upload: start, upload bytes, finish
    */
   async createReelPost(
     pageId: string,
@@ -283,18 +283,17 @@ export class FacebookService {
     videoUrl: string
   ): Promise<{ id: string }> {
     try {
-      console.log('Creating Facebook Reel...');
+      console.log('Creating Facebook Reel with binary upload...');
 
-      // Phase 1: Initialize upload with file_url
-      console.log('Phase 1: Initializing Reel upload with video URL...');
-      const url = `${this.baseUrl}/${pageId}/video_reels`;
+      // Phase 1: Initialize upload session
+      console.log('Phase 1: Initializing Reel upload session...');
+      const reelsUrl = `${this.baseUrl}/${pageId}/video_reels`;
       const startParams = new URLSearchParams({
         upload_phase: 'start',
-        file_url: videoUrl, // Provide URL in START phase
         access_token: pageAccessToken
       });
 
-      const startResponse = await fetch(url, {
+      const startResponse = await fetch(reelsUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -309,65 +308,52 @@ export class FacebookService {
         throw new Error(startData.error?.message || 'Failed to initialize Facebook Reel upload');
       }
 
-      const videoId = startData.video_id;
-      console.log('Reel upload initialized with video_id:', videoId);
+      const { video_id: videoId, upload_url: uploadUrl } = startData;
+      console.log('Reel upload initialized:', { videoId, uploadUrl });
 
-      // Phase 2: Wait for Facebook to fetch and process the video
-      console.log('Phase 2: Waiting for video to be uploaded and processed...');
-      const maxAttempts = 60; // Wait up to 2 minutes (60 * 2s)
-      let attempts = 0;
-      let isReady = false;
+      // Phase 2: Fetch video from Supabase and upload bytes to Facebook
+      console.log('Phase 2: Fetching video from storage and uploading to Facebook...');
 
-      while (attempts < maxAttempts && !isReady) {
-        // Wait 2 seconds before checking
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        attempts++;
-
-        // Check video status
-        const statusUrl = `${this.baseUrl}/${videoId}`;
-        const statusParams = new URLSearchParams({
-          fields: 'status',
-          access_token: pageAccessToken
-        });
-
-        try {
-          const statusResponse = await fetch(`${statusUrl}?${statusParams.toString()}`);
-          const statusData = await statusResponse.json();
-
-          console.log(`Check ${attempts}/${maxAttempts}: Video status:`, statusData);
-
-          // Check if both uploading and processing phases are complete
-          const uploadingComplete = statusData.status?.uploading_phase?.status === 'complete';
-          const processingComplete = statusData.status?.processing_phase?.status === 'complete';
-
-          if (uploadingComplete && processingComplete) {
-            isReady = true;
-            console.log('Video upload and processing complete - ready for publishing');
-          } else if (uploadingComplete) {
-            console.log('Video uploaded, waiting for processing to complete...');
-          } else {
-            console.log('Video still uploading...');
-          }
-        } catch (error) {
-          console.log(`Status check ${attempts} failed:`, error);
-          // Continue checking
-        }
+      // Fetch video from Supabase storage
+      const videoResponse = await fetch(videoUrl);
+      if (!videoResponse.ok) {
+        throw new Error(`Failed to fetch video from storage: ${videoResponse.statusText}`);
       }
 
-      if (!isReady) {
-        throw new Error('Video upload/processing timeout - video is not ready after 2 minutes. Please try with a smaller video file.');
+      const videoBlob = await videoResponse.blob();
+      const videoBuffer = await videoBlob.arrayBuffer();
+      console.log(`Video fetched: ${videoBuffer.byteLength} bytes`);
+
+      // Upload video bytes to Facebook's upload URL
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `OAuth ${pageAccessToken}`,
+          'Content-Type': 'application/octet-stream',
+          'Content-Length': videoBuffer.byteLength.toString()
+        },
+        body: videoBuffer
+      });
+
+      if (!uploadResponse.ok) {
+        const uploadError = await uploadResponse.text();
+        console.error('Failed to upload video bytes:', uploadError);
+        throw new Error(`Failed to upload video to Facebook: ${uploadResponse.statusText}`);
       }
+
+      console.log('Video bytes uploaded successfully');
 
       // Phase 3: Finish and publish the Reel
       console.log('Phase 3: Publishing Reel...');
       const finishParams = new URLSearchParams({
-        video_id: videoId,
         upload_phase: 'finish',
+        video_id: videoId,
         description: message,
+        share_to_feed: 'true',
         access_token: pageAccessToken
       });
 
-      const finishResponse = await fetch(url, {
+      const finishResponse = await fetch(reelsUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -382,7 +368,20 @@ export class FacebookService {
         throw new Error(finishData.error?.message || 'Failed to publish Facebook Reel');
       }
 
-      console.log('Facebook Reel created successfully:', finishData.id);
+      console.log('Facebook Reel published successfully:', finishData.id);
+
+      // Optional: Poll for upload completion status
+      console.log('Verifying upload status...');
+      const statusUrl = `${this.baseUrl}/${videoId}`;
+      const statusParams = new URLSearchParams({
+        fields: 'uploading_phase,status,publishing_status',
+        access_token: pageAccessToken
+      });
+
+      const statusResponse = await fetch(`${statusUrl}?${statusParams.toString()}`);
+      const statusData = await statusResponse.json();
+      console.log('Final Reel status:', statusData);
+
       return { id: finishData.id };
     } catch (error) {
       console.error('Facebook Reel posting error:', error);
