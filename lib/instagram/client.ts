@@ -553,16 +553,17 @@ export class InstagramClient {
       const { id: creationId } = await containerResponse.json();
       console.log('Story container created with ID:', creationId);
 
-      // For video stories, wait for processing
-      if (isVideo) {
-        console.log('Video story detected, checking processing status...');
-        
-        if (onProgress) {
-          onProgress('Processing video story...', 50);
-        }
-        
-        await this.waitForMediaProcessing(creationId, onProgress);
+      // Wait for media processing (both images and videos need time)
+      console.log('Waiting for story media to be ready...');
+
+      if (onProgress) {
+        onProgress(isVideo ? 'Processing video story...' : 'Processing image story...', 50);
       }
+
+      // Add a small delay before checking status (Instagram needs time to register the media)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      await this.waitForMediaProcessing(creationId, onProgress);
 
       // Step 2: Publish the story
       const publishParams = new URLSearchParams({
