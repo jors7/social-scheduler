@@ -3286,7 +3286,9 @@ function CreateNewPostPageContent() {
                                     <p className="text-[10px] text-blue-700 leading-relaxed">
                                       🎬 Short-form vertical video content<br/>
                                       📐 Vertical format (9:16) required<br/>
-                                      ⏱️ Duration: 5-90 seconds
+                                      ⏱️ Duration: 5-90 seconds<br/>
+                                      <span className="text-amber-700 font-medium">⚠️ Use original content only - no copyrighted music</span><br/>
+                                      <span className="text-blue-600">⏳ Processing may take 2-10 minutes</span>
                                     </p>
                                   </div>
                                 )}

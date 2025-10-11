@@ -281,7 +281,7 @@ export class FacebookService {
     pageAccessToken: string,
     message: string,
     videoUrl: string
-  ): Promise<{ id: string }> {
+  ): Promise<{ id: string; permalink?: string }> {
     try {
       console.log('Creating Facebook Reel with binary upload...');
 
@@ -402,21 +402,58 @@ export class FacebookService {
 
       // Use post_id if available, otherwise fall back to video_id
       const reelId = finishData.post_id || finishData.id || finishData.video_id || videoId;
-      console.log('Facebook Reel published successfully with ID:', reelId);
+      console.log('Facebook Reel FINISH complete, starting processing wait...');
 
-      // Optional: Poll for upload completion status
-      console.log('Verifying upload status...');
-      const statusUrl = `${this.baseUrl}/${videoId}`;
-      const statusParams = new URLSearchParams({
-        fields: 'status,permalink_url',
-        access_token: pageAccessToken
-      });
+      // Poll video status until truly published (up to 15 minutes)
+      console.log('Polling video status until processing and publishing complete...');
+      const maxPollingTime = 15 * 60 * 1000; // 15 minutes
+      const pollingInterval = 7000; // 7 seconds
+      const startTime = Date.now();
+      let isPublished = false;
+      let permalink = '';
 
-      const statusResponse = await fetch(`${statusUrl}?${statusParams.toString()}`);
-      const statusData = await statusResponse.json();
-      console.log('Final Reel status:', statusData);
+      while (Date.now() - startTime < maxPollingTime && !isPublished) {
+        await new Promise(resolve => setTimeout(resolve, pollingInterval));
 
-      return { id: reelId || videoId };
+        const statusUrl = `${this.baseUrl}/${videoId}`;
+        const statusParams = new URLSearchParams({
+          fields: 'status,uploading_phase,processing_phase,publishing_phase,copyright_check_status,permalink_url',
+          access_token: pageAccessToken
+        });
+
+        const statusResponse = await fetch(`${statusUrl}?${statusParams.toString()}`);
+        const statusData = await statusResponse.json();
+
+        const processingStatus = statusData.status?.processing_phase?.status || statusData.processing_phase?.status;
+        const publishingStatus = statusData.status?.publishing_phase?.status || statusData.publishing_phase?.status;
+        const copyrightStatus = statusData.status?.copyright_check_status?.status || statusData.copyright_check_status?.status;
+        const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
+
+        console.log(`Poll ${elapsedSeconds}s: processing=${processingStatus}, publishing=${publishingStatus}, copyright=${copyrightStatus}`);
+
+        // Check for copyright blocks
+        if (copyrightStatus === 'blocked' || copyrightStatus === 'requires_review') {
+          throw new Error(`Reel blocked by copyright check (${copyrightStatus}). Please use original content without copyrighted music.`);
+        }
+
+        // Check if truly published
+        if (processingStatus === 'complete' && publishingStatus === 'complete') {
+          isPublished = true;
+          permalink = statusData.permalink_url || statusData.status?.permalink_url || '';
+          console.log('Reel is live!', permalink);
+          break;
+        }
+      }
+
+      if (!isPublished) {
+        console.log('Reel processing timeout after 15 minutes');
+        throw new Error('Reel processing timeout (15 minutes). The Reel may still publish later - check your Facebook page.');
+      }
+
+      return {
+        id: videoId,
+        permalink: permalink
+      };
     } catch (error) {
       console.error('Facebook Reel posting error:', error);
       throw error;

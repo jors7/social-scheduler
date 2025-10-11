@@ -90,7 +90,7 @@ export class PostingProgressTracker {
         } else if (platform.toLowerCase() === 'instagram' && message?.includes('reel')) {
           processingMsg = `${emoji} Processing ${platformName} reel (this may take up to 2 minutes)...`
         } else if (platform.toLowerCase() === 'facebook' && message?.includes('reel')) {
-          processingMsg = `${emoji} Processing ${platformName} reel...`
+          processingMsg = `${emoji} Processing ${platformName} reel (this may take 2-10 minutes)...`
         } else if (platform.toLowerCase() === 'facebook' && message?.includes('story')) {
           processingMsg = `${emoji} Processing ${platformName} story...`
         }

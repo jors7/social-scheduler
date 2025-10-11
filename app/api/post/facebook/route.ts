@@ -144,6 +144,20 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      if (errorMessage.includes('copyright')) {
+        return NextResponse.json(
+          { error: 'Reel blocked by copyright check. Please use original content without copyrighted music or audio.' },
+          { status: 400 }
+        );
+      }
+
+      if (errorMessage.includes('timeout') && errorMessage.includes('15 minutes')) {
+        return NextResponse.json(
+          { error: 'Reel is still processing after 15 minutes. It may appear on your Facebook page shortly. Check your Reels tab or try again.' },
+          { status: 202 } // 202 Accepted - processing not complete
+        );
+      }
+
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
