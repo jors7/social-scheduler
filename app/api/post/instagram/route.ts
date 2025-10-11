@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { InstagramService } from '@/lib/instagram/service';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, accessToken, text, mediaUrl, mediaUrls, isStory } = await request.json();
+    const body = await request.json();
+    const { userId, accessToken, text, mediaUrl, mediaUrls, isStory, currentUserId } = body;
 
     if (!userId || !accessToken) {
       return NextResponse.json(
@@ -61,6 +63,69 @@ export async function POST(request: NextRequest) {
 
     console.log(`Instagram ${isStory ? 'story' : 'post'} created:`, result);
 
+    // Fetch thumbnail for stories (similar to Facebook Reels)
+    let thumbnailUrl = null;
+    if (isStory && result.id && currentUserId) {
+      try {
+        console.log('Fetching Instagram Story thumbnail...');
+
+        // Fetch media information including thumbnail_url
+        const mediaResponse = await fetch(
+          `https://graph.instagram.com/${result.id}?fields=media_url,thumbnail_url,media_type&access_token=${accessToken}`
+        );
+
+        if (mediaResponse.ok) {
+          const mediaData = await mediaResponse.json();
+          const thumbUrl = mediaData.thumbnail_url || mediaData.media_url;
+
+          console.log('Instagram Story media data:', mediaData);
+
+          if (thumbUrl) {
+            // Download thumbnail from Instagram CDN
+            console.log('Downloading thumbnail from Instagram CDN...');
+            const thumbnailResponse = await fetch(thumbUrl);
+
+            if (thumbnailResponse.ok) {
+              const thumbnailBlob = await thumbnailResponse.blob();
+              const thumbnailBuffer = await thumbnailBlob.arrayBuffer();
+              console.log(`Thumbnail downloaded: ${thumbnailBuffer.byteLength} bytes`);
+
+              // Upload to Supabase Storage
+              const supabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.SUPABASE_SERVICE_ROLE_KEY!
+              );
+
+              const filename = `thumbnails/${currentUserId}/${result.id}.jpg`;
+              console.log('Uploading thumbnail to Supabase Storage:', filename);
+
+              const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('post-media')
+                .upload(filename, thumbnailBuffer, {
+                  contentType: 'image/jpeg',
+                  upsert: true
+                });
+
+              if (uploadError) {
+                console.error('Failed to upload thumbnail to Supabase:', uploadError);
+              } else {
+                // Get public URL
+                const { data: urlData } = supabase.storage
+                  .from('post-media')
+                  .getPublicUrl(filename);
+
+                thumbnailUrl = urlData.publicUrl;
+                console.log('Thumbnail uploaded successfully:', thumbnailUrl);
+              }
+            }
+          }
+        }
+      } catch (thumbnailError) {
+        console.error('Error fetching Instagram Story thumbnail:', thumbnailError);
+        // Continue without thumbnail if fetch fails
+      }
+    }
+
     // Fetch initial metrics for the post (likes and comments)
     let metrics = {
       likes: 0,
@@ -92,13 +157,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    const response: any = {
       success: true,
       id: result.id,
       type: isStory ? 'story' : 'post',
       metrics,
       ...result
-    });
+    };
+
+    // Include thumbnail URL if available (for stories)
+    if (thumbnailUrl) {
+      response.thumbnailUrl = thumbnailUrl;
+    }
+
+    return NextResponse.json(response);
 
   } catch (error: any) {
     console.error('Instagram posting error:', error);

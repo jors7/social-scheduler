@@ -417,6 +417,9 @@ export class PostingService {
           }
         };
       } else {
+        // Get user ID for thumbnail upload
+        const { data: { user } } = await this.supabase.auth.getUser();
+
         // Regular posting without progress for images or carousels
         const response = await fetch('/api/post/instagram', {
           method: 'POST',
@@ -429,6 +432,7 @@ export class PostingService {
             text: content,
             mediaUrls: mediaUrls, // Pass all media URLs for carousel support
             isStory: isStory,
+            currentUserId: user?.id, // Pass current user ID for thumbnail upload
           }),
         });
 
@@ -444,6 +448,7 @@ export class PostingService {
           postId: data.id,
           data: {
             id: data.id,
+            thumbnailUrl: data.thumbnailUrl, // Include thumbnail URL if present
             metrics: data.metrics || {
               likes: 0,
               comments: 0,
