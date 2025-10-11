@@ -494,6 +494,7 @@ export class FacebookService {
 
   /**
    * Get video thumbnail URL from Facebook API
+   * Tries multiple fields to get thumbnail for both regular videos and Reels
    */
   async getVideoThumbnail(
     videoId: string,
@@ -502,8 +503,10 @@ export class FacebookService {
     try {
       console.log(`Fetching thumbnail for video ${videoId}...`);
       const url = `${this.baseUrl}/${videoId}`;
+
+      // Try multiple fields that might contain thumbnail
       const params = new URLSearchParams({
-        fields: 'thumbnails',
+        fields: 'thumbnails,picture,format,source',
         access_token: pageAccessToken
       });
 
@@ -515,11 +518,31 @@ export class FacebookService {
         return null;
       }
 
-      const thumbnailUrl = data.thumbnails?.data?.[0]?.uri || null;
-      if (thumbnailUrl) {
-        console.log('Thumbnail URL retrieved:', thumbnailUrl);
-      } else {
-        console.log('No thumbnail found for video');
+      console.log('Video data received:', JSON.stringify(data, null, 2));
+
+      // Try different thumbnail sources in priority order
+      let thumbnailUrl = null;
+
+      // 1. Try thumbnails array (works for regular videos)
+      if (data.thumbnails?.data?.[0]?.uri) {
+        thumbnailUrl = data.thumbnails.data[0].uri;
+        console.log('Thumbnail found in thumbnails.data[0].uri:', thumbnailUrl);
+      }
+      // 2. Try picture field (sometimes used for videos)
+      else if (data.picture) {
+        thumbnailUrl = data.picture;
+        console.log('Thumbnail found in picture field:', thumbnailUrl);
+      }
+      // 3. Try format array with highest quality
+      else if (data.format && Array.isArray(data.format) && data.format.length > 0) {
+        // Format array usually has different quality versions, get the highest quality
+        const highestQuality = data.format[data.format.length - 1];
+        thumbnailUrl = highestQuality.picture || null;
+        console.log('Thumbnail found in format array:', thumbnailUrl);
+      }
+
+      if (!thumbnailUrl) {
+        console.log('No thumbnail found for video. Available fields:', Object.keys(data));
       }
 
       return thumbnailUrl;
