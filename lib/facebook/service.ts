@@ -241,8 +241,9 @@ export class FacebookService {
       const mediaId = uploadData.id;
       console.log(`${mediaType} uploaded for story:`, mediaId);
 
-      // Step 2: Publish to Stories endpoint
-      const storyUrl = `${this.baseUrl}/${pageId}/stories`;
+      // Step 2: Publish to correct Stories endpoint (photo_stories or video_stories)
+      const storyEndpoint = mediaType === 'photo' ? 'photo_stories' : 'video_stories';
+      const storyUrl = `${this.baseUrl}/${pageId}/${storyEndpoint}`;
       const storyParams = new URLSearchParams({
         [mediaType === 'photo' ? 'photo_id' : 'video_id']: mediaId,
         access_token: pageAccessToken
