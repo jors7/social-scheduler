@@ -368,13 +368,23 @@ export class FacebookService {
         throw new Error(finishData.error?.message || 'Failed to publish Facebook Reel');
       }
 
-      console.log('Facebook Reel published successfully:', finishData.id);
+      console.log('Facebook Reel publish response:', finishData);
+
+      // The FINISH response might return { success: true } without an ID
+      // In that case, use the video_id from the START phase
+      const reelId = finishData.id || finishData.video_id || (finishData.success ? videoId : null);
+
+      if (!reelId) {
+        console.error('No Reel ID in response, using video_id from START phase:', videoId);
+      }
+
+      console.log('Facebook Reel published successfully with ID:', reelId || videoId);
 
       // Optional: Poll for upload completion status
       console.log('Verifying upload status...');
       const statusUrl = `${this.baseUrl}/${videoId}`;
       const statusParams = new URLSearchParams({
-        fields: 'uploading_phase,status,publishing_status',
+        fields: 'status,permalink_url',
         access_token: pageAccessToken
       });
 
@@ -382,7 +392,7 @@ export class FacebookService {
       const statusData = await statusResponse.json();
       console.log('Final Reel status:', statusData);
 
-      return { id: finishData.id };
+      return { id: reelId || videoId };
     } catch (error) {
       console.error('Facebook Reel posting error:', error);
       throw error;
