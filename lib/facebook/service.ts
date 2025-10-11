@@ -424,9 +424,10 @@ export class FacebookService {
         const statusResponse = await fetch(`${statusUrl}?${statusParams.toString()}`);
         const statusData = await statusResponse.json();
 
-        const processingStatus = statusData.status?.processing_phase?.status || statusData.processing_phase?.status;
-        const publishingStatus = statusData.status?.publishing_phase?.status || statusData.publishing_phase?.status;
-        const copyrightStatus = statusData.status?.copyright_check_status?.status || statusData.copyright_check_status?.status;
+        // Fields are at top level, not nested under 'status'
+        const processingStatus = statusData.processing_phase?.status;
+        const publishingStatus = statusData.publishing_phase?.status;
+        const copyrightStatus = statusData.copyright_check_status?.status;
         const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
 
         console.log(`Poll ${elapsedSeconds}s: processing=${processingStatus}, publishing=${publishingStatus}, copyright=${copyrightStatus}`);
@@ -439,7 +440,7 @@ export class FacebookService {
         // Check if truly published
         if (processingStatus === 'complete' && publishingStatus === 'complete') {
           isPublished = true;
-          permalink = statusData.permalink_url || statusData.status?.permalink_url || '';
+          permalink = statusData.permalink_url || '';
           console.log('Reel is live!', permalink);
           break;
         }
