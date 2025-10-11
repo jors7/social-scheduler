@@ -68,11 +68,13 @@ export async function GET(request: NextRequest) {
     const enhancedPosts = await Promise.all(
       posts.map(async (post) => {
         // Try to get media URL from platform APIs
-        let platformMediaUrl = null;
+        // Prioritize database value if it exists
+        let platformMediaUrl = post.platform_media_url || null;
         let pinterestTitle = null;
         let pinterestDescription = null;
 
-        if (post.post_results && Array.isArray(post.post_results)) {
+        // Only fetch from APIs if not already in database
+        if (!platformMediaUrl && post.post_results && Array.isArray(post.post_results)) {
           for (const result of post.post_results) {
             if (result.success && result.postId && !platformMediaUrl) {
               const platform = result.platform;
