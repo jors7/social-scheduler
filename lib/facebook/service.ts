@@ -417,17 +417,17 @@ export class FacebookService {
 
         const statusUrl = `${this.baseUrl}/${videoId}`;
         const statusParams = new URLSearchParams({
-          fields: 'status,uploading_phase,processing_phase,publishing_phase,copyright_check_status,permalink_url',
+          fields: 'status,permalink_url',
           access_token: pageAccessToken
         });
 
         const statusResponse = await fetch(`${statusUrl}?${statusParams.toString()}`);
         const statusData = await statusResponse.json();
 
-        // Fields are at top level, not nested under 'status'
-        const processingStatus = statusData.processing_phase?.status;
-        const publishingStatus = statusData.publishing_phase?.status;
-        const copyrightStatus = statusData.copyright_check_status?.status;
+        // All phase info is nested under 'status' when requesting 'fields=status'
+        const processingStatus = statusData.status?.processing_phase?.status;
+        const publishingStatus = statusData.status?.publishing_phase?.status;
+        const copyrightStatus = statusData.status?.copyright_check_status?.status;
         const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
 
         console.log(`Poll ${elapsedSeconds}s: processing=${processingStatus}, publishing=${publishingStatus}, copyright=${copyrightStatus}`);
