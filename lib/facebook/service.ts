@@ -209,7 +209,9 @@ export class FacebookService {
     pageId: string,
     pageAccessToken: string,
     mediaUrl: string,
-    mediaType: 'photo' | 'video'
+    mediaType: 'photo' | 'video',
+    supabaseClient: any,
+    userId: string
   ): Promise<{ id: string }> {
     try {
       console.log(`Creating Facebook ${mediaType} story...`);
@@ -270,7 +272,7 @@ export class FacebookService {
       let thumbnailUrl: string | null = null;
       if (mediaType === 'video') {
         console.log('Fetching Story thumbnail...');
-        thumbnailUrl = await this.getVideoThumbnail(mediaId, pageAccessToken);
+        thumbnailUrl = await this.getVideoThumbnail(mediaId, pageAccessToken, supabaseClient, userId);
       }
 
       return {
@@ -291,7 +293,9 @@ export class FacebookService {
     pageId: string,
     pageAccessToken: string,
     message: string,
-    videoUrl: string
+    videoUrl: string,
+    supabaseClient: any,
+    userId: string
   ): Promise<{ id: string; permalink?: string }> {
     try {
       console.log('Creating Facebook Reel with binary upload...');
@@ -479,7 +483,7 @@ export class FacebookService {
 
       // Fetch thumbnail URL for the published Reel
       console.log('Fetching Reel thumbnail...');
-      const thumbnailUrl = await this.getVideoThumbnail(videoId, pageAccessToken);
+      const thumbnailUrl = await this.getVideoThumbnail(videoId, pageAccessToken, supabaseClient, userId);
 
       return {
         id: videoId,
@@ -493,12 +497,14 @@ export class FacebookService {
   }
 
   /**
-   * Get video thumbnail URL from Facebook API
-   * Tries multiple fields to get thumbnail for both regular videos and Reels
+   * Get video thumbnail URL from Facebook API, download it, and upload to Supabase Storage
+   * This ensures thumbnails work across all devices without Facebook authentication
    */
   async getVideoThumbnail(
     videoId: string,
-    pageAccessToken: string
+    pageAccessToken: string,
+    supabaseClient: any,
+    userId: string
   ): Promise<string | null> {
     try {
       console.log(`Fetching thumbnail for video ${videoId}...`);
@@ -543,9 +549,47 @@ export class FacebookService {
 
       if (!thumbnailUrl) {
         console.log('No thumbnail found for video. Available fields:', Object.keys(data));
+        return null;
       }
 
-      return thumbnailUrl;
+      // Download thumbnail from Facebook CDN (works with our access token)
+      console.log('Downloading thumbnail from Facebook CDN...');
+      const thumbnailResponse = await fetch(thumbnailUrl);
+
+      if (!thumbnailResponse.ok) {
+        console.error('Failed to download thumbnail:', thumbnailResponse.statusText);
+        return null;
+      }
+
+      const thumbnailBlob = await thumbnailResponse.blob();
+      const thumbnailBuffer = await thumbnailBlob.arrayBuffer();
+      console.log(`Thumbnail downloaded: ${thumbnailBuffer.byteLength} bytes`);
+
+      // Upload to Supabase Storage for public access
+      const filename = `thumbnails/${userId}/${videoId}.jpg`;
+      console.log('Uploading thumbnail to Supabase Storage:', filename);
+
+      const { data: uploadData, error: uploadError } = await supabaseClient.storage
+        .from('post-media')
+        .upload(filename, thumbnailBuffer, {
+          contentType: 'image/jpeg',
+          upsert: true // Overwrite if exists
+        });
+
+      if (uploadError) {
+        console.error('Failed to upload thumbnail to Supabase:', uploadError);
+        return null;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabaseClient.storage
+        .from('post-media')
+        .getPublicUrl(filename);
+
+      const publicUrl = urlData.publicUrl;
+      console.log('Thumbnail uploaded successfully:', publicUrl);
+
+      return publicUrl;
     } catch (error) {
       console.error('Error fetching video thumbnail:', error);
       return null;

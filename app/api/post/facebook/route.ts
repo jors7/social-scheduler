@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FacebookService } from '@/lib/facebook/service';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { pageId, accessToken, text, mediaUrls, isStory, isReel } = body;
+    const { pageId, accessToken, text, mediaUrls, isStory, isReel, userId } = body;
 
     if (!pageId || !accessToken) {
       return NextResponse.json(
@@ -42,6 +43,12 @@ export async function POST(request: NextRequest) {
     console.log('Has media:', !!mediaUrls && mediaUrls.length > 0);
     console.log('Media count:', mediaUrls?.length || 0);
 
+    // Create Supabase client for thumbnail upload
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     const facebookService = new FacebookService();
     let result;
 
@@ -53,7 +60,9 @@ export async function POST(request: NextRequest) {
         pageId,
         accessToken,
         text,
-        videoUrl
+        videoUrl,
+        supabase,
+        userId
       );
     }
     // Handle Story posts
@@ -67,7 +76,9 @@ export async function POST(request: NextRequest) {
         pageId,
         accessToken,
         mediaUrl,
-        isVideo ? 'video' : 'photo'
+        isVideo ? 'video' : 'photo',
+        supabase,
+        userId
       );
     }
     // Handle regular feed posts

@@ -273,6 +273,12 @@ export class PostingService {
         throw new Error('Facebook Reels require a video');
       }
 
+      // Get user ID for thumbnail upload
+      const { data: { user } } = await this.supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const response = await fetch('/api/post/facebook', {
         method: 'POST',
         headers: {
@@ -285,6 +291,7 @@ export class PostingService {
           mediaUrls: mediaUrls,
           isStory: isStory,
           isReel: isReel,
+          userId: user.id,
         }),
       });
 
