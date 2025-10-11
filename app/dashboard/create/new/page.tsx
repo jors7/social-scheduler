@@ -1438,12 +1438,24 @@ function CreateNewPostPageContent() {
             // Add platform_media_url if thumbnail was found
             if (platformMediaUrl) {
               insertData.platform_media_url = platformMediaUrl;
+              console.log('💾 Adding platform_media_url to insert data:', platformMediaUrl);
+            } else {
+              console.log('⚠️ No platform_media_url to add');
             }
 
+            console.log('💾 Final insertData before database insert:', JSON.stringify(insertData, null, 2));
+
             // Store in scheduled_posts table
-            await supabase
+            const { data: insertedData, error: insertError } = await supabase
               .from('scheduled_posts')
               .insert(insertData)
+              .select();
+
+            if (insertError) {
+              console.error('❌ Database insert error:', insertError);
+            } else {
+              console.log('✅ Database insert successful:', insertedData);
+            }
           }
         } catch (error) {
           console.error('Failed to store post results in database:', error)
