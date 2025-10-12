@@ -2825,26 +2825,50 @@ function CreateNewPostPageContent() {
                 <div className="mt-4">
                   <Label className="text-sm font-medium">Previously Uploaded Media</Label>
                   <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {uploadedMediaUrls.map((url, index) => (
-                      <div key={index} className="relative group">
-                        <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                          <img
-                            src={url}
-                            alt={`Media ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
+                    {uploadedMediaUrls.map((url, index) => {
+                      // Detect if URL is a video based on file extension
+                      const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v']
+                      const isVideo = videoExtensions.some(ext => url.toLowerCase().includes(ext))
+
+                      return (
+                        <div key={index} className="relative group">
+                          <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
+                            {isVideo ? (
+                              <div className="relative w-full h-full bg-black">
+                                <video
+                                  src={url}
+                                  className="w-full h-full object-cover"
+                                  muted
+                                  preload="metadata"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                  <div className="bg-white/90 rounded-full p-3 shadow-lg">
+                                    <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <img
+                                src={url}
+                                alt={`Media ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                          </div>
+                          <button
+                            onClick={() => {
+                              setUploadedMediaUrls(prev => prev.filter((_, i) => i !== index))
+                              toast.info('Media removed from post')
+                            }}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
                         </div>
-                        <button
-                          onClick={() => {
-                            setUploadedMediaUrls(prev => prev.filter((_, i) => i !== index))
-                            toast.info('Media removed from post')
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               )}
