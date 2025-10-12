@@ -354,6 +354,9 @@ export class PostingService {
       const isCarousel = mediaUrls.length > 1;
       
       if ((hasVideo || isCarousel) && onProgress) {
+        // Get user ID for thumbnail upload
+        const { data: { user } } = await this.supabase.auth.getUser();
+
         // Use Server-Sent Events for progress updates
         const response = await fetch('/api/post/instagram/progress', {
           method: 'POST',
@@ -367,6 +370,7 @@ export class PostingService {
             mediaUrls: mediaUrls,
             isStory: isStory,
             isReel: isReel,
+            currentUserId: user?.id, // Pass current user ID for thumbnail upload
           }),
         });
 
