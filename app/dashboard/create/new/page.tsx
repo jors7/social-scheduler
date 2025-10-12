@@ -3090,6 +3090,7 @@ function CreateNewPostPageContent() {
               platformContent={platformContent}
               mediaUrls={previewMediaUrls}
               instagramFormat={instagramFormat}
+              facebookFormat={facebookAsReel ? 'reel' : facebookAsStory ? 'story' : 'feed'}
               onClose={() => setShowPreview(false)}
             />
           )}

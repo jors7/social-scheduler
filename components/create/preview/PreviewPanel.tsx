@@ -20,6 +20,7 @@ interface PreviewPanelProps {
   platformContent: Record<string, string>
   mediaUrls: string[]
   instagramFormat?: 'feed-square' | 'feed-portrait' | 'feed-landscape' | 'story' | 'reel'
+  facebookFormat?: 'feed' | 'story' | 'reel'
   onClose: () => void
 }
 
@@ -41,6 +42,7 @@ export function PreviewPanel({
   platformContent,
   mediaUrls,
   instagramFormat = 'feed-portrait',
+  facebookFormat = 'feed',
   onClose
 }: PreviewPanelProps) {
   const [activePlatform, setActivePlatform] = useState(
@@ -121,6 +123,7 @@ export function PreviewPanel({
             content={platformContentToUse}
             mediaUrls={mediaUrls}
             {...(activePlatform === 'instagram' && { format: instagramFormat })}
+            {...(activePlatform === 'facebook' && { format: facebookFormat })}
           />
         </div>
 
