@@ -268,11 +268,15 @@ export class FacebookService {
 
       console.log('Facebook story created:', storyData.id);
 
-      // Fetch thumbnail URL for video stories
+      // Fetch thumbnail for BOTH photo and video stories
       let thumbnailUrl: string | null = null;
       if (mediaType === 'video') {
-        console.log('Fetching Story thumbnail...');
+        console.log('Fetching video story thumbnail...');
         thumbnailUrl = await this.getVideoThumbnail(mediaId, pageAccessToken, supabaseClient, userId);
+      } else {
+        // Photo stories - fetch image from Facebook and re-upload to Supabase
+        console.log('Fetching photo story thumbnail...');
+        thumbnailUrl = await this.getPhotoThumbnail(mediaId, pageAccessToken, supabaseClient, userId);
       }
 
       return {
@@ -493,6 +497,92 @@ export class FacebookService {
     } catch (error) {
       console.error('Facebook Reel posting error:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Get photo URL from Facebook API, download it, and upload to Supabase Storage
+   * This ensures photo story thumbnails work across all devices without Facebook authentication
+   */
+  async getPhotoThumbnail(
+    photoId: string,
+    pageAccessToken: string,
+    supabaseClient: any,
+    userId: string
+  ): Promise<string | null> {
+    try {
+      console.log(`Fetching photo for story ${photoId}...`);
+      const url = `${this.baseUrl}/${photoId}`;
+
+      const params = new URLSearchParams({
+        fields: 'images',
+        access_token: pageAccessToken
+      });
+
+      const response = await fetch(`${url}?${params.toString()}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('Failed to fetch photo:', data);
+        return null;
+      }
+
+      console.log('Photo data received:', JSON.stringify(data, null, 2));
+
+      // Get the highest quality image from the images array
+      let photoUrl = null;
+      if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+        // Images are usually sorted by size, get the largest one (first in array)
+        photoUrl = data.images[0].source;
+        console.log('Photo URL found:', photoUrl);
+      }
+
+      if (!photoUrl) {
+        console.log('No photo URL found. Available fields:', Object.keys(data));
+        return null;
+      }
+
+      // Download photo from Facebook CDN
+      console.log('Downloading photo from Facebook CDN...');
+      const photoResponse = await fetch(photoUrl);
+
+      if (!photoResponse.ok) {
+        console.error('Failed to download photo:', photoResponse.statusText);
+        return null;
+      }
+
+      const photoBlob = await photoResponse.blob();
+      const photoBuffer = await photoBlob.arrayBuffer();
+      console.log(`Photo downloaded: ${photoBuffer.byteLength} bytes`);
+
+      // Upload to Supabase Storage for public access
+      const filename = `thumbnails/${userId}/${photoId}.jpg`;
+      console.log('Uploading photo to Supabase Storage:', filename);
+
+      const { data: uploadData, error: uploadError } = await supabaseClient.storage
+        .from('post-media')
+        .upload(filename, photoBuffer, {
+          contentType: 'image/jpeg',
+          upsert: true // Overwrite if exists
+        });
+
+      if (uploadError) {
+        console.error('Failed to upload photo to Supabase:', uploadError);
+        return null;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabaseClient.storage
+        .from('post-media')
+        .getPublicUrl(filename);
+
+      const publicUrl = urlData.publicUrl;
+      console.log('Photo uploaded successfully:', publicUrl);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error fetching photo:', error);
+      return null;
     }
   }
 
