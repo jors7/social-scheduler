@@ -55,6 +55,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if we have a refresh token
+    if (!account.refresh_token) {
+      console.error('No refresh token for YouTube account');
+      return NextResponse.json(
+        { error: 'YouTube authentication expired. Please reconnect your YouTube account in Settings.' },
+        { status: 401 }
+      );
+    }
+
     // For text posts without video, YouTube doesn't support regular posts
     // Only Community posts are available for select channels
     if (!videoUrl) {
@@ -111,8 +120,25 @@ export async function POST(request: NextRequest) {
       message: isShort ? 'YouTube Short uploaded successfully' : 'Video uploaded to YouTube successfully',
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('YouTube posting error:', error);
+
+    // Check for authentication errors
+    if (error?.response?.status === 401 || error?.message?.includes('authentication')) {
+      return NextResponse.json(
+        { error: 'YouTube authentication expired. Please reconnect your YouTube account in Settings.' },
+        { status: 401 }
+      );
+    }
+
+    // Check for invalid credentials error
+    if (error?.message?.includes('invalid_grant') || error?.message?.includes('Token has been expired or revoked')) {
+      return NextResponse.json(
+        { error: 'YouTube access has been revoked. Please reconnect your YouTube account in Settings.' },
+        { status: 401 }
+      );
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to post to YouTube' },
       { status: 500 }

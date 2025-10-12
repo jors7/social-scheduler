@@ -69,13 +69,13 @@ export async function GET(request: NextRequest) {
       scope: SCOPES,
       state: state,
       access_type: 'offline', // To get refresh token
+      prompt: 'consent', // Always force consent to get a fresh refresh token
     });
 
-    // Only force consent if we don't have a refresh token
-    // This ensures we get a refresh token on first auth but don't prompt unnecessarily
-    if (!existingAccount?.refresh_token) {
-      params.append('prompt', 'consent');
-    }
+    // Note: We always force consent because:
+    // 1. Existing refresh tokens may have been revoked by the user
+    // 2. Google only provides refresh tokens on consent or first auth
+    // 3. Without a valid refresh token, API calls will fail with "authentication expired"
 
     const authUrl = `${YOUTUBE_OAUTH_URL}?${params.toString()}`;
     

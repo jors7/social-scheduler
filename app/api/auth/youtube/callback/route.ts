@@ -82,6 +82,14 @@ export async function GET(request: NextRequest) {
     const refreshToken = tokenData.refresh_token;
     const expiresIn = tokenData.expires_in;
 
+    // Ensure we got a refresh token - this is critical for long-term access
+    if (!refreshToken) {
+      console.error('No refresh token received from YouTube OAuth');
+      return NextResponse.redirect(
+        new URL('/dashboard/settings?error=youtube_no_refresh_token', request.url)
+      );
+    }
+
     // Try to get user's YouTube channel info
     let channel = null;
     let channelError = null;
@@ -153,23 +161,18 @@ export async function GET(request: NextRequest) {
 
     if (existingAccount) {
       // Update existing account
-      // Important: Keep existing refresh token if Google didn't provide a new one
-      // This happens when prompt=consent is not used
+      // Note: We now always get a refresh token because we force prompt=consent
       const updateData: any = {
         platform_user_id: platformUserId,
         account_name: accountName,
         username: username,
         profile_image_url: profileImageUrl,
         access_token: accessToken,
+        refresh_token: refreshToken, // Always update since we always force consent
         expires_at: expiresAt,
         updated_at: new Date().toISOString()
       };
-      
-      // Only update refresh token if we got a new one
-      if (refreshToken) {
-        updateData.refresh_token = refreshToken;
-      }
-      
+
       const { error: dbError } = await supabase
         .from('social_accounts')
         .update(updateData)
