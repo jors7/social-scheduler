@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     let thumbnailUrl = null;
     if ((isStory || isReel) && result.id && currentUserId) {
       try {
-        console.log('Fetching Instagram Story thumbnail...');
+        console.log('Fetching Instagram Story/Reel thumbnail...');
 
         // Fetch media information including thumbnail_url
         const mediaResponse = await fetch(
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
       ...result
     };
 
-    // Include thumbnail URL if available (for stories)
+    // Include thumbnail URL if available (for stories and reels)
     if (thumbnailUrl) {
       response.thumbnailUrl = thumbnailUrl;
     }
