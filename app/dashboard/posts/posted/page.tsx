@@ -548,10 +548,6 @@ export default function PostedPostsPage() {
                   post.platform_media_url.includes('.png')
                 )
 
-                if (hasPlatformThumbnail) {
-                  console.log('🖼️ Using platform thumbnail:', post.platform_media_url);
-                }
-
                 // YouTube videos always use video tag with preload="metadata" for thumbnail extraction
                 // If it's YouTube, always render as video. Otherwise check for video extensions.
                 const isVideo = isYouTubePost ? true : (

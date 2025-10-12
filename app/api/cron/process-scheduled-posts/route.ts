@@ -280,6 +280,16 @@ export async function GET(request: NextRequest) {
           // Add platform_media_url if thumbnail was found
           if (platformMediaUrl) {
             updateData.platform_media_url = platformMediaUrl;
+
+            // For YouTube videos, also update media_urls if it's empty
+            // This ensures the video thumbnail shows in the UI
+            if (!post.media_urls || post.media_urls.length === 0) {
+              const isYouTubePost = post.platforms.includes('youtube');
+              if (isYouTubePost) {
+                updateData.media_urls = [platformMediaUrl];
+                console.log('Setting media_urls for YouTube post:', platformMediaUrl);
+              }
+            }
           }
 
           await supabase
