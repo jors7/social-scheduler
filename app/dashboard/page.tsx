@@ -1332,17 +1332,17 @@ export default function DashboardPage() {
                             <span
                               key={platform}
                               className={cn(
-                                "text-xs px-2 py-1 rounded-full font-medium text-white",
-                                platform === 'facebook' && 'bg-[#1877F2]',
-                                platform === 'instagram' && 'bg-gradient-to-r from-purple-500 to-pink-500',
-                                platform === 'twitter' && 'bg-black',
-                                platform === 'linkedin' && 'bg-[#0A66C2]',
-                                platform === 'threads' && 'bg-black',
-                                platform === 'bluesky' && 'bg-[#00A8E8]',
-                                platform === 'youtube' && 'bg-[#FF0000]',
-                                platform === 'tiktok' && 'bg-black',
-                                platform === 'pinterest' && 'bg-[#E60023]',
-                                !['facebook', 'instagram', 'twitter', 'linkedin', 'threads', 'bluesky', 'youtube', 'tiktok', 'pinterest'].includes(platform) && 'bg-gray-500'
+                                "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+                                platform === 'facebook' && 'bg-[#1877F2]/10 text-[#1877F2]',
+                                platform === 'instagram' && 'bg-purple-500/10 text-purple-600',
+                                platform === 'twitter' && 'bg-black/10 text-gray-900',
+                                platform === 'linkedin' && 'bg-[#0A66C2]/10 text-[#0A66C2]',
+                                platform === 'threads' && 'bg-black/10 text-gray-900',
+                                platform === 'bluesky' && 'bg-[#00A8E8]/10 text-[#00A8E8]',
+                                platform === 'youtube' && 'bg-[#FF0000]/10 text-[#FF0000]',
+                                platform === 'tiktok' && 'bg-black/10 text-gray-900',
+                                platform === 'pinterest' && 'bg-[#E60023]/10 text-[#E60023]',
+                                !['facebook', 'instagram', 'twitter', 'linkedin', 'threads', 'bluesky', 'youtube', 'tiktok', 'pinterest'].includes(platform) && 'bg-gray-500/10 text-gray-700'
                               )}
                             >
                               {platform.charAt(0).toUpperCase() + platform.slice(1)}

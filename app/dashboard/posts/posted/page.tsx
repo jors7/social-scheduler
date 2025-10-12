@@ -17,13 +17,11 @@ import {
   ExternalLink,
   Clock,
   X,
-  FileText,
-  MessageCircle
+  FileText
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
-import { ThreadsReplyDialog } from '@/components/threads/reply-dialog'
 import { Pagination } from '@/components/ui/pagination'
 
 interface PostedPost {
@@ -75,8 +73,6 @@ export default function PostedPostsPage() {
   const [loadingInsights, setLoadingInsights] = useState<Record<string, boolean>>({})
   const [postInsights, setPostInsights] = useState<Record<string, InstagramInsights>>({})
   const [showInsightsModal, setShowInsightsModal] = useState<string | null>(null)
-  const [replyDialogOpen, setReplyDialogOpen] = useState(false)
-  const [replyToPost, setReplyToPost] = useState<{ id: string; text: string; accountId?: string } | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(18)
 
@@ -306,33 +302,6 @@ export default function PostedPostsPage() {
     toast.info(`Selected posts were published on: ${platforms.join(', ')}. Original post viewing will be implemented when platform APIs provide post URLs.`)
   }
 
-  // TEMPORARY FEATURE FOR META APP REVIEW - THREADS REPLY FUNCTIONALITY
-  // This will be removed after threads_manage_replies permission is approved
-  const handleReplyToThreads = (postId: string, postText: string) => {
-    setReplyToPost({ id: postId, text: postText })
-    setReplyDialogOpen(true)
-  }
-
-  const getThreadsPostId = (post: PostedPost): string | null => {
-    // Extract Threads post ID from post_results
-    if (post.post_results && Array.isArray(post.post_results)) {
-      console.log('Checking post_results for Threads ID:', post.post_results)
-
-      const threadsResult = post.post_results.find((result: any) =>
-        result.platform === 'threads' && result.success
-      )
-
-      console.log('Found threads result:', threadsResult)
-
-      // Try multiple possible locations for the ID
-      const postId = threadsResult?.data?.id || threadsResult?.postId || threadsResult?.id
-
-      console.log('Extracted post ID:', postId)
-
-      return postId || null
-    }
-    return null
-  }
 
   return (
     <div className="space-y-8">
@@ -624,17 +593,17 @@ export default function PostedPostsPage() {
                               <span
                                 key={platform}
                                 className={cn(
-                                  "text-xs px-2 py-1 rounded-full font-medium text-white",
-                                  platform === 'facebook' && 'bg-[#1877F2]',
-                                  platform === 'instagram' && 'bg-gradient-to-r from-purple-500 to-pink-500',
-                                  platform === 'twitter' && 'bg-black',
-                                  platform === 'linkedin' && 'bg-[#0A66C2]',
-                                  platform === 'threads' && 'bg-black',
-                                  platform === 'bluesky' && 'bg-[#00A8E8]',
-                                  platform === 'youtube' && 'bg-[#FF0000]',
-                                  platform === 'tiktok' && 'bg-black',
-                                  platform === 'pinterest' && 'bg-[#E60023]',
-                                  !['facebook', 'instagram', 'twitter', 'linkedin', 'threads', 'bluesky', 'youtube', 'tiktok', 'pinterest'].includes(platform) && 'bg-gray-500'
+                                  "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+                                  platform === 'facebook' && 'bg-[#1877F2]/10 text-[#1877F2]',
+                                  platform === 'instagram' && 'bg-purple-500/10 text-purple-600',
+                                  platform === 'twitter' && 'bg-black/10 text-gray-900',
+                                  platform === 'linkedin' && 'bg-[#0A66C2]/10 text-[#0A66C2]',
+                                  platform === 'threads' && 'bg-black/10 text-gray-900',
+                                  platform === 'bluesky' && 'bg-[#00A8E8]/10 text-[#00A8E8]',
+                                  platform === 'youtube' && 'bg-[#FF0000]/10 text-[#FF0000]',
+                                  platform === 'tiktok' && 'bg-black/10 text-gray-900',
+                                  platform === 'pinterest' && 'bg-[#E60023]/10 text-[#E60023]',
+                                  !['facebook', 'instagram', 'twitter', 'linkedin', 'threads', 'bluesky', 'youtube', 'tiktok', 'pinterest'].includes(platform) && 'bg-gray-500/10 text-gray-700'
                                 )}
                               >
                                 {platform.charAt(0).toUpperCase() + platform.slice(1)}
@@ -668,22 +637,6 @@ export default function PostedPostsPage() {
                                 }
                                 return null
                               })}
-                              {/* TEMPORARY: Threads Reply Button for App Review */}
-                              {post.platforms.includes('threads') && post.status === 'posted' && post.post_results && (() => {
-                                const threadsPostId = getThreadsPostId(post)
-                                if (threadsPostId) {
-                                  return (
-                                    <button
-                                      onClick={() => handleReplyToThreads(threadsPostId, stripHtml(displayContent))}
-                                      className="inline-flex items-center gap-1 px-2 py-1 bg-black hover:bg-gray-800 text-white rounded-md text-xs transition-colors"
-                                    >
-                                      <MessageCircle className="h-3 w-3" />
-                                      Reply on Threads
-                                    </button>
-                                  )
-                                }
-                                return null
-                              })()}
                             </div>
                           )}
                         </div>
@@ -756,20 +709,6 @@ export default function PostedPostsPage() {
           </div>
         </div>
       </SubscriptionGate>
-
-      {/* TEMPORARY: Threads Reply Dialog for App Review */}
-      {replyToPost && (
-        <ThreadsReplyDialog
-          open={replyDialogOpen}
-          onOpenChange={setReplyDialogOpen}
-          postId={replyToPost.id}
-          postText={replyToPost.text}
-          accountId={replyToPost.accountId}
-          onSuccess={() => {
-            toast.success('Reply posted! Check Threads to see your reply.')
-          }}
-        />
-      )}
     </div>
   )
 }
