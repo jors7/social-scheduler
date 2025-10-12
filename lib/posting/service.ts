@@ -20,6 +20,7 @@ export interface PostData {
   instagramAsReel?: boolean; // Instagram specific - post as reel instead of feed post
   facebookAsStory?: boolean; // Facebook specific - post as story instead of feed post
   facebookAsReel?: boolean; // Facebook specific - post as reel instead of feed post
+  youtubeAsShort?: boolean; // YouTube specific - post as Short instead of regular video
 }
 
 export interface PostResult {
@@ -30,6 +31,7 @@ export interface PostResult {
   data?: {
     id?: string;
     type?: string; // Post type (e.g., 'story' or 'post')
+    url?: string; // Post URL (for YouTube and other platforms)
     isDraft?: boolean; // For TikTok draft posting
     message?: string; // Custom success message (e.g., for drafts)
     thumbnailUrl?: string; // Thumbnail URL from platform (for videos)
@@ -244,7 +246,15 @@ export class PostingService {
       
       case 'twitter':
         return await this.postToTwitter(textContent, account, mediaUrls);
-      
+
+      case 'youtube':
+        return await this.postToYouTube(
+          textContent,
+          account,
+          mediaUrls,
+          postData?.youtubeAsShort
+        );
+
       default:
         return {
           platform,
@@ -882,6 +892,72 @@ export class PostingService {
       console.error('Twitter posting error:', error);
       return {
         platform: 'twitter',
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  private async postToYouTube(
+    content: string,
+    account: any,
+    mediaUrls?: string[],
+    isShort?: boolean
+  ): Promise<PostResult> {
+    try {
+      // YouTube requires a video
+      if (!mediaUrls || mediaUrls.length === 0) {
+        throw new Error('YouTube requires a video to post');
+      }
+
+      // Use the first media URL as the video
+      const videoUrl = mediaUrls[0];
+
+      console.log('Posting to YouTube:', {
+        videoUrl: videoUrl.substring(0, 50) + '...',
+        isShort: isShort,
+        contentLength: content?.length
+      });
+
+      // Extract title from content (first line or first 100 chars)
+      const lines = content.split('\n').filter(line => line.trim());
+      const title = lines[0]?.substring(0, 100) || 'New Video';
+      const description = content;
+
+      const response = await fetch('/api/post/youtube', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: title,
+          description: description,
+          videoUrl: videoUrl,
+          isShort: isShort,
+          privacyStatus: 'public', // Can be made configurable later
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'YouTube posting failed');
+      }
+
+      return {
+        platform: 'youtube',
+        success: true,
+        postId: data.id,
+        data: {
+          id: data.id,
+          type: isShort ? 'short' : 'video',
+          url: data.url,
+        }
+      };
+    } catch (error) {
+      console.error('YouTube posting error:', error);
+      return {
+        platform: 'youtube',
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
       };

@@ -1,6 +1,6 @@
 'use client'
 
-import { stripHtml, truncateText, getAllEntities } from './preview-utils'
+import { stripHtml, truncateText, getAllEntities, isVideoUrl } from './preview-utils'
 
 interface InstagramPreviewProps {
   content: string
@@ -74,11 +74,20 @@ export function InstagramPreview({ content, mediaUrls = [], format = 'feed-portr
         {/* Story/Reel container - 9:16 aspect ratio */}
         {mediaUrls && mediaUrls.length > 0 ? (
           <div className={`relative bg-gray-900 ${getAspectRatio()}`}>
-            <img
-              src={mediaUrls[0]}
-              alt=""
-              className="w-full h-full object-cover"
-            />
+            {isVideoUrl(mediaUrls[0]) ? (
+              <video
+                src={mediaUrls[0]}
+                className="w-full h-full object-cover"
+                muted
+                preload="metadata"
+              />
+            ) : (
+              <img
+                src={mediaUrls[0]}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            )}
 
             {/* Top header */}
             <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/60 to-transparent">
@@ -142,11 +151,20 @@ export function InstagramPreview({ content, mediaUrls = [], format = 'feed-portr
       {/* Image - Dynamic aspect ratio based on format */}
       {mediaUrls && mediaUrls.length > 0 ? (
         <div className={`relative bg-gray-100 ${getAspectRatio()}`}>
-          <img
-            src={mediaUrls[0]}
-            alt=""
-            className="w-full h-full object-cover"
-          />
+          {isVideoUrl(mediaUrls[0]) ? (
+            <video
+              src={mediaUrls[0]}
+              className="w-full h-full object-cover"
+              muted
+              preload="metadata"
+            />
+          ) : (
+            <img
+              src={mediaUrls[0]}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+          )}
           {/* Carousel indicator if multiple images */}
           {mediaUrls.length > 1 && (
             <div className="absolute top-3 right-3 bg-black/50 text-white text-xs px-2 py-1 rounded-full">

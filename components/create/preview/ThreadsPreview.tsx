@@ -1,6 +1,6 @@
 'use client'
 
-import { stripHtml, truncateText, getAllEntities, getCharacterStatus } from './preview-utils'
+import { stripHtml, truncateText, getAllEntities, getCharacterStatus, isVideoUrl } from './preview-utils'
 
 interface ThreadsPreviewProps {
   content: string
@@ -67,11 +67,20 @@ export function ThreadsPreview({ content, mediaUrls = [] }: ThreadsPreviewProps)
           {mediaUrls && mediaUrls.length > 0 && (
             <div className="mt-3 rounded-xl overflow-hidden">
               <div className="relative bg-gray-100 aspect-[9/16] max-h-[300px]">
-                <img
-                  src={mediaUrls[0]}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
+                {isVideoUrl(mediaUrls[0]) ? (
+                  <video
+                    src={mediaUrls[0]}
+                    className="w-full h-full object-cover"
+                    muted
+                    preload="metadata"
+                  />
+                ) : (
+                  <img
+                    src={mediaUrls[0]}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                )}
               </div>
             </div>
           )}

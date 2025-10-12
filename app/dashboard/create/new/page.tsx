@@ -125,11 +125,9 @@ function CreateNewPostPageContent() {
 
   // Combine uploaded URLs and file blob URLs for preview
   const previewMediaUrls = useMemo(() => {
-    if (uploadedMediaUrls.length > 0) {
-      return uploadedMediaUrls // Use uploaded URLs if available
-    }
-    // Otherwise use blob URLs from selected files
-    return filePreviewUrls.map(({ url }) => url)
+    // Combine uploaded URLs and blob URLs from new files
+    const blobUrls = filePreviewUrls.map(({ url }) => url)
+    return [...uploadedMediaUrls, ...blobUrls]
   }, [uploadedMediaUrls, filePreviewUrls])
   
   // Fetch connected accounts on mount
@@ -249,7 +247,8 @@ function CreateNewPostPageContent() {
   const [youtubePrivacyStatus, setYoutubePrivacyStatus] = useState<'private' | 'unlisted' | 'public'>('private')
   const [youtubeVideoFile, setYoutubeVideoFile] = useState<File | null>(null)
   const [youtubeThumbnailFile, setYoutubeThumbnailFile] = useState<File | null>(null)
-  
+  const [youtubeAsShort, setYoutubeAsShort] = useState(false)
+
   // Debug YouTube state changes
   useEffect(() => {
     console.log('YouTube state updated:', {
@@ -259,7 +258,7 @@ function CreateNewPostPageContent() {
       hasTitle: !!(youtubeTitle && youtubeTitle.trim())
     })
   }, [youtubeVideoFile, youtubeTitle])
-  
+
   // TikTok states
   const [tiktokPrivacyLevel, setTiktokPrivacyLevel] = useState<'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY'>('PUBLIC_TO_EVERYONE')
   const [tiktokSaveAsDraft, setTiktokSaveAsDraft] = useState(false)
@@ -1337,6 +1336,7 @@ function CreateNewPostPageContent() {
         instagramAsReel: selectedPlatforms.includes('instagram') ? instagramAsReel : undefined,
         facebookAsStory: selectedPlatforms.includes('facebook') ? facebookAsStory : undefined,
         facebookAsReel: selectedPlatforms.includes('facebook') ? facebookAsReel : undefined,
+        youtubeAsShort: selectedPlatforms.includes('youtube') ? youtubeAsShort : undefined,
       }
       
       console.log('Posting with data:', {
@@ -3093,6 +3093,7 @@ function CreateNewPostPageContent() {
               mediaUrls={previewMediaUrls}
               instagramFormat={instagramFormat}
               facebookFormat={facebookAsReel ? 'reel' : facebookAsStory ? 'story' : 'feed'}
+              youtubeFormat={youtubeAsShort ? 'short' : 'video'}
               onClose={() => setShowPreview(false)}
             />
           )}
@@ -3342,6 +3343,69 @@ function CreateNewPostPageContent() {
                                   <p className="text-[10px] text-blue-600 mt-1.5">
                                     📰 Regular post will appear on your page feed
                                   </p>
+                                )}
+                              </div>
+                            )}
+
+                            {/* YouTube Options */}
+                            {platform.id === 'youtube' && (
+                              <div className="mt-3 pt-3 border-t border-red-200/50 space-y-3">
+                                <div>
+                                  <Label className="text-xs font-medium text-red-700 mb-2 block">
+                                    Video Type
+                                  </Label>
+                                  {/* Toggle Group */}
+                                  <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
+                                    <button
+                                      type="button"
+                                      onClick={() => setYoutubeAsShort(false)}
+                                      className={cn(
+                                        "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
+                                        !youtubeAsShort
+                                          ? "bg-white text-red-700 shadow-sm"
+                                          : "text-gray-600 hover:text-gray-900"
+                                      )}
+                                    >
+                                      📹 Video
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setYoutubeAsShort(true)}
+                                      className={cn(
+                                        "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
+                                        youtubeAsShort
+                                          ? "bg-white text-red-700 shadow-sm"
+                                          : "text-gray-600 hover:text-gray-900"
+                                      )}
+                                    >
+                                      🎬 Short
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Regular Video hint */}
+                                {!youtubeAsShort && (
+                                  <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+                                    <p className="text-[10px] text-red-700 leading-relaxed">
+                                      📹 Standard YouTube videos<br/>
+                                      📐 Any aspect ratio supported<br/>
+                                      ⏱️ Duration: no strict limit<br/>
+                                      ✨ Best for long-form content
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Short hint */}
+                                {youtubeAsShort && (
+                                  <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+                                    <p className="text-[10px] text-red-700 leading-relaxed">
+                                      🎬 YouTube Shorts format<br/>
+                                      📐 Vertical format (9:16) required<br/>
+                                      ⏱️ Duration: up to 60 seconds<br/>
+                                      🏷️ #Shorts tag will be added automatically<br/>
+                                      ✨ Optimized for mobile viewing
+                                    </p>
+                                  </div>
                                 )}
                               </div>
                             )}

@@ -253,6 +253,107 @@ export class YouTubeService {
   }
 
   /**
+   * Upload a YouTube Short
+   * Shorts requirements:
+   * - Vertical video (9:16 aspect ratio recommended)
+   * - Maximum 60 seconds duration
+   * - #Shorts in title or description for Shorts shelf
+   */
+  async uploadShort(params: {
+    title: string;
+    description: string;
+    tags?: string[];
+    privacyStatus?: 'private' | 'public' | 'unlisted';
+    publishAt?: string; // ISO 8601 datetime for scheduled publishing
+    videoPath?: string;
+    videoBuffer?: Buffer;
+    videoStream?: Readable;
+    thumbnailPath?: string;
+    thumbnailBuffer?: Buffer;
+    onProgress?: (progress: number) => void;
+  }) {
+    try {
+      // Add #Shorts tag if not already present
+      const shortsTag = 'Shorts';
+      const tags = params.tags || [];
+      if (!tags.includes(shortsTag)) {
+        tags.push(shortsTag);
+      }
+
+      // Add #Shorts to description if not present
+      let description = params.description;
+      if (!description.includes('#Shorts') && !description.includes('#shorts')) {
+        description = description + '\n\n#Shorts';
+      }
+
+      // Upload video with Shorts-optimized settings
+      const result = await this.uploadVideo({
+        title: params.title,
+        description: description,
+        tags: tags,
+        categoryId: '22', // Category 22 = "People & Blogs" (commonly used for Shorts)
+        privacyStatus: params.privacyStatus,
+        publishAt: params.publishAt,
+        videoPath: params.videoPath,
+        videoBuffer: params.videoBuffer,
+        videoStream: params.videoStream,
+        thumbnailPath: params.thumbnailPath,
+        thumbnailBuffer: params.thumbnailBuffer,
+        onProgress: params.onProgress,
+      });
+
+      return {
+        ...result,
+        isShort: true,
+      };
+    } catch (error) {
+      console.error('Error uploading YouTube Short:', error);
+      const errorMessage = parseYouTubeError(error);
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * Upload a YouTube Short from a URL
+   */
+  async uploadShortFromUrl(videoUrl: string, params: {
+    title: string;
+    description: string;
+    tags?: string[];
+    privacyStatus?: 'private' | 'public' | 'unlisted';
+    publishAt?: string;
+    thumbnailUrl?: string;
+  }) {
+    try {
+      // Fetch video from URL
+      const videoResponse = await fetch(videoUrl);
+      if (!videoResponse.ok) {
+        throw new Error(`Failed to fetch video: ${videoResponse.statusText}`);
+      }
+
+      const videoBuffer = Buffer.from(await videoResponse.arrayBuffer());
+
+      // Fetch thumbnail if provided
+      let thumbnailBuffer: Buffer | undefined;
+      if (params.thumbnailUrl) {
+        const thumbnailResponse = await fetch(params.thumbnailUrl);
+        if (thumbnailResponse.ok) {
+          thumbnailBuffer = Buffer.from(await thumbnailResponse.arrayBuffer());
+        }
+      }
+
+      return this.uploadShort({
+        ...params,
+        videoBuffer,
+        thumbnailBuffer,
+      });
+    } catch (error) {
+      console.error('Error uploading Short from URL:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Create a YouTube post (Community post)
    * Note: This requires YouTube Community API access which may be limited
    */

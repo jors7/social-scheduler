@@ -275,3 +275,11 @@ export function exceedsLimit(content: string, platform: string): boolean {
   const limit = PLATFORM_LIMITS[platform as keyof typeof PLATFORM_LIMITS] || 500
   return plainText.length > limit
 }
+
+/**
+ * Check if a URL points to a video file
+ */
+export function isVideoUrl(url: string): boolean {
+  const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v']
+  return videoExtensions.some(ext => url.toLowerCase().includes(ext))
+}

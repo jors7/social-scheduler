@@ -1,6 +1,6 @@
 'use client'
 
-import { stripHtml, truncateText } from './preview-utils'
+import { stripHtml, truncateText, isVideoUrl } from './preview-utils'
 
 interface TikTokPreviewProps {
   content: string
@@ -18,11 +18,20 @@ export function TikTokPreview({ content, mediaUrls = [] }: TikTokPreviewProps) {
         {/* Video container - 9:16 aspect ratio */}
         {mediaUrls && mediaUrls.length > 0 ? (
           <div className="relative bg-gray-900 aspect-[9/16]">
-            <img
-              src={mediaUrls[0]}
-              alt=""
-              className="w-full h-full object-cover"
-            />
+            {isVideoUrl(mediaUrls[0]) ? (
+              <video
+                src={mediaUrls[0]}
+                className="w-full h-full object-cover"
+                muted
+                preload="metadata"
+              />
+            ) : (
+              <img
+                src={mediaUrls[0]}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            )}
 
             {/* Play icon overlay */}
             <div className="absolute inset-0 flex items-center justify-center">

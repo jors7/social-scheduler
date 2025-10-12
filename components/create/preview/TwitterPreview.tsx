@@ -1,7 +1,7 @@
 'use client'
 
 import { MessageCircle, Repeat2, Heart, BarChart3, Share } from 'lucide-react'
-import { stripHtml, truncateText, getAllEntities, getCharacterStatus } from './preview-utils'
+import { stripHtml, truncateText, getAllEntities, getCharacterStatus, isVideoUrl } from './preview-utils'
 
 interface TwitterPreviewProps {
   content: string
@@ -98,11 +98,20 @@ export function TwitterPreview({ content, mediaUrls = [] }: TwitterPreviewProps)
                         : 'aspect-[7/8]'
                     }`}
                   >
-                    <img
-                      src={url}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
+                    {isVideoUrl(url) ? (
+                      <video
+                        src={url}
+                        className="w-full h-full object-cover"
+                        muted
+                        preload="metadata"
+                      />
+                    ) : (
+                      <img
+                        src={url}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    )}
                   </div>
                 ))}
               </div>

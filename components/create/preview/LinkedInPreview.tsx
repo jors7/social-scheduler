@@ -1,7 +1,7 @@
 'use client'
 
 import { ThumbsUp, MessageSquare, Repeat2 } from 'lucide-react'
-import { stripHtml, truncateText, getAllEntities } from './preview-utils'
+import { stripHtml, truncateText, getAllEntities, isVideoUrl } from './preview-utils'
 
 interface LinkedInPreviewProps {
   content: string
@@ -83,11 +83,20 @@ export function LinkedInPreview({ content, mediaUrls = [] }: LinkedInPreviewProp
       {mediaUrls && mediaUrls.length > 0 && (
         <div className="relative">
           <div className="relative bg-gray-100 aspect-[1.91/1]">
-            <img
-              src={mediaUrls[0]}
-              alt=""
-              className="w-full h-full object-cover"
-            />
+            {isVideoUrl(mediaUrls[0]) ? (
+              <video
+                src={mediaUrls[0]}
+                className="w-full h-full object-cover"
+                muted
+                preload="metadata"
+              />
+            ) : (
+              <img
+                src={mediaUrls[0]}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            )}
           </div>
         </div>
       )}

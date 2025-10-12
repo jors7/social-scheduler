@@ -1,6 +1,6 @@
 'use client'
 
-import { stripHtml, truncateText, getAllEntities, getCharacterStatus } from './preview-utils'
+import { stripHtml, truncateText, getAllEntities, getCharacterStatus, isVideoUrl } from './preview-utils'
 
 interface BlueskyPreviewProps {
   content: string
@@ -84,11 +84,20 @@ export function BlueskyPreview({ content, mediaUrls = [] }: BlueskyPreviewProps)
                     key={index}
                     className="relative bg-gray-200 aspect-square"
                   >
-                    <img
-                      src={url}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
+                    {isVideoUrl(url) ? (
+                      <video
+                        src={url}
+                        className="w-full h-full object-cover"
+                        muted
+                        preload="metadata"
+                      />
+                    ) : (
+                      <img
+                        src={url}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    )}
                   </div>
                 ))}
               </div>

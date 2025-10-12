@@ -7,15 +7,16 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     console.log('YouTube POST request body:', body);
-    const { 
-      title, 
-      description, 
-      videoUrl, 
+    const {
+      title,
+      description,
+      videoUrl,
       thumbnailUrl,
       tags,
       privacyStatus = 'private',
       categoryId,
-      publishAt // ISO 8601 datetime for scheduled publishing
+      publishAt, // ISO 8601 datetime for scheduled publishing
+      isShort = false // New parameter for YouTube Shorts
     } = body;
 
     // Get current user
@@ -69,24 +70,39 @@ export async function POST(request: NextRequest) {
     const formattedContent = formatYouTubeContent(description || '', title);
 
     // Create YouTube service
-    const youtubeService = new YouTubeService(account.access_token, account.refresh_token);
+    const youtubeService = new YouTubeService(account.access_token, account.refresh_token, user.id);
 
-    // Upload video from URL (e.g., from Supabase storage or external URL)
-    const result = await youtubeService.uploadVideoFromUrl(videoUrl, {
-      title: formattedContent.title,
-      description: formattedContent.description,
-      tags: tags || formattedContent.tags,
-      categoryId: categoryId,
-      privacyStatus: privacyStatus as 'private' | 'public' | 'unlisted',
-      publishAt: publishAt,
-      thumbnailUrl: thumbnailUrl,
-    });
+    // Upload video from URL (either as Short or regular video)
+    let result;
+    if (isShort) {
+      console.log('Uploading YouTube Short...');
+      result = await youtubeService.uploadShortFromUrl(videoUrl, {
+        title: formattedContent.title,
+        description: formattedContent.description,
+        tags: tags || formattedContent.tags,
+        privacyStatus: privacyStatus as 'private' | 'public' | 'unlisted',
+        publishAt: publishAt,
+        thumbnailUrl: thumbnailUrl,
+      });
+    } else {
+      console.log('Uploading regular YouTube video...');
+      result = await youtubeService.uploadVideoFromUrl(videoUrl, {
+        title: formattedContent.title,
+        description: formattedContent.description,
+        tags: tags || formattedContent.tags,
+        categoryId: categoryId,
+        privacyStatus: privacyStatus as 'private' | 'public' | 'unlisted',
+        publishAt: publishAt,
+        thumbnailUrl: thumbnailUrl,
+      });
+    }
 
     return NextResponse.json({
       success: true,
       id: result.id,
       url: result.url,
-      message: 'Video uploaded to YouTube successfully',
+      isShort: isShort,
+      message: isShort ? 'YouTube Short uploaded successfully' : 'Video uploaded to YouTube successfully',
     });
 
   } catch (error) {

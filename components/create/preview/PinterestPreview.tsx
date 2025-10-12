@@ -1,6 +1,6 @@
 'use client'
 
-import { stripHtml } from './preview-utils'
+import { stripHtml, isVideoUrl } from './preview-utils'
 
 interface PinterestPreviewProps {
   content: string
@@ -22,11 +22,20 @@ export function PinterestPreview({ content, mediaUrls = [] }: PinterestPreviewPr
         {/* Image - 2:3 vertical aspect ratio (1000x1500) */}
         {mediaUrls && mediaUrls.length > 0 ? (
           <div className="relative bg-gray-100 aspect-[2/3]">
-            <img
-              src={mediaUrls[0]}
-              alt=""
-              className="w-full h-full object-cover"
-            />
+            {isVideoUrl(mediaUrls[0]) ? (
+              <video
+                src={mediaUrls[0]}
+                className="w-full h-full object-cover"
+                muted
+                preload="metadata"
+              />
+            ) : (
+              <img
+                src={mediaUrls[0]}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            )}
             {/* Save button overlay */}
             <div className="absolute top-3 right-3">
               <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg transition-colors">

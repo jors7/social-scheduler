@@ -1,7 +1,7 @@
 'use client'
 
 import { ThumbsUp, MessageCircle, Share2 } from 'lucide-react'
-import { stripHtml, truncateText, getAllEntities } from './preview-utils'
+import { stripHtml, truncateText, getAllEntities, isVideoUrl } from './preview-utils'
 
 interface FacebookPreviewProps {
   content: string
@@ -58,11 +58,20 @@ export function FacebookPreview({ content, mediaUrls = [], format = 'feed' }: Fa
         {/* Story/Reel container - 9:16 aspect ratio */}
         {mediaUrls && mediaUrls.length > 0 ? (
           <div className="relative bg-gray-900 aspect-[9/16]">
-            <img
-              src={mediaUrls[0]}
-              alt=""
-              className="w-full h-full object-cover"
-            />
+            {isVideoUrl(mediaUrls[0]) ? (
+              <video
+                src={mediaUrls[0]}
+                className="w-full h-full object-cover"
+                muted
+                preload="metadata"
+              />
+            ) : (
+              <img
+                src={mediaUrls[0]}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            )}
 
             {/* Top header */}
             <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/60 to-transparent">
@@ -139,11 +148,20 @@ export function FacebookPreview({ content, mediaUrls = [], format = 'feed' }: Fa
         <div className="relative">
           {mediaUrls.length === 1 ? (
             <div className="relative bg-gray-100 aspect-[1.91/1]">
-              <img
-                src={mediaUrls[0]}
-                alt=""
-                className="w-full h-full object-cover"
-              />
+              {isVideoUrl(mediaUrls[0]) ? (
+                <video
+                  src={mediaUrls[0]}
+                  className="w-full h-full object-cover"
+                  muted
+                  preload="metadata"
+                />
+              ) : (
+                <img
+                  src={mediaUrls[0]}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              )}
             </div>
           ) : (
             <div className={`grid gap-0.5 ${
