@@ -440,11 +440,20 @@ export default function PostedPostsPage() {
                 const isStoryPost = () => {
                   if (!post.post_results || !Array.isArray(post.post_results)) return false
 
-                  return post.post_results.some((result: any) => {
+                  const isStory = post.post_results.some((result: any) => {
                     if (!result.success) return false
 
                     // Check for Instagram stories
                     if (result.platform === 'instagram' && result.data) {
+                      // Debug log for Instagram posts
+                      console.log('Instagram post data:', {
+                        postId: post.id,
+                        hasType: 'type' in result.data,
+                        dataType: result.data.type,
+                        resultType: result.type,
+                        hasThumbnail: !!result.data.thumbnailUrl,
+                        fullData: result.data
+                      })
                       return result.data.type === 'story' || result.type === 'story'
                     }
 
@@ -455,6 +464,12 @@ export default function PostedPostsPage() {
 
                     return false
                   })
+
+                  if (isStory) {
+                    console.log('Story detected for post:', post.id)
+                  }
+
+                  return isStory
                 }
 
                 // Helper function to get media URL (prioritize platform-fetched media URL)
@@ -479,6 +494,18 @@ export default function PostedPostsPage() {
 
                 // Helper function to get display content (prioritize Pinterest title)
                 const getDisplayContent = () => {
+                  // Check if it's a story post first (stories get special labels)
+                  if (isStoryPost()) {
+                    // Determine which platform the story is from
+                    if (post.platforms.includes('instagram')) {
+                      return 'Instagram Story'
+                    }
+                    if (post.platforms.includes('facebook')) {
+                      return 'Facebook Story'
+                    }
+                    return 'Story'
+                  }
+
                   // For Pinterest posts, use title if available
                   if (post.platforms.includes('pinterest')) {
                     if (post.pinterest_title) {
@@ -500,19 +527,7 @@ export default function PostedPostsPage() {
                   // Check if content is empty or just whitespace
                   const trimmedContent = post.content?.trim() || ''
 
-                  // If content is empty and it's a story, show platform-specific label
-                  if (!trimmedContent && isStoryPost()) {
-                    // Determine which platform the story is from
-                    if (post.platforms.includes('instagram')) {
-                      return 'Instagram Story'
-                    }
-                    if (post.platforms.includes('facebook')) {
-                      return 'Facebook Story'
-                    }
-                    return 'Story'
-                  }
-
-                  // If content is empty but not a story, show generic placeholder
+                  // If content is empty, show generic placeholder
                   if (!trimmedContent) {
                     return 'Untitled Post'
                   }

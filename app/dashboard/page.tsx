@@ -1262,6 +1262,18 @@ export default function DashboardPage() {
 
                   // Get display content - use Pinterest-specific fields if available
                   const getDisplayContent = () => {
+                    // Check if it's a story post first (stories get special labels)
+                    if (isStoryPost()) {
+                      // Determine which platform the story is from
+                      if (post.platforms.includes('instagram')) {
+                        return 'Instagram Story'
+                      }
+                      if (post.platforms.includes('facebook')) {
+                        return 'Facebook Story'
+                      }
+                      return 'Story'
+                    }
+
                     // Check if this is a Pinterest post with specific content
                     if (post.platforms.includes('pinterest')) {
                       // Type assertion to access Pinterest fields
@@ -1299,19 +1311,7 @@ export default function DashboardPage() {
                     // Check if content is empty or just whitespace
                     const trimmedContent = post.content?.trim() || ''
 
-                    // If content is empty and it's a story, show platform-specific label
-                    if (!trimmedContent && isStoryPost()) {
-                      // Determine which platform the story is from
-                      if (post.platforms.includes('instagram')) {
-                        return 'Instagram Story'
-                      }
-                      if (post.platforms.includes('facebook')) {
-                        return 'Facebook Story'
-                      }
-                      return 'Story'
-                    }
-
-                    // If content is empty but not a story, show generic placeholder
+                    // If content is empty, show generic placeholder
                     if (!trimmedContent) {
                       return 'Untitled Post'
                     }
