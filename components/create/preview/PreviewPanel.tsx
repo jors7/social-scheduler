@@ -119,12 +119,24 @@ export function PreviewPanel({
 
       <CardContent className="pt-0">
         <div className="border rounded-lg p-4 bg-gray-50 min-h-[400px] max-h-[600px] overflow-y-auto">
-          <ActivePreviewComponent
-            content={platformContentToUse}
-            mediaUrls={mediaUrls}
-            {...(activePlatform === 'instagram' && { format: instagramFormat })}
-            {...(activePlatform === 'facebook' && { format: facebookFormat })}
-          />
+          {activePlatform === 'instagram' ? (
+            <InstagramPreview
+              content={platformContentToUse}
+              mediaUrls={mediaUrls}
+              format={instagramFormat}
+            />
+          ) : activePlatform === 'facebook' ? (
+            <FacebookPreview
+              content={platformContentToUse}
+              mediaUrls={mediaUrls}
+              format={facebookFormat}
+            />
+          ) : (
+            <ActivePreviewComponent
+              content={platformContentToUse}
+              mediaUrls={mediaUrls}
+            />
+          )}
         </div>
 
         {/* Helper text */}
