@@ -132,7 +132,9 @@ export async function POST(request: NextRequest) {
     const response: any = {
       success: true,
       id: result.id,
-      message: successMessage
+      message: successMessage,
+      isStory: isStory || false,  // Include story indicator for detection
+      isReel: isReel || false     // Include reel indicator for detection
     };
 
     // Include thumbnail URL if present (for Reels and video Stories)

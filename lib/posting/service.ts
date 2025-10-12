@@ -310,7 +310,9 @@ export class PostingService {
         postId: data.id,
         data: {
           id: data.id,
-          thumbnailUrl: data.thumbnailUrl // Include thumbnail URL if present
+          isStory: data.isStory || false,    // Include story indicator for detection
+          isReel: data.isReel || false,      // Include reel indicator for detection
+          thumbnailUrl: data.thumbnailUrl    // Include thumbnail URL if present
         }
       };
 
