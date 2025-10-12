@@ -3225,7 +3225,7 @@ function CreateNewPostPageContent() {
                                 {!instagramAsStory && !instagramAsReel && (
                                   <div className="bg-purple-50 border border-purple-200 rounded-lg p-2">
                                     <p className="text-[10px] text-purple-700 leading-relaxed">
-                                      📰 Feed posts appear in followers' feeds<br/>
+                                      📰 Feed posts appear in followers&apos; feeds<br/>
                                       ⭐ Portrait format (4:5) recommended<br/>
                                       📐 Square (1:1) and landscape (1.91:1) also supported
                                     </p>
