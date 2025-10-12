@@ -438,14 +438,29 @@ export default function PostedPostsPage() {
               {paginatedPosts.map(post => {
                 // Helper function to detect if this is a story post
                 const isStoryPost = () => {
-                  if (!post.post_results || !Array.isArray(post.post_results)) return false
+                  if (!post.post_results || !Array.isArray(post.post_results)) {
+                    console.log('No post_results for post:', post.id, post)
+                    return false
+                  }
+
+                  console.log('Checking post for stories:', {
+                    postId: post.id,
+                    platforms: post.platforms,
+                    post_results: post.post_results
+                  })
 
                   const isStory = post.post_results.some((result: any) => {
+                    console.log('Checking result:', {
+                      platform: result.platform,
+                      success: result.success,
+                      hasData: !!result.data,
+                      data: result.data
+                    })
+
                     if (!result.success) return false
 
                     // Check for Instagram stories
                     if (result.platform === 'instagram' && result.data) {
-                      // Debug log for Instagram posts
                       console.log('Instagram post data:', {
                         postId: post.id,
                         hasType: 'type' in result.data,
@@ -459,15 +474,20 @@ export default function PostedPostsPage() {
 
                     // Check for Facebook stories
                     if (result.platform === 'facebook' && result.data) {
+                      console.log('Facebook post data:', {
+                        postId: post.id,
+                        hasIsStory: 'isStory' in result.data,
+                        dataIsStory: result.data.isStory,
+                        resultIsStory: result.isStory,
+                        fullData: result.data
+                      })
                       return result.data.isStory === true || result.isStory === true
                     }
 
                     return false
                   })
 
-                  if (isStory) {
-                    console.log('Story detected for post:', post.id)
-                  }
+                  console.log('Story check result for post', post.id, ':', isStory)
 
                   return isStory
                 }
