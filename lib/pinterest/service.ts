@@ -67,7 +67,7 @@ export class PinterestService {
       }
 
       // Remove undefined values
-      Object.keys(pinData).forEach(key => 
+      Object.keys(pinData).forEach(key =>
         pinData[key] === undefined && delete pinData[key]
       );
 
@@ -76,6 +76,74 @@ export class PinterestService {
     } catch (error) {
       console.error('Pinterest create pin error:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Create a carousel pin with multiple images (2-5 images)
+   */
+  async createCarouselPin(
+    boardId: string,
+    title: string,
+    description: string,
+    imageUrls: string[],
+    link?: string
+  ) {
+    try {
+      return await this.client.createCarouselPin(boardId, title, description, imageUrls, link);
+    } catch (error) {
+      console.error('Pinterest create carousel pin error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a video pin
+   */
+  async createVideoPin(
+    boardId: string,
+    title: string,
+    description: string,
+    videoUrl: string,
+    coverImageUrl?: string,
+    link?: string
+  ) {
+    try {
+      return await this.client.createVideoPin(boardId, title, description, videoUrl, coverImageUrl, link);
+    } catch (error) {
+      console.error('Pinterest create video pin error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Smart pin creation - detects media type and creates appropriate pin
+   */
+  async createSmartPin(
+    boardId: string,
+    title: string,
+    description: string,
+    mediaUrls: string[],
+    link?: string
+  ) {
+    if (!mediaUrls || mediaUrls.length === 0) {
+      throw new Error('At least one media URL is required');
+    }
+
+    // Detect media type from first URL
+    const firstUrl = mediaUrls[0].toLowerCase();
+    const isVideo = firstUrl.match(/\.(mp4|mov|m4v|webm)$/);
+
+    if (isVideo) {
+      // Create video pin
+      const coverImage = mediaUrls.length > 1 ? mediaUrls[1] : undefined;
+      return await this.createVideoPin(boardId, title, description, mediaUrls[0], coverImage, link);
+    } else if (mediaUrls.length >= 2 && mediaUrls.length <= 5) {
+      // Create carousel pin (2-5 images)
+      return await this.createCarouselPin(boardId, title, description, mediaUrls, link);
+    } else {
+      // Create standard image pin
+      return await this.createPin(boardId, title, description, mediaUrls[0], link);
     }
   }
 }

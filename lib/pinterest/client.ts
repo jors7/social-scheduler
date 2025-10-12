@@ -79,13 +79,13 @@ export class PinterestClient {
       board_id: boardId,
       ...pinData,
     };
-    
+
     console.log('=== Pinterest Pin Creation Debug ===');
     console.log('API Endpoint:', `${this.apiBaseUrl}/pins`);
     console.log('Using Sandbox:', this.apiBaseUrl.includes('sandbox'));
     console.log('Request Body:', JSON.stringify(requestBody, null, 2));
     console.log('Token (first 20 chars):', this.accessToken.substring(0, 20) + '...');
-    
+
     const response = await fetch(
       `${this.apiBaseUrl}/pins`,
       {
@@ -106,7 +106,7 @@ export class PinterestClient {
       console.error('=== Pinterest API Error ===');
       console.error('Status:', response.status);
       console.error('Error Response:', errorText);
-      
+
       // Try to parse error as JSON for better debugging
       let errorJson;
       try {
@@ -115,7 +115,7 @@ export class PinterestClient {
       } catch (e) {
         // Not JSON, that's okay
       }
-      
+
       throw new Error(`Pinterest API error: ${response.status} - ${errorText}`);
     }
 
@@ -123,5 +123,84 @@ export class PinterestClient {
     console.log('=== Pin Created Successfully ===');
     console.log('Result:', JSON.stringify(result, null, 2));
     return result;
+  }
+
+  /**
+   * Create a carousel pin with multiple images (2-5 images)
+   * @param boardId - The board ID to post to
+   * @param title - Pin title
+   * @param description - Pin description
+   * @param imageUrls - Array of 2-5 image URLs
+   * @param link - Optional destination link
+   */
+  async createCarouselPin(
+    boardId: string,
+    title: string,
+    description: string,
+    imageUrls: string[],
+    link?: string
+  ) {
+    if (imageUrls.length < 2 || imageUrls.length > 5) {
+      throw new Error('Carousel pins require 2-5 images');
+    }
+
+    const pinData: any = {
+      title,
+      description,
+      media_source: {
+        source_type: 'multiple_image_urls',
+        items: imageUrls.map(url => ({
+          url,
+          title: title, // Can be customized per image if needed
+        }))
+      }
+    };
+
+    if (link) {
+      pinData.link = link;
+    }
+
+    console.log('=== Creating Carousel Pin ===');
+    console.log('Images:', imageUrls.length);
+
+    return this.createPin(boardId, pinData);
+  }
+
+  /**
+   * Create a video pin
+   * @param boardId - The board ID to post to
+   * @param title - Pin title
+   * @param description - Pin description
+   * @param videoUrl - Video URL (must be publicly accessible)
+   * @param coverImageUrl - Optional cover image URL
+   * @param link - Optional destination link
+   */
+  async createVideoPin(
+    boardId: string,
+    title: string,
+    description: string,
+    videoUrl: string,
+    coverImageUrl?: string,
+    link?: string
+  ) {
+    const pinData: any = {
+      title,
+      description,
+      media_source: {
+        source_type: 'video_url',
+        url: videoUrl,
+        cover_image_url: coverImageUrl
+      }
+    };
+
+    if (link) {
+      pinData.link = link;
+    }
+
+    console.log('=== Creating Video Pin ===');
+    console.log('Video URL:', videoUrl);
+    console.log('Cover Image:', coverImageUrl || 'Auto-generated');
+
+    return this.createPin(boardId, pinData);
   }
 }

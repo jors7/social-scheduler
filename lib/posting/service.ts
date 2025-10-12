@@ -533,14 +533,28 @@ export class PostingService {
 
   private async postToPinterest(content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
     try {
-      // Pinterest requires at least an image
+      // Pinterest requires at least one media file (image or video)
       if (!mediaUrls || mediaUrls.length === 0) {
-        throw new Error('Pinterest requires at least one image');
+        throw new Error('Pinterest requires at least one image or video');
       }
 
-      // Use the first image for Pinterest
-      const imageUrl = mediaUrls[0];
-      console.log('Pinterest: Using image URL:', imageUrl);
+      // Detect media type
+      const firstUrl = mediaUrls[0].toLowerCase();
+      const isVideo = firstUrl.match(/\.(mp4|mov|m4v|webm)$/);
+
+      console.log('Pinterest: Media URLs:', mediaUrls);
+      console.log('Pinterest: Is video:', isVideo);
+      console.log('Pinterest: Media count:', mediaUrls.length);
+
+      // Determine pin type
+      let pinType = 'image';
+      if (isVideo) {
+        pinType = 'video';
+      } else if (mediaUrls.length >= 2 && mediaUrls.length <= 5) {
+        pinType = 'carousel';
+      }
+
+      console.log('Pinterest: Creating', pinType, 'pin');
 
       const response = await fetch('/api/post/pinterest', {
         method: 'POST',
@@ -552,7 +566,8 @@ export class PostingService {
           boardId: account.pinterest_board_id, // This needs to be set
           title: account.pinterest_title || 'New Pin',
           description: account.pinterest_description || content, // Use custom description or fallback to content
-          imageUrl: imageUrl, // Use first image
+          mediaUrls: mediaUrls, // Pass all media URLs
+          pinType: pinType, // Specify the pin type
           link: account.pinterest_link, // Optional destination URL
         }),
       });
@@ -579,15 +594,17 @@ export class PostingService {
     } catch (error) {
       // Provide more helpful error messages
       let errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
-      if (errorMessage.includes('requires at least one image')) {
-        errorMessage = 'Pinterest requires an image to create a pin';
+
+      if (errorMessage.includes('requires at least one')) {
+        errorMessage = 'Pinterest requires an image or video to create a pin';
       } else if (errorMessage.includes('authentication') || errorMessage.includes('401')) {
         errorMessage = 'Pinterest account needs to be reconnected';
       } else if (errorMessage.includes('board')) {
         errorMessage = 'Pinterest board selection or permissions error';
+      } else if (errorMessage.includes('Carousel pins require 2-5 images')) {
+        errorMessage = 'Carousel pins require between 2 and 5 images';
       }
-      
+
       return {
         platform: 'pinterest',
         success: false,

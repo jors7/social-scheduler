@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     console.log('Pinterest POST request body:', body);
-    const { accessToken, boardId, title, description, imageUrl, link } = body;
+    const { accessToken, boardId, title, description, imageUrl, mediaUrls, pinType, link } = body;
 
     if (!accessToken) {
       return NextResponse.json(
@@ -28,6 +28,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Determine which media to use (support both old imageUrl and new mediaUrls)
+    const media = mediaUrls || (imageUrl ? [imageUrl] : []);
+
+    if (!media || media.length === 0) {
+      return NextResponse.json(
+        { error: 'At least one image or video is required' },
+        { status: 400 }
+      );
+    }
+
     // Format content for Pinterest
     const formattedContent = formatPinterestContent(description || '', title);
 
@@ -35,58 +45,104 @@ export async function POST(request: NextRequest) {
     const pinterestService = new PinterestService(accessToken);
 
     try {
-      // Create the pin
-      const result = await pinterestService.createPin(
-        boardId,
-        formattedContent.title,
-        formattedContent.description,
-        imageUrl,
-        link
-      );
+      let result;
+
+      // Create appropriate pin type based on pinType parameter or auto-detect
+      const detectedPinType = pinType || 'image';
+
+      console.log('Creating Pinterest pin:', {
+        type: detectedPinType,
+        mediaCount: media.length,
+        title: formattedContent.title.substring(0, 50),
+      });
+
+      if (detectedPinType === 'video') {
+        // Create video pin
+        const videoUrl = media[0];
+        const coverImageUrl = media.length > 1 ? media[1] : undefined;
+
+        result = await pinterestService.createVideoPin(
+          boardId,
+          formattedContent.title,
+          formattedContent.description,
+          videoUrl,
+          coverImageUrl,
+          link
+        );
+      } else if (detectedPinType === 'carousel' && media.length >= 2 && media.length <= 5) {
+        // Create carousel pin
+        result = await pinterestService.createCarouselPin(
+          boardId,
+          formattedContent.title,
+          formattedContent.description,
+          media,
+          link
+        );
+      } else {
+        // Create standard image pin
+        result = await pinterestService.createPin(
+          boardId,
+          formattedContent.title,
+          formattedContent.description,
+          media[0],
+          link
+        );
+      }
 
       return NextResponse.json({
         success: true,
         id: result.id,
         url: `https://www.pinterest.com/pin/${result.id}/`,
+        pinType: detectedPinType,
       });
     } catch (pinError: any) {
       console.error('Pinterest pin creation error:', pinError);
-      
+
       // Handle different error scenarios
       if (pinError.message.includes('401') || pinError.message.includes('Authentication')) {
         return NextResponse.json(
-          { 
+          {
             error: 'Pinterest authentication failed. Please reconnect your Pinterest account.',
             requiresReauth: true,
-            details: pinError.message 
+            details: pinError.message
           },
           { status: 401 }
         );
       }
-      
+
       if (pinError.message.includes('403') || pinError.message.includes('Forbidden')) {
         return NextResponse.json(
-          { 
+          {
             error: 'Pinterest posting permission denied. Please check your board permissions.',
             details: pinError.message
           },
           { status: 403 }
         );
       }
-      
+
       if (pinError.message.includes('400') || pinError.message.includes('Bad Request')) {
         return NextResponse.json(
-          { 
-            error: 'Invalid pin data. Please check your board selection and ensure you have an image attached.',
-            details: pinError.message 
+          {
+            error: 'Invalid pin data. Please check your board selection and ensure you have media attached.',
+            details: pinError.message
           },
           { status: 400 }
         );
       }
-      
+
+      if (pinError.message.includes('Carousel pins require 2-5 images')) {
+        return NextResponse.json(
+          {
+            error: 'Carousel pins require between 2 and 5 images.',
+            details: pinError.message
+          },
+          { status: 400 }
+        );
+      }
+
       // Generic error with helpful message
       return NextResponse.json(
-        { 
+        {
           error: 'Unable to post to Pinterest. Please try again or check your board permissions.',
           details: pinError.message
         },
