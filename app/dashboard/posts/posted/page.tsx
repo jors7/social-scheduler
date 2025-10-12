@@ -553,14 +553,15 @@ export default function PostedPostsPage() {
                 }
 
                 // YouTube videos always use video tag with preload="metadata" for thumbnail extraction
-                // If we have a platform thumbnail (image), show it as an image
-                // Otherwise check if the media URL is a video
-                const isVideo = (isYouTubePost || (!hasPlatformThumbnail && firstMediaUrl)) ? (
-                  firstMediaUrl?.includes('.mp4') ||
-                  firstMediaUrl?.includes('.mov') ||
-                  firstMediaUrl?.includes('.webm') ||
-                  firstMediaUrl?.includes('video')
-                ) : false
+                // If it's YouTube, always render as video. Otherwise check for video extensions.
+                const isVideo = isYouTubePost ? true : (
+                  !hasPlatformThumbnail && firstMediaUrl && (
+                    firstMediaUrl.includes('.mp4') ||
+                    firstMediaUrl.includes('.mov') ||
+                    firstMediaUrl.includes('.webm') ||
+                    firstMediaUrl.includes('video')
+                  )
+                )
                 
                 return (
                   <Card key={post.id} variant="elevated" className="overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">

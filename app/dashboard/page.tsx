@@ -1261,7 +1261,13 @@ export default function DashboardPage() {
 
                   // Simple check if URL is likely a video based on extension
                   // YouTube posts always use video tag for thumbnail extraction
-                  const isVideo = (isYouTubePost || firstMediaUrl) && (firstMediaUrl?.includes('.mp4') || firstMediaUrl?.includes('.mov') || firstMediaUrl?.includes('.webm'))
+                  const isVideo = isYouTubePost ? true : (
+                    firstMediaUrl && (
+                      firstMediaUrl.includes('.mp4') ||
+                      firstMediaUrl.includes('.mov') ||
+                      firstMediaUrl.includes('.webm')
+                    )
+                  )
 
 
                   // Get display content - use Pinterest-specific fields if available
