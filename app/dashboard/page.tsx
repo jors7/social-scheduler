@@ -1256,8 +1256,12 @@ export default function DashboardPage() {
 
                   const firstMediaUrl = getMediaUrl()
 
+                  // Check if this is a YouTube post - always show YouTube as video with preload="metadata"
+                  const isYouTubePost = post.platforms.includes('youtube')
+
                   // Simple check if URL is likely a video based on extension
-                  const isVideo = firstMediaUrl && (firstMediaUrl.includes('.mp4') || firstMediaUrl.includes('.mov') || firstMediaUrl.includes('.webm'))
+                  // YouTube posts always use video tag for thumbnail extraction
+                  const isVideo = (isYouTubePost || firstMediaUrl) && (firstMediaUrl?.includes('.mp4') || firstMediaUrl?.includes('.mov') || firstMediaUrl?.includes('.webm'))
 
 
                   // Get display content - use Pinterest-specific fields if available

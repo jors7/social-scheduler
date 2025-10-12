@@ -538,8 +538,11 @@ export default function PostedPostsPage() {
                   });
                 }
 
+                // Check if this is a YouTube post - always show YouTube as video with preload="metadata"
+                const isYouTubePost = post.platforms.includes('youtube');
+
                 // Check if we have a platform media URL (thumbnail) for video content
-                const hasPlatformThumbnail = post.platform_media_url && (
+                const hasPlatformThumbnail = !isYouTubePost && post.platform_media_url && (
                   post.platform_media_url.includes('.jpg') ||
                   post.platform_media_url.includes('.jpeg') ||
                   post.platform_media_url.includes('.png')
@@ -549,13 +552,14 @@ export default function PostedPostsPage() {
                   console.log('🖼️ Using platform thumbnail:', post.platform_media_url);
                 }
 
-                // If we have a platform thumbnail, always show it as an image
+                // YouTube videos always use video tag with preload="metadata" for thumbnail extraction
+                // If we have a platform thumbnail (image), show it as an image
                 // Otherwise check if the media URL is a video
-                const isVideo = !hasPlatformThumbnail && firstMediaUrl ? (
-                  firstMediaUrl.includes('.mp4') ||
-                  firstMediaUrl.includes('.mov') ||
-                  firstMediaUrl.includes('.webm') ||
-                  firstMediaUrl.includes('video')
+                const isVideo = (isYouTubePost || (!hasPlatformThumbnail && firstMediaUrl)) ? (
+                  firstMediaUrl?.includes('.mp4') ||
+                  firstMediaUrl?.includes('.mov') ||
+                  firstMediaUrl?.includes('.webm') ||
+                  firstMediaUrl?.includes('video')
                 ) : false
                 
                 return (
