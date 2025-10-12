@@ -938,4 +938,19 @@ export class InstagramClient {
       throw error;
     }
   }
+
+  async createReel(
+    videoUrl: string,
+    caption: string,
+    onProgress?: (status: string, progress?: number) => void
+  ) {
+    // Reels are just videos with REELS media type, which is what createPost already does for videos
+    console.log('Creating Instagram reel with:', {
+      userID: this.userID,
+      videoUrl: videoUrl.substring(0, 50) + '...',
+      captionLength: caption.length
+    });
+
+    return this.createPost(videoUrl, caption, true, onProgress);
+  }
 }

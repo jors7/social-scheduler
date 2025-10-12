@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, accessToken, text, mediaUrl, mediaUrls, isStory, currentUserId } = body;
+    const { userId, accessToken, text, mediaUrl, mediaUrls, isStory, isReel, currentUserId } = body;
 
     if (!userId || !accessToken) {
       return NextResponse.json(
@@ -13,9 +13,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
-    // Stories don't require captions, but feed posts do
-    if (!isStory && !text) {
+
+    // Stories and Reels don't require captions, but feed posts do
+    if (!isStory && !isReel && !text) {
       return NextResponse.json(
         { error: 'Caption is required for feed posts' },
         { status: 400 }
@@ -38,12 +38,13 @@ export async function POST(request: NextRequest) {
       textLength: text?.length || 0,
       mediaCount: allMediaUrls.length,
       isCarousel: allMediaUrls.length > 1,
-      isStory: !!isStory
+      isStory: !!isStory,
+      isReel: !!isReel
     });
 
     // Get Instagram app secret from environment
     const appSecret = process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET;
-    
+
     console.log('Instagram API endpoint:', {
       hasAppSecret: !!appSecret,
       secretStart: appSecret ? appSecret.substring(0, 4) + '...' : 'none'
@@ -58,14 +59,16 @@ export async function POST(request: NextRequest) {
     const result = await service.createPost({
       mediaUrls: allMediaUrls,
       caption: text || '',
-      isStory: isStory
+      isStory: isStory,
+      isReel: isReel
     });
 
-    console.log(`Instagram ${isStory ? 'story' : 'post'} created:`, result);
+    const postType = isStory ? 'story' : isReel ? 'reel' : 'post';
+    console.log(`Instagram ${postType} created:`, result);
 
-    // Fetch thumbnail for stories (similar to Facebook Reels)
+    // Fetch thumbnail for stories and reels (similar to Facebook Reels)
     let thumbnailUrl = null;
-    if (isStory && result.id && currentUserId) {
+    if ((isStory || isReel) && result.id && currentUserId) {
       try {
         console.log('Fetching Instagram Story thumbnail...');
 
@@ -136,8 +139,8 @@ export async function POST(request: NextRequest) {
       reach: 0
     };
 
-    // Only fetch metrics for feed posts (not stories)
-    if (!isStory && result.id) {
+    // Only fetch metrics for feed posts (not stories or reels)
+    if (!isStory && !isReel && result.id) {
       try {
         // First get the media object which includes like_count and comments_count
         const mediaResponse = await fetch(
@@ -160,7 +163,7 @@ export async function POST(request: NextRequest) {
     const response: any = {
       success: true,
       id: result.id,
-      type: isStory ? 'story' : 'post',
+      type: isStory ? 'story' : isReel ? 'reel' : 'post',
       metrics,
       ...result
     };

@@ -17,6 +17,7 @@ export interface PostData {
   pinterestLink?: string; // Pinterest specific - destination URL
   tiktokPrivacyLevel?: 'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY'; // TikTok specific - privacy/draft setting
   instagramAsStory?: boolean; // Instagram specific - post as story instead of feed post
+  instagramAsReel?: boolean; // Instagram specific - post as reel instead of feed post
   facebookAsStory?: boolean; // Facebook specific - post as story instead of feed post
   facebookAsReel?: boolean; // Facebook specific - post as reel instead of feed post
 }
@@ -136,6 +137,8 @@ export class PostingService {
           );
           if (platform === 'instagram' && postData.instagramAsStory) {
             progressTracker?.updatePlatform(platform, 'processing', 'story');
+          } else if (platform === 'instagram' && postData.instagramAsReel) {
+            progressTracker?.updatePlatform(platform, 'processing', 'reel');
           } else if (platform === 'instagram' && isVideo) {
             progressTracker?.updatePlatform(platform, 'processing', 'reel');
           } else if (platform === 'facebook' && postData.facebookAsReel) {
@@ -220,7 +223,8 @@ export class PostingService {
           account,
           mediaUrls,
           onProgress ? (status) => onProgress('instagram', status) : undefined,
-          postData?.instagramAsStory
+          postData?.instagramAsStory,
+          postData?.instagramAsReel
         );
       
       case 'bluesky':
@@ -328,11 +332,12 @@ export class PostingService {
   }
 
   private async postToInstagram(
-    content: string, 
-    account: any, 
+    content: string,
+    account: any,
     mediaUrls?: string[],
     onProgress?: (status: string) => void,
-    isStory?: boolean
+    isStory?: boolean,
+    isReel?: boolean
   ): Promise<PostResult> {
     try {
       // Instagram requires media
@@ -361,6 +366,7 @@ export class PostingService {
             text: content,
             mediaUrls: mediaUrls,
             isStory: isStory,
+            isReel: isReel,
           }),
         });
 
@@ -435,6 +441,7 @@ export class PostingService {
             text: content,
             mediaUrls: mediaUrls, // Pass all media URLs for carousel support
             isStory: isStory,
+            isReel: isReel,
             currentUserId: user?.id, // Pass current user ID for thumbnail upload
           }),
         });

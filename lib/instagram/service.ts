@@ -27,11 +27,17 @@ export class InstagramService {
     caption: string;
     isVideo?: boolean;
     isStory?: boolean; // New parameter for story posts
+    isReel?: boolean; // New parameter for reel posts
     onProgress?: (status: string, progress?: number) => void;
   }) {
     // Check if this is a story post
     if (content.isStory) {
       return this.createStory(content);
+    }
+
+    // Check if this is a reel post
+    if (content.isReel) {
+      return this.createReel(content);
     }
     
     // Check if this is a carousel post (multiple media items)
@@ -105,7 +111,7 @@ export class InstagramService {
     onProgress?: (status: string, progress?: number) => void;
   }) {
     const mediaUrl = content.mediaUrl || content.imageUrl || (content.mediaUrls?.[0]);
-    
+
     if (!mediaUrl) {
       throw new Error('Instagram stories require a media URL');
     }
@@ -118,13 +124,48 @@ export class InstagramService {
     // Detect if it's a video
     const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
     const isVideo = content.isVideo || videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
-    
+
     console.log('InstagramService: Creating story with:', {
       mediaUrl: mediaUrl.substring(0, 50) + '...',
       isVideo: isVideo
     });
 
     return this.client.createStory(mediaUrl, isVideo, content.onProgress);
+  }
+
+  private async createReel(content: {
+    imageUrl?: string;
+    mediaUrl?: string;
+    mediaUrls?: string[];
+    caption: string;
+    isVideo?: boolean;
+    onProgress?: (status: string, progress?: number) => void;
+  }) {
+    const mediaUrl = content.mediaUrl || content.imageUrl || (content.mediaUrls?.[0]);
+
+    if (!mediaUrl) {
+      throw new Error('Instagram reels require a video URL');
+    }
+
+    // Note: Reels don't support carousels
+    if (content.mediaUrls && content.mediaUrls.length > 1) {
+      console.warn('Instagram reels do not support multiple media items. Using first item only.');
+    }
+
+    // Reels must be videos
+    const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
+    const isVideo = content.isVideo || videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
+
+    if (!isVideo) {
+      throw new Error('Instagram reels require a video file');
+    }
+
+    console.log('InstagramService: Creating reel with:', {
+      mediaUrl: mediaUrl.substring(0, 50) + '...',
+      caption: content.caption
+    });
+
+    return this.client.createReel(mediaUrl, content.caption, content.onProgress);
   }
 
   async getMediaInsights(mediaId: string, metrics?: string[]) {

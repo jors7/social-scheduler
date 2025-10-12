@@ -86,6 +86,7 @@ function CreateNewPostPageContent() {
   const [connectedAccounts, setConnectedAccounts] = useState<any[]>([])
   const [selectedAccounts, setSelectedAccounts] = useState<Record<string, string[]>>({})
   const [instagramAsStory, setInstagramAsStory] = useState(false)
+  const [instagramAsReel, setInstagramAsReel] = useState(false)
   const [instagramFormat, setInstagramFormat] = useState<'feed-square' | 'feed-portrait' | 'feed-landscape' | 'story' | 'reel'>('feed-portrait')
   const [facebookAsStory, setFacebookAsStory] = useState(false)
   const [facebookAsReel, setFacebookAsReel] = useState(false)
@@ -1333,6 +1334,7 @@ function CreateNewPostPageContent() {
         pinterestLink: pinterestLink || undefined,
         tiktokPrivacyLevel: selectedPlatforms.includes('tiktok') ? (tiktokSaveAsDraft ? 'SELF_ONLY' : tiktokPrivacyLevel) : undefined,
         instagramAsStory: selectedPlatforms.includes('instagram') ? instagramAsStory : undefined,
+        instagramAsReel: selectedPlatforms.includes('instagram') ? instagramAsReel : undefined,
         facebookAsStory: selectedPlatforms.includes('facebook') ? facebookAsStory : undefined,
         facebookAsReel: selectedPlatforms.includes('facebook') ? facebookAsReel : undefined,
       }
@@ -3162,119 +3164,95 @@ function CreateNewPostPageContent() {
                             {/* Instagram Options */}
                             {platform.id === 'instagram' && (
                               <div className="mt-3 pt-3 border-t border-purple-200/50 space-y-3">
-                                {/* Format Selector */}
                                 <div>
                                   <Label className="text-xs font-medium text-purple-700 mb-2 block">
-                                    Content Format
+                                    Content Type
                                   </Label>
-                                  <div className="grid grid-cols-2 gap-2">
+                                  {/* Toggle Group */}
+                                  <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
                                     <button
                                       type="button"
                                       onClick={() => {
+                                        setInstagramAsStory(false)
+                                        setInstagramAsReel(false)
                                         setInstagramFormat('feed-portrait')
-                                        setInstagramAsStory(false)
                                       }}
                                       className={cn(
-                                        "flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all",
-                                        instagramFormat === 'feed-portrait'
-                                          ? "border-purple-600 bg-purple-50"
-                                          : "border-gray-200 bg-white hover:border-purple-300"
+                                        "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
+                                        !instagramAsStory && !instagramAsReel
+                                          ? "bg-white text-purple-700 shadow-sm"
+                                          : "text-gray-600 hover:text-gray-900"
                                       )}
                                     >
-                                      <div className={cn(
-                                        "w-6 h-8 border-2 rounded mb-1",
-                                        instagramFormat === 'feed-portrait' ? "border-purple-600" : "border-gray-400"
-                                      )} />
-                                      <span className="text-[10px] font-medium">Portrait</span>
-                                      <span className="text-[9px] text-gray-500">4:5</span>
+                                      📰 Feed
                                     </button>
-
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        setInstagramFormat('feed-square')
-                                        setInstagramAsStory(false)
-                                      }}
-                                      className={cn(
-                                        "flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all",
-                                        instagramFormat === 'feed-square'
-                                          ? "border-purple-600 bg-purple-50"
-                                          : "border-gray-200 bg-white hover:border-purple-300"
-                                      )}
-                                    >
-                                      <div className={cn(
-                                        "w-6 h-6 border-2 rounded mb-1",
-                                        instagramFormat === 'feed-square' ? "border-purple-600" : "border-gray-400"
-                                      )} />
-                                      <span className="text-[10px] font-medium">Square</span>
-                                      <span className="text-[9px] text-gray-500">1:1</span>
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setInstagramFormat('feed-landscape')
-                                        setInstagramAsStory(false)
-                                      }}
-                                      className={cn(
-                                        "flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all",
-                                        instagramFormat === 'feed-landscape'
-                                          ? "border-purple-600 bg-purple-50"
-                                          : "border-gray-200 bg-white hover:border-purple-300"
-                                      )}
-                                    >
-                                      <div className={cn(
-                                        "w-8 h-4 border-2 rounded mb-1",
-                                        instagramFormat === 'feed-landscape' ? "border-purple-600" : "border-gray-400"
-                                      )} />
-                                      <span className="text-[10px] font-medium">Landscape</span>
-                                      <span className="text-[9px] text-gray-500">1.91:1</span>
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setInstagramFormat('story')
                                         setInstagramAsStory(true)
+                                        setInstagramAsReel(false)
+                                        setInstagramFormat('story')
                                       }}
                                       className={cn(
-                                        "flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all",
-                                        instagramFormat === 'story'
-                                          ? "border-purple-600 bg-purple-50"
-                                          : "border-gray-200 bg-white hover:border-purple-300"
+                                        "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
+                                        instagramAsStory && !instagramAsReel
+                                          ? "bg-white text-purple-700 shadow-sm"
+                                          : "text-gray-600 hover:text-gray-900"
                                       )}
                                     >
-                                      <div className={cn(
-                                        "w-4 h-8 border-2 rounded mb-1",
-                                        instagramFormat === 'story' ? "border-purple-600" : "border-gray-400"
-                                      )} />
-                                      <span className="text-[10px] font-medium">Story</span>
-                                      <span className="text-[9px] text-gray-500">9:16</span>
+                                      📸 Story
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setInstagramAsStory(false)
+                                        setInstagramAsReel(true)
+                                        setInstagramFormat('reel')
+                                      }}
+                                      className={cn(
+                                        "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
+                                        instagramAsReel
+                                          ? "bg-white text-purple-700 shadow-sm"
+                                          : "text-gray-600 hover:text-gray-900"
+                                      )}
+                                    >
+                                      🎬 Reel
                                     </button>
                                   </div>
-
-                                  {/* Format hints */}
-                                  {instagramFormat === 'feed-portrait' && (
-                                    <p className="text-[10px] text-purple-600 mt-1.5">
-                                      ⭐ Portrait (4:5) is recommended for best engagement in 2025
-                                    </p>
-                                  )}
-                                  {instagramFormat === 'feed-square' && (
-                                    <p className="text-[10px] text-purple-600 mt-1.5">
-                                      📐 Classic square format (1:1) - Still supported
-                                    </p>
-                                  )}
-                                  {instagramFormat === 'feed-landscape' && (
-                                    <p className="text-[10px] text-purple-600 mt-1.5">
-                                      🌄 Landscape (1.91:1) - Good for wide photos
-                                    </p>
-                                  )}
-                                  {instagramFormat === 'story' && (
-                                    <p className="text-[10px] text-purple-600 mt-1.5">
-                                      📸 Stories disappear after 24 hours. Vertical 9:16 format.
-                                    </p>
-                                  )}
                                 </div>
+
+                                {/* Feed hint */}
+                                {!instagramAsStory && !instagramAsReel && (
+                                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-2">
+                                    <p className="text-[10px] text-purple-700 leading-relaxed">
+                                      📰 Feed posts appear in followers' feeds<br/>
+                                      ⭐ Portrait format (4:5) recommended<br/>
+                                      📐 Square (1:1) and landscape (1.91:1) also supported
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Story hint */}
+                                {instagramAsStory && !instagramAsReel && (
+                                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-2">
+                                    <p className="text-[10px] text-purple-700 leading-relaxed">
+                                      📸 Stories disappear after 24 hours<br/>
+                                      📐 Vertical format (9:16) recommended<br/>
+                                      🎥 Videos: up to 60s (ideally 15s or less)
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Reel hint */}
+                                {instagramAsReel && (
+                                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-2">
+                                    <p className="text-[10px] text-purple-700 leading-relaxed">
+                                      🎬 Reels are short-form video content<br/>
+                                      📐 Vertical format (9:16) required<br/>
+                                      🎥 Videos: 15s to 90s (ideally 15-30s)
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                             )}
 
