@@ -1380,7 +1380,8 @@ function CreateNewPostPageContent() {
               platform: r.platform,
               success: r.success,
               postId: r.postId || null,
-              error: r.error || null
+              error: r.error || null,
+              data: r.data || null // Include the data object which contains type, thumbnailUrl, metrics, etc.
             }))
 
             // Extract thumbnail URL from results if available (for videos/reels/stories)
