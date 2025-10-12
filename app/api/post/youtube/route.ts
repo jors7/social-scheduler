@@ -111,6 +111,15 @@ export async function POST(request: NextRequest) {
     // The UI will handle rendering it correctly with <video> tag and preload="metadata"
     const thumbnailUrlForUI = videoUrl;
 
+    console.log('🎬 YouTube API returning:', {
+      success: true,
+      id: result.id,
+      url: result.url,
+      isShort,
+      videoUrl,
+      thumbnailUrlForUI
+    });
+
     return NextResponse.json({
       success: true,
       id: result.id,
