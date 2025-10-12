@@ -16,7 +16,8 @@ export async function POST(request: NextRequest) {
       privacyStatus = 'private',
       categoryId,
       publishAt, // ISO 8601 datetime for scheduled publishing
-      isShort = false // New parameter for YouTube Shorts
+      isShort = false, // New parameter for YouTube Shorts
+      userId // User ID for thumbnail upload
     } = body;
 
     // Get current user
@@ -97,11 +98,16 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // For YouTube videos, use the original video URL as the thumbnail
+    // The UI will handle rendering it correctly with <video> tag and preload="metadata"
+    const thumbnailUrlForUI = videoUrl;
+
     return NextResponse.json({
       success: true,
       id: result.id,
       url: result.url,
       isShort: isShort,
+      thumbnailUrl: thumbnailUrlForUI, // Return video URL to be used as thumbnail in UI
       message: isShort ? 'YouTube Short uploaded successfully' : 'Video uploaded to YouTube successfully',
     });
 

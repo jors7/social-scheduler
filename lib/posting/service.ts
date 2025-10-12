@@ -910,6 +910,12 @@ export class PostingService {
         throw new Error('YouTube requires a video to post');
       }
 
+      // Get user ID for thumbnail upload
+      const { data: { user } } = await this.supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       // Use the first media URL as the video
       const videoUrl = mediaUrls[0];
 
@@ -935,6 +941,7 @@ export class PostingService {
           videoUrl: videoUrl,
           isShort: isShort,
           privacyStatus: 'public', // Can be made configurable later
+          userId: user.id, // Pass user ID for thumbnail upload
         }),
       });
 
@@ -952,6 +959,7 @@ export class PostingService {
           id: data.id,
           type: isShort ? 'short' : 'video',
           url: data.url,
+          thumbnailUrl: data.thumbnailUrl, // Include thumbnail URL
         }
       };
     } catch (error) {
