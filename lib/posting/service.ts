@@ -419,7 +419,7 @@ export class PostingService {
           postId: result.id,
           data: {
             id: result.id,
-            type: result.type, // Include type (story or reel)
+            type: result.postType, // Include type (story or reel) - from SSE postType field
             thumbnailUrl: result.thumbnailUrl, // Include thumbnail URL if present
             metrics: result.metrics || {
               likes: 0,

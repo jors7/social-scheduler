@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
         type: 'complete',
         success: true,
         id: result.id,
-        type: isStory ? 'story' : isReel ? 'reel' : 'post',
+        postType: isStory ? 'story' : isReel ? 'reel' : 'post',
         thumbnailUrl: thumbnailUrl,
         metrics
       })}\n\n`));
