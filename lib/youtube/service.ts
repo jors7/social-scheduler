@@ -98,25 +98,28 @@ export class YouTubeService {
       console.log('Refreshing YouTube access token...');
 
       // Get new tokens using the refresh token
-      const { tokens } = await this.oauth2Client.refreshAccessToken();
+      const response = await this.oauth2Client.refreshAccessToken();
 
-      if (!tokens.access_token) {
-        throw new Error('Failed to refresh access token');
+      // The response structure is { credentials: { access_token, ... } } not { tokens: { ... } }
+      const credentials = response.credentials;
+
+      if (!credentials || !credentials.access_token) {
+        throw new Error('Failed to refresh access token - no credentials returned');
       }
 
       console.log('YouTube access token refreshed successfully');
 
-      // Update credentials in oauth2Client
+      // Update credentials in oauth2Client (this is already done by refreshAccessToken, but let's be explicit)
       this.oauth2Client.setCredentials({
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token || this.oauth2Client.credentials.refresh_token,
+        access_token: credentials.access_token,
+        refresh_token: credentials.refresh_token || this.oauth2Client.credentials.refresh_token,
       });
 
       // Store the new tokens in database
       if (this.userId) {
         await this.updateStoredTokens(
-          tokens.access_token,
-          tokens.refresh_token || undefined
+          credentials.access_token,
+          credentials.refresh_token || undefined
         );
       }
     } catch (error) {
