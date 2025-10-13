@@ -29,13 +29,20 @@ export function ReachChart({ analyticsData, dateRange = '30' }: ReachChartProps)
 
   // Generate chart data from all posts - group by date
   const dataMap = new Map<string, any>()
-  
+
+  // Debug logging
+  console.log('[ReachChart] Processing posts:', {
+    totalPosts: analyticsData.allPosts.length,
+    timePeriod: timePeriod,
+    dateRange: dateRange
+  })
+
   analyticsData.allPosts.forEach(post => {
     // Get the posted date and metrics based on platform
     let dateStr = ''
     let reach = 0
     let impressions = 0
-    
+
     // Handle different data structures from various platforms
     if (post.platform === 'facebook') {
       dateStr = post.created_time || post.timestamp || ''
@@ -44,29 +51,46 @@ export function ReachChart({ analyticsData, dateRange = '30' }: ReachChartProps)
     } else if (post.platform === 'instagram') {
       dateStr = post.timestamp || ''
       reach = post.reach || 0
-      impressions = post.impressions || reach || 0
+      // Instagram uses plays (views) as impressions for videos/reels
+      impressions = post.impressions || post.plays || 0
     } else if (post.platform === 'threads') {
       dateStr = post.timestamp || ''
       reach = post.views || 0
       impressions = post.views || 0 // Threads only has views
+    } else if (post.platform === 'pinterest') {
+      dateStr = post.created_at || post.timestamp || ''
+      reach = post.impressions || 0 // Pinterest uses impressions as reach
+      impressions = post.impressions || 0
+    } else if (post.platform === 'tiktok') {
+      dateStr = post.created_time || post.timestamp || ''
+      reach = post.views || 0
+      impressions = post.views || 0
     } else if (post.platform === 'bluesky') {
       dateStr = post.createdAt || ''
       // Bluesky doesn't provide real reach/impressions
       reach = 0
       impressions = 0
+    } else {
+      // Fallback for unknown platforms
+      dateStr = post.created_time || post.timestamp || post.createdAt || ''
+      reach = post.reach || post.views || 0
+      impressions = post.impressions || post.views || 0
     }
-    
+
     if (!dateStr) return // Skip posts without date
-    
+
     const date = new Date(dateStr)
     if (isNaN(date.getTime())) return // Skip invalid dates
-    
-    const dateKey = date.toISOString().split('T')[0] // Use YYYY-MM-DD as key
-    
-    // Format date consistently
-    const month = date.toLocaleDateString('en-US', { month: 'short' })
-    const day = date.getDate()
-    const dateLabel = `${month} ${day}`
+
+    // Use UTC date for consistency (avoid timezone mismatches)
+    const year = date.getUTCFullYear()
+    const month = date.getUTCMonth()
+    const day = date.getUTCDate()
+    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+
+    // Format date label using same UTC date
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const dateLabel = `${monthNames[month]} ${day}`
     
     if (dataMap.has(dateKey)) {
       const existing = dataMap.get(dateKey)
@@ -85,22 +109,35 @@ export function ReachChart({ analyticsData, dateRange = '30' }: ReachChartProps)
   // Convert map to array and sort
   const allChartData = Array.from(dataMap.values())
     .sort((a, b) => a.timestamp - b.timestamp)
-  
+
+  console.log('[ReachChart] All chart data before filtering:', {
+    dataPoints: allChartData.length,
+    totalReach: allChartData.reduce((sum, d) => sum + d.reach, 0),
+    totalImpressions: allChartData.reduce((sum, d) => sum + d.impressions, 0)
+  })
+
   // Filter data based on time period
   const cutoffDate = new Date()
   cutoffDate.setDate(cutoffDate.getDate() - timePeriod)
   let chartData = allChartData.filter(d => d.timestamp >= cutoffDate.getTime())
-  
-  // Remove any remaining duplicates by date label (shouldn't happen but just in case)
-  const seenDates = new Set<string>()
-  chartData = chartData.filter(item => {
-    if (seenDates.has(item.date)) {
-      return false
-    }
-    seenDates.add(item.date)
-    return true
+
+  console.log('[ReachChart] Chart data after filtering:', {
+    dataPoints: chartData.length,
+    cutoffDate: cutoffDate.toISOString(),
+    totalReach: chartData.reduce((sum, d) => sum + d.reach, 0),
+    totalImpressions: chartData.reduce((sum, d) => sum + d.impressions, 0)
   })
-  
+
+  // Note: No need to remove duplicates - the Map already handles that by dateKey
+  // The date label is just for display, multiple posts on same date are already aggregated
+
+  console.log('[ReachChart] Final chart data:', {
+    dataPoints: chartData.length,
+    totalReach: chartData.reduce((sum, d) => sum + d.reach, 0),
+    totalImpressions: chartData.reduce((sum, d) => sum + d.impressions, 0),
+    fullData: chartData
+  })
+
   // Calculate statistics
   const totalReach = chartData.reduce((sum, d) => sum + d.reach, 0)
   const totalImpressions = chartData.reduce((sum, d) => sum + d.impressions, 0)

@@ -24,7 +24,13 @@ export function EngagementChart({ analyticsData }: EngagementChartProps) {
   
   // Generate chart data from all posts - group by date
   const dataMap = new Map<string, any>()
-  
+
+  // Debug logging
+  console.log('[EngagementChart] Processing posts:', {
+    totalPosts: analyticsData.allPosts.length,
+    platforms: Array.from(new Set(analyticsData.allPosts.map(p => p.platform)))
+  })
+
   analyticsData.allPosts.forEach(post => {
     // Get the posted date based on platform
     let dateStr = ''
@@ -43,6 +49,15 @@ export function EngagementChart({ analyticsData }: EngagementChartProps) {
       likes = post.likes || 0
       comments = post.comments || 0
       shares = post.saves || 0 // Use saves as shares for Instagram
+      console.log('[EngagementChart] Instagram post:', {
+        id: post.id,
+        caption: post.caption?.substring(0, 30),
+        likes,
+        comments,
+        saves: shares,
+        timestamp: dateStr,
+        total: likes + comments + shares
+      })
     } else if (post.platform === 'threads') {
       dateStr = post.timestamp || ''
       likes = post.likes || 0
@@ -58,19 +73,33 @@ export function EngagementChart({ analyticsData }: EngagementChartProps) {
       likes = post.likes || 0
       comments = post.comments || 0
       shares = post.shares || 0
+    } else if (post.platform === 'pinterest') {
+      dateStr = post.created_at || post.timestamp || ''
+      likes = post.saves || 0  // Pinterest uses "saves" instead of likes
+      comments = post.pin_clicks || 0  // Use pin_clicks as comments equivalent
+      shares = post.outbound_clicks || 0  // Use outbound_clicks as shares
+    } else {
+      // Fallback for unknown platforms
+      dateStr = post.created_time || post.timestamp || post.createdAt || ''
+      likes = post.likes || 0
+      comments = post.comments || post.replies || 0
+      shares = post.shares || post.reposts || 0
     }
 
     if (!dateStr) return // Skip posts without date
-    
+
     const date = new Date(dateStr)
     if (isNaN(date.getTime())) return // Skip invalid dates
-    
-    const dateKey = date.toISOString().split('T')[0] // Use YYYY-MM-DD as key
-    
-    // Format date consistently
-    const month = date.toLocaleDateString('en-US', { month: 'short' })
-    const day = date.getDate()
-    const dateLabel = `${month} ${day}`
+
+    // Use UTC date for consistency (avoid timezone mismatches)
+    const year = date.getUTCFullYear()
+    const month = date.getUTCMonth()
+    const day = date.getUTCDate()
+    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+
+    // Format date label using same UTC date
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const dateLabel = `${monthNames[month]} ${day}`
     
     if (dataMap.has(dateKey)) {
       const existing = dataMap.get(dateKey)
@@ -95,17 +124,23 @@ export function EngagementChart({ analyticsData }: EngagementChartProps) {
   let data = Array.from(dataMap.values())
     .sort((a, b) => a.timestamp - b.timestamp)
     .slice(-30) // Last 30 data points
-  
-  // Remove any remaining duplicates by date label (shouldn't happen but just in case)
-  const seenDates = new Set<string>()
-  data = data.filter(item => {
-    if (seenDates.has(item.date)) {
-      return false
-    }
-    seenDates.add(item.date)
-    return true
+
+  console.log('[EngagementChart] Chart data before filtering:', {
+    dataPoints: data.length,
+    totalEngagement: data.reduce((sum, d) => sum + d.total, 0),
+    dates: data.map(d => d.date),
+    data: data.map(d => ({ date: d.date, likes: d.likes, comments: d.comments, shares: d.shares, total: d.total }))
   })
-  
+
+  // Note: No need to remove duplicates - the Map already handles that by dateKey
+  // The date label is just for display, multiple posts on same date are already aggregated
+
+  console.log('[EngagementChart] Final chart data:', {
+    dataPoints: data.length,
+    totalEngagement: data.reduce((sum, d) => sum + d.total, 0),
+    fullData: data
+  })
+
   if (data.length === 0) {
     return (
       <div className="h-[250px] sm:h-[300px] flex items-center justify-center text-gray-500">

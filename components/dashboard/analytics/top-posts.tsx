@@ -81,7 +81,7 @@ export function TopPosts({ analyticsData }: TopPostsProps) {
       else if (post.platform === 'instagram') {
         content = post.caption || ''
         totalEngagement = (post.likes || 0) + (post.comments || 0) + (post.saves || 0)
-        totalReach = post.reach || post.impressions || 0
+        totalReach = post.reach || 0
         posted_at = post.timestamp || ''
         hasMedia = post.media_type === 'IMAGE' || post.media_type === 'VIDEO' || post.media_type === 'CAROUSEL_ALBUM'
       }

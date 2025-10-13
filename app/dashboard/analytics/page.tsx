@@ -152,22 +152,27 @@ export default function AnalyticsPage() {
         console.log('[Frontend] Instagram totalPosts:', metrics.totalPosts)
         console.log('[Frontend] Instagram totalEngagement:', metrics.totalEngagement)
         console.log('[Frontend] Instagram totalReach:', metrics.totalReach)
+        console.log('[Frontend] Instagram totalImpressions:', metrics.totalImpressions)
         totalPosts += metrics.totalPosts
         totalEngagement += metrics.totalEngagement
         totalReach += metrics.totalReach
-        // Instagram no longer provides impressions (deprecated April 2025)
+        totalImpressions += metrics.totalImpressions || 0 // Use plays (views) as impressions
 
         platformStats.instagram = {
           posts: metrics.totalPosts,
           engagement: metrics.totalEngagement,
           reach: metrics.totalReach,
-          impressions: 0 // Deprecated metric
+          impressions: metrics.totalImpressions || 0 // Use plays (views) from API
         }
         console.log('[Frontend] platformStats.instagram:', platformStats.instagram)
 
         // Add posts with platform tag
         metrics.posts.forEach((post: any) => {
-          allPosts.push({ ...post, platform: 'instagram', impressions: 0 })
+          allPosts.push({
+            ...post,
+            platform: 'instagram',
+            impressions: post.impressions || post.plays || 0 // Use plays (views) as impressions
+          })
         })
       }
 
