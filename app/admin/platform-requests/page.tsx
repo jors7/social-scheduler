@@ -59,14 +59,22 @@ export default function AdminPlatformRequestsPage() {
       })
 
       const response = await fetch(`/api/admin/platform-requests?${params}`)
-      if (!response.ok) throw new Error('Failed to fetch platform requests')
+
+      console.log('[Platform Requests Page] Response status:', response.status)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('[Platform Requests Page] Error response:', errorData)
+        throw new Error(errorData.error || errorData.details || 'Failed to fetch platform requests')
+      }
 
       const data: RequestsResponse = await response.json()
+      console.log('[Platform Requests Page] Success:', data)
       setRequests(data.requests)
       setStats(data.stats)
-    } catch (error) {
-      console.error('Error fetching platform requests:', error)
-      toast.error('Failed to load platform requests')
+    } catch (error: any) {
+      console.error('[Platform Requests Page] Error fetching platform requests:', error)
+      toast.error(error.message || 'Failed to load platform requests')
     } finally {
       setLoading(false)
     }
