@@ -56,11 +56,29 @@ import {
   Zap,
   Brain,
   Loader2,
-  Eye
+  Eye,
+  GripVertical
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useAutoSave } from '@/hooks/useAutoSave'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 const platforms = [
   { id: 'twitter', name: 'X (Twitter)', icon: '𝕏', charLimit: 280, gradient: 'from-gray-50 to-slate-50', borderColor: 'border-gray-200' },
@@ -73,6 +91,97 @@ const platforms = [
   { id: 'bluesky', name: 'Bluesky', icon: '🦋', charLimit: 300, gradient: 'from-sky-50 to-cyan-50', borderColor: 'border-sky-200' },
   { id: 'pinterest', name: 'Pinterest', icon: 'P', charLimit: 500, gradient: 'from-red-50 to-pink-50', borderColor: 'border-red-200' },
 ]
+
+// Sortable media item component for drag-and-drop reordering
+interface SortableMediaItemProps {
+  url: string
+  index: number
+  isVideo: boolean
+  onRemove: () => void
+}
+
+function SortableMediaItem({ url, index, isVideo, onRemove }: SortableMediaItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: url })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={cn(
+        "relative group cursor-grab active:cursor-grabbing",
+        isDragging && "z-50"
+      )}
+    >
+      <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-300 transition-all">
+        {isVideo ? (
+          <div className="relative w-full h-full bg-black">
+            <video
+              src={url}
+              className="w-full h-full object-cover"
+              muted
+              preload="metadata"
+            />
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="bg-white/90 rounded-full p-3 shadow-lg">
+                <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <img
+            src={url}
+            alt={`Media ${index + 1}`}
+            className="w-full h-full object-cover"
+          />
+        )}
+
+        {/* Number badge */}
+        <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-gray-900 rounded-full w-7 h-7 flex items-center justify-center text-sm font-semibold shadow-md pointer-events-none">
+          {index + 1}
+        </div>
+
+        {/* Drag handle - visual indicator */}
+        <div className="absolute top-2 right-2 bg-gray-800/80 text-white rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-all pointer-events-none">
+          <GripVertical className="w-4 h-4" />
+        </div>
+      </div>
+
+      {/* Delete button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onRemove()
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="absolute -bottom-2 -right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs hover:bg-red-600 transition-colors shadow-md z-10 cursor-pointer"
+      >
+        <X className="w-4 h-4" />
+      </button>
+
+      {/* Hover hint */}
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        <p className="text-white text-xs text-center font-medium">Drag to reorder</p>
+      </div>
+    </div>
+  )
+}
 
 function CreateNewPostPageContent() {
   const searchParams = useSearchParams()
@@ -104,6 +213,27 @@ function CreateNewPostPageContent() {
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
   const [shouldAutoPublish, setShouldAutoPublish] = useState(false)
   const [shouldAutoSchedule, setShouldAutoSchedule] = useState(false)
+
+  // Set up drag-and-drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  // Handle drag end event to reorder images
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      setUploadedMediaUrls((items) => {
+        const oldIndex = items.indexOf(active.id as string)
+        const newIndex = items.indexOf(over.id as string)
+        return arrayMove(items, oldIndex, newIndex)
+      })
+    }
+  }
 
   // Memoize file preview URLs to prevent re-creation on every render
   const filePreviewUrls = useMemo(() => {
@@ -2841,56 +2971,48 @@ function CreateNewPostPageContent() {
                 </div>
               )}
 
-              {/* Show existing media from draft */}
+              {/* Show existing media from draft with drag-and-drop reordering */}
               {uploadedMediaUrls.length > 0 && selectedFiles.length === 0 && (
                 <div className="mt-4">
-                  <Label className="text-sm font-medium">Previously Uploaded Media</Label>
-                  <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {uploadedMediaUrls.map((url, index) => {
-                      // Detect if URL is a video based on file extension
-                      const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v']
-                      const isVideo = videoExtensions.some(ext => url.toLowerCase().includes(ext))
-
-                      return (
-                        <div key={index} className="relative group">
-                          <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
-                            {isVideo ? (
-                              <div className="relative w-full h-full bg-black">
-                                <video
-                                  src={url}
-                                  className="w-full h-full object-cover"
-                                  muted
-                                  preload="metadata"
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                  <div className="bg-white/90 rounded-full p-3 shadow-lg">
-                                    <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
-                                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                                    </svg>
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <img
-                                src={url}
-                                alt={`Media ${index + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            )}
-                          </div>
-                          <button
-                            onClick={() => {
-                              setUploadedMediaUrls(prev => prev.filter((_, i) => i !== index))
-                              toast.info('Media removed from post')
-                            }}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      )
-                    })}
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium">Previously Uploaded Media</Label>
+                    {uploadedMediaUrls.length > 1 && (
+                      <span className="text-xs text-blue-600 font-medium">
+                        💡 Drag to reorder
+                      </span>
+                    )}
                   </div>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={uploadedMediaUrls}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {uploadedMediaUrls.map((url, index) => {
+                          // Detect if URL is a video based on file extension
+                          const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v']
+                          const isVideo = videoExtensions.some(ext => url.toLowerCase().includes(ext))
+
+                          return (
+                            <SortableMediaItem
+                              key={url}
+                              url={url}
+                              index={index}
+                              isVideo={isVideo}
+                              onRemove={() => {
+                                setUploadedMediaUrls(prev => prev.filter((_, i) => i !== index))
+                                toast.info('Media removed from post')
+                              }}
+                            />
+                          )
+                        })}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
                 </div>
               )}
             </CardContent>
