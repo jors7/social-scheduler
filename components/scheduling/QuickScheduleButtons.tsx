@@ -1,13 +1,11 @@
 'use client'
 
-import { Zap, Sunrise, Sun, Sparkles, LucideIcon } from 'lucide-react'
+import { Clock, Coffee, Sun, CalendarDays, LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface QuickScheduleOption {
   label: string
   icon: LucideIcon
-  iconColor: string
-  gradient: string
   date: string // YYYY-MM-DD
   time: string // HH:MM
   description: string
@@ -33,9 +31,7 @@ export function QuickScheduleButtons({
     const in1Hour = new Date(now.getTime() + 60 * 60 * 1000)
     options.push({
       label: 'In 1 Hour',
-      icon: Zap,
-      iconColor: 'text-purple-600',
-      gradient: 'from-purple-100 to-indigo-100',
+      icon: Clock,
       date: formatDate(in1Hour),
       time: formatTime(in1Hour),
       description: 'Quick post'
@@ -47,9 +43,7 @@ export function QuickScheduleButtons({
     tomorrow9AM.setHours(9, 0, 0, 0)
     options.push({
       label: 'Tomorrow 9 AM',
-      icon: Sunrise,
-      iconColor: 'text-orange-600',
-      gradient: 'from-orange-100 to-amber-100',
+      icon: Coffee,
       date: formatDate(tomorrow9AM),
       time: formatTime(tomorrow9AM),
       description: 'Morning post'
@@ -62,8 +56,6 @@ export function QuickScheduleButtons({
     options.push({
       label: 'Tomorrow Noon',
       icon: Sun,
-      iconColor: 'text-yellow-600',
-      gradient: 'from-yellow-100 to-amber-100',
       date: formatDate(tomorrow12PM),
       time: formatTime(tomorrow12PM),
       description: 'Lunch time'
@@ -76,9 +68,7 @@ export function QuickScheduleButtons({
     thisWeekend.setHours(10, 0, 0, 0)
     options.push({
       label: 'This Weekend',
-      icon: Sparkles,
-      iconColor: 'text-pink-600',
-      gradient: 'from-pink-100 to-purple-100',
+      icon: CalendarDays,
       date: formatDate(thisWeekend),
       time: formatTime(thisWeekend),
       description: 'Saturday morning'
@@ -109,7 +99,7 @@ export function QuickScheduleButtons({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <Zap className="h-3.5 w-3.5 text-blue-600" />
+        <Clock className="h-3.5 w-3.5 text-gray-600" />
         <span className="text-xs font-medium text-gray-700">Quick Schedule</span>
       </div>
 
@@ -124,27 +114,17 @@ export function QuickScheduleButtons({
               type="button"
               onClick={() => onSelect(option.date, option.time)}
               className={cn(
-                "relative p-3 rounded-lg border-2 transition-all text-center group overflow-hidden",
+                "relative p-3 rounded-lg border-2 transition-all text-center group bg-white",
                 selected
                   ? "border-blue-500 shadow-md"
                   : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
               )}
             >
-              <div className={cn(
-                "absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity",
-                option.gradient,
-                selected ? "opacity-100" : "group-hover:opacity-50"
-              )} />
-
-              <div className="relative flex flex-col items-center gap-1">
-                <div className={cn(
-                  "p-1.5 rounded-lg transition-colors",
-                  selected
-                    ? cn("bg-white/80", option.iconColor)
-                    : "bg-gray-100 text-gray-600 group-hover:bg-white/80"
-                )}>
-                  <IconComponent className="h-4 w-4" />
-                </div>
+              <div className="flex flex-col items-center gap-1.5">
+                <IconComponent className={cn(
+                  "h-5 w-5 transition-colors",
+                  selected ? "text-blue-600" : "text-gray-500 group-hover:text-gray-700"
+                )} />
                 <span className={cn(
                   "text-[10px] font-semibold leading-tight",
                   selected ? "text-gray-900" : "text-gray-700"
