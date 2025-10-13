@@ -114,6 +114,10 @@ export default function DashboardPage() {
   const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes in milliseconds
   const [currentTipIndex, setCurrentTipIndex] = useState(0)
 
+  // Store scheduled/draft counts in refs to avoid stale closure issues
+  const scheduledCountRef = useRef<number>(0)
+  const draftCountRef = useRef<number>(0)
+
   // Onboarding integration
   const {
     isOnboardingOpen,
@@ -278,6 +282,10 @@ export default function DashboardPage() {
       const scheduledCount = scheduled.filter((p: PostData) => ['pending', 'posting'].includes(p.status)).length
       const postedCount = scheduled.filter((p: PostData) => ['posted'].includes(p.status)).length
       const draftCount = drafts.length
+
+      // Store in refs for access by analytics function
+      scheduledCountRef.current = scheduledCount
+      draftCountRef.current = draftCount
       
       // Calculate local stats from database (for immediate display)
       const postedPosts = scheduled.filter((p: PostData) => p.status === 'posted')
@@ -508,10 +516,11 @@ export default function DashboardPage() {
       console.log('[Dashboard] Analytics data aggregated:', analyticsData)
       
       // Update analytics stats
+      // Use refs instead of state to avoid stale closure issues
       const newAnalyticsStats = {
         totalPosts: analyticsData.totalPosts,
-        scheduledPosts: stats?.scheduledPosts || 0,
-        draftPosts: stats?.draftPosts || 0,
+        scheduledPosts: scheduledCountRef.current, // Use ref value from database query
+        draftPosts: draftCountRef.current, // Use ref value from database query
         postedPosts: analyticsData.totalPosts,
         totalReach: analyticsData.totalReach,
         avgEngagement: analyticsData.engagementRate
