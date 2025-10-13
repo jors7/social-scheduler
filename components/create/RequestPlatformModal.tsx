@@ -128,7 +128,7 @@ export function RequestPlatformModal({ open, onOpenChange }: RequestPlatformModa
             Request New Platform
           </DialogTitle>
           <DialogDescription>
-            Vote for platforms you'd like to see or request a custom one
+            Vote for platforms you&apos;d like to see or request a custom one
           </DialogDescription>
         </DialogHeader>
 
@@ -187,7 +187,7 @@ export function RequestPlatformModal({ open, onOpenChange }: RequestPlatformModa
           <div className="pt-4 border-t">
             <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <span>💡</span>
-              Don't see your platform?
+              Don&apos;t see your platform?
             </h3>
             <div className="space-y-3">
               <div>
@@ -222,7 +222,7 @@ export function RequestPlatformModal({ open, onOpenChange }: RequestPlatformModa
                 </div>
               </div>
               <p className="text-xs text-gray-500">
-                We'll review your request and consider adding it to our roadmap
+                We&apos;ll review your request and consider adding it to our roadmap
               </p>
             </div>
           </div>
