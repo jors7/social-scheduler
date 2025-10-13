@@ -2472,14 +2472,9 @@ function CreateNewPostPageContent() {
                       size="sm"
                       onClick={() => setShowPreview(!showPreview)}
                       disabled={selectedPlatforms.length === 0}
-                      className={cn(
-                        "flex-1 sm:flex-initial transition-colors",
-                        showPreview
-                          ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                          : "bg-gray-50 hover:bg-gray-100"
-                      )}
+                      className="bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border-blue-200 hover:border-blue-300 flex-1 sm:flex-initial"
                     >
-                      <Eye className="mr-2 h-4 w-4" />
+                      <Eye className="mr-2 h-4 w-4 text-blue-600" />
                       Preview
                     </Button>
                     <Button
@@ -3122,38 +3117,39 @@ function CreateNewPostPageContent() {
             />
           )}
 
-          {/* Platform Selection */}
-          <Card variant="elevated" className="lg:sticky lg:top-6 hover:shadow-xl transition-all duration-300">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Platforms</CardTitle>
-              <CardDescription className="text-sm sm:text-base text-gray-600">Choose where to publish</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {platforms.map((platform) => {
-                  const platformAccounts = connectedAccounts.filter(acc => acc.platform === platform.id)
-                  const hasAccounts = platformAccounts.length > 0
-                  
-                  return (
-                    <div key={platform.id} className="space-y-2">
+         {/* Platform Selection */}
+         <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Platforms</CardTitle>
+                <CardDescription className="text-sm sm:text-base text-gray-600">Choose where to publish</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Platform Selection Buttons - 2 Column Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {platforms.map((platform) => {
+                    const platformAccounts = connectedAccounts.filter(acc => acc.platform === platform.id)
+                    const hasAccounts = platformAccounts.length > 0
+
+                    return (
                       <button
+                        key={platform.id}
                         onClick={() => togglePlatform(platform.id)}
                         className={cn(
-                          "w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left",
+                          "w-full flex items-center gap-2.5 p-3.5 rounded-lg border-2 transition-all text-left",
                           selectedPlatforms.includes(platform.id)
                             ? "border-primary bg-primary/10 text-primary"
-                            : hasAccounts 
+                            : hasAccounts
                               ? "border-gray-200 hover:border-gray-300"
                               : "border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed"
                         )}
                         disabled={!hasAccounts}
                       >
-                        <span className="text-lg">{platform.icon}</span>
+                        <span className="text-base">{platform.icon}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{platform.name}</p>
+                          <p className="font-medium text-sm truncate">{platform.name}</p>
                           <p className="text-xs text-gray-500">
-                            {hasAccounts 
-                              ? `${platformAccounts.length} account${platformAccounts.length > 1 ? 's' : ''} connected`
+                            {hasAccounts
+                              ? `${platformAccounts.length} account${platformAccounts.length > 1 ? 's' : ''}`
                               : 'Not connected'}
                           </p>
                         </div>
@@ -3161,379 +3157,381 @@ function CreateNewPostPageContent() {
                           <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
                         )}
                       </button>
-                      
-                      {selectedPlatforms.includes(platform.id) && platformAccounts.length > 0 && (
-                        <div className="mt-2 ml-11 mr-2 animate-in slide-in-from-top-1 duration-200">
-                          <div className={cn(
-                            "p-3 rounded-lg bg-gradient-to-r border transition-all",
-                            platform.gradient,
-                            platform.borderColor
-                          )}>
-                            <Label className="text-[11px] font-medium text-gray-600 mb-1.5 block">
-                              Account Settings
+                    )
+                  })}
+                </div>
+
+                {/* Full-Width Platform Settings - Appears Below Grid */}
+                <div className="space-y-4 mt-4">
+                  {selectedPlatforms.map((platformId) => {
+                    const platform = platforms.find(p => p.id === platformId)
+                    const platformAccounts = connectedAccounts.filter(acc => acc.platform === platformId)
+
+                    if (!platform || platformAccounts.length === 0) return null
+
+                    return (
+                      <div key={platformId} className="animate-in slide-in-from-top-2 duration-200">
+                        <div className={cn(
+                          "p-4 rounded-lg bg-gradient-to-r border transition-all",
+                          platform.gradient,
+                          platform.borderColor
+                        )}>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-lg">{platform.icon}</span>
+                            <Label className="text-sm font-semibold text-gray-800">
+                              {platform.name} Settings
                             </Label>
-                            <AccountSelector
-                              platform={platform.name}
-                              platformId={platform.id}
-                              accounts={platformAccounts}
-                              selectedAccountIds={selectedAccounts[platform.id] || []}
-                              onSelectionChange={(accountIds) => {
-                                setSelectedAccounts(prev => ({
-                                  ...prev,
-                                  [platform.id]: accountIds
-                                }))
-                              }}
-                              multiSelect={platformAccounts.length > 1}
-                            />
-                            
-                            {/* Instagram Options */}
-                            {platform.id === 'instagram' && (
-                              <div className="mt-3 pt-3 border-t border-purple-200/50 space-y-3">
-                                <div>
-                                  <Label className="text-xs font-medium text-purple-700 mb-2 block">
-                                    Content Type
-                                  </Label>
-                                  {/* Toggle Group */}
-                                  <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setInstagramAsStory(false)
-                                        setInstagramAsReel(false)
-                                        setInstagramFormat('feed-portrait')
-                                      }}
-                                      className={cn(
-                                        "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
-                                        !instagramAsStory && !instagramAsReel
-                                          ? "bg-white text-purple-700 shadow-sm"
-                                          : "text-gray-600 hover:text-gray-900"
-                                      )}
-                                    >
-                                      📰 Feed
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setInstagramAsStory(true)
-                                        setInstagramAsReel(false)
-                                        setInstagramFormat('story')
-                                      }}
-                                      className={cn(
-                                        "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
-                                        instagramAsStory && !instagramAsReel
-                                          ? "bg-white text-purple-700 shadow-sm"
-                                          : "text-gray-600 hover:text-gray-900"
-                                      )}
-                                    >
-                                      📸 Story
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setInstagramAsStory(false)
-                                        setInstagramAsReel(true)
-                                        setInstagramFormat('reel')
-                                      }}
-                                      className={cn(
-                                        "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
-                                        instagramAsReel
-                                          ? "bg-white text-purple-700 shadow-sm"
-                                          : "text-gray-600 hover:text-gray-900"
-                                      )}
-                                    >
-                                      🎬 Reel
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {/* Feed hint */}
-                                {!instagramAsStory && !instagramAsReel && (
-                                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-2">
-                                    <p className="text-[10px] text-purple-700 leading-relaxed">
-                                      📰 Feed posts appear in followers&apos; feeds<br/>
-                                      ⭐ Portrait format (4:5) recommended<br/>
-                                      📐 Square (1:1) and landscape (1.91:1) also supported
-                                    </p>
-                                  </div>
-                                )}
-
-                                {/* Story hint */}
-                                {instagramAsStory && !instagramAsReel && (
-                                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-2">
-                                    <p className="text-[10px] text-purple-700 leading-relaxed">
-                                      📸 Stories disappear after 24 hours<br/>
-                                      📐 Vertical format (9:16) recommended<br/>
-                                      🎥 Videos: up to 60s (ideally 15s or less)
-                                    </p>
-                                  </div>
-                                )}
-
-                                {/* Reel hint */}
-                                {instagramAsReel && (
-                                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-2">
-                                    <p className="text-[10px] text-purple-700 leading-relaxed">
-                                      🎬 Reels are short-form video content<br/>
-                                      📐 Vertical format (9:16) required<br/>
-                                      🎥 Videos: 3s to 90s (ideally 15-30s)
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Facebook Options */}
-                            {platform.id === 'facebook' && (
-                              <div className="mt-3 pt-3 border-t border-blue-200/50 space-y-3">
-                                <div>
-                                  <Label className="text-xs font-medium text-blue-700 mb-2 block">
-                                    Post Type
-                                  </Label>
-                                  {/* Toggle Group */}
-                                  <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setFacebookAsStory(false)
-                                        setFacebookAsReel(false)
-                                      }}
-                                      className={cn(
-                                        "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
-                                        !facebookAsStory && !facebookAsReel
-                                          ? "bg-white text-blue-700 shadow-sm"
-                                          : "text-gray-600 hover:text-gray-900"
-                                      )}
-                                    >
-                                      📰 Feed
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setFacebookAsStory(true)
-                                        setFacebookAsReel(false)
-                                      }}
-                                      className={cn(
-                                        "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
-                                        facebookAsStory && !facebookAsReel
-                                          ? "bg-white text-blue-700 shadow-sm"
-                                          : "text-gray-600 hover:text-gray-900"
-                                      )}
-                                    >
-                                      📸 Story
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setFacebookAsStory(false)
-                                        setFacebookAsReel(true)
-                                      }}
-                                      className={cn(
-                                        "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
-                                        facebookAsReel
-                                          ? "bg-white text-blue-700 shadow-sm"
-                                          : "text-gray-600 hover:text-gray-900"
-                                      )}
-                                    >
-                                      🎬 Reel
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {/* Story hint */}
-                                {facebookAsStory && !facebookAsReel && (
-                                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
-                                    <p className="text-[10px] text-blue-700 leading-relaxed">
-                                      📸 Stories disappear after 24 hours<br/>
-                                      📐 Vertical format (9:16) recommended<br/>
-                                      🎥 Videos: up to 120s (ideally under 15s)
-                                    </p>
-                                  </div>
-                                )}
-
-                                {/* Reel hint */}
-                                {facebookAsReel && (
-                                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
-                                    <p className="text-[10px] text-blue-700 leading-relaxed">
-                                      🎬 Short-form vertical video content<br/>
-                                      📐 Vertical format (9:16) required<br/>
-                                      ⏱️ Duration: 3-90 seconds<br/>
-                                      <span className="text-amber-700 font-medium">⚠️ Use original content only - no copyrighted music</span><br/>
-                                      <span className="text-blue-600">⏳ Processing may take 2-10 minutes</span>
-                                    </p>
-                                  </div>
-                                )}
-
-                                {/* Feed hint */}
-                                {!facebookAsStory && !facebookAsReel && (
-                                  <p className="text-[10px] text-blue-600 mt-1.5">
-                                    📰 Regular post will appear on your page feed
-                                  </p>
-                                )}
-                              </div>
-                            )}
-
-                            {/* YouTube Options */}
-                            {platform.id === 'youtube' && (
-                              <div className="mt-3 pt-3 border-t border-red-200/50 space-y-3">
-                                <div>
-                                  <Label className="text-xs font-medium text-red-700 mb-2 block">
-                                    Video Type
-                                  </Label>
-                                  {/* Toggle Group */}
-                                  <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
-                                    <button
-                                      type="button"
-                                      onClick={() => setYoutubeAsShort(false)}
-                                      className={cn(
-                                        "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
-                                        !youtubeAsShort
-                                          ? "bg-white text-red-700 shadow-sm"
-                                          : "text-gray-600 hover:text-gray-900"
-                                      )}
-                                    >
-                                      📹 Video
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setYoutubeAsShort(true)}
-                                      className={cn(
-                                        "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
-                                        youtubeAsShort
-                                          ? "bg-white text-red-700 shadow-sm"
-                                          : "text-gray-600 hover:text-gray-900"
-                                      )}
-                                    >
-                                      🎬 Short
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {/* Regular Video hint */}
-                                {!youtubeAsShort && (
-                                  <div className="bg-red-50 border border-red-200 rounded-lg p-2">
-                                    <p className="text-[10px] text-red-700 leading-relaxed">
-                                      📹 Standard YouTube videos<br/>
-                                      📐 Any aspect ratio supported<br/>
-                                      ⏱️ Duration: no strict limit<br/>
-                                      ✨ Best for long-form content
-                                    </p>
-                                  </div>
-                                )}
-
-                                {/* Short hint */}
-                                {youtubeAsShort && (
-                                  <div className="bg-red-50 border border-red-200 rounded-lg p-2">
-                                    <p className="text-[10px] text-red-700 leading-relaxed">
-                                      🎬 YouTube Shorts format<br/>
-                                      📐 Vertical format (9:16) required<br/>
-                                      ⏱️ Duration: up to 60 seconds<br/>
-                                      🏷️ #Shorts tag will be added automatically<br/>
-                                      ✨ Optimized for mobile viewing
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            )}
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-              
-              {selectedPlatforms.length > 0 && (
-                <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
-                  <p className="text-sm font-medium text-green-800">
-                    {selectedPlatforms.length} platform{selectedPlatforms.length > 1 ? 's' : ''} selected
-                  </p>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {selectedPlatforms.map(id => {
-                      const platform = platforms.find(p => p.id === id)
-                      const platformAccounts = connectedAccounts.filter(acc => acc.platform === id)
-                      const selectedAccountIds = selectedAccounts[id] || []
-                      const selectedAccountsForPlatform = platformAccounts.filter(acc => selectedAccountIds.includes(acc.id))
-                      
-                      return (
-                        <span key={id} className="inline-flex items-center gap-1 px-3 py-1.5 bg-white rounded-lg text-xs font-medium shadow-sm border border-green-100">
-                          <span>{platform?.icon}</span>
-                          <span>{platform?.name}</span>
-                          {selectedAccountsForPlatform.length > 0 && (
-                            <span className="text-gray-500">
-                              ({selectedAccountsForPlatform.length === 1
-                                ? selectedAccountsForPlatform[0].username || selectedAccountsForPlatform[0].account_name || 'Account'
-                                : `${selectedAccountsForPlatform.length} accounts`})
-                            </span>
+
+                          <AccountSelector
+                            platform={platform.name}
+                            platformId={platform.id}
+                            accounts={platformAccounts}
+                            selectedAccountIds={selectedAccounts[platformId] || []}
+                            onSelectionChange={(accountIds) => {
+                              setSelectedAccounts(prev => ({
+                                ...prev,
+                                [platformId]: accountIds
+                              }))
+                            }}
+                            multiSelect={platformAccounts.length > 1}
+                          />
+
+                          {/* Instagram Options */}
+                          {platformId === 'instagram' && (
+                            <div className="mt-3 pt-3 border-t border-purple-200/50 space-y-3">
+                              <div>
+                                <Label className="text-xs font-medium text-purple-700 mb-2 block">
+                                  Content Type
+                                </Label>
+                                <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setInstagramAsStory(false)
+                                      setInstagramAsReel(false)
+                                      setInstagramFormat('feed-portrait')
+                                    }}
+                                    className={cn(
+                                      "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
+                                      !instagramAsStory && !instagramAsReel
+                                        ? "bg-white text-purple-700 shadow-sm"
+                                        : "text-gray-600 hover:text-gray-900"
+                                    )}
+                                  >
+                                    📰 Feed
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setInstagramAsStory(true)
+                                      setInstagramAsReel(false)
+                                      setInstagramFormat('story')
+                                    }}
+                                    className={cn(
+                                      "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
+                                      instagramAsStory && !instagramAsReel
+                                        ? "bg-white text-purple-700 shadow-sm"
+                                        : "text-gray-600 hover:text-gray-900"
+                                    )}
+                                  >
+                                    📸 Story
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setInstagramAsStory(false)
+                                      setInstagramAsReel(true)
+                                      setInstagramFormat('reel')
+                                    }}
+                                    className={cn(
+                                      "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
+                                      instagramAsReel
+                                        ? "bg-white text-purple-700 shadow-sm"
+                                        : "text-gray-600 hover:text-gray-900"
+                                    )}
+                                  >
+                                    🎬 Reel
+                                  </button>
+                                </div>
+                              </div>
+
+                              {!instagramAsStory && !instagramAsReel && (
+                                <div className="bg-purple-50 border border-purple-200 rounded-lg p-2">
+                                  <p className="text-[10px] text-purple-700 leading-relaxed">
+                                    📰 Feed posts appear in followers&apos; feeds<br/>
+                                    ⭐ Portrait format (4:5) recommended<br/>
+                                    📐 Square (1:1) and landscape (1.91:1) also supported
+                                  </p>
+                                </div>
+                              )}
+
+                              {instagramAsStory && !instagramAsReel && (
+                                <div className="bg-purple-50 border border-purple-200 rounded-lg p-2">
+                                  <p className="text-[10px] text-purple-700 leading-relaxed">
+                                    📸 Stories disappear after 24 hours<br/>
+                                    📐 Vertical format (9:16) recommended<br/>
+                                    🎥 Videos: up to 60s (ideally 15s or less)
+                                  </p>
+                                </div>
+                              )}
+
+                              {instagramAsReel && (
+                                <div className="bg-purple-50 border border-purple-200 rounded-lg p-2">
+                                  <p className="text-[10px] text-purple-700 leading-relaxed">
+                                    🎬 Reels are short-form video content<br/>
+                                    📐 Vertical format (9:16) required<br/>
+                                    🎥 Videos: 3s to 90s (ideally 15-30s)
+                                  </p>
+                                </div>
+                              )}
+                            </div>
                           )}
-                        </span>
-                      )
-                    })}
+
+                          {/* Facebook Options */}
+                          {platformId === 'facebook' && (
+                            <div className="mt-3 pt-3 border-t border-blue-200/50 space-y-3">
+                              <div>
+                                <Label className="text-xs font-medium text-blue-700 mb-2 block">
+                                  Post Type
+                                </Label>
+                                <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setFacebookAsStory(false)
+                                      setFacebookAsReel(false)
+                                    }}
+                                    className={cn(
+                                      "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
+                                      !facebookAsStory && !facebookAsReel
+                                        ? "bg-white text-blue-700 shadow-sm"
+                                        : "text-gray-600 hover:text-gray-900"
+                                    )}
+                                  >
+                                    📰 Feed
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setFacebookAsStory(true)
+                                      setFacebookAsReel(false)
+                                    }}
+                                    className={cn(
+                                      "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
+                                      facebookAsStory && !facebookAsReel
+                                        ? "bg-white text-blue-700 shadow-sm"
+                                        : "text-gray-600 hover:text-gray-900"
+                                    )}
+                                  >
+                                    📸 Story
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setFacebookAsStory(false)
+                                      setFacebookAsReel(true)
+                                    }}
+                                    className={cn(
+                                      "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
+                                      facebookAsReel
+                                        ? "bg-white text-blue-700 shadow-sm"
+                                        : "text-gray-600 hover:text-gray-900"
+                                    )}
+                                  >
+                                    🎬 Reel
+                                  </button>
+                                </div>
+                              </div>
+
+                              {facebookAsStory && !facebookAsReel && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                                  <p className="text-[10px] text-blue-700 leading-relaxed">
+                                    📸 Stories disappear after 24 hours<br/>
+                                    📐 Vertical format (9:16) recommended<br/>
+                                    🎥 Videos: up to 120s (ideally under 15s)
+                                  </p>
+                                </div>
+                              )}
+
+                              {facebookAsReel && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                                  <p className="text-[10px] text-blue-700 leading-relaxed">
+                                    🎬 Short-form vertical video content<br/>
+                                    📐 Vertical format (9:16) required<br/>
+                                    ⏱️ Duration: 3-90 seconds<br/>
+                                    <span className="text-amber-700 font-medium">⚠️ Use original content only - no copyrighted music</span><br/>
+                                    <span className="text-blue-600">⏳ Processing may take 2-10 minutes</span>
+                                  </p>
+                                </div>
+                              )}
+
+                              {!facebookAsStory && !facebookAsReel && (
+                                <p className="text-[10px] text-blue-600 mt-1.5">
+                                  📰 Regular post will appear on your page feed
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          {/* YouTube Options */}
+                          {platformId === 'youtube' && (
+                            <div className="mt-3 pt-3 border-t border-red-200/50 space-y-3">
+                              <div>
+                                <Label className="text-xs font-medium text-red-700 mb-2 block">
+                                  Video Type
+                                </Label>
+                                <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
+                                  <button
+                                    type="button"
+                                    onClick={() => setYoutubeAsShort(false)}
+                                    className={cn(
+                                      "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
+                                      !youtubeAsShort
+                                        ? "bg-white text-red-700 shadow-sm"
+                                        : "text-gray-600 hover:text-gray-900"
+                                    )}
+                                  >
+                                    📹 Video
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setYoutubeAsShort(true)}
+                                    className={cn(
+                                      "flex-1 px-2 py-2 rounded-md text-[11px] font-medium transition-all",
+                                      youtubeAsShort
+                                        ? "bg-white text-red-700 shadow-sm"
+                                        : "text-gray-600 hover:text-gray-900"
+                                    )}
+                                  >
+                                    🎬 Short
+                                  </button>
+                                </div>
+                              </div>
+
+                              {!youtubeAsShort && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+                                  <p className="text-[10px] text-red-700 leading-relaxed">
+                                    📹 Standard YouTube videos<br/>
+                                    📐 Any aspect ratio supported<br/>
+                                    ⏱️ Duration: no strict limit<br/>
+                                    ✨ Best for long-form content
+                                  </p>
+                                </div>
+                              )}
+
+                              {youtubeAsShort && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+                                  <p className="text-[10px] text-red-700 leading-relaxed">
+                                    🎬 YouTube Shorts format<br/>
+                                    📐 Vertical format (9:16) required<br/>
+                                    ⏱️ Duration: up to 60 seconds<br/>
+                                    🏷️ #Shorts tag will be added automatically<br/>
+                                    ✨ Optimized for mobile viewing
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {selectedPlatforms.length > 0 && (
+                  <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                    <p className="text-sm font-medium text-green-800">
+                      {selectedPlatforms.length} platform{selectedPlatforms.length > 1 ? 's' : ''} selected
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {selectedPlatforms.map(id => {
+                        const platform = platforms.find(p => p.id === id)
+                        const platformAccounts = connectedAccounts.filter(acc => acc.platform === id)
+                        const selectedAccountIds = selectedAccounts[id] || []
+                        const selectedAccountsForPlatform = platformAccounts.filter(acc => selectedAccountIds.includes(acc.id))
+
+                        return (
+                          <span key={id} className="inline-flex items-center gap-1 px-3 py-1.5 bg-white rounded-lg text-xs font-medium shadow-sm border border-green-100">
+                            <span>{platform?.icon}</span>
+                            <span>{platform?.name}</span>
+                            {selectedAccountsForPlatform.length > 0 && (
+                              <span className="text-gray-500">
+                                ({selectedAccountsForPlatform.length === 1
+                                  ? selectedAccountsForPlatform[0].username || selectedAccountsForPlatform[0].account_name || 'Account'
+                                  : `${selectedAccountsForPlatform.length} accounts`})
+                              </span>
+                            )}
+                          </span>
+                        )
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </CardContent>
+            </Card>
 
-              {/* Pinterest Board Selection */}
-              <PinterestBoardSelector
-                selectedPlatforms={selectedPlatforms}
-                selectedPinterestBoard={selectedPinterestBoard}
-                setSelectedPinterestBoard={setSelectedPinterestBoard}
-                pinterestTitle={pinterestTitle}
-                setPinterestTitle={setPinterestTitle}
-                pinterestDescription={pinterestDescription}
-                setPinterestDescription={setPinterestDescription}
-                pinterestLink={pinterestLink}
-                setPinterestLink={setPinterestLink}
-                pinterestBoards={pinterestBoards}
-                setPinterestBoards={setPinterestBoards}
-              />
+            {/* Pinterest Board Selection */}
+            <PinterestBoardSelector
+              selectedPlatforms={selectedPlatforms}
+              selectedPinterestBoard={selectedPinterestBoard}
+              setSelectedPinterestBoard={setSelectedPinterestBoard}
+              pinterestTitle={pinterestTitle}
+              setPinterestTitle={setPinterestTitle}
+              pinterestDescription={pinterestDescription}
+              setPinterestDescription={setPinterestDescription}
+              pinterestLink={pinterestLink}
+              setPinterestLink={setPinterestLink}
+              pinterestBoards={pinterestBoards}
+              setPinterestBoards={setPinterestBoards}
+            />
 
-              {/* YouTube Video Metadata */}
-              {selectedPlatforms.includes('youtube') && (
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <span className="text-red-600">▶</span>
-                      YouTube Video Settings
-                    </CardTitle>
-                    <CardDescription>
-                      Configure your YouTube video details
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <VideoUpload
-                      videoFile={youtubeVideoFile}
-                      thumbnailFile={youtubeThumbnailFile}
-                      onVideoChange={setYoutubeVideoFile}
-                      onThumbnailChange={setYoutubeThumbnailFile}
-                    />
-                    <VideoMetadata
-                      title={youtubeTitle}
-                      description={youtubeDescription || postContent.replace(/<[^>]*>/g, '')}
-                      tags={youtubeTags}
-                      categoryId={youtubeCategoryId}
-                      privacyStatus={youtubePrivacyStatus}
-                      onTitleChange={setYoutubeTitle}
-                      onDescriptionChange={setYoutubeDescription}
-                      onTagsChange={setYoutubeTags}
-                      onCategoryChange={setYoutubeCategoryId}
-                      onPrivacyChange={setYoutubePrivacyStatus}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-              
-              {/* TikTok Video Settings */}
-              {selectedPlatforms.includes('tiktok') && (
-                <div className="mt-6">
-                  <TikTokVideoSettings
-                    privacyLevel={tiktokPrivacyLevel}
-                    setPrivacyLevel={setTiktokPrivacyLevel}
-                    saveAsDraft={tiktokSaveAsDraft}
-                    setSaveAsDraft={setTiktokSaveAsDraft}
+            {/* YouTube Video Metadata */}
+            {selectedPlatforms.includes('youtube') && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="text-red-600">▶</span>
+                    YouTube Video Settings
+                  </CardTitle>
+                  <CardDescription>
+                    Configure your YouTube video details
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <VideoUpload
+                    videoFile={youtubeVideoFile}
+                    thumbnailFile={youtubeThumbnailFile}
+                    onVideoChange={setYoutubeVideoFile}
+                    onThumbnailChange={setYoutubeThumbnailFile}
                   />
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  <VideoMetadata
+                    title={youtubeTitle}
+                    description={youtubeDescription || postContent.replace(/<[^>]*>/g, '')}
+                    tags={youtubeTags}
+                    categoryId={youtubeCategoryId}
+                    privacyStatus={youtubePrivacyStatus}
+                    onTitleChange={setYoutubeTitle}
+                    onDescriptionChange={setYoutubeDescription}
+                    onTagsChange={setYoutubeTags}
+                    onCategoryChange={setYoutubeCategoryId}
+                    onPrivacyChange={setYoutubePrivacyStatus}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* TikTok Video Settings */}
+            {selectedPlatforms.includes('tiktok') && (
+              <div className="mt-6">
+                <TikTokVideoSettings
+                  privacyLevel={tiktokPrivacyLevel}
+                  setPrivacyLevel={setTiktokPrivacyLevel}
+                  saveAsDraft={tiktokSaveAsDraft}
+                  setSaveAsDraft={setTiktokSaveAsDraft}
+                />
+              </div>
+            )}
         </div>
       </div>
 

@@ -81,8 +81,8 @@ export function PreviewPanel({
   const platformContentToUse = platformContent[activePlatform] || content
 
   return (
-    <Card className="sticky top-6">
-      <CardHeader className="pb-3">
+    <Card>
+      <CardHeader className="pb-3 overflow-visible">
         <div className="flex items-center justify-between mb-3">
           <CardTitle className="text-lg">Preview</CardTitle>
           <button
@@ -94,7 +94,7 @@ export function PreviewPanel({
         </div>
 
         {/* Platform tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-4 overflow-x-auto overflow-y-hidden scrollbar-hide border-b border-gray-200">
           {selectedPlatforms.map((platformId) => {
             const platform =
               platformConfig[platformId as keyof typeof platformConfig]
@@ -105,10 +105,10 @@ export function PreviewPanel({
                 key={platformId}
                 onClick={() => setActivePlatform(platformId)}
                 className={cn(
-                  'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap',
+                  'flex items-center gap-2 px-1 pb-3 text-sm transition-all whitespace-nowrap border-b-2 -mb-[1px]',
                   activePlatform === platformId
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'border-blue-600 text-gray-900 font-medium'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 )}
               >
                 <span className="text-base">{platform.icon}</span>
