@@ -50,11 +50,11 @@ export class YouTubeService {
    */
   private async updateStoredTokens(accessToken: string, refreshToken?: string) {
     if (!this.userId) return;
-    
+
     try {
       const { createServerClient } = await import('@supabase/ssr');
       const { cookies } = await import('next/headers');
-      
+
       const cookieStore = cookies();
       const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -68,11 +68,11 @@ export class YouTubeService {
         }
       );
 
-      const updateData: any = { 
+      const updateData: any = {
         access_token: accessToken,
         updated_at: new Date().toISOString()
       };
-      
+
       if (refreshToken) {
         updateData.refresh_token = refreshToken;
       }
@@ -82,10 +82,46 @@ export class YouTubeService {
         .update(updateData)
         .eq('user_id', this.userId)
         .eq('platform', 'youtube');
-        
+
       console.log('Updated YouTube tokens in database');
     } catch (error) {
       console.error('Failed to update YouTube tokens:', error);
+    }
+  }
+
+  /**
+   * Manually refresh the access token
+   * This ensures we have a valid token before making API calls
+   */
+  async refreshAccessToken(): Promise<void> {
+    try {
+      console.log('Refreshing YouTube access token...');
+
+      // Get new tokens using the refresh token
+      const { tokens } = await this.oauth2Client.refreshAccessToken();
+
+      if (!tokens.access_token) {
+        throw new Error('Failed to refresh access token');
+      }
+
+      console.log('YouTube access token refreshed successfully');
+
+      // Update credentials in oauth2Client
+      this.oauth2Client.setCredentials({
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token || this.oauth2Client.credentials.refresh_token,
+      });
+
+      // Store the new tokens in database
+      if (this.userId) {
+        await this.updateStoredTokens(
+          tokens.access_token,
+          tokens.refresh_token || undefined
+        );
+      }
+    } catch (error) {
+      console.error('Failed to refresh YouTube access token:', error);
+      throw new Error('Failed to refresh YouTube authentication. Please reconnect your YouTube account in Settings.');
     }
   }
 

@@ -82,6 +82,19 @@ export async function POST(request: NextRequest) {
     // Create YouTube service
     const youtubeService = new YouTubeService(account.access_token, account.refresh_token, user.id);
 
+    // Refresh the access token before posting to ensure it's valid
+    // This prevents 401 errors from expired tokens
+    try {
+      await youtubeService.refreshAccessToken();
+      console.log('Token refreshed successfully before posting');
+    } catch (refreshError: any) {
+      console.error('Token refresh failed:', refreshError);
+      return NextResponse.json(
+        { error: 'YouTube authentication expired. Please reconnect your YouTube account in Settings.' },
+        { status: 401 }
+      );
+    }
+
     // Upload video from URL (either as Short or regular video)
     let result;
     if (isShort) {

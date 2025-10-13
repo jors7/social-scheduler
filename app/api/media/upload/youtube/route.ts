@@ -120,10 +120,23 @@ export async function POST(request: NextRequest) {
     // Create YouTube service with user ID for token refresh
     const youtubeService = new YouTubeService(account.access_token, account.refresh_token, user.id);
 
+    // Refresh the access token before uploading to ensure it's valid
+    // This prevents 401 errors from expired tokens
+    try {
+      await youtubeService.refreshAccessToken();
+      console.log('Token refreshed successfully before upload');
+    } catch (refreshError: any) {
+      console.error('Token refresh failed:', refreshError);
+      return NextResponse.json(
+        { error: 'YouTube authentication expired. Please reconnect your YouTube account in Settings.' },
+        { status: 401 }
+      );
+    }
+
     // Validate and ensure categoryId is a string
     const validCategoryId = categoryId && categoryId.trim() ? categoryId.trim() : '22';
     console.log('Using YouTube categoryId:', validCategoryId);
-    
+
     // Upload video
     const result = await youtubeService.uploadVideo({
       title,
