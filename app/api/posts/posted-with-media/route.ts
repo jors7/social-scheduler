@@ -68,10 +68,22 @@ export async function GET(request: NextRequest) {
     const enhancedPosts = await Promise.all(
       posts.map(async (post) => {
         // Try to get media URL from platform APIs
-        // Prioritize database value if it exists
+        // Prioritize database value if it exists, BUT for Pinterest always use media_urls
         let platformMediaUrl = post.platform_media_url || null;
         let pinterestTitle = null;
         let pinterestDescription = null;
+
+        // Check if this is a Pinterest post - if so, use media_urls from database instead
+        const isPinterestPost = post.post_results && Array.isArray(post.post_results) &&
+          post.post_results.some((result: any) => result.platform === 'pinterest');
+
+        if (isPinterestPost && post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
+          const firstMedia = post.media_urls[0];
+          if (typeof firstMedia === 'string' && firstMedia.trim() !== '') {
+            platformMediaUrl = firstMedia.trim();
+            console.log('Pinterest: Using database media_urls instead of platform_media_url for permanent URL');
+          }
+        }
 
         // Only fetch from APIs if not already in database
         if (!platformMediaUrl && post.post_results && Array.isArray(post.post_results)) {
