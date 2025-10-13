@@ -309,17 +309,22 @@ export async function GET(request: NextRequest) {
           }
 
           // Clean up uploaded media files if all successful
-          // IMPORTANT: Don't cleanup if TikTok was posted - TikTok needs time to download the video
+          // IMPORTANT: Don't cleanup if TikTok or Pinterest was posted
+          // - TikTok needs time to download the video
+          // - Pinterest needs permanent URLs for thumbnails (Pinterest API URLs expire)
           const postedToTikTok = post.platforms.includes('tiktok');
-          
-          if (post.media_urls && post.media_urls.length > 0 && !postedToTikTok) {
+          const postedToPinterest = post.platforms.includes('pinterest');
+          const shouldSkipCleanup = postedToTikTok || postedToPinterest;
+
+          if (post.media_urls && post.media_urls.length > 0 && !shouldSkipCleanup) {
             try {
               await cleanupMediaFiles(post.media_urls, supabase);
             } catch (cleanupError) {
               console.error('Media cleanup error:', cleanupError);
             }
-          } else if (postedToTikTok) {
-            console.log('Skipping media cleanup for TikTok post - needs time to download');
+          } else if (shouldSkipCleanup) {
+            const reason = postedToTikTok ? 'TikTok needs time to download' : 'Pinterest needs permanent URLs';
+            console.log(`Skipping media cleanup - ${reason}`);
           }
 
         } else {
