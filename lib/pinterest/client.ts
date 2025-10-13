@@ -376,9 +376,15 @@ export class PinterestClient {
         }
       };
 
-      // Add cover image if provided
+      // Pinterest REQUIRES a cover image for video pins
+      // Use provided cover image URL, or use keyframe timestamp to auto-generate
       if (coverImageUrl) {
         pinData.media_source.cover_image_url = coverImageUrl;
+        console.log('Using provided cover image:', coverImageUrl);
+      } else {
+        // Use keyframe at 0 seconds to auto-generate cover from video
+        pinData.media_source.cover_image_key_frame_time = 0;
+        console.log('Auto-generating cover image from video keyframe at 0s');
       }
 
       if (link) {
