@@ -141,40 +141,43 @@ export async function GET(request: NextRequest) {
                     }
                     
                   } else if (platform === 'pinterest') {
-                    // Fetch Pinterest pin with media
+                    // Use original media_urls from database (permanent Supabase Storage URLs)
+                    // Pinterest API returns temporary CDN URLs that expire, so we use our stored media instead
                     try {
-                      const pinterestResponse = await fetch(
-                        `https://api.pinterest.com/v5/pins/${result.postId}`,
-                        {
-                          headers: {
-                            'Authorization': `Bearer ${account.access_token}`,
-                            'Content-Type': 'application/json'
+                      if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
+                        const firstMedia = post.media_urls[0];
+                        if (typeof firstMedia === 'string' && firstMedia.trim() !== '') {
+                          platformMediaUrl = firstMedia.trim();
+                          console.log('Pinterest media URL from database for', result.postId, ':', platformMediaUrl);
+                        }
+                      }
+
+                      // Still fetch Pinterest API for title and description metadata
+                      try {
+                        const pinterestResponse = await fetch(
+                          `https://api.pinterest.com/v5/pins/${result.postId}`,
+                          {
+                            headers: {
+                              'Authorization': `Bearer ${account.access_token}`,
+                              'Content-Type': 'application/json'
+                            }
                           }
+                        );
+
+                        if (pinterestResponse.ok) {
+                          const pinData = await pinterestResponse.json();
+
+                          // Extract title and description only
+                          pinterestTitle = pinData.title || '';
+                          pinterestDescription = pinData.description || '';
+
+                          console.log('Pinterest title:', pinterestTitle);
                         }
-                      );
-                      
-                      if (pinterestResponse.ok) {
-                        const pinData = await pinterestResponse.json();
-                        
-                        // Extract media URL
-                        if (pinData.media?.images) {
-                          const imageUrl = 
-                            pinData.media.images['1200x']?.url ||
-                            pinData.media.images['600x']?.url ||
-                            pinData.media.images['400x300']?.url ||
-                            pinData.media.images.orig?.url;
-                          platformMediaUrl = imageUrl;
-                        }
-                        
-                        // Extract title and description
-                        pinterestTitle = pinData.title || '';
-                        pinterestDescription = pinData.description || '';
-                        
-                        console.log('Pinterest media URL extracted for', result.postId, ':', platformMediaUrl);
-                        console.log('Pinterest title:', pinterestTitle);
+                      } catch (metadataError) {
+                        console.error('Error fetching Pinterest metadata:', metadataError);
                       }
                     } catch (pinError) {
-                      console.error('Error fetching Pinterest pin:', pinError);
+                      console.error('Error handling Pinterest media:', pinError);
                     }
                   }
                 } catch (error) {
