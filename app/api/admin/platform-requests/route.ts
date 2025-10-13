@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,12 +23,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
     }
 
+    // Use service role client to bypass RLS for admin queries
+    const supabaseAdmin = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
     // Get filter from query params
     const searchParams = request.nextUrl.searchParams
     const typeFilter = searchParams.get('type') || 'all'
 
-    // Build query
-    let query = supabase
+    // Build query using admin client
+    let query = supabaseAdmin
       .from('platform_requests')
       .select('id, platform_name, vote_count, is_custom, requested_by, created_at, updated_at')
       .order('vote_count', { ascending: false })
@@ -41,6 +54,12 @@ export async function GET(request: NextRequest) {
 
     const { data: requests, error } = await query
 
+    console.log('[Admin Platform Requests] Query result:', {
+      requestCount: requests?.length || 0,
+      error: error,
+      requests: requests
+    })
+
     if (error) {
       console.error('Error fetching platform requests:', error)
       return NextResponse.json({ error: 'Failed to fetch requests' }, { status: 500 })
@@ -51,6 +70,13 @@ export async function GET(request: NextRequest) {
     const customRequests = requests?.filter(r => r.is_custom).length || 0
     const suggestedRequests = requests?.filter(r => !r.is_custom).length || 0
     const totalVotes = requests?.reduce((sum, r) => sum + r.vote_count, 0) || 0
+
+    console.log('[Admin Platform Requests] Stats:', {
+      totalRequests,
+      customRequests,
+      suggestedRequests,
+      totalVotes
+    })
 
     return NextResponse.json({
       requests: requests || [],

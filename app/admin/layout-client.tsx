@@ -3,15 +3,16 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { 
-  Users, 
-  BarChart3, 
-  Settings, 
-  Shield, 
+import {
+  Users,
+  BarChart3,
+  Settings,
+  Shield,
   FileText,
   Home,
   ArrowLeft,
-  Loader2
+  Loader2,
+  MessageSquarePlus
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -147,7 +148,7 @@ export default function AdminLayoutClient({
                   href="/admin/audit"
                   className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                     isActive('/admin/audit')
-                      ? 'bg-gray-100 text-gray-900' 
+                      ? 'bg-gray-100 text-gray-900'
                       : 'hover:bg-gray-100'
                   }`}
                 >
@@ -157,10 +158,23 @@ export default function AdminLayoutClient({
               </li>
               <li>
                 <Link
+                  href="/admin/platform-requests"
+                  className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    isActive('/admin/platform-requests')
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'hover:bg-gray-100'
+                  }`}
+                >
+                  <MessageSquarePlus className="h-5 w-5 mr-3 text-gray-400" />
+                  <span>Platform Requests</span>
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/admin/settings"
                   className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                     isActive('/admin/settings')
-                      ? 'bg-gray-100 text-gray-900' 
+                      ? 'bg-gray-100 text-gray-900'
                       : 'hover:bg-gray-100'
                   }`}
                 >
