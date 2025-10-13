@@ -34,6 +34,7 @@ const RichTextEditor = dynamic(
 import { AISuggestionsModal } from '@/components/dashboard/ai-suggestions-modal'
 import { SubscriptionGateNoSuspense as SubscriptionGate } from '@/components/subscription/subscription-gate-no-suspense'
 import { PreviewPanel } from '@/components/create/preview/PreviewPanel'
+import { RequestPlatformModal } from '@/components/create/RequestPlatformModal'
 import { QuickScheduleButtons } from '@/components/scheduling/QuickScheduleButtons'
 import { CompactDateTimeInput } from '@/components/scheduling/CompactDateTimeInput'
 import { createBrowserClient } from '@supabase/ssr'
@@ -90,6 +91,7 @@ const platforms = [
   { id: 'threads', name: 'Threads', icon: '@', charLimit: 500, gradient: 'from-slate-50 to-gray-50', borderColor: 'border-slate-200' },
   { id: 'bluesky', name: 'Bluesky', icon: '🦋', charLimit: 300, gradient: 'from-sky-50 to-cyan-50', borderColor: 'border-sky-200' },
   { id: 'pinterest', name: 'Pinterest', icon: 'P', charLimit: 500, gradient: 'from-red-50 to-pink-50', borderColor: 'border-red-200' },
+  { id: 'request', name: 'Request Platform', icon: '➕', charLimit: 0, gradient: 'from-green-50 to-emerald-50', borderColor: 'border-green-200', isSpecial: true },
 ]
 
 // Sortable media item component for drag-and-drop reordering
@@ -213,6 +215,7 @@ function CreateNewPostPageContent() {
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
   const [shouldAutoPublish, setShouldAutoPublish] = useState(false)
   const [shouldAutoSchedule, setShouldAutoSchedule] = useState(false)
+  const [showRequestPlatformModal, setShowRequestPlatformModal] = useState(false)
 
   // Set up drag-and-drop sensors
   const sensors = useSensors(
@@ -3249,6 +3252,24 @@ function CreateNewPostPageContent() {
                 {/* Platform Selection Buttons - 2 Column Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {platforms.map((platform) => {
+                    // Special handling for "Request Platform" card
+                    if ((platform as any).isSpecial && platform.id === 'request') {
+                      return (
+                        <button
+                          key={platform.id}
+                          onClick={() => setShowRequestPlatformModal(true)}
+                          className={cn(
+                            "w-full flex flex-col items-center justify-center gap-1.5 p-4 rounded-lg border-2 transition-all",
+                            "border-dashed border-green-300 hover:border-green-400 bg-gradient-to-br from-green-50/50 to-emerald-50/50 hover:from-green-100/50 hover:to-emerald-100/50"
+                          )}
+                        >
+                          <span className="text-2xl">{platform.icon}</span>
+                          <p className="font-semibold text-sm text-green-700">{platform.name}</p>
+                          <p className="text-xs text-green-600">Vote for new platforms</p>
+                        </button>
+                      )
+                    }
+
                     const platformAccounts = connectedAccounts.filter(acc => acc.platform === platform.id)
                     const hasAccounts = platformAccounts.length > 0
 
@@ -3664,6 +3685,12 @@ function CreateNewPostPageContent() {
         content={postContent}
         platforms={selectedPlatforms}
         onSelectSuggestion={handleAISuggestionSelect}
+      />
+
+      {/* Request Platform Modal */}
+      <RequestPlatformModal
+        open={showRequestPlatformModal}
+        onOpenChange={setShowRequestPlatformModal}
       />
       </SubscriptionGate>
     </div>
