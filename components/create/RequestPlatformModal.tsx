@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { ArrowUp, Loader2, Send } from 'lucide-react'
+import { ArrowUp, Loader2, Send, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface PlatformRequest {
@@ -33,6 +33,7 @@ const suggestedPlatforms = [
 
 export function RequestPlatformModal({ open, onOpenChange }: RequestPlatformModalProps) {
   const [requests, setRequests] = useState<PlatformRequest[]>([])
+  const [votedPlatforms, setVotedPlatforms] = useState<string[]>([])
   const [customRequest, setCustomRequest] = useState('')
   const [loadingVote, setLoadingVote] = useState<string | null>(null)
   const [loadingCustom, setLoadingCustom] = useState(false)
@@ -52,6 +53,7 @@ export function RequestPlatformModal({ open, onOpenChange }: RequestPlatformModa
       if (response.ok) {
         const data = await response.json()
         setRequests(data.requests || [])
+        setVotedPlatforms(data.votedPlatforms || [])
       }
     } catch (error) {
       console.error('Error loading platform requests:', error)
@@ -74,7 +76,11 @@ export function RequestPlatformModal({ open, onOpenChange }: RequestPlatformModa
         await loadRequests() // Reload to get updated counts
       } else {
         const error = await response.json()
-        toast.error(error.error || 'Failed to vote')
+        if (error.alreadyVoted) {
+          toast.error('You have already voted for this platform')
+        } else {
+          toast.error(error.error || 'Failed to vote')
+        }
       }
     } catch (error) {
       console.error('Error voting:', error)
@@ -148,17 +154,20 @@ export function RequestPlatformModal({ open, onOpenChange }: RequestPlatformModa
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {suggestedPlatforms.map((platform) => {
                   const votes = getVoteCount(platform.name)
+                  const isVoted = votedPlatforms.includes(platform.name)
                   const isVoting = loadingVote === platform.name
 
                   return (
                     <button
                       key={platform.name}
-                      onClick={() => handleVote(platform.name)}
-                      disabled={isVoting}
+                      onClick={() => !isVoted && handleVote(platform.name)}
+                      disabled={isVoting || isVoted}
                       className={cn(
                         "flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left",
-                        "border-gray-200 hover:border-green-300 hover:bg-green-50/50",
-                        isVoting && "opacity-50 cursor-not-allowed"
+                        isVoted
+                          ? "border-green-300 bg-green-50/50 cursor-not-allowed"
+                          : "border-gray-200 hover:border-green-300 hover:bg-green-50/50",
+                        (isVoting || isVoted) && "opacity-50"
                       )}
                     >
                       <span className="text-2xl">{platform.icon}</span>
@@ -167,7 +176,12 @@ export function RequestPlatformModal({ open, onOpenChange }: RequestPlatformModa
                         <p className="text-xs text-gray-500 truncate">{platform.description}</p>
                       </div>
                       <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-100 text-green-700">
-                        {isVoting ? (
+                        {isVoted ? (
+                          <>
+                            <Check className="h-3 w-3" />
+                            <span className="text-xs font-bold">Voted</span>
+                          </>
+                        ) : isVoting ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
                           <>

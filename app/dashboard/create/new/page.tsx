@@ -3259,13 +3259,15 @@ function CreateNewPostPageContent() {
                           key={platform.id}
                           onClick={() => setShowRequestPlatformModal(true)}
                           className={cn(
-                            "w-full flex flex-col items-center justify-center gap-1.5 p-4 rounded-lg border-2 transition-all",
+                            "w-full flex items-center gap-2.5 p-3.5 rounded-lg border-2 transition-all text-left",
                             "border-dashed border-green-300 hover:border-green-400 bg-gradient-to-br from-green-50/50 to-emerald-50/50 hover:from-green-100/50 hover:to-emerald-100/50"
                           )}
                         >
-                          <span className="text-2xl">{platform.icon}</span>
-                          <p className="font-semibold text-sm text-green-700">{platform.name}</p>
-                          <p className="text-xs text-green-600">Vote for new platforms</p>
+                          <span className="text-base">{platform.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm text-green-700 truncate">{platform.name}</p>
+                            <p className="text-xs text-green-600">Vote for new platforms</p>
+                          </div>
                         </button>
                       )
                     }

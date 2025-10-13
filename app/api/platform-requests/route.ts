@@ -22,7 +22,23 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch requests' }, { status: 500 })
     }
 
-    return NextResponse.json({ requests: requests || [] })
+    // Fetch platforms the current user has voted for
+    const { data: userVotes, error: votesError } = await supabase
+      .from('platform_votes')
+      .select('platform_name')
+      .eq('user_id', user.id)
+
+    if (votesError) {
+      console.error('Error fetching user votes:', votesError)
+      // Continue without user votes rather than failing entirely
+    }
+
+    const votedPlatforms = userVotes?.map(v => v.platform_name) || []
+
+    return NextResponse.json({
+      requests: requests || [],
+      votedPlatforms
+    })
   } catch (error) {
     console.error('Error in platform requests API:', error)
     return NextResponse.json(

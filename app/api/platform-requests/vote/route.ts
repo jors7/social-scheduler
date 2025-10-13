@@ -17,6 +17,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Platform name is required' }, { status: 400 })
     }
 
+    // Check if user has already voted for this platform
+    const { data: existingVote, error: voteCheckError } = await supabase
+      .from('platform_votes')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('platform_name', platformName)
+      .maybeSingle()
+
+    if (voteCheckError) {
+      console.error('Error checking existing vote:', voteCheckError)
+      return NextResponse.json({ error: 'Failed to check vote status' }, { status: 500 })
+    }
+
+    if (existingVote) {
+      return NextResponse.json({
+        error: 'You have already voted for this platform',
+        alreadyVoted: true
+      }, { status: 400 })
+    }
+
     // Check if platform request already exists
     const { data: existing, error: fetchError } = await supabase
       .from('platform_requests')
@@ -55,6 +75,19 @@ export async function POST(request: NextRequest) {
         console.error('Error creating platform request:', insertError)
         return NextResponse.json({ error: 'Failed to create request' }, { status: 500 })
       }
+    }
+
+    // Record the user's vote
+    const { error: voteInsertError } = await supabase
+      .from('platform_votes')
+      .insert({
+        user_id: user.id,
+        platform_name: platformName
+      })
+
+    if (voteInsertError) {
+      console.error('Error recording vote:', voteInsertError)
+      // Don't fail the request, vote count was already incremented
     }
 
     return NextResponse.json({ success: true })
