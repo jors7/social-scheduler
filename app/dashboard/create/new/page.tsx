@@ -3266,7 +3266,7 @@ function CreateNewPostPageContent() {
                           <span className="text-base">{platform.icon}</span>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm text-green-700 truncate">{platform.name}</p>
-                            <p className="text-xs text-green-600">Vote for new platforms</p>
+                            <p className="text-xs text-green-600">Vote here</p>
                           </div>
                         </button>
                       )
