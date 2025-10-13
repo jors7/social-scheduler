@@ -120,11 +120,12 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (pinError.message.includes('400') || pinError.message.includes('Bad Request')) {
+      // Handle aspect ratio error for carousel pins (this is the most specific error)
+      if (pinError.message.includes('same aspect ratio')) {
         return NextResponse.json(
           {
-            error: 'Invalid pin data. Please check your board selection and ensure you have media attached.',
-            details: pinError.message
+            error: pinError.message, // Use the detailed error message from client
+            details: 'All carousel images must have matching dimensions or aspect ratios.'
           },
           { status: 400 }
         );
@@ -134,6 +135,16 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error: 'Carousel pins require between 2 and 5 images.',
+            details: pinError.message
+          },
+          { status: 400 }
+        );
+      }
+
+      if (pinError.message.includes('400') || pinError.message.includes('Bad Request')) {
+        return NextResponse.json(
+          {
+            error: 'Invalid pin data. Please check your board selection and ensure you have media attached.',
             details: pinError.message
           },
           { status: 400 }

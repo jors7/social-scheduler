@@ -107,13 +107,22 @@ export class PinterestClient {
       console.error('Status:', response.status);
       console.error('Error Response:', errorText);
 
-      // Try to parse error as JSON for better debugging
+      // Try to parse error as JSON for better debugging and error handling
       let errorJson;
       try {
         errorJson = JSON.parse(errorText);
         console.error('Parsed Error:', JSON.stringify(errorJson, null, 2));
+
+        // Handle aspect ratio error for carousel pins
+        if (errorJson.message?.includes('same width/height ratio')) {
+          throw new Error('Carousel pins require all images to have the same aspect ratio. Please ensure all images are the same dimensions (e.g., all square, all portrait, or all landscape with matching ratios).');
+        }
       } catch (e) {
-        // Not JSON, that's okay
+        // If it's already our custom error, rethrow it
+        if (e instanceof Error && e.message.includes('Carousel pins require')) {
+          throw e;
+        }
+        // Not JSON or different error, continue with generic error
       }
 
       throw new Error(`Pinterest API error: ${response.status} - ${errorText}`);
@@ -127,10 +136,17 @@ export class PinterestClient {
 
   /**
    * Create a carousel pin with multiple images (2-5 images)
+   *
+   * IMPORTANT: Pinterest requires all images in a carousel to have the SAME aspect ratio.
+   * For example:
+   * - All images must be square (1:1)
+   * - OR all images must be portrait (2:3, 4:5, etc.)
+   * - OR all images must be landscape (16:9, 3:2, etc.)
+   *
    * @param boardId - The board ID to post to
    * @param title - Pin title
    * @param description - Pin description
-   * @param imageUrls - Array of 2-5 image URLs
+   * @param imageUrls - Array of 2-5 image URLs (must have matching aspect ratios)
    * @param link - Optional destination link
    */
   async createCarouselPin(
@@ -162,6 +178,7 @@ export class PinterestClient {
 
     console.log('=== Creating Carousel Pin ===');
     console.log('Images:', imageUrls.length);
+    console.log('⚠️  Note: All images must have the same aspect ratio');
 
     return this.createPin(boardId, pinData);
   }
