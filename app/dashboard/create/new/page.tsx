@@ -1620,10 +1620,14 @@ function CreateNewPostPageContent() {
       // Clear form if all successful
       if (failed.length === 0) {
         // Clean up uploaded images from storage
-        // IMPORTANT: Don't cleanup if TikTok was posted to - TikTok needs time to download the video via PULL_FROM_URL
+        // IMPORTANT: Don't cleanup if TikTok or Pinterest was posted
+        // - TikTok needs time to download the video via PULL_FROM_URL
+        // - Pinterest needs permanent URLs for thumbnails (Pinterest API URLs expire)
         const postedToTikTok = supportedPlatforms.includes('tiktok');
+        const postedToPinterest = supportedPlatforms.includes('pinterest');
+        const shouldSkipCleanup = postedToTikTok || postedToPinterest;
 
-        if (mediaUrls.length > 0 && !postedToTikTok) {
+        if (mediaUrls.length > 0 && !shouldSkipCleanup) {
           try {
             await fetch('/api/upload/cleanup', {
               method: 'POST',
@@ -1633,6 +1637,9 @@ function CreateNewPostPageContent() {
           } catch (error) {
             console.error('Failed to cleanup uploaded files:', error)
           }
+        } else if (shouldSkipCleanup) {
+          const reason = postedToTikTok ? 'TikTok needs time to download' : 'Pinterest needs permanent URLs';
+          console.log(`Skipping media cleanup - ${reason}`);
         }
         
         // Delete draft if this was posted from a draft
