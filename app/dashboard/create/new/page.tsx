@@ -2748,6 +2748,11 @@ function CreateNewPostPageContent() {
                     💡 Facebook Stories: Vertical format (9:16) recommended. Videos up to 120s.
                   </p>
                 )}
+                {selectedPlatforms.includes('pinterest') && (
+                  <p className="text-xs text-red-600 font-medium mt-2">
+                    📌 Pinterest: 1 image/video = Pin | 2-5 images = Carousel | Video = Auto cover
+                  </p>
+                )}
               </div>
               
               {/* Selected Files Display */}
@@ -2757,12 +2762,31 @@ function CreateNewPostPageContent() {
                     <Label className="text-sm font-medium">
                       Selected Files ({selectedFiles.length})
                     </Label>
-                    {selectedPlatforms.includes('instagram') && selectedFiles.length > 1 && (
-                      <span className="text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-1 rounded-full font-medium">
-                        Instagram Carousel: {selectedFiles.length} items
-                      </span>
-                    )}
+                    <div className="flex gap-2">
+                      {selectedPlatforms.includes('instagram') && selectedFiles.length > 1 && (
+                        <span className="text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-1 rounded-full font-medium">
+                          Instagram Carousel: {selectedFiles.length} items
+                        </span>
+                      )}
+                      {selectedPlatforms.includes('pinterest') && selectedFiles.length > 0 && (
+                        <span className="text-xs bg-gradient-to-r from-red-600 to-pink-600 text-white px-2 py-1 rounded-full font-medium">
+                          {selectedFiles.some(f => f.type.includes('video'))
+                            ? `📌 Pinterest Video Pin${selectedFiles.length > 1 ? ' (with cover)' : ''}`
+                            : selectedFiles.length >= 2 && selectedFiles.length <= 5
+                            ? `📌 Pinterest Carousel: ${selectedFiles.length} pins`
+                            : '📌 Pinterest Image Pin'}
+                        </span>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Pinterest Carousel Aspect Ratio Warning */}
+                  {selectedPlatforms.includes('pinterest') && selectedFiles.length >= 2 && selectedFiles.length <= 5 && !selectedFiles.some(f => f.type.includes('video')) && (
+                    <p className="text-xs text-amber-600 font-medium mt-2 bg-amber-50 px-3 py-2 rounded-md border border-amber-200">
+                      ⚠️ Pinterest Carousel: All images must have the same aspect ratio (e.g., all square, all portrait, or all landscape)
+                    </p>
+                  )}
+
                   <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {filePreviewUrls.map(({ file, url }, index) => (
                       <div key={`${file.name}-${file.size}-${index}`} className="relative group">
