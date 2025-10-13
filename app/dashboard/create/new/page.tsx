@@ -3259,7 +3259,7 @@ function CreateNewPostPageContent() {
                           key={platform.id}
                           onClick={() => setShowRequestPlatformModal(true)}
                           className={cn(
-                            "w-full flex items-center gap-2.5 p-3.5 rounded-lg border-2 transition-all text-left",
+                            "w-full flex items-center gap-2.5 p-3.5 rounded-lg border-2 transition-all text-left min-h-[60px]",
                             "border-dashed border-green-300 hover:border-green-400 bg-gradient-to-br from-green-50/50 to-emerald-50/50 hover:from-green-100/50 hover:to-emerald-100/50"
                           )}
                         >
@@ -3280,7 +3280,7 @@ function CreateNewPostPageContent() {
                         key={platform.id}
                         onClick={() => togglePlatform(platform.id)}
                         className={cn(
-                          "w-full flex items-center gap-2.5 p-3.5 rounded-lg border-2 transition-all text-left",
+                          "w-full flex items-center gap-2.5 p-3.5 rounded-lg border-2 transition-all text-left min-h-[60px]",
                           selectedPlatforms.includes(platform.id)
                             ? "border-primary bg-primary/10 text-primary"
                             : hasAccounts
@@ -3293,9 +3293,7 @@ function CreateNewPostPageContent() {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{platform.name}</p>
                           <p className="text-xs text-gray-500">
-                            {hasAccounts
-                              ? `${platformAccounts.length} account${platformAccounts.length > 1 ? 's' : ''}`
-                              : 'Not connected'}
+                            {hasAccounts ? 'Connected' : 'Not connected'}
                           </p>
                         </div>
                         {selectedPlatforms.includes(platform.id) && (
