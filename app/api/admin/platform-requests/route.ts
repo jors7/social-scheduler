@@ -13,15 +13,29 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user profile to check admin role
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
+    console.log('[Admin Platform Requests] Profile check:', {
+      userId: user.id,
+      profile,
+      profileError
+    })
+
+    if (profileError) {
+      console.error('[Admin Platform Requests] Profile fetch error:', profileError)
+      return NextResponse.json({ error: 'Failed to verify admin role' }, { status: 500 })
+    }
+
     if (!profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) {
+      console.error('[Admin Platform Requests] Access denied:', { role: profile?.role })
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
     }
+
+    console.log('[Admin Platform Requests] Admin verified:', { role: profile.role })
 
     // Use service role client to bypass RLS for admin queries
     const supabaseAdmin = createServiceClient(
@@ -57,12 +71,26 @@ export async function GET(request: NextRequest) {
     console.log('[Admin Platform Requests] Query result:', {
       requestCount: requests?.length || 0,
       error: error,
+      errorDetails: error ? {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      } : null,
       requests: requests
     })
 
     if (error) {
-      console.error('Error fetching platform requests:', error)
-      return NextResponse.json({ error: 'Failed to fetch requests' }, { status: 500 })
+      console.error('[Admin Platform Requests] Error fetching platform requests:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      })
+      return NextResponse.json({
+        error: 'Failed to fetch requests',
+        details: error.message
+      }, { status: 500 })
     }
 
     // Calculate stats
