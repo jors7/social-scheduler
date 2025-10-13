@@ -12,31 +12,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user profile to check admin role
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    console.log('[Admin Platform Requests] Profile check:', {
-      userId: user.id,
-      profile,
-      profileError
-    })
-
-    if (profileError) {
-      console.error('[Admin Platform Requests] Profile fetch error:', profileError)
-      return NextResponse.json({ error: 'Failed to verify admin role' }, { status: 500 })
-    }
-
-    if (!profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) {
-      console.error('[Admin Platform Requests] Access denied:', { role: profile?.role })
-      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
-    }
-
-    console.log('[Admin Platform Requests] Admin verified:', { role: profile.role })
-
     // Use service role client to bypass RLS for admin queries
     const supabaseAdmin = createServiceClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -48,6 +23,31 @@ export async function GET(request: NextRequest) {
         }
       }
     )
+
+    // Check admin role from user_subscriptions table
+    const { data: subscription, error: subError } = await supabaseAdmin
+      .from('user_subscriptions')
+      .select('role')
+      .eq('user_id', user.id)
+      .single()
+
+    console.log('[Admin Platform Requests] Role check:', {
+      userId: user.id,
+      subscription,
+      subError
+    })
+
+    if (subError) {
+      console.error('[Admin Platform Requests] Role fetch error:', subError)
+      return NextResponse.json({ error: 'Failed to verify admin role' }, { status: 500 })
+    }
+
+    if (!subscription || (subscription.role !== 'admin' && subscription.role !== 'super_admin')) {
+      console.error('[Admin Platform Requests] Access denied:', { role: subscription?.role })
+      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
+    }
+
+    console.log('[Admin Platform Requests] Admin verified:', { role: subscription.role })
 
     // Get filter from query params
     const searchParams = request.nextUrl.searchParams
