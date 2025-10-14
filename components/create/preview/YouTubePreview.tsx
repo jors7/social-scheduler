@@ -6,15 +6,32 @@ interface YouTubePreviewProps {
   content: string
   mediaUrls?: string[]
   format?: 'video' | 'short'
+  youtubeTitle?: string
+  youtubeDescription?: string
 }
 
-export function YouTubePreview({ content, mediaUrls = [], format = 'video' }: YouTubePreviewProps) {
-  const plainText = stripHtml(content)
+export function YouTubePreview({
+  content,
+  mediaUrls = [],
+  format = 'video',
+  youtubeTitle,
+  youtubeDescription
+}: YouTubePreviewProps) {
+  // Use YouTube-specific fields if provided, otherwise fall back to content parsing
+  let title: string
+  let description: string
 
-  // Extract title (first line, max 100 chars) and description (rest)
-  const lines = plainText.split('\n')
-  const title = lines[0]?.slice(0, 100) || 'Untitled Video'
-  const description = lines.slice(1).join('\n')
+  if (youtubeTitle || youtubeDescription) {
+    // Use the dedicated YouTube fields
+    title = youtubeTitle?.slice(0, 100) || 'Untitled Video'
+    description = youtubeDescription || ''
+  } else {
+    // Fall back to parsing content (legacy behavior)
+    const plainText = stripHtml(content)
+    const lines = plainText.split('\n')
+    title = lines[0]?.slice(0, 100) || 'Untitled Video'
+    description = lines.slice(1).join('\n')
+  }
 
   // Show first 2 lines of description in preview
   const descriptionLines = description.split('\n').slice(0, 2).join('\n')

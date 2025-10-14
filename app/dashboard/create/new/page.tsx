@@ -3375,6 +3375,8 @@ function CreateNewPostPageContent() {
               instagramFormat={instagramFormat}
               facebookFormat={facebookAsReel ? 'reel' : facebookAsStory ? 'story' : 'feed'}
               youtubeFormat={youtubeAsShort ? 'short' : 'video'}
+              youtubeTitle={youtubeTitle}
+              youtubeDescription={youtubeDescription}
               pinterestTitle={pinterestTitle}
               pinterestDescription={pinterestDescription}
               pinterestBoard={pinterestBoards.find(b => b.id === selectedPinterestBoard)?.name}

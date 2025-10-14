@@ -22,6 +22,8 @@ interface PreviewPanelProps {
   instagramFormat?: 'feed-square' | 'feed-portrait' | 'feed-landscape' | 'story' | 'reel'
   facebookFormat?: 'feed' | 'story' | 'reel'
   youtubeFormat?: 'video' | 'short'
+  youtubeTitle?: string
+  youtubeDescription?: string
   pinterestTitle?: string
   pinterestDescription?: string
   pinterestBoard?: string
@@ -48,6 +50,8 @@ export function PreviewPanel({
   instagramFormat = 'feed-portrait',
   facebookFormat = 'feed',
   youtubeFormat = 'video',
+  youtubeTitle,
+  youtubeDescription,
   pinterestTitle,
   pinterestDescription,
   pinterestBoard,
@@ -144,6 +148,8 @@ export function PreviewPanel({
               content={platformContentToUse}
               mediaUrls={mediaUrls}
               format={youtubeFormat}
+              youtubeTitle={youtubeTitle}
+              youtubeDescription={youtubeDescription}
             />
           ) : activePlatform === 'pinterest' ? (
             <PinterestPreview
