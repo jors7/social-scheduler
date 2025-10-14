@@ -8,6 +8,7 @@ interface YouTubePreviewProps {
   format?: 'video' | 'short'
   youtubeTitle?: string
   youtubeDescription?: string
+  youtubeMediaUrls?: string[]
 }
 
 export function YouTubePreview({
@@ -15,7 +16,8 @@ export function YouTubePreview({
   mediaUrls = [],
   format = 'video',
   youtubeTitle,
-  youtubeDescription
+  youtubeDescription,
+  youtubeMediaUrls
 }: YouTubePreviewProps) {
   // Use YouTube-specific fields if provided, otherwise fall back to content parsing
   let title: string
@@ -33,6 +35,9 @@ export function YouTubePreview({
     description = lines.slice(1).join('\n')
   }
 
+  // Use YouTube-specific media if provided, otherwise fall back to general media
+  const displayMediaUrls = youtubeMediaUrls && youtubeMediaUrls.length > 0 ? youtubeMediaUrls : mediaUrls
+
   // Show first 2 lines of description in preview
   const descriptionLines = description.split('\n').slice(0, 2).join('\n')
   const { text: truncatedTitle } = truncateText(title, 70, 'soft')
@@ -44,18 +49,18 @@ export function YouTubePreview({
     return (
       <div className="bg-black max-w-xs mx-auto rounded-3xl overflow-hidden shadow-2xl">
         {/* Shorts container - 9:16 aspect ratio */}
-        {mediaUrls && mediaUrls.length > 0 ? (
+        {displayMediaUrls && displayMediaUrls.length > 0 ? (
           <div className="relative bg-gray-900 aspect-[9/16]">
-            {isVideoUrl(mediaUrls[0]) ? (
+            {isVideoUrl(displayMediaUrls[0]) ? (
               <video
-                src={mediaUrls[0]}
+                src={displayMediaUrls[0]}
                 className="w-full h-full object-cover"
                 muted
                 preload="metadata"
               />
             ) : (
               <img
-                src={mediaUrls[0]}
+                src={displayMediaUrls[0]}
                 alt=""
                 className="w-full h-full object-cover"
               />
@@ -192,18 +197,18 @@ export function YouTubePreview({
       {/* Video card */}
       <div className="rounded-xl overflow-hidden shadow-md">
         {/* Thumbnail - 16:9 aspect ratio */}
-        {mediaUrls && mediaUrls.length > 0 ? (
+        {displayMediaUrls && displayMediaUrls.length > 0 ? (
           <div className="relative bg-gray-900 aspect-video">
-            {isVideoUrl(mediaUrls[0]) ? (
+            {isVideoUrl(displayMediaUrls[0]) ? (
               <video
-                src={mediaUrls[0]}
+                src={displayMediaUrls[0]}
                 className="w-full h-full object-cover"
                 muted
                 preload="metadata"
               />
             ) : (
               <img
-                src={mediaUrls[0]}
+                src={displayMediaUrls[0]}
                 alt=""
                 className="w-full h-full object-cover"
               />

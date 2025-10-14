@@ -24,6 +24,7 @@ interface PreviewPanelProps {
   youtubeFormat?: 'video' | 'short'
   youtubeTitle?: string
   youtubeDescription?: string
+  youtubeMediaUrls?: string[]
   pinterestTitle?: string
   pinterestDescription?: string
   pinterestBoard?: string
@@ -52,6 +53,7 @@ export function PreviewPanel({
   youtubeFormat = 'video',
   youtubeTitle,
   youtubeDescription,
+  youtubeMediaUrls,
   pinterestTitle,
   pinterestDescription,
   pinterestBoard,
@@ -150,6 +152,7 @@ export function PreviewPanel({
               format={youtubeFormat}
               youtubeTitle={youtubeTitle}
               youtubeDescription={youtubeDescription}
+              youtubeMediaUrls={youtubeMediaUrls}
             />
           ) : activePlatform === 'pinterest' ? (
             <PinterestPreview

@@ -262,7 +262,7 @@ function CreateNewPostPageContent() {
     const blobUrls = filePreviewUrls.map(({ url }) => url)
     return [...uploadedMediaUrls, ...blobUrls]
   }, [uploadedMediaUrls, filePreviewUrls])
-  
+
   // Fetch connected accounts on mount
   useEffect(() => {
     async function fetchAccounts() {
@@ -391,6 +391,18 @@ function CreateNewPostPageContent() {
       hasTitle: !!(youtubeTitle && youtubeTitle.trim())
     })
   }, [youtubeVideoFile, youtubeTitle])
+
+  // YouTube-specific preview URLs (video/thumbnail)
+  const youtubePreviewUrls = useMemo(() => {
+    const urls: string[] = []
+    // Prioritize thumbnail if available, otherwise use video
+    if (youtubeThumbnailFile) {
+      urls.push(URL.createObjectURL(youtubeThumbnailFile))
+    } else if (youtubeVideoFile) {
+      urls.push(URL.createObjectURL(youtubeVideoFile))
+    }
+    return urls
+  }, [youtubeVideoFile, youtubeThumbnailFile])
 
   // TikTok states
   const [tiktokPrivacyLevel, setTiktokPrivacyLevel] = useState<'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY'>('PUBLIC_TO_EVERYONE')
@@ -3377,6 +3389,7 @@ function CreateNewPostPageContent() {
               youtubeFormat={youtubeAsShort ? 'short' : 'video'}
               youtubeTitle={youtubeTitle}
               youtubeDescription={youtubeDescription}
+              youtubeMediaUrls={youtubePreviewUrls}
               pinterestTitle={pinterestTitle}
               pinterestDescription={pinterestDescription}
               pinterestBoard={pinterestBoards.find(b => b.id === selectedPinterestBoard)?.name}
