@@ -6,17 +6,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
-  Megaphone,
-  Rocket,
-  Lightbulb,
-  Video,
-  MessageCircle,
-  BookOpen,
-  Sparkles
+  Sparkles,
+  Briefcase,
+  Heart,
+  Lightbulb
 } from 'lucide-react'
 
 export interface CaptionContext {
-  template?: string
+  tone: string
   topic: string
   keyMessage?: string
   audience?: string
@@ -24,18 +21,15 @@ export interface CaptionContext {
 }
 
 interface AICaptionContextFormProps {
-  onSubmit: (context: CaptionContext) => void
+  onSubmit: (context: CaptionContext, tone: string) => void
   onCancel: () => void
   loading?: boolean
 }
 
-const templates = [
-  { id: 'announcement', label: 'Announcement', icon: Megaphone, description: 'Share news or updates' },
-  { id: 'launch', label: 'Launch', icon: Rocket, description: 'Product or feature release' },
-  { id: 'tip', label: 'Tip/How-to', icon: Lightbulb, description: 'Educational content' },
-  { id: 'behind-scenes', label: 'Behind the Scenes', icon: Video, description: 'Show your process' },
-  { id: 'qa', label: 'Q&A', icon: MessageCircle, description: 'Answer questions' },
-  { id: 'story', label: 'Story', icon: BookOpen, description: 'Share experiences' },
+const tones = [
+  { id: 'professional', label: 'Professional', icon: Briefcase, description: 'Business-focused & credible' },
+  { id: 'casual', label: 'Casual', icon: Heart, description: 'Friendly & relatable' },
+  { id: 'inspiring', label: 'Inspiring', icon: Lightbulb, description: 'Motivational & uplifting' },
 ]
 
 const ctaOptions = [
@@ -48,29 +42,11 @@ const ctaOptions = [
 ]
 
 export function AICaptionContextForm({ onSubmit, onCancel, loading = false }: AICaptionContextFormProps) {
-  const [selectedTemplate, setSelectedTemplate] = useState<string>()
+  const [selectedTone, setSelectedTone] = useState<string>('professional')
   const [topic, setTopic] = useState('')
   const [keyMessage, setKeyMessage] = useState('')
   const [audience, setAudience] = useState('')
   const [selectedCtas, setSelectedCtas] = useState<string[]>([])
-
-  const handleTemplateSelect = (templateId: string) => {
-    setSelectedTemplate(templateId)
-
-    // Auto-fill topic placeholder based on template
-    const placeholders: Record<string, string> = {
-      'announcement': 'Announcing our...',
-      'launch': 'Launching our new...',
-      'tip': 'How to...',
-      'behind-scenes': 'Behind the scenes of...',
-      'qa': 'Answering questions about...',
-      'story': 'Story about...',
-    }
-
-    if (!topic) {
-      setTopic(placeholders[templateId] || '')
-    }
-  }
 
   const handleCtaToggle = (ctaId: string) => {
     setSelectedCtas(prev =>
@@ -81,18 +57,18 @@ export function AICaptionContextForm({ onSubmit, onCancel, loading = false }: AI
   }
 
   const handleSubmit = () => {
-    if (!topic.trim()) return
+    if (!topic.trim() || !selectedTone) return
 
     onSubmit({
-      template: selectedTemplate,
+      tone: selectedTone,
       topic: topic.trim(),
       keyMessage: keyMessage.trim() || undefined,
       audience: audience.trim() || undefined,
       cta: selectedCtas.length > 0 ? selectedCtas : undefined,
-    })
+    }, selectedTone)
   }
 
-  const isValid = topic.trim().length > 0
+  const isValid = topic.trim().length > 0 && selectedTone
 
   return (
     <div className="space-y-6">
@@ -107,27 +83,27 @@ export function AICaptionContextForm({ onSubmit, onCancel, loading = false }: AI
         </p>
       </div>
 
-      {/* Template Selection */}
+      {/* Tone Selection */}
       <div>
-        <Label className="text-sm font-medium mb-3 block">Choose a Template (Optional)</Label>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {templates.map((template) => {
-            const Icon = template.icon
+        <Label className="text-sm font-medium mb-3 block">
+          Choose Tone <span className="text-red-500">*</span>
+        </Label>
+        <div className="grid grid-cols-3 gap-3">
+          {tones.map((tone) => {
+            const Icon = tone.icon
             return (
               <Button
-                key={template.id}
-                variant={selectedTemplate === template.id ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleTemplateSelect(template.id)}
-                className="h-auto p-3 text-left"
+                key={tone.id}
+                variant={selectedTone === tone.id ? 'default' : 'outline'}
+                size="lg"
+                onClick={() => setSelectedTone(tone.id)}
+                className="h-auto p-4 flex-col gap-2"
                 type="button"
               >
-                <div className="flex items-start gap-2 w-full">
-                  <Icon className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-xs">{template.label}</div>
-                    <div className="text-xs opacity-70 line-clamp-1">{template.description}</div>
-                  </div>
+                <Icon className="h-6 w-6" />
+                <div className="text-center">
+                  <div className="font-semibold text-sm">{tone.label}</div>
+                  <div className="text-xs opacity-70 mt-1">{tone.description}</div>
                 </div>
               </Button>
             )

@@ -68,106 +68,81 @@ export async function POST(request: NextRequest) {
     }).join(', ')
 
     const toneInstructions: Record<string, string> = {
-      professional: 'Use professional, business-focused language. Be authoritative and credible.',
-      casual: 'Use friendly, conversational language. Be approachable and relatable.',
-      funny: 'Use humor and wit. Be entertaining and engaging.',
-      inspiring: 'Use motivational and uplifting language. Be encouraging and positive.',
-      educational: 'Use informative and helpful language. Be clear and instructive.',
-      mixed: 'Provide a variety of tones - some professional, some casual, some funny, etc.'
+      professional: 'professional, business-focused, authoritative',
+      casual: 'friendly, conversational, approachable',
+      inspiring: 'motivational, uplifting, encouraging'
     }
 
-    const hashtagGuidance = includeHashtags 
-      ? `Include relevant hashtags at the end. Use 3-8 hashtags depending on the platform (fewer for Twitter/LinkedIn, more for Instagram/TikTok).`
-      : 'Do not include hashtags.'
+    // Build detailed context
+    const contextParts = []
 
-    const emojiGuidance = includeEmojis
-      ? 'Include appropriate emojis to make the content more engaging.'
-      : 'Do not include emojis.'
-
-    // Build context-aware prompt
-    let contextSection = ''
     if (context) {
-      const parts = []
-
-      if (context.template) {
-        const templateDescriptions: Record<string, string> = {
-          'announcement': 'This is an announcement post',
-          'launch': 'This is a product/feature launch post',
-          'tip': 'This is an educational tip or how-to post',
-          'behind-scenes': 'This is a behind-the-scenes post',
-          'qa': 'This is a Q&A or question-based post',
-          'story': 'This is a storytelling post',
-        }
-        parts.push(`Type: ${templateDescriptions[context.template] || context.template}`)
-      }
-
-      parts.push(`Topic: ${context.topic}`)
+      contextParts.push(`**Topic:** ${context.topic}`)
 
       if (context.keyMessage) {
-        parts.push(`Key Message: ${context.keyMessage}`)
+        contextParts.push(`**Key Message:** ${context.keyMessage}`)
       }
 
       if (context.audience) {
-        parts.push(`Target Audience: ${context.audience}`)
+        contextParts.push(`**Target Audience:** ${context.audience}`)
       }
 
       if (context.cta && context.cta.length > 0) {
         const ctaMap: Record<string, string> = {
-          'visit': 'encourage people to visit a website',
-          'comment': 'ask people to comment below',
-          'share': 'encourage people to share the post',
-          'signup': 'encourage people to sign up',
-          'learn-more': 'encourage people to learn more',
-          'shop': 'encourage people to shop or buy',
+          'visit': 'Visit our website',
+          'comment': 'Comment below with your thoughts',
+          'share': 'Share this post',
+          'signup': 'Sign up now',
+          'learn-more': 'Learn more',
+          'shop': 'Shop now',
         }
         const ctaTexts = context.cta.map((c: string) => ctaMap[c] || c)
-        parts.push(`Call to Action: ${ctaTexts.join(', ')}`)
+        contextParts.push(`**Desired Call-to-Action:** ${ctaTexts.join(', ')}`)
       }
-
-      contextSection = `
-
-Context Information:
-${parts.join('\n')}
-
-${content ? `Additional User Input: "${content}"` : ''}
-`
-    } else {
-      contextSection = content ? `\n\nContent: "${content}"` : ''
     }
 
-    const prompt = `
-Create 5 engaging social media captions for a post with the following details:${contextSection}
+    const contextSection = contextParts.length > 0 ? contextParts.join('\n') : ''
 
-Requirements:
-- Platforms: ${platformInfo}
-- Tone: ${toneInstructions[tone] || toneInstructions.casual}
-- ${hashtagGuidance}
-- ${emojiGuidance}
-- Each caption should be unique and engaging
-- Respect character limits for each platform
-- Make content shareable and engaging
-- Use the context information to create highly relevant and specific captions
-- Make captions actionable and valuable for the target audience
+    const prompt = `You are a social media caption specialist, known for crafting engaging, authentic, and scroll-stopping captions.
 
-Format your response as a JSON array of objects with this structure:
-[
-  {
-    "content": "The caption text here",
-    "tone": "${tone === 'mixed' ? 'professional|casual|funny|inspiring|educational' : tone}",
-    "hashtags": ["#hashtag1", "#hashtag2"],
-    "platforms": ["${platforms.join('", "')}"],
-    "characterCount": number
-  }
-]
+Write ONE captivating social media caption based on the details provided below:
 
-Important: Return ONLY the JSON array, no additional text.
-`
+${contextSection}
+
+**Tone:** ${toneInstructions[tone] || 'casual'}
+**Platform(s):** ${platforms.join(', ')}
+${content ? `**Additional Context:** ${content}` : ''}
+
+Instructions:
+
+1. **Length:** 150-200 words
+2. **Structure:**
+   - **Hook** (first line that grabs attention immediately)
+   - **Body** (value-driven story, tips, insights, or information that resonates with the audience)
+   - **CTA** (clear, compelling call-to-action)
+3. **Formatting:**
+   - Use line breaks for readability
+   - Include emojis sparingly (1-3 max) where they add value
+   - Use bullet points if presenting a list
+4. **Hashtags:** Include 3-5 relevant, searchable hashtags at the end
+5. **Make it:** Authentic, relatable, and valuable to the target audience
+
+Return your response as a JSON object with this exact structure:
+{
+  "content": "The complete caption with line breaks as \\n",
+  "tone": "${tone}",
+  "hashtags": ["#hashtag1", "#hashtag2", "#hashtag3"],
+  "platforms": ["${platforms.join('", "')}"],
+  "characterCount": number
+}
+
+Important: Return ONLY the JSON object, no additional text or markdown.`
 
     const completion = await openai.chat.completions.create({
       messages: [
         {
           role: 'system',
-          content: 'You are a professional social media content creator. Generate engaging captions that perform well across different platforms. Always respond with valid JSON only.'
+          content: 'You are a social media caption specialist, known for crafting engaging, authentic, and scroll-stopping captions. Always respond with valid JSON only.'
         },
         {
           role: 'user',
@@ -175,8 +150,8 @@ Important: Return ONLY the JSON array, no additional text.
         }
       ],
       model: 'gpt-4o-mini',
-      temperature: 0.8,
-      max_tokens: 2000,
+      temperature: 0.9,
+      max_tokens: 1000,
     })
 
     const responseContent = completion.choices[0]?.message?.content?.trim()
@@ -185,24 +160,24 @@ Important: Return ONLY the JSON array, no additional text.
       throw new Error('No response from OpenAI')
     }
 
-    // Parse the JSON response
-    let suggestions: any[]
+    // Parse the JSON response (expecting single object now)
+    let suggestion: any
     try {
-      suggestions = JSON.parse(responseContent)
+      suggestion = JSON.parse(responseContent)
     } catch (parseError) {
       console.error('Failed to parse OpenAI response:', responseContent)
       throw new Error('Invalid JSON response from OpenAI')
     }
 
-    // Convert to proper format
-    const formattedSuggestions = suggestions.map((suggestion, index) => ({
-      id: `openai-${Date.now()}-${index}`,
+    // Convert to array format for compatibility (single item)
+    const formattedSuggestions = [{
+      id: `openai-${Date.now()}`,
       content: suggestion.content,
       tone: suggestion.tone,
       hashtags: suggestion.hashtags || [],
       platforms: suggestion.platforms || platforms,
       characterCount: suggestion.characterCount || suggestion.content.length
-    }))
+    }]
 
     // Increment usage after successful generation
     console.log('Incrementing AI suggestions usage...')

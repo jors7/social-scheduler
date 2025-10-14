@@ -10,7 +10,7 @@ export interface CaptionSuggestion {
 }
 
 export interface CaptionContext {
-  template?: string
+  tone: string
   topic: string
   keyMessage?: string
   audience?: string

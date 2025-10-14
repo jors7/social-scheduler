@@ -96,9 +96,10 @@ export function AISuggestionsModal({
     generateSuggestions(tone, context || undefined)
   }
 
-  const handleContextSubmit = (captionContext: CaptionContext) => {
+  const handleContextSubmit = (captionContext: CaptionContext, tone: string) => {
     setContext(captionContext)
-    generateSuggestions(selectedTone, captionContext)
+    setSelectedTone(tone)
+    generateSuggestions(tone, captionContext)
   }
 
   const handleBackToContext = () => {
@@ -166,121 +167,88 @@ export function AISuggestionsModal({
           {/* Step 2: Suggestions Display */}
           {step === 'suggestions' && (
             <>
-          {/* Tone Selection */}
-          <div>
-            <h3 className="text-sm font-medium mb-3">Choose Style</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {tones.map((tone) => {
-                const Icon = tone.icon
-                return (
-                  <Button
-                    key={tone.id}
-                    variant={selectedTone === tone.id ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleToneChange(tone.id)}
-                    className="justify-start h-auto p-3"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <Icon className="h-4 w-4" />
-                      <div className="text-left">
-                        <div className="font-medium">{tone.label}</div>
-                        <div className="text-xs opacity-70">{tone.description}</div>
-                      </div>
-                    </div>
-                  </Button>
-                )
-              })}
-            </div>
-          </div>
-
-          <Separator />
-
           {/* Loading State */}
           {loading && (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-              <span className="ml-2 text-muted-foreground">Generating suggestions...</span>
+              <span className="ml-2 text-muted-foreground">Crafting your perfect caption...</span>
             </div>
           )}
 
-          {/* Suggestions */}
+          {/* Single Caption Display */}
           {!loading && suggestions.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium">Caption Suggestions</h3>
+                <h3 className="text-lg font-semibold">Your AI-Generated Caption</h3>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => generateSuggestions()}
+                  onClick={() => generateSuggestions(selectedTone, context || undefined)}
                   disabled={loading}
                 >
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh
+                  Regenerate
                 </Button>
               </div>
-              
-              <div className="space-y-3">
-                {suggestions.map((suggestion) => {
-                  const Icon = getToneIcon(suggestion.tone)
-                  return (
-                    <Card key={suggestion.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <Badge 
-                            variant="secondary" 
-                            className={getToneBadgeColor(suggestion.tone)}
+
+              {suggestions[0] && (
+                <Card className="border-2">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <Badge
+                        variant="secondary"
+                        className={getToneBadgeColor(suggestions[0].tone)}
+                      >
+                        {suggestions[0].tone}
+                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(suggestions[0].content)}
+                        >
+                          <Copy className="h-4 w-4 mr-1" />
+                          Copy
+                        </Button>
+                        <Button
+                          variant="default"
+                          onClick={() => handleSelectSuggestion(suggestions[0])}
+                        >
+                          Use This Caption
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="text-base mb-4 whitespace-pre-wrap leading-relaxed">
+                      {suggestions[0].content}
+                    </div>
+
+                    {suggestions[0].hashtags && suggestions[0].hashtags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
+                        {suggestions[0].hashtags.map((hashtag, index) => (
+                          <span
+                            key={index}
+                            className="text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full"
                           >
-                            <Icon className="h-3 w-3 mr-1" />
-                            {suggestion.tone}
-                          </Badge>
-                          <div className="flex items-center space-x-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyToClipboard(suggestion.content)}
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => handleSelectSuggestion(suggestion)}
-                            >
-                              Use This
-                            </Button>
-                          </div>
-                        </div>
-                        
-                        <p className="text-sm mb-3 whitespace-pre-wrap">{suggestion.content}</p>
-                        
-                        {suggestion.hashtags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {suggestion.hashtags.map((hashtag, index) => (
-                              <span
-                                key={index}
-                                className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded"
-                              >
-                                {hashtag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
-                          <span>{suggestion.characterCount} characters</span>
-                          <div className="flex items-center space-x-2">
-                            {suggestion.platforms.map((platform) => (
-                              <span key={platform} className="capitalize">
-                                {platform}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
+                            {hashtag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t text-sm text-muted-foreground">
+                      <span>{suggestions[0].characterCount} characters</span>
+                      <div className="flex items-center gap-2">
+                        {suggestions[0].platforms.map((platform) => (
+                          <span key={platform} className="capitalize bg-gray-100 px-2 py-1 rounded">
+                            {platform}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
 
