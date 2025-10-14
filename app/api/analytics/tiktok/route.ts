@@ -104,7 +104,9 @@ export async function GET(request: NextRequest) {
 
         if (!mediaResponse.ok) {
           const errorData = await mediaResponse.json().catch(() => ({}));
-          console.error(`[TikTok Analytics] Failed to fetch TikTok videos for account ${account.id}:`, {
+          console.error(`[TikTok Analytics] Media endpoint returned error for account ${account.id}:`);
+          console.error(`[TikTok Analytics] Full error response:`, JSON.stringify(errorData, null, 2));
+          console.error(`[TikTok Analytics] Parsed values:`, {
             status: mediaResponse.status,
             statusText: mediaResponse.statusText,
             error: errorData.error || 'Unknown error',
