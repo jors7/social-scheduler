@@ -288,17 +288,42 @@ export function PinterestInsights({ className }: PinterestInsightsProps) {
                       <div className="flex items-start gap-3 mb-3">
                         {/* Pin Thumbnail - 64x64px */}
                         <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
-                          {pin.thumbnail_url || pin.media_url ? (
-                            <img
-                              src={pin.thumbnail_url || pin.media_url}
-                              alt={pin.title || pin.description || 'Pin'}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-red-100 to-red-200 flex items-center justify-center">
-                              <Pin className="h-8 w-8 text-red-400" />
-                            </div>
-                          )}
+                          {(() => {
+                            const mediaUrl = pin.thumbnail_url || pin.media_url;
+
+                            if (!mediaUrl) {
+                              // No media URL - show placeholder
+                              return (
+                                <div className="w-full h-full bg-gradient-to-br from-red-100 to-red-200 flex items-center justify-center">
+                                  <Pin className="h-8 w-8 text-red-400" />
+                                </div>
+                              );
+                            }
+
+                            // Check if it's a video file
+                            const isVideo = /\.(mp4|mov|avi|webm|mkv|m4v)$/i.test(mediaUrl);
+
+                            if (isVideo) {
+                              // Use video tag for video files
+                              return (
+                                <video
+                                  src={mediaUrl}
+                                  className="w-full h-full object-cover"
+                                  muted
+                                  playsInline
+                                />
+                              );
+                            } else {
+                              // Use img tag for images
+                              return (
+                                <img
+                                  src={mediaUrl}
+                                  alt={pin.title || pin.description || 'Pin'}
+                                  className="w-full h-full object-cover"
+                                />
+                              );
+                            }
+                          })()}
                         </div>
 
                         {/* Pin Content */}
