@@ -95,7 +95,14 @@ export async function GET(request: NextRequest) {
         const mediaResponse = await fetchWithTimeout(mediaUrl, 15000); // 15 second timeout
 
         if (!mediaResponse.ok) {
-          console.error(`Failed to fetch TikTok videos for account ${account.id}`);
+          const errorData = await mediaResponse.json().catch(() => ({}));
+          console.error(`[TikTok Analytics] Failed to fetch TikTok videos for account ${account.id}:`, {
+            status: mediaResponse.status,
+            statusText: mediaResponse.statusText,
+            error: errorData.error || 'Unknown error',
+            tokenExpired: errorData.tokenExpired || false,
+            scopeError: errorData.scopeError || false
+          });
           continue;
         }
 
