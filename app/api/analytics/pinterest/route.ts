@@ -82,15 +82,19 @@ export async function GET(request: NextRequest) {
       .select('*')
       .eq('user_id', user.id)
       .eq('status', 'posted')
-      .contains('platforms', ['pinterest'])
       .order('posted_at', { ascending: false })
       .limit(100); // Limit to last 100 posts for performance
+
+    // Filter for Pinterest posts in JavaScript (Supabase contains() has issues with JSONB arrays)
+    const pinterestPosts = dbPosts?.filter((post: any) =>
+      post.platforms && Array.isArray(post.platforms) && post.platforms.includes('pinterest')
+    ) || [];
 
     if (postsError) {
       console.error('[Pinterest Analytics] Error fetching posts from database:', postsError);
     }
 
-    console.log(`[Pinterest Analytics] Found ${dbPosts?.length || 0} Pinterest posts in database`);
+    console.log(`[Pinterest Analytics] Found ${pinterestPosts.length} Pinterest posts in database`);
 
     // Fetch data for each Pinterest account
     for (const account of accounts) {
@@ -98,10 +102,10 @@ export async function GET(request: NextRequest) {
 
       try {
         // Process database posts with Pinterest API analytics
-        if (dbPosts && dbPosts.length > 0) {
+        if (pinterestPosts && pinterestPosts.length > 0) {
           console.log('[Pinterest Analytics] Processing database posts with API analytics');
 
-          const pinPromises = dbPosts.map(async (dbPost: any) => {
+          const pinPromises = pinterestPosts.map(async (dbPost: any) => {
             try {
               // Get Pinterest post ID from post_results
               const pinterestResult = dbPost.post_results?.find((r: any) => r.platform === 'pinterest');
