@@ -160,9 +160,10 @@ export async function GET(request: NextRequest) {
                 : 'reach,saved,total_interactions';       // Images don't support 'views'
 
               // Add cache-busting timestamp to ensure fresh data from Instagram API
-              // Use API v22+ for new 'views' metric (required for metrics introduced after April 2025)
+              // Use Instagram Graph API (graph.instagram.com) with v22.0 for new 'views' metric
+              // Note: Must use graph.instagram.com (not graph.facebook.com) for Instagram User tokens
               const cacheBust = Date.now();
-              const insightsUrl = `https://graph.facebook.com/v22.0/${media.id}/insights?metric=${metrics}&access_token=${account.access_token}&_=${cacheBust}`;
+              const insightsUrl = `https://graph.instagram.com/v22.0/${media.id}/insights?metric=${metrics}&access_token=${account.access_token}&_=${cacheBust}`;
               console.log(`[Instagram Analytics] Fetching insights for media ${media.id} (type: ${media.media_type}, product: ${media.media_product_type || 'N/A'})`);
               console.log(`[Instagram Analytics] Requesting metrics: ${metrics}`);
 
