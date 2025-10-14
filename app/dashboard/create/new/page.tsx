@@ -524,22 +524,23 @@ function CreateNewPostPageContent() {
     // Convert plain text to HTML format for rich text editor
     // Preserve emojis and line breaks properly
 
+    // First, convert **text** to <strong>text</strong>
+    let processedSuggestion = suggestion
+    if (processedSuggestion.includes('**')) {
+      processedSuggestion = processedSuggestion.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    }
+
     // Split by double newlines to identify paragraphs
-    const paragraphs = suggestion.split('\n\n').filter(p => p.trim())
+    const paragraphs = processedSuggestion.split('\n\n').filter(p => p.trim())
 
     const htmlContent = paragraphs.map(paragraph => {
-      // For each paragraph, convert **text** to <strong>text</strong>
-      let processedParagraph = paragraph
-      if (processedParagraph.includes('**')) {
-        processedParagraph = processedParagraph.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      }
-
       // If paragraph contains single line breaks (like bullet lists), convert them to <br>
-      if (processedParagraph.includes('\n')) {
-        processedParagraph = processedParagraph.split('\n').map(line => line.trim()).filter(line => line).join('<br>')
+      if (paragraph.includes('\n')) {
+        const lines = paragraph.split('\n').map(line => line.trim()).filter(line => line)
+        return `<p>${lines.join('<br>')}</p>`
       }
 
-      return `<p>${processedParagraph}</p>`
+      return `<p>${paragraph}</p>`
     }).join('')
 
     setPostContent(htmlContent)

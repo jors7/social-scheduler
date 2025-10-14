@@ -78,19 +78,19 @@ export function AICaptionContextForm({ onSubmit, onCancel, loading = false }: AI
               <Button
                 key={tone.id}
                 variant={isSelected ? 'default' : 'outline'}
-                size="lg"
+                size="sm"
                 onClick={() => setSelectedTone(tone.id)}
-                className={`h-auto p-5 flex-col gap-3 transition-all duration-200 ${
+                className={`h-auto p-3 flex-col gap-2 transition-all duration-200 ${
                   isSelected
                     ? 'shadow-lg scale-105 bg-gradient-to-br from-blue-500 to-purple-600 border-0'
                     : 'hover:shadow-md hover:scale-102 hover:border-blue-300'
                 }`}
                 type="button"
               >
-                <Icon className={`h-7 w-7 ${isSelected ? 'text-white' : ''}`} />
+                <Icon className={`h-5 w-5 ${isSelected ? 'text-white' : ''}`} />
                 <div className="text-center">
-                  <div className={`font-semibold text-sm ${isSelected ? 'text-white' : ''}`}>{tone.label}</div>
-                  <div className={`text-xs mt-1 ${isSelected ? 'text-white/90' : 'opacity-70'}`}>{tone.description}</div>
+                  <div className={`font-semibold text-xs ${isSelected ? 'text-white' : ''}`}>{tone.label}</div>
+                  <div className={`text-[10px] mt-0.5 ${isSelected ? 'text-white/90' : 'opacity-70'}`}>{tone.description}</div>
                 </div>
               </Button>
             )

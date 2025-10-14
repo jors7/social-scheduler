@@ -135,10 +135,8 @@ export function AISuggestionsModal({
   }
 
   const handleSelectSuggestion = (suggestion: CaptionSuggestion) => {
-    const fullContent = suggestion.hashtags.length > 0
-      ? `${suggestion.content}\n\n${suggestion.hashtags.join(' ')}`
-      : suggestion.content
-    onSelectSuggestion(fullContent)
+    // Pass content as-is - don't append hashtags as they may already be included
+    onSelectSuggestion(suggestion.content)
     onOpenChange(false)
   }
 
