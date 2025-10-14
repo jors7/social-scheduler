@@ -159,19 +159,26 @@ export async function GET(request: NextRequest) {
                 : '';
 
               // Use permanent Supabase Storage URL from database (NOT Pinterest CDN URLs)
-              // Priority: platform_media_url (video thumbnail) > media_urls[0] (image/video file)
+              // Priority matches dashboard logic:
+              // 1. platform_media_url (video thumbnail for Pinterest videos)
+              // 2. media_urls[0] (image file for regular Pinterest images)
               let thumbnailUrl = null;
 
-              // First check platform_media_url (this is the video thumbnail for Pinterest videos)
+              // First check platform_media_url (this is where video thumbnails are stored)
               if (dbPost.platform_media_url && typeof dbPost.platform_media_url === 'string') {
-                thumbnailUrl = dbPost.platform_media_url;
-                console.log(`[Pinterest Analytics] Using platform_media_url for video thumbnail: ${thumbnailUrl}`);
+                thumbnailUrl = dbPost.platform_media_url.trim();
+                console.log(`[Pinterest Analytics] Using platform_media_url: ${thumbnailUrl}`);
               }
-              // Fall back to media_urls[0] (for images or if no platform_media_url)
+              // Fall back to media_urls[0]
               else if (dbPost.media_urls && Array.isArray(dbPost.media_urls) && dbPost.media_urls.length > 0) {
-                thumbnailUrl = dbPost.media_urls[0];
-                console.log(`[Pinterest Analytics] Using media_urls[0]: ${thumbnailUrl}`);
+                const firstMedia = dbPost.media_urls[0];
+                if (typeof firstMedia === 'string' && firstMedia.trim() !== '') {
+                  thumbnailUrl = firstMedia.trim();
+                  console.log(`[Pinterest Analytics] Using media_urls[0]: ${thumbnailUrl}`);
+                }
               }
+
+              console.log(`[Pinterest Analytics] Post ${dbPost.id} final thumbnail URL:`, thumbnailUrl);
 
               return {
                 id: pinId,
