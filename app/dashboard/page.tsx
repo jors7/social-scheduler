@@ -1265,17 +1265,20 @@ export default function DashboardPage() {
 
                   const firstMediaUrl = getMediaUrl()
 
-                  // Check if this is a YouTube post - always show YouTube as video with preload="metadata"
-                  const isYouTubePost = post.platforms.includes('youtube')
+                  // Check if we have an image thumbnail (for all platforms including YouTube)
+                  const hasImageThumbnail = firstMediaUrl && (
+                    firstMediaUrl.includes('.jpg') ||
+                    firstMediaUrl.includes('.jpeg') ||
+                    firstMediaUrl.includes('.png') ||
+                    firstMediaUrl.includes('.webp')
+                  )
 
-                  // Simple check if URL is likely a video based on extension
-                  // YouTube posts always use video tag for thumbnail extraction
-                  const isVideo = isYouTubePost ? true : (
-                    firstMediaUrl && (
-                      firstMediaUrl.includes('.mp4') ||
-                      firstMediaUrl.includes('.mov') ||
-                      firstMediaUrl.includes('.webm')
-                    )
+                  // Determine if this should be rendered as a video
+                  // Use video tag only if it's actually a video file (not an image thumbnail)
+                  const isVideo = !hasImageThumbnail && firstMediaUrl && (
+                    firstMediaUrl.includes('.mp4') ||
+                    firstMediaUrl.includes('.mov') ||
+                    firstMediaUrl.includes('.webm')
                   )
 
 
