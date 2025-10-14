@@ -16,7 +16,9 @@ export async function GET(request: NextRequest) {
     console.log('[TikTok Media] Authenticated user:', user.id);
 
     const searchParams = request.nextUrl.searchParams;
-    const limit = parseInt(searchParams.get('limit') || '5');
+    const requestedLimit = parseInt(searchParams.get('limit') || '5');
+    // TikTok API only allows max 20 videos per request
+    const limit = Math.min(requestedLimit, 20);
     const accountId = searchParams.get('accountId');
 
     // Get TikTok account
