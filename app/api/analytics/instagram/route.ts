@@ -142,27 +142,27 @@ export async function GET(request: NextRequest) {
             let saves = 0, reach = 0, total_interactions = 0, plays = 0;
 
             // Try to get insights for all posts (impressions deprecated April 2025)
-            // Note: Instagram API has different supported metrics for different media types:
-            // - REELS: Do NOT support 'plays' metric (will return error 100)
-            // - Regular VIDEO posts: Support 'plays' metric
-            // - FEED (images): Do not support 'plays' metric
-            // For Reels, we use 'reach' as the view count
+            // Note: Instagram API metrics support:
+            // - REELS: Support 'plays' metric (views)
+            // - Regular VIDEO posts: Support 'plays' metric (views)
+            // - FEED (images): Do NOT support 'plays' metric
+            // Reference: GET /{ig-media-id}/insights?metric=plays,reach,likes,comments,shares,saves,total_interactions
             try {
-              // Determine metrics to fetch based on media product type
-              // media_product_type can be: FEED, REELS, STORY, etc.
-              const isReel = media.media_product_type === 'REELS';
-              const isRegularVideo = media.media_type === 'VIDEO' && !isReel;
+              // Determine metrics to fetch based on media type
+              // Request 'plays' (views) for all videos including Reels
+              const isVideoOrReel = media.media_type === 'VIDEO' || media.media_product_type === 'REELS';
 
-              // IMPORTANT: Reels do NOT support 'plays' metric
-              // Regular videos (non-Reels) DO support 'plays' metric
-              const metrics = isRegularVideo
-                ? 'reach,saved,total_interactions,plays'  // Only regular videos support 'plays'
-                : 'reach,saved,total_interactions';       // Reels and images don't support 'plays'
+              // Videos and Reels support 'plays' metric (this is "views")
+              // Images (FEED) do not support 'plays'
+              const metrics = isVideoOrReel
+                ? 'reach,saved,total_interactions,plays'  // Videos and Reels support 'plays' (views)
+                : 'reach,saved,total_interactions';       // Images don't support 'plays'
 
               // Add cache-busting timestamp to ensure fresh data from Instagram API
               const cacheBust = Date.now();
               const insightsUrl = `https://graph.instagram.com/${media.id}/insights?metric=${metrics}&access_token=${account.access_token}&_=${cacheBust}`;
               console.log(`[Instagram Analytics] Fetching insights for media ${media.id} (type: ${media.media_type}, product: ${media.media_product_type || 'N/A'})`);
+              console.log(`[Instagram Analytics] Requesting metrics: ${metrics}`);
 
               const insightsResponse = await fetch(insightsUrl);
 
@@ -188,11 +188,7 @@ export async function GET(request: NextRequest) {
                   });
                 }
 
-                // For Reels, use reach as plays (Reel views = reach)
-                if (isReel && plays === 0 && reach > 0) {
-                  plays = reach;
-                  console.log(`[Instagram Analytics] ℹ Using reach as plays for Reel ${media.id}: ${plays}`);
-                }
+                console.log(`[Instagram Analytics] ✓ Final metrics for ${media.id}: reach=${reach}, plays=${plays}, saves=${saves}, interactions=${total_interactions}`);
               } else {
                 const errorText = await insightsResponse.text();
                 console.error(`[Instagram Analytics] ✗ Insights API failed for media ${media.id} (${media.media_type}):`);
@@ -229,21 +225,21 @@ export async function GET(request: NextRequest) {
               saves,
               reach,
               total_interactions,
-              plays, // Video views for Reels only
-              impressions: reach // Use reach as impressions for Instagram (impressions metric deprecated)
+              plays, // Video views (for Reels and regular videos)
+              impressions: plays || reach // Use plays (views) as impressions, fallback to reach for images
             };
 
             allMetrics.posts.push(postMetrics);
             allMetrics.totalPosts++;
             allMetrics.totalEngagement += postMetrics.likes + postMetrics.comments + postMetrics.saves;
             allMetrics.totalReach += reach;
-            allMetrics.totalImpressions += reach; // Use reach as impressions for Instagram
+            allMetrics.totalImpressions += (plays || reach); // Use plays (views) as impressions, fallback to reach
 
             // Log summary for this post
             console.log(`[Instagram Analytics] Post summary for ${media.id}:`);
             console.log(`  - Media type: ${media.media_type}, Product type: ${media.media_product_type || 'N/A'}`);
             console.log(`  - Likes: ${postMetrics.likes}, Comments: ${postMetrics.comments}, Saves: ${saves}`);
-            console.log(`  - Reach: ${reach}, Plays: ${plays}, Impressions: ${reach}`);
+            console.log(`  - Reach: ${reach}, Plays (Views): ${plays}, Impressions: ${plays || reach}`);
             console.log(`  - Caption: ${media.caption?.substring(0, 50) || 'No caption'}...`);
           }
       } catch (error: any) {
