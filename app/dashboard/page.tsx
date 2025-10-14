@@ -97,6 +97,9 @@ export default function DashboardPage() {
   const [recentPosts, setRecentPosts] = useState<PostData[]>([])
   const [upcomingSchedule, setUpcomingSchedule] = useState<{date: string, posts: number, platforms: string[], dateObj: Date, media_urls: string[], postGroups: string[][]}[]>([])
   const [loading, setLoading] = useState(true)
+  const [usageLoading, setUsageLoading] = useState(true)
+  const [postsLoading, setPostsLoading] = useState(true)
+  const [scheduleLoading, setScheduleLoading] = useState(true)
   const [subscription, setSubscription] = useState<any>(null)
   const [usage, setUsage] = useState<UsageData | null>(null)
   const [activeTab, setActiveTab] = useState<'recent' | 'scheduled' | 'drafts'>('recent')
@@ -189,31 +192,47 @@ export default function DashboardPage() {
     return 'Good evening'
   }
 
-  const fetchDashboardData = async () => {
+  // Initialize basic data (instant)
+  const initializeBasicData = async () => {
     try {
       const supabase = createClient()
-      
-      // Set greeting
+
+      // Set greeting immediately
       setGreeting(getGreeting())
-      
+
       // Check if user is authenticated
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       if (authError || !user) {
         toast.error('Please log in to view your dashboard')
-        return
+        return null
       }
-      
-      // Get subscription status
+
+      // Get subscription status (fast)
       const subData = await getClientSubscription()
       setSubscription(subData)
-      
-      // Get usage data
+
+      setLoading(false) // Allow greeting/buttons to show
+
+      return { user, subscription: subData }
+    } catch (error) {
+      console.error('Error initializing dashboard:', error)
+      setLoading(false)
+      return null
+    }
+  }
+
+  // Fetch usage data (fast - single RPC call)
+  const fetchUsageData = async (userId: string, subscription: any) => {
+    try {
+      const supabase = createClient()
+
       const { data: usageData, error: usageError } = await supabase
-        .rpc('get_usage_summary', { user_uuid: user.id })
-      
+        .rpc('get_usage_summary', { user_uuid: userId })
+
       if (!usageError && usageData && usageData.length > 0) {
         const usage = usageData[0]
-        const currentPlan = SUBSCRIPTION_PLANS[subData?.planId || 'free']
+        const planId = (subscription?.planId || 'free') as 'free' | 'starter' | 'professional' | 'enterprise'
+        const currentPlan = SUBSCRIPTION_PLANS[planId]
         const enhancedUsage = {
           posts_used: usage.posts_used || 0,
           posts_limit: currentPlan.limits.posts_per_month,
@@ -224,7 +243,8 @@ export default function DashboardPage() {
         }
         setUsage(enhancedUsage)
       } else {
-        const currentPlan = SUBSCRIPTION_PLANS[subData?.planId || 'free']
+        const planId = (subscription?.planId || 'free') as 'free' | 'starter' | 'professional' | 'enterprise'
+        const currentPlan = SUBSCRIPTION_PLANS[planId]
         setUsage({
           posts_used: 0,
           posts_limit: currentPlan.limits.posts_per_month,
@@ -234,18 +254,29 @@ export default function DashboardPage() {
           connected_accounts_limit: currentPlan.limits.connected_accounts
         })
       }
-      
+    } catch (error) {
+      console.error('Error fetching usage data:', error)
+    } finally {
+      setUsageLoading(false)
+    }
+  }
+
+  // Fetch posts and schedule data (slower)
+  const fetchPostsAndSchedule = async (userId: string, subscription: any) => {
+    try {
+      const supabase = createClient()
+
       // Fetch all data concurrently
       const [draftsResult, scheduledResult] = await Promise.all([
         supabase
           .from('drafts')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .order('updated_at', { ascending: false }),
         supabase
           .from('scheduled_posts')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .order('scheduled_for', { ascending: false })
       ])
       
@@ -413,12 +444,13 @@ export default function DashboardPage() {
         .slice(0, 5)
       
       setUpcomingSchedule(scheduleArray)
-      
+
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
       toast.error('Failed to load dashboard data')
     } finally {
-      setLoading(false)
+      setPostsLoading(false)
+      setScheduleLoading(false)
     }
   }
   
@@ -541,7 +573,17 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    fetchDashboardData()
+    const loadDashboard = async () => {
+      // Step 1: Initialize basic data (greeting, subscription) - instant
+      const basicData = await initializeBasicData()
+      if (!basicData) return
+
+      // Step 2: Fetch usage data and posts/schedule in parallel for faster loading
+      fetchUsageData(basicData.user.id, basicData.subscription)
+      fetchPostsAndSchedule(basicData.user.id, basicData.subscription)
+    }
+
+    loadDashboard()
   }, [])
 
   // Auto-rotate tips every 15 seconds

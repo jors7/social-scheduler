@@ -52,6 +52,10 @@ export function RichTextEditor({
         },
         // Disable the default link extension from StarterKit to avoid conflicts
         link: false,
+        // Enable hard breaks with Shift+Enter
+        hardBreak: {
+          keepMarks: false,
+        },
       }),
       Link.configure({
         openOnClick: false,
@@ -75,6 +79,7 @@ export function RichTextEditor({
     editorProps: {
       attributes: {
         class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[200px] p-4',
+        style: 'white-space: pre-wrap;',
       },
     },
   })
