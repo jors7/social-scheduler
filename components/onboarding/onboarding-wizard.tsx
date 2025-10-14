@@ -327,7 +327,7 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
     },
     {
       id: 'complete',
-      title: 'You&apos;re All Set! 🚀',
+      title: "You're All Set! 🚀",
       description: 'Start creating amazing content for your audience',
       icon: CheckCircle2,
       position: 'center',

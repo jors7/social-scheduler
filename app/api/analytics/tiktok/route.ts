@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 // Helper to add timeout to fetch requests
-async function fetchWithTimeout(url: string, timeout = 10000) {
+async function fetchWithTimeout(url: string, timeout = 10000, options: RequestInit = {}) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
-    const response = await fetch(url, { signal: controller.signal });
+    const response = await fetch(url, { ...options, signal: controller.signal });
     clearTimeout(timeoutId);
     return response;
   } catch (error: any) {
@@ -92,7 +92,15 @@ export async function GET(request: NextRequest) {
         // We'll fetch up to 100 videos to get enough data for the analytics period
         // Use absolute URL for server-side fetch
         const mediaUrl = `${baseUrl}/api/tiktok/media?limit=100&accountId=${account.id}`;
-        const mediaResponse = await fetchWithTimeout(mediaUrl, 15000); // 15 second timeout
+
+        // Forward authentication cookies for server-side fetch
+        const cookieHeader = request.headers.get('cookie');
+        const headers: HeadersInit = {};
+        if (cookieHeader) {
+          headers['Cookie'] = cookieHeader;
+        }
+
+        const mediaResponse = await fetchWithTimeout(mediaUrl, 15000, { headers }); // 15 second timeout
 
         if (!mediaResponse.ok) {
           const errorData = await mediaResponse.json().catch(() => ({}));

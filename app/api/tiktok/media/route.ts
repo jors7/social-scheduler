@@ -8,8 +8,11 @@ export async function GET(request: NextRequest) {
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
+      console.error('[TikTok Media] Authentication failed:', authError?.message || 'No user');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    console.log('[TikTok Media] Authenticated user:', user.id);
 
     const searchParams = request.nextUrl.searchParams;
     const limit = parseInt(searchParams.get('limit') || '5');
