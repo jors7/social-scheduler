@@ -392,17 +392,63 @@ function CreateNewPostPageContent() {
     })
   }, [youtubeVideoFile, youtubeTitle])
 
+  // YouTube video preview thumbnail (extracted from video if no custom thumbnail)
+  const [youtubeVideoThumbnail, setYoutubeVideoThumbnail] = useState<string | null>(null)
+
+  // Extract thumbnail from video when video changes and no custom thumbnail
+  useEffect(() => {
+    let mounted = true
+    let objectUrl: string | null = null
+
+    async function extractThumbnail() {
+      if (!youtubeVideoFile || youtubeThumbnailFile) {
+        setYoutubeVideoThumbnail(null)
+        return
+      }
+
+      try {
+        const { extractVideoThumbnail } = await import('@/lib/video-thumbnail')
+        const thumbnailBlob = await extractVideoThumbnail(youtubeVideoFile, {
+          width: 1280,
+          height: 720,
+          seekTime: 1
+        })
+
+        if (mounted && thumbnailBlob) {
+          objectUrl = URL.createObjectURL(thumbnailBlob)
+          setYoutubeVideoThumbnail(objectUrl)
+        } else if (mounted) {
+          setYoutubeVideoThumbnail(null)
+        }
+      } catch (error) {
+        console.error('Error extracting video thumbnail:', error)
+        if (mounted) {
+          setYoutubeVideoThumbnail(null)
+        }
+      }
+    }
+
+    extractThumbnail()
+
+    return () => {
+      mounted = false
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl)
+      }
+    }
+  }, [youtubeVideoFile, youtubeThumbnailFile])
+
   // YouTube-specific preview URLs (video/thumbnail)
   const youtubePreviewUrls = useMemo(() => {
     const urls: string[] = []
-    // Prioritize thumbnail if available, otherwise use video
+    // Prioritize custom thumbnail, then extracted thumbnail from video
     if (youtubeThumbnailFile) {
       urls.push(URL.createObjectURL(youtubeThumbnailFile))
-    } else if (youtubeVideoFile) {
-      urls.push(URL.createObjectURL(youtubeVideoFile))
+    } else if (youtubeVideoThumbnail) {
+      urls.push(youtubeVideoThumbnail)
     }
     return urls
-  }, [youtubeVideoFile, youtubeThumbnailFile])
+  }, [youtubeThumbnailFile, youtubeVideoThumbnail])
 
   // TikTok states
   const [tiktokPrivacyLevel, setTiktokPrivacyLevel] = useState<'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY'>('PUBLIC_TO_EVERYONE')
