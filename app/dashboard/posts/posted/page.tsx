@@ -669,7 +669,7 @@ export default function PostedPostsPage() {
                                   console.log('Post data:', {
                                     platform_media_url: post.platform_media_url,
                                     media_urls: post.media_urls,
-                                    hasPlatformThumbnail
+                                    hasImageThumbnail
                                   });
                                   // Replace image with placeholder on error
                                   const placeholder = document.createElement('div')
