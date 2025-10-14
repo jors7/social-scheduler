@@ -1012,7 +1012,8 @@ function CreateNewPostPageContent() {
                   content: youtubeDescription || postContent,
                   platforms: ['youtube'],
                   platform_content: { youtube: youtubeDescription || postContent },
-                  media_urls: uploadedMediaUrls.length > 0 ? uploadedMediaUrls : null,
+                  media_urls: youtubeVideoUrl ? [youtubeVideoUrl] : null, // Use YouTube video URL for thumbnail
+                  platform_media_url: youtubeVideoUrl, // Store video URL as platform media URL for thumbnail
                   status: 'posted',
                   scheduled_for: postedTime, // Add this so posts appear in queries that order by scheduled_for
                   posted_at: postedTime,
