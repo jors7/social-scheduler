@@ -972,46 +972,69 @@ function CreateNewPostPageContent() {
       let youtubeVideoUrl: string | undefined;
       let youtubeThumbnailUrl: string | undefined; // Store the thumbnail image URL
       if (selectedPlatforms.includes('youtube') && youtubeVideoFile) {
-        // First, extract a thumbnail image from the video to save storage space
-        progressTracker.updatePlatform('youtube', 'uploading', 'Extracting thumbnail...')
-
         try {
           const { data: { user } } = await supabase.auth.getUser()
           if (!user) throw new Error('User not authenticated')
 
-          // Extract thumbnail image from video
-          const { extractVideoThumbnail, blobToFile } = await import('@/lib/video-thumbnail')
-          const thumbnailBlob = await extractVideoThumbnail(youtubeVideoFile, {
-            width: 1280,
-            height: 720,
-            quality: 0.85
-          })
+          // Prioritize custom thumbnail if provided, otherwise auto-extract from video
+          if (youtubeThumbnailFile) {
+            // Upload custom thumbnail to Supabase Storage
+            progressTracker.updatePlatform('youtube', 'uploading', 'Uploading custom thumbnail...')
 
-          if (thumbnailBlob) {
-            // Upload thumbnail image to Supabase Storage
-            const thumbnailFile = blobToFile(thumbnailBlob, `youtube_thumbnail_${Date.now()}.jpg`)
-            const fileName = `${user.id}/${Date.now()}_youtube_thumb.jpg`
-
+            const fileName = `${user.id}/${Date.now()}_youtube_custom_thumb.jpg`
             const { data: uploadData, error: uploadError } = await supabase.storage
               .from('post-media')
-              .upload(fileName, thumbnailFile, {
-                contentType: 'image/jpeg',
+              .upload(fileName, youtubeThumbnailFile, {
+                contentType: youtubeThumbnailFile.type,
                 upsert: false
               })
 
             if (!uploadError) {
-              // Get public URL
               const { data: { publicUrl } } = supabase.storage
                 .from('post-media')
                 .getPublicUrl(fileName)
 
               youtubeThumbnailUrl = publicUrl
-              console.log('YouTube thumbnail uploaded to storage:', youtubeThumbnailUrl)
+              console.log('Custom YouTube thumbnail uploaded to storage:', youtubeThumbnailUrl)
             } else {
-              console.error('Failed to upload thumbnail:', uploadError)
+              console.error('Failed to upload custom thumbnail:', uploadError)
             }
           } else {
-            console.warn('Could not extract video thumbnail, proceeding without thumbnail')
+            // Auto-extract thumbnail image from video to save storage space
+            progressTracker.updatePlatform('youtube', 'uploading', 'Extracting thumbnail...')
+
+            const { extractVideoThumbnail, blobToFile } = await import('@/lib/video-thumbnail')
+            const thumbnailBlob = await extractVideoThumbnail(youtubeVideoFile, {
+              width: 1280,
+              height: 720,
+              quality: 0.85
+            })
+
+            if (thumbnailBlob) {
+              // Upload auto-extracted thumbnail to Supabase Storage
+              const thumbnailFile = blobToFile(thumbnailBlob, `youtube_thumbnail_${Date.now()}.jpg`)
+              const fileName = `${user.id}/${Date.now()}_youtube_thumb.jpg`
+
+              const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('post-media')
+                .upload(fileName, thumbnailFile, {
+                  contentType: 'image/jpeg',
+                  upsert: false
+                })
+
+              if (!uploadError) {
+                const { data: { publicUrl } } = supabase.storage
+                  .from('post-media')
+                  .getPublicUrl(fileName)
+
+                youtubeThumbnailUrl = publicUrl
+                console.log('Auto-extracted YouTube thumbnail uploaded to storage:', youtubeThumbnailUrl)
+              } else {
+                console.error('Failed to upload auto-extracted thumbnail:', uploadError)
+              }
+            } else {
+              console.warn('Could not extract video thumbnail, proceeding without thumbnail')
+            }
           }
 
           // Now upload to YouTube
@@ -2002,7 +2025,70 @@ function CreateNewPostPageContent() {
       if (selectedPlatforms.includes('youtube') && youtubeVideoFile) {
         // For YouTube scheduling, upload the video immediately as private with publishAt
         toast.info('Scheduling YouTube video...')
-        
+
+        // First, handle thumbnail (prioritize custom, otherwise extract from video)
+        let youtubeThumbnailUrl: string | undefined;
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) throw new Error('User not authenticated')
+
+          if (youtubeThumbnailFile) {
+            // Upload custom thumbnail to Supabase Storage
+            const fileName = `${user.id}/${Date.now()}_youtube_scheduled_custom_thumb.jpg`
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('post-media')
+              .upload(fileName, youtubeThumbnailFile, {
+                contentType: youtubeThumbnailFile.type,
+                upsert: false
+              })
+
+            if (!uploadError) {
+              const { data: { publicUrl } } = supabase.storage
+                .from('post-media')
+                .getPublicUrl(fileName)
+
+              youtubeThumbnailUrl = publicUrl
+              console.log('Custom YouTube thumbnail uploaded for scheduled post:', youtubeThumbnailUrl)
+            } else {
+              console.error('Failed to upload custom thumbnail for scheduled post:', uploadError)
+            }
+          } else {
+            // Auto-extract thumbnail from video
+            const { extractVideoThumbnail, blobToFile } = await import('@/lib/video-thumbnail')
+            const thumbnailBlob = await extractVideoThumbnail(youtubeVideoFile, {
+              width: 1280,
+              height: 720,
+              quality: 0.85
+            })
+
+            if (thumbnailBlob) {
+              const thumbnailFile = blobToFile(thumbnailBlob, `youtube_scheduled_thumbnail_${Date.now()}.jpg`)
+              const fileName = `${user.id}/${Date.now()}_youtube_scheduled_thumb.jpg`
+
+              const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('post-media')
+                .upload(fileName, thumbnailFile, {
+                  contentType: 'image/jpeg',
+                  upsert: false
+                })
+
+              if (!uploadError) {
+                const { data: { publicUrl } } = supabase.storage
+                  .from('post-media')
+                  .getPublicUrl(fileName)
+
+                youtubeThumbnailUrl = publicUrl
+                console.log('Auto-extracted YouTube thumbnail uploaded for scheduled post:', youtubeThumbnailUrl)
+              } else {
+                console.error('Failed to upload auto-extracted thumbnail for scheduled post:', uploadError)
+              }
+            }
+          }
+        } catch (thumbnailError) {
+          console.error('Error processing thumbnail for scheduled YouTube video:', thumbnailError)
+          // Continue without thumbnail
+        }
+
         const formData = new FormData()
         formData.append('video', youtubeVideoFile)
         if (youtubeThumbnailFile) {
@@ -2014,20 +2100,20 @@ function CreateNewPostPageContent() {
         formData.append('categoryId', youtubeCategoryId)
         formData.append('privacyStatus', 'private') // Must be private for scheduling
         formData.append('publishAt', scheduledFor.toISOString()) // Set publish time
-        
+
         try {
           const response = await fetch('/api/media/upload/youtube', {
             method: 'POST',
             body: formData,
           })
-          
+
           if (!response.ok) {
             const error = await response.json()
             throw new Error(error.error || 'YouTube scheduling failed')
           }
-          
+
           const result = await response.json()
-          
+
           // Store the scheduled YouTube video in scheduled_posts
           const { data: { user } } = await supabase.auth.getUser()
           if (user) {
@@ -2038,7 +2124,8 @@ function CreateNewPostPageContent() {
                 content: youtubeDescription || postContent,
                 platforms: ['youtube'],
                 platform_content: { youtube: youtubeDescription || postContent },
-                media_urls: uploadedMediaUrls.length > 0 ? uploadedMediaUrls : null,
+                media_urls: youtubeThumbnailUrl ? [youtubeThumbnailUrl] : null,
+                platform_media_url: youtubeThumbnailUrl,
                 status: 'pending', // Use pending so it shows in scheduled posts
                 scheduled_for: scheduledFor.toISOString(),
                 post_results: [{
