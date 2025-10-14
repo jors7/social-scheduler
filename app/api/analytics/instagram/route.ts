@@ -143,15 +143,22 @@ export async function GET(request: NextRequest) {
             let saves = 0, reach = 0, total_interactions = 0, plays = 0;
 
             // Try to get insights for all posts (impressions deprecated April 2025)
-            // For reels, we fetch "plays" metric which represents views
+            // Note: Instagram API has different supported metrics for different media types:
+            // - REELS: Do NOT support 'plays' metric (will return error 100)
+            // - Regular VIDEO posts: Support 'plays' metric
+            // - FEED (images): Do not support 'plays' metric
+            // For Reels, we use 'reach' as the view count
             try {
               // Determine metrics to fetch based on media product type
               // media_product_type can be: FEED, REELS, STORY, etc.
-              // Only REELS support the "plays" metric
               const isReel = media.media_product_type === 'REELS';
-              const metrics = isReel
-                ? 'reach,saved,total_interactions,plays'
-                : 'reach,saved,total_interactions';
+              const isRegularVideo = media.media_type === 'VIDEO' && !isReel;
+
+              // IMPORTANT: Reels do NOT support 'plays' metric
+              // Regular videos (non-Reels) DO support 'plays' metric
+              const metrics = isRegularVideo
+                ? 'reach,saved,total_interactions,plays'  // Only regular videos support 'plays'
+                : 'reach,saved,total_interactions';       // Reels and images don't support 'plays'
 
               const insightsUrl = `https://graph.instagram.com/${media.id}/insights?metric=${metrics}&access_token=${account.access_token}`;
               console.log(`[Instagram Analytics] Fetching insights for media ${media.id} (type: ${media.media_type}, product: ${media.media_product_type || 'N/A'})`);
@@ -160,7 +167,6 @@ export async function GET(request: NextRequest) {
 
               if (insightsResponse.ok) {
                 const insightsData = await insightsResponse.json();
-                console.log(`[Instagram Analytics] Insights response for ${media.id}:`, JSON.stringify(insightsData, null, 2));
 
                 if (insightsData.data && Array.isArray(insightsData.data)) {
                   insightsData.data.forEach((metric: any) => {
@@ -180,6 +186,12 @@ export async function GET(request: NextRequest) {
                     }
                   });
                 }
+
+                // For Reels, use reach as plays (Reel views = reach)
+                if (isReel && plays === 0 && reach > 0) {
+                  plays = reach;
+                  console.log(`[Instagram Analytics] ℹ Using reach as plays for Reel ${media.id}: ${plays}`);
+                }
               } else {
                 const errorText = await insightsResponse.text();
                 console.error(`[Instagram Analytics] ✗ Insights API failed for media ${media.id} (${media.media_type}):`);
@@ -193,34 +205,6 @@ export async function GET(request: NextRequest) {
                     console.error(`[Instagram Analytics]   Error code: ${errorData.error.code}`);
                     console.error(`[Instagram Analytics]   Error message: ${errorData.error.message}`);
                     console.error(`[Instagram Analytics]   Error type: ${errorData.error.type}`);
-
-                    // If plays metric is not supported, retry without it
-                    if (errorData.error.message?.includes('plays metric') && isReel) {
-                      console.log(`[Instagram Analytics] ⚠ Retrying without 'plays' metric for ${media.id}`);
-                      const fallbackMetrics = 'reach,saved,total_interactions';
-                      const fallbackUrl = `https://graph.instagram.com/${media.id}/insights?metric=${fallbackMetrics}&access_token=${account.access_token}`;
-
-                      const fallbackResponse = await fetch(fallbackUrl);
-                      if (fallbackResponse.ok) {
-                        const fallbackData = await fallbackResponse.json();
-                        console.log(`[Instagram Analytics] ✓ Fallback successful for ${media.id}`);
-
-                        if (fallbackData.data && Array.isArray(fallbackData.data)) {
-                          fallbackData.data.forEach((metric: any) => {
-                            if (metric.name === 'reach' && metric.values?.[0]) {
-                              reach = metric.values[0].value || 0;
-                              console.log(`[Instagram Analytics] ✓ Reach for ${media.id}: ${reach}`);
-                            }
-                            if (metric.name === 'saved' && metric.values?.[0]) {
-                              saves = metric.values[0].value || 0;
-                            }
-                            if (metric.name === 'total_interactions' && metric.values?.[0]) {
-                              total_interactions = metric.values[0].value || 0;
-                            }
-                          });
-                        }
-                      }
-                    }
                   }
                 } catch (e) {
                   // Error response not JSON
