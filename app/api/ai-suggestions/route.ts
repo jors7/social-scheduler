@@ -103,6 +103,33 @@ export async function POST(request: NextRequest) {
 
     const contextSection = contextParts.length > 0 ? contextParts.join('\n') : ''
 
+    // Determine strictest character limit if any platform has one
+    const strictPlatforms = platforms.filter((p: string) => ['twitter', 'threads', 'bluesky', 'pinterest'].includes(p))
+    let lengthGuidance = '150-200 words'
+    let charLimitNote = ''
+
+    if (strictPlatforms.length > 0) {
+      const limits = strictPlatforms.map((p: string) => {
+        const platformLimits: Record<string, number> = {
+          twitter: 280,
+          threads: 500,
+          bluesky: 300,
+          pinterest: 500
+        }
+        return { platform: p, limit: platformLimits[p] }
+      })
+
+      const strictestLimit = Math.min(...limits.map((l: { platform: string, limit: number }) => l.limit))
+
+      charLimitNote = `\n\n**CRITICAL CHARACTER LIMIT:** Your caption MUST fit within ${strictestLimit} characters (including spaces, emojis, and hashtags). The platforms selected have strict limits: ${limits.map((l: { platform: string, limit: number }) => `${l.platform} (${l.limit} chars)`).join(', ')}. Keep it concise!`
+
+      if (strictestLimit <= 300) {
+        lengthGuidance = 'Short and punchy (under 50 words)'
+      } else if (strictestLimit <= 500) {
+        lengthGuidance = 'Concise and impactful (50-80 words)'
+      }
+    }
+
     const prompt = `You are a social media caption specialist, known for crafting engaging, authentic, and scroll-stopping captions.
 
 Write ONE captivating social media caption based on the details provided below:
@@ -111,11 +138,11 @@ ${contextSection}
 
 **Tone:** ${toneInstructions[tone] || 'casual'}
 **Platform(s):** ${platforms.join(', ')}
-${content ? `**Additional Context:** ${content}` : ''}
+${content ? `**Additional Context:** ${content}` : ''}${charLimitNote}
 
 Instructions:
 
-1. **Length:** 150-200 words
+1. **Length:** ${lengthGuidance}
 2. **Structure:**
    - **Hook** (first line that grabs attention immediately)
    - **Body** (value-driven story, tips, insights, or information that resonates with the audience)
@@ -124,7 +151,7 @@ Instructions:
    - Use line breaks for readability
    - Include emojis sparingly (1-3 max) where they add value
    - Use bullet points if presenting a list
-4. **Hashtags:** Include 3-5 relevant, searchable hashtags at the end
+4. **Hashtags:** Include 3-5 relevant, searchable hashtags at the end (count these in your character limit!)
 5. **Make it:** Authentic, relatable, and valuable to the target audience
 
 Return your response as a JSON object with this exact structure:
