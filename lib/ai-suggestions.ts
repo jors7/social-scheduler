@@ -9,12 +9,21 @@ export interface CaptionSuggestion {
   characterCount: number
 }
 
+export interface CaptionContext {
+  template?: string
+  topic: string
+  keyMessage?: string
+  audience?: string
+  cta?: string[]
+}
+
 export interface SuggestionRequest {
   content?: string
   platforms: string[]
   tone?: string
   includeHashtags?: boolean
   includeEmojis?: boolean
+  context?: CaptionContext
 }
 
 // AI suggestion service with OpenAI integration

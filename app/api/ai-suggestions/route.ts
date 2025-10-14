@@ -6,7 +6,7 @@ import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
   try {
-    const { content, platforms, tone, includeHashtags, includeEmojis } = await request.json()
+    const { content, platforms, tone, includeHashtags, includeEmojis, context } = await request.json()
 
     // Initialize OpenAI only when needed
     const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -84,8 +84,59 @@ export async function POST(request: NextRequest) {
       ? 'Include appropriate emojis to make the content more engaging.'
       : 'Do not include emojis.'
 
+    // Build context-aware prompt
+    let contextSection = ''
+    if (context) {
+      const parts = []
+
+      if (context.template) {
+        const templateDescriptions: Record<string, string> = {
+          'announcement': 'This is an announcement post',
+          'launch': 'This is a product/feature launch post',
+          'tip': 'This is an educational tip or how-to post',
+          'behind-scenes': 'This is a behind-the-scenes post',
+          'qa': 'This is a Q&A or question-based post',
+          'story': 'This is a storytelling post',
+        }
+        parts.push(`Type: ${templateDescriptions[context.template] || context.template}`)
+      }
+
+      parts.push(`Topic: ${context.topic}`)
+
+      if (context.keyMessage) {
+        parts.push(`Key Message: ${context.keyMessage}`)
+      }
+
+      if (context.audience) {
+        parts.push(`Target Audience: ${context.audience}`)
+      }
+
+      if (context.cta && context.cta.length > 0) {
+        const ctaMap: Record<string, string> = {
+          'visit': 'encourage people to visit a website',
+          'comment': 'ask people to comment below',
+          'share': 'encourage people to share the post',
+          'signup': 'encourage people to sign up',
+          'learn-more': 'encourage people to learn more',
+          'shop': 'encourage people to shop or buy',
+        }
+        const ctaTexts = context.cta.map((c: string) => ctaMap[c] || c)
+        parts.push(`Call to Action: ${ctaTexts.join(', ')}`)
+      }
+
+      contextSection = `
+
+Context Information:
+${parts.join('\n')}
+
+${content ? `Additional User Input: "${content}"` : ''}
+`
+    } else {
+      contextSection = content ? `\n\nContent: "${content}"` : ''
+    }
+
     const prompt = `
-Create 5 engaging social media captions based on this content: "${content}"
+Create 5 engaging social media captions for a post with the following details:${contextSection}
 
 Requirements:
 - Platforms: ${platformInfo}
@@ -95,6 +146,8 @@ Requirements:
 - Each caption should be unique and engaging
 - Respect character limits for each platform
 - Make content shareable and engaging
+- Use the context information to create highly relevant and specific captions
+- Make captions actionable and valuable for the target audience
 
 Format your response as a JSON array of objects with this structure:
 [

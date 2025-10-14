@@ -7,18 +7,20 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { AICaptionService, CaptionSuggestion } from '@/lib/ai-suggestions'
-import { 
-  Sparkles, 
-  Copy, 
-  RefreshCw, 
-  Wand2, 
-  Hash, 
-  Heart, 
+import { AICaptionContextForm, CaptionContext } from '@/components/dashboard/ai-caption-context-form'
+import {
+  Sparkles,
+  Copy,
+  RefreshCw,
+  Wand2,
+  Hash,
+  Heart,
   Lightbulb,
   Briefcase,
   Smile,
   GraduationCap,
-  Loader2
+  Loader2,
+  ArrowLeft
 } from 'lucide-react'
 
 interface AISuggestionsModalProps {
@@ -36,6 +38,8 @@ export function AISuggestionsModal({
   platforms,
   onSelectSuggestion
 }: AISuggestionsModalProps) {
+  const [step, setStep] = useState<'context' | 'suggestions'>('context')
+  const [context, setContext] = useState<CaptionContext | null>(null)
   const [suggestions, setSuggestions] = useState<CaptionSuggestion[]>([])
   const [hashtags, setHashtags] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
@@ -50,9 +54,9 @@ export function AISuggestionsModal({
     { id: 'educational', label: 'Educational', icon: GraduationCap, description: 'Informative' }
   ]
 
-  const generateSuggestions = useCallback(async (tone: string = selectedTone) => {
+  const generateSuggestions = useCallback(async (tone: string = selectedTone, captionContext?: CaptionContext) => {
     if (platforms.length === 0) return
-    
+
     setLoading(true)
     try {
       const [captionSuggestions, hashtagSuggestions] = await Promise.all([
@@ -61,29 +65,44 @@ export function AISuggestionsModal({
           platforms,
           tone,
           includeHashtags: true,
-          includeEmojis: true
+          includeEmojis: true,
+          context: captionContext || context || undefined
         }),
         AICaptionService.generateHashtagSuggestions(content, platforms)
       ])
-      
+
       setSuggestions(captionSuggestions)
       setHashtags(hashtagSuggestions)
+      setStep('suggestions')
     } catch (error) {
       console.error('Failed to generate suggestions:', error)
     } finally {
       setLoading(false)
     }
-  }, [content, platforms, selectedTone])
+  }, [content, platforms, selectedTone, context])
 
   useEffect(() => {
-    if (open && platforms.length > 0) {
-      generateSuggestions()
+    if (open) {
+      // Reset to context form when modal opens
+      setStep('context')
+      setContext(null)
+      setSuggestions([])
+      setHashtags([])
     }
-  }, [open, platforms, generateSuggestions])
+  }, [open])
 
   const handleToneChange = (tone: string) => {
     setSelectedTone(tone)
-    generateSuggestions(tone)
+    generateSuggestions(tone, context || undefined)
+  }
+
+  const handleContextSubmit = (captionContext: CaptionContext) => {
+    setContext(captionContext)
+    generateSuggestions(selectedTone, captionContext)
+  }
+
+  const handleBackToContext = () => {
+    setStep('context')
   }
 
   const handleSelectSuggestion = (suggestion: CaptionSuggestion) => {
@@ -119,12 +138,34 @@ export function AISuggestionsModal({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            {step === 'suggestions' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackToContext}
+                className="mr-2 -ml-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            )}
             <Sparkles className="h-5 w-5 text-blue-500" />
             AI Caption Suggestions
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Step 1: Context Form */}
+          {step === 'context' && (
+            <AICaptionContextForm
+              onSubmit={handleContextSubmit}
+              onCancel={() => onOpenChange(false)}
+              loading={loading}
+            />
+          )}
+
+          {/* Step 2: Suggestions Display */}
+          {step === 'suggestions' && (
+            <>
           {/* Tone Selection */}
           <div>
             <h3 className="text-sm font-medium mb-3">Choose Style</h3>
@@ -285,6 +326,8 @@ export function AISuggestionsModal({
                 )}
               </div>
             </div>
+          )}
+            </>
           )}
         </div>
       </DialogContent>
