@@ -10,7 +10,7 @@ const CLIENT_SECRET = process.env.TIKTOK_CLIENT_SECRET || '';
  * TikTok tokens expire after 24 hours, so we refresh them every 12 hours
  *
  * This endpoint should be called by Vercel Cron or similar scheduler
- * Recommended schedule: 0 */12 * * * (every 12 hours)
+ * Recommended schedule: every 12 hours (e.g., 0 0,12 * * *)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     const results = {
       total: accounts.length,
-      success: 0,
+      succeeded: 0,
       failed: 0,
       errors: [] as string[]
     };
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
         }
 
         console.log(`[TikTok Token Refresh Cron] ✓ Successfully refreshed token for ${account.username}`);
-        results.success++;
+        results.succeeded++;
 
       } catch (error) {
         console.error(`[TikTok Token Refresh Cron] Exception for account ${account.username}:`, error);
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log(`[TikTok Token Refresh Cron] Completed: ${results.success} succeeded, ${results.failed} failed`);
+    console.log(`[TikTok Token Refresh Cron] Completed: ${results.succeeded} succeeded, ${results.failed} failed`);
 
     return NextResponse.json({
       success: true,
