@@ -52,6 +52,9 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const days = parseInt(searchParams.get('days') || '30');
 
+    // Get base URL for internal API calls (server-side fetch requires absolute URLs)
+    const baseUrl = request.nextUrl.origin;
+
     // Get TikTok accounts
     const { data: accounts, error: accountsError } = await supabase
       .from('social_accounts')
@@ -87,7 +90,8 @@ export async function GET(request: NextRequest) {
       try {
         // Fetch videos using the TikTok API via our media endpoint
         // We'll fetch up to 100 videos to get enough data for the analytics period
-        const mediaUrl = `/api/tiktok/media?limit=100&accountId=${account.id}`;
+        // Use absolute URL for server-side fetch
+        const mediaUrl = `${baseUrl}/api/tiktok/media?limit=100&accountId=${account.id}`;
         const mediaResponse = await fetchWithTimeout(mediaUrl, 15000); // 15 second timeout
 
         if (!mediaResponse.ok) {
