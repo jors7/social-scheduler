@@ -970,32 +970,60 @@ function CreateNewPostPageContent() {
       
       // Handle YouTube separately if selected
       let youtubeVideoUrl: string | undefined;
+      let youtubeVideoFileUrl: string | undefined; // Store the video file URL for thumbnail
       if (selectedPlatforms.includes('youtube') && youtubeVideoFile) {
-        // Upload YouTube video first
-        progressTracker.updatePlatform('youtube', 'uploading', 'Uploading video to YouTube...')
-        
-        const formData = new FormData()
-        formData.append('video', youtubeVideoFile)
-        if (youtubeThumbnailFile) {
-          formData.append('thumbnail', youtubeThumbnailFile)
-        }
-        formData.append('title', youtubeTitle || 'New Video')
-        formData.append('description', youtubeDescription || postContent)
-        formData.append('tags', youtubeTags.join(','))
-        formData.append('categoryId', youtubeCategoryId)
-        formData.append('privacyStatus', youtubePrivacyStatus)
+        // First, upload the video to Supabase Storage to get a permanent URL for thumbnails
+        progressTracker.updatePlatform('youtube', 'uploading', 'Preparing video file...')
 
         try {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) throw new Error('User not authenticated')
+
+          // Upload video to Supabase Storage
+          const fileExt = youtubeVideoFile.name.split('.').pop()
+          const fileName = `${user.id}/${Date.now()}_youtube.${fileExt}`
+
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('post-media')
+            .upload(fileName, youtubeVideoFile, {
+              contentType: youtubeVideoFile.type,
+              upsert: false
+            })
+
+          if (uploadError) throw uploadError
+
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('post-media')
+            .getPublicUrl(fileName)
+
+          youtubeVideoFileUrl = publicUrl
+          console.log('YouTube video uploaded to storage:', youtubeVideoFileUrl)
+
+          // Now upload to YouTube
+          progressTracker.updatePlatform('youtube', 'uploading', 'Uploading to YouTube...')
+
+          const formData = new FormData()
+          formData.append('video', youtubeVideoFile)
+          if (youtubeThumbnailFile) {
+            formData.append('thumbnail', youtubeThumbnailFile)
+          }
+          formData.append('title', youtubeTitle || 'New Video')
+          formData.append('description', youtubeDescription || postContent)
+          formData.append('tags', youtubeTags.join(','))
+          formData.append('categoryId', youtubeCategoryId)
+          formData.append('privacyStatus', youtubePrivacyStatus)
+
           const response = await fetch('/api/media/upload/youtube', {
             method: 'POST',
             body: formData,
           })
-          
+
           if (!response.ok) {
             const error = await response.json()
             throw new Error(error.error || 'YouTube upload failed')
           }
-          
+
           const result = await response.json()
           youtubeVideoUrl = result.video.url
           progressTracker.updatePlatform('youtube', 'success', `Video uploaded to YouTube successfully! View at: ${result.video.url}`)
@@ -1012,8 +1040,8 @@ function CreateNewPostPageContent() {
                   content: youtubeDescription || postContent,
                   platforms: ['youtube'],
                   platform_content: { youtube: youtubeDescription || postContent },
-                  media_urls: youtubeVideoUrl ? [youtubeVideoUrl] : null, // Use YouTube video URL for thumbnail
-                  platform_media_url: youtubeVideoUrl, // Store video URL as platform media URL for thumbnail
+                  media_urls: youtubeVideoFileUrl ? [youtubeVideoFileUrl] : null, // Use video file URL for thumbnail
+                  platform_media_url: youtubeVideoFileUrl, // Store video file URL as platform media URL for thumbnail
                   status: 'posted',
                   scheduled_for: postedTime, // Add this so posts appear in queries that order by scheduled_for
                   posted_at: postedTime,
@@ -1021,11 +1049,11 @@ function CreateNewPostPageContent() {
                     platform: 'youtube',
                     success: true,
                     postId: result.video.id,
-                    url: result.video.url,
+                    url: result.video.url, // YouTube watch URL
                     data: {
                       title: youtubeTitle,
                       videoId: result.video.id,
-                      url: result.video.url
+                      url: result.video.url // YouTube watch URL
                     }
                   }]
                 })
