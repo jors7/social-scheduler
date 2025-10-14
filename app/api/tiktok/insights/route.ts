@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { ensureTikTokTokenValid } from '@/lib/tiktok/token-manager';
 
 export async function GET(request: NextRequest) {
   try {
@@ -38,6 +39,21 @@ export async function GET(request: NextRequest) {
 
     const account = accounts[0];
 
+    // Ensure token is valid, refresh if necessary
+    console.log('[TikTok Insights] Checking token validity for account:', account.id);
+    const { valid, token, error: tokenError } = await ensureTikTokTokenValid(account.id);
+
+    if (!valid) {
+      console.error('[TikTok Insights] Token validation failed:', tokenError);
+      return NextResponse.json(
+        { error: tokenError || 'TikTok token expired', tokenExpired: true },
+        { status: 401 }
+      );
+    }
+
+    // Use the validated/refreshed token
+    const accessToken = token || account.access_token;
+
     console.log(`[TikTok Insights] Fetching for account:`, {
       accountId: account.id,
       username: account.username,
@@ -50,7 +66,7 @@ export async function GET(request: NextRequest) {
 
       const userResponse = await fetch(userStatsUrl, {
         headers: {
-          'Authorization': `Bearer ${account.access_token}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
       });
