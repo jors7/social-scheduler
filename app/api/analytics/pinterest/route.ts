@@ -72,110 +72,123 @@ export async function GET(request: NextRequest) {
       posts: []
     };
 
+    // Fetch Pinterest posts from database (with permanent media URLs)
+    console.log('[Pinterest Analytics] Fetching Pinterest posts from database');
+
+    const { data: dbPosts, error: postsError } = await supabase
+      .from('scheduled_posts')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'posted')
+      .contains('platforms', ['pinterest'])
+      .gte('posted_at', since.toISOString())
+      .order('posted_at', { ascending: false });
+
+    if (postsError) {
+      console.error('[Pinterest Analytics] Error fetching posts from database:', postsError);
+    }
+
+    console.log(`[Pinterest Analytics] Found ${dbPosts?.length || 0} Pinterest posts in database`);
+
     // Fetch data for each Pinterest account
     for (const account of accounts) {
       if (!account.access_token) continue;
 
       try {
-        // Get user's pins using Pinterest API v5
-        console.log('[Pinterest Analytics] Fetching pins for account:', account.username || account.platform_user_id);
+        // Process database posts with Pinterest API analytics
+        if (dbPosts && dbPosts.length > 0) {
+          console.log('[Pinterest Analytics] Processing database posts with API analytics');
 
-        const pinsUrl = `https://api.pinterest.com/v5/pins?page_size=100&pin_fields=id,title,description,link,created_at,board_id,media`;
-        const pinsResponse = await fetch(pinsUrl, {
-          headers: {
-            'Authorization': `Bearer ${account.access_token}`,
-            'Content-Type': 'application/json',
-          }
-        });
-
-        if (!pinsResponse.ok) {
-          const errorText = await pinsResponse.text();
-          console.error(`[Pinterest Analytics] Failed to fetch pins:`, errorText);
-          continue;
-        }
-
-        const pinsData = await pinsResponse.json();
-        const allPins = pinsData.items || [];
-
-        console.log(`[Pinterest Analytics] Found ${allPins.length} total pins`);
-
-        // Filter pins by date range
-        const pinsInDateRange = allPins.filter((pin: any) => {
-          if (!pin.created_at) return false;
-          const pinDate = new Date(pin.created_at);
-          return pinDate >= since;
-        });
-
-        console.log(`[Pinterest Analytics] Pins in date range (last ${days} days): ${pinsInDateRange.length}/${allPins.length}`);
-
-        // Process all pins with full analytics regardless of date range
-        const pinPromises = pinsInDateRange.map(async (pin: any) => {
-          try {
-            let saves = 0, pin_clicks = 0, impressions = 0, outbound_clicks = 0;
-
-            // Get analytics for each pin
-            // Pinterest Analytics API requires specific date ranges and metrics
+          const pinPromises = dbPosts.map(async (dbPost: any) => {
             try {
-              const analyticsUrl = `https://api.pinterest.com/v5/pins/${pin.id}/analytics?start_date=${since.toISOString().split('T')[0]}&end_date=${new Date().toISOString().split('T')[0]}&metric_types=PIN_CLICK,IMPRESSION,SAVE,OUTBOUND_CLICK`;
-              const analyticsResponse = await fetch(analyticsUrl, {
-                headers: {
-                  'Authorization': `Bearer ${account.access_token}`,
-                  'Content-Type': 'application/json',
-                }
-              });
-
-              if (analyticsResponse.ok) {
-                const analyticsData = await analyticsResponse.json();
-
-                // Pinterest returns daily breakdown, we need to sum it up
-                if (analyticsData.daily_metrics && Array.isArray(analyticsData.daily_metrics)) {
-                  analyticsData.daily_metrics.forEach((metric: any) => {
-                    if (metric.data_status === 'READY') {
-                      saves += metric.metrics?.SAVE || 0;
-                      pin_clicks += metric.metrics?.PIN_CLICK || 0;
-                      impressions += metric.metrics?.IMPRESSION || 0;
-                      outbound_clicks += metric.metrics?.OUTBOUND_CLICK || 0;
-                    }
-                  });
-                }
-              } else {
-                console.log(`[Pinterest Analytics] Analytics not available for pin ${pin.id}`);
+              // Get Pinterest post ID from post_results
+              const pinterestResult = dbPost.post_results?.find((r: any) => r.platform === 'pinterest');
+              if (!pinterestResult || !pinterestResult.postId) {
+                console.log(`[Pinterest Analytics] No Pinterest postId found for post ${dbPost.id}`);
+                return null;
               }
-            } catch (analyticsError) {
-              console.log(`[Pinterest Analytics] Error fetching analytics for pin ${pin.id}:`, analyticsError);
+
+              const pinId = pinterestResult.postId;
+              let saves = 0, pin_clicks = 0, impressions = 0, outbound_clicks = 0;
+
+              // Get analytics for each pin from Pinterest API
+              try {
+                const analyticsUrl = `https://api.pinterest.com/v5/pins/${pinId}/analytics?start_date=${since.toISOString().split('T')[0]}&end_date=${new Date().toISOString().split('T')[0]}&metric_types=PIN_CLICK,IMPRESSION,SAVE,OUTBOUND_CLICK`;
+                const analyticsResponse = await fetch(analyticsUrl, {
+                  headers: {
+                    'Authorization': `Bearer ${account.access_token}`,
+                    'Content-Type': 'application/json',
+                  }
+                });
+
+                if (analyticsResponse.ok) {
+                  const analyticsData = await analyticsResponse.json();
+
+                  // Pinterest returns daily breakdown, we need to sum it up
+                  if (analyticsData.daily_metrics && Array.isArray(analyticsData.daily_metrics)) {
+                    analyticsData.daily_metrics.forEach((metric: any) => {
+                      if (metric.data_status === 'READY') {
+                        saves += metric.metrics?.SAVE || 0;
+                        pin_clicks += metric.metrics?.PIN_CLICK || 0;
+                        impressions += metric.metrics?.IMPRESSION || 0;
+                        outbound_clicks += metric.metrics?.OUTBOUND_CLICK || 0;
+                      }
+                    });
+                  }
+                } else {
+                  console.log(`[Pinterest Analytics] Analytics not available for pin ${pinId}`);
+                }
+              } catch (analyticsError) {
+                console.log(`[Pinterest Analytics] Error fetching analytics for pin ${pinId}:`, analyticsError);
+              }
+
+              // Extract title from platform_content or content
+              const pinterestContent = dbPost.platform_content?.pinterest || dbPost.content || '';
+              const title = pinterestContent.includes(':')
+                ? pinterestContent.split(':')[0].trim()
+                : pinterestContent.substring(0, 100);
+
+              const description = pinterestContent.includes(':')
+                ? pinterestContent.split(':').slice(1).join(':').trim()
+                : '';
+
+              // Use permanent Supabase Storage URL from database (NOT Pinterest CDN URLs)
+              const thumbnailUrl = dbPost.media_urls && Array.isArray(dbPost.media_urls) && dbPost.media_urls.length > 0
+                ? dbPost.media_urls[0]
+                : null;
+
+              return {
+                id: pinId,
+                title: title || 'Untitled Pin',
+                description: description || dbPost.content || '',
+                link: dbPost.pinterest_link || null,
+                created_at: dbPost.posted_at || dbPost.created_at,
+                board_id: dbPost.pinterest_board_id || null,
+                media_url: thumbnailUrl,
+                thumbnail_url: thumbnailUrl,
+                saves,
+                pin_clicks,
+                impressions,
+                outbound_clicks,
+                totalEngagement: saves + pin_clicks + outbound_clicks
+              };
+            } catch (error) {
+              console.error(`[Pinterest Analytics] Error processing database post ${dbPost.id}:`, error);
+              return null;
             }
+          });
 
-            return {
-              id: pin.id,
-              title: pin.title,
-              description: pin.description,
-              link: pin.link,
-              created_at: pin.created_at,
-              board_id: pin.board_id,
-              media_url: pin.media?.images?.['600x']?.url || pin.media?.images?.originals?.url,
-              thumbnail_url: pin.media?.images?.['236x']?.url || pin.media?.images?.['400x600']?.url,
-              saves,
-              pin_clicks,
-              impressions,
-              outbound_clicks,
-              totalEngagement: saves + pin_clicks + outbound_clicks
-            };
-          } catch (error) {
-            console.error(`[Pinterest Analytics] Error processing pin ${pin.id}:`, error);
-            return null;
-          }
-        });
-
-        const pinResults = await Promise.all(pinPromises);
-        pinResults.forEach(pinMetrics => {
-          if (pinMetrics) {
-            allMetrics.posts.push(pinMetrics);
-            allMetrics.totalPosts++;
-            allMetrics.totalEngagement += pinMetrics.totalEngagement;
-            allMetrics.totalReach += pinMetrics.impressions; // Use impressions as reach
-            allMetrics.totalImpressions += pinMetrics.impressions;
-          }
-        });
+          const pinResults = await Promise.all(pinPromises);
+          pinResults.forEach(pinMetrics => {
+            if (pinMetrics) {
+              allMetrics.posts.push(pinMetrics);
+              allMetrics.totalPosts++;
+              allMetrics.totalEngagement += pinMetrics.totalEngagement;
+              allMetrics.totalReach += pinMetrics.impressions; // Use impressions as reach
+              allMetrics.totalImpressions += pinMetrics.impressions;
+            }
+          });
+        }
 
         console.log('[Pinterest Analytics] ========== FINAL METRICS ==========');
         console.log('[Pinterest Analytics] Total Posts:', allMetrics.totalPosts);
