@@ -5,15 +5,33 @@ import { stripHtml, isVideoUrl } from './preview-utils'
 interface PinterestPreviewProps {
   content: string
   mediaUrls?: string[]
+  pinterestTitle?: string
+  pinterestDescription?: string
+  pinterestBoard?: string
 }
 
-export function PinterestPreview({ content, mediaUrls = [] }: PinterestPreviewProps) {
-  const plainText = stripHtml(content)
+export function PinterestPreview({
+  content,
+  mediaUrls = [],
+  pinterestTitle,
+  pinterestDescription,
+  pinterestBoard
+}: PinterestPreviewProps) {
+  // Use Pinterest-specific fields if provided, otherwise fall back to content parsing
+  let title: string
+  let description: string
 
-  // Extract title (first line) and description (rest)
-  const lines = plainText.split('\n')
-  const title = lines[0]?.slice(0, 100) || 'Untitled Pin'
-  const description = lines.slice(1).join('\n').slice(0, 500)
+  if (pinterestTitle || pinterestDescription) {
+    // Use the dedicated Pinterest fields
+    title = pinterestTitle?.slice(0, 100) || 'Untitled Pin'
+    description = pinterestDescription?.slice(0, 500) || ''
+  } else {
+    // Fall back to parsing content (legacy behavior)
+    const plainText = stripHtml(content)
+    const lines = plainText.split('\n')
+    title = lines[0]?.slice(0, 100) || 'Untitled Pin'
+    description = lines.slice(1).join('\n').slice(0, 500)
+  }
 
   return (
     <div className="bg-gray-50 max-w-sm mx-auto">
@@ -67,7 +85,9 @@ export function PinterestPreview({ content, mediaUrls = [] }: PinterestPreviewPr
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <div className="w-8 h-8 rounded-full bg-red-100 flex-shrink-0"></div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-gray-900 truncate">Your Board</p>
+              <p className="font-medium text-gray-900 truncate">
+                {pinterestBoard || 'Your Board'}
+              </p>
             </div>
           </div>
         </div>

@@ -22,6 +22,9 @@ interface PreviewPanelProps {
   instagramFormat?: 'feed-square' | 'feed-portrait' | 'feed-landscape' | 'story' | 'reel'
   facebookFormat?: 'feed' | 'story' | 'reel'
   youtubeFormat?: 'video' | 'short'
+  pinterestTitle?: string
+  pinterestDescription?: string
+  pinterestBoard?: string
   onClose: () => void
 }
 
@@ -45,6 +48,9 @@ export function PreviewPanel({
   instagramFormat = 'feed-portrait',
   facebookFormat = 'feed',
   youtubeFormat = 'video',
+  pinterestTitle,
+  pinterestDescription,
+  pinterestBoard,
   onClose
 }: PreviewPanelProps) {
   const [activePlatform, setActivePlatform] = useState(
@@ -138,6 +144,14 @@ export function PreviewPanel({
               content={platformContentToUse}
               mediaUrls={mediaUrls}
               format={youtubeFormat}
+            />
+          ) : activePlatform === 'pinterest' ? (
+            <PinterestPreview
+              content={platformContentToUse}
+              mediaUrls={mediaUrls}
+              pinterestTitle={pinterestTitle}
+              pinterestDescription={pinterestDescription}
+              pinterestBoard={pinterestBoard}
             />
           ) : (
             <ActivePreviewComponent
