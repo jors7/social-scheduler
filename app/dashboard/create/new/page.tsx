@@ -533,11 +533,13 @@ function CreateNewPostPageContent() {
     // Split by double newlines to identify paragraphs
     const paragraphs = processedSuggestion.split('\n\n').filter(p => p.trim())
 
+    // Convert to HTML - each line within a paragraph becomes its own <p> tag
     const htmlContent = paragraphs.map(paragraph => {
-      // If paragraph contains single line breaks (like bullet lists), convert them to <br>
+      // If paragraph contains single line breaks (like bullet lists), split into separate paragraphs
       if (paragraph.includes('\n')) {
         const lines = paragraph.split('\n').map(line => line.trim()).filter(line => line)
-        return `<p>${lines.join('<br>')}</p>`
+        // Each line becomes its own paragraph for proper line spacing
+        return lines.map(line => `<p>${line}</p>`).join('')
       }
 
       return `<p>${paragraph}</p>`
