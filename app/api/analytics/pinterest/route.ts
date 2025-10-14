@@ -73,6 +73,8 @@ export async function GET(request: NextRequest) {
     };
 
     // Fetch Pinterest posts from database (with permanent media URLs)
+    // Note: We fetch ALL posted Pinterest posts, not just from date range
+    // This is because we want to show all pins and let the analytics API filter by date
     console.log('[Pinterest Analytics] Fetching Pinterest posts from database');
 
     const { data: dbPosts, error: postsError } = await supabase
@@ -81,8 +83,8 @@ export async function GET(request: NextRequest) {
       .eq('user_id', user.id)
       .eq('status', 'posted')
       .contains('platforms', ['pinterest'])
-      .gte('posted_at', since.toISOString())
-      .order('posted_at', { ascending: false });
+      .order('posted_at', { ascending: false })
+      .limit(100); // Limit to last 100 posts for performance
 
     if (postsError) {
       console.error('[Pinterest Analytics] Error fetching posts from database:', postsError);
