@@ -970,35 +970,49 @@ function CreateNewPostPageContent() {
       
       // Handle YouTube separately if selected
       let youtubeVideoUrl: string | undefined;
-      let youtubeVideoFileUrl: string | undefined; // Store the video file URL for thumbnail
+      let youtubeThumbnailUrl: string | undefined; // Store the thumbnail image URL
       if (selectedPlatforms.includes('youtube') && youtubeVideoFile) {
-        // First, upload the video to Supabase Storage to get a permanent URL for thumbnails
-        progressTracker.updatePlatform('youtube', 'uploading', 'Preparing video file...')
+        // First, extract a thumbnail image from the video to save storage space
+        progressTracker.updatePlatform('youtube', 'uploading', 'Extracting thumbnail...')
 
         try {
           const { data: { user } } = await supabase.auth.getUser()
           if (!user) throw new Error('User not authenticated')
 
-          // Upload video to Supabase Storage
-          const fileExt = youtubeVideoFile.name.split('.').pop()
-          const fileName = `${user.id}/${Date.now()}_youtube.${fileExt}`
+          // Extract thumbnail image from video
+          const { extractVideoThumbnail, blobToFile } = await import('@/lib/video-thumbnail')
+          const thumbnailBlob = await extractVideoThumbnail(youtubeVideoFile, {
+            width: 1280,
+            height: 720,
+            quality: 0.85
+          })
 
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('post-media')
-            .upload(fileName, youtubeVideoFile, {
-              contentType: youtubeVideoFile.type,
-              upsert: false
-            })
+          if (thumbnailBlob) {
+            // Upload thumbnail image to Supabase Storage
+            const thumbnailFile = blobToFile(thumbnailBlob, `youtube_thumbnail_${Date.now()}.jpg`)
+            const fileName = `${user.id}/${Date.now()}_youtube_thumb.jpg`
 
-          if (uploadError) throw uploadError
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('post-media')
+              .upload(fileName, thumbnailFile, {
+                contentType: 'image/jpeg',
+                upsert: false
+              })
 
-          // Get public URL
-          const { data: { publicUrl } } = supabase.storage
-            .from('post-media')
-            .getPublicUrl(fileName)
+            if (!uploadError) {
+              // Get public URL
+              const { data: { publicUrl } } = supabase.storage
+                .from('post-media')
+                .getPublicUrl(fileName)
 
-          youtubeVideoFileUrl = publicUrl
-          console.log('YouTube video uploaded to storage:', youtubeVideoFileUrl)
+              youtubeThumbnailUrl = publicUrl
+              console.log('YouTube thumbnail uploaded to storage:', youtubeThumbnailUrl)
+            } else {
+              console.error('Failed to upload thumbnail:', uploadError)
+            }
+          } else {
+            console.warn('Could not extract video thumbnail, proceeding without thumbnail')
+          }
 
           // Now upload to YouTube
           progressTracker.updatePlatform('youtube', 'uploading', 'Uploading to YouTube...')
@@ -1040,8 +1054,8 @@ function CreateNewPostPageContent() {
                   content: youtubeDescription || postContent,
                   platforms: ['youtube'],
                   platform_content: { youtube: youtubeDescription || postContent },
-                  media_urls: youtubeVideoFileUrl ? [youtubeVideoFileUrl] : null, // Use video file URL for thumbnail
-                  platform_media_url: youtubeVideoFileUrl, // Store video file URL as platform media URL for thumbnail
+                  media_urls: youtubeThumbnailUrl ? [youtubeThumbnailUrl] : null, // Use thumbnail image URL
+                  platform_media_url: youtubeThumbnailUrl, // Store thumbnail image URL
                   status: 'posted',
                   scheduled_for: postedTime, // Add this so posts appear in queries that order by scheduled_for
                   posted_at: postedTime,

@@ -538,25 +538,21 @@ export default function PostedPostsPage() {
                   });
                 }
 
-                // Check if this is a YouTube post - always show YouTube as video with preload="metadata"
-                const isYouTubePost = post.platforms.includes('youtube');
-
-                // Check if we have a platform media URL (thumbnail) for video content
-                const hasPlatformThumbnail = !isYouTubePost && post.platform_media_url && (
-                  post.platform_media_url.includes('.jpg') ||
-                  post.platform_media_url.includes('.jpeg') ||
-                  post.platform_media_url.includes('.png')
+                // Check if we have an image thumbnail (for all platforms including YouTube)
+                const hasImageThumbnail = firstMediaUrl && (
+                  firstMediaUrl.includes('.jpg') ||
+                  firstMediaUrl.includes('.jpeg') ||
+                  firstMediaUrl.includes('.png') ||
+                  firstMediaUrl.includes('.webp')
                 )
 
-                // YouTube videos always use video tag with preload="metadata" for thumbnail extraction
-                // If it's YouTube, always render as video. Otherwise check for video extensions.
-                const isVideo = isYouTubePost ? true : (
-                  !hasPlatformThumbnail && firstMediaUrl && (
-                    firstMediaUrl.includes('.mp4') ||
-                    firstMediaUrl.includes('.mov') ||
-                    firstMediaUrl.includes('.webm') ||
-                    firstMediaUrl.includes('video')
-                  )
+                // Determine if this should be rendered as a video
+                // Use video tag only if it's actually a video file (not an image thumbnail)
+                const isVideo = !hasImageThumbnail && firstMediaUrl && (
+                  firstMediaUrl.includes('.mp4') ||
+                  firstMediaUrl.includes('.mov') ||
+                  firstMediaUrl.includes('.webm') ||
+                  firstMediaUrl.includes('video')
                 )
                 
                 return (
