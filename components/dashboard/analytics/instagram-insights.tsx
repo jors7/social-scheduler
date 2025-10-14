@@ -515,12 +515,13 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
       </Card>
 
       {/* Metrics Limitations Info */}
-      {accountInfo && (accountInfo.followers_count < 100 || accountInfo.account_type === 'MEDIA_CREATOR') && (
+      {accountInfo && (
         <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
           <div className="flex-1 text-sm text-blue-900">
             <p className="font-medium mb-1">Some metrics may show limited data:</p>
             <ul className="list-disc list-inside space-y-1 text-blue-800">
+              <li>Instagram analytics data may be delayed by 24-48 hours due to Instagram API processing time</li>
               {accountInfo.followers_count < 100 && (
                 <li>Profile Views requires 100+ followers (you have {accountInfo.followers_count})</li>
               )}
