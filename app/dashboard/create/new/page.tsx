@@ -530,20 +530,16 @@ function CreateNewPostPageContent() {
       processedSuggestion = processedSuggestion.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     }
 
-    // Split by double newlines to identify paragraphs
-    const paragraphs = processedSuggestion.split('\n\n').filter(p => p.trim())
-
-    // Convert to HTML - each line within a paragraph becomes its own <p> tag
-    const htmlContent = paragraphs.map(paragraph => {
-      // If paragraph contains single line breaks (like bullet lists), split into separate paragraphs
-      if (paragraph.includes('\n')) {
-        const lines = paragraph.split('\n').map(line => line.trim()).filter(line => line)
-        // Each line becomes its own paragraph for proper line spacing
-        return lines.map(line => `<p>${line}</p>`).join('')
-      }
-
-      return `<p>${paragraph}</p>`
-    }).join('')
+    // Replace all single \n with <br> for line breaks
+    // Replace \n\n with </p><p> for paragraph breaks
+    let htmlContent = processedSuggestion
+      .split('\n\n')
+      .map(paragraph => {
+        // Within each paragraph, convert single line breaks to <br>
+        const withBreaks = paragraph.split('\n').join('<br>')
+        return `<p>${withBreaks}</p>`
+      })
+      .join('')
 
     setPostContent(htmlContent)
     // Don't automatically sync to platform content - let users explicitly customize if needed
@@ -2851,14 +2847,6 @@ function CreateNewPostPageContent() {
                   placeholder="What's on your mind?"
                   maxLength={selectedPlatforms.length === 1 ? platforms.find(p => p.id === selectedPlatforms[0])?.charLimit : 2200}
                 />
-                {selectedPlatforms.length === 1 && (
-                  <div className="mt-2 text-sm text-gray-500">
-                    {(() => {
-                      const chars = getCharCount(selectedPlatforms[0])
-                      return `${chars.current} / ${chars.limit} characters`
-                    })()}
-                  </div>
-                )}
               </div>
 
               {/* Platform Customization Toggle */}
