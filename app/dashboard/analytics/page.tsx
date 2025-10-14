@@ -95,14 +95,16 @@ export default function AnalyticsPage() {
       }
 
       // Fetch data from all platforms in parallel (including trends)
+      // Add cache-busting timestamp to ensure fresh data
+      const cacheBust = Date.now();
       const [facebookRes, instagramRes, threadsRes, blueskyRes, pinterestRes, tiktokRes, trendsRes] = await Promise.all([
-        fetch(`/api/analytics/facebook?days=${dateRange}`),
-        fetch(`/api/analytics/instagram?days=${dateRange}`),
-        fetch(`/api/analytics/threads?days=${dateRange}`),
-        fetch(`/api/analytics/bluesky?days=${dateRange}`),
-        fetch(`/api/analytics/pinterest?days=${dateRange}`),
-        fetch(`/api/analytics/tiktok?days=${dateRange}`),
-        fetch(`/api/analytics/trends?days=${dateRange}`)
+        fetch(`/api/analytics/facebook?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/instagram?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/threads?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/bluesky?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/pinterest?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/tiktok?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/trends?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' })
       ])
 
       const [facebookData, instagramData, threadsData, blueskyData, pinterestData, tiktokData, trendsDataRes] = await Promise.all([

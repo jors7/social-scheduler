@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-// Cache for Instagram data when token expires
-const instagramCache = new Map<string, { data: any, timestamp: number }>();
-const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+// NOTE: Removed in-memory cache to prevent serving stale data
+// Instagram API data should always be fetched fresh
 
 interface InstagramMetrics {
   totalPosts: number;
@@ -160,7 +159,9 @@ export async function GET(request: NextRequest) {
                 ? 'reach,saved,total_interactions,plays'  // Only regular videos support 'plays'
                 : 'reach,saved,total_interactions';       // Reels and images don't support 'plays'
 
-              const insightsUrl = `https://graph.instagram.com/${media.id}/insights?metric=${metrics}&access_token=${account.access_token}`;
+              // Add cache-busting timestamp to ensure fresh data from Instagram API
+              const cacheBust = Date.now();
+              const insightsUrl = `https://graph.instagram.com/${media.id}/insights?metric=${metrics}&access_token=${account.access_token}&_=${cacheBust}`;
               console.log(`[Instagram Analytics] Fetching insights for media ${media.id} (type: ${media.media_type}, product: ${media.media_product_type || 'N/A'})`);
 
               const insightsResponse = await fetch(insightsUrl);
@@ -245,36 +246,9 @@ export async function GET(request: NextRequest) {
             console.log(`  - Reach: ${reach}, Plays: ${plays}, Impressions: ${reach}`);
             console.log(`  - Caption: ${media.caption?.substring(0, 50) || 'No caption'}...`);
           }
-        
-        // Cache successful data
-        if (postsInDateRange.length > 0) {
-          instagramCache.set(account.id, {
-            data: {
-              posts: allMetrics.posts.slice(-postsInDateRange.length), // Keep only posts from this account
-              totalPosts: postsInDateRange.length,
-              totalEngagement: allMetrics.totalEngagement,
-              totalReach: allMetrics.totalReach,
-              totalImpressions: allMetrics.totalImpressions
-            },
-            timestamp: Date.now()
-          });
-        }
       } catch (error: any) {
         console.error(`Error fetching data for Instagram account ${account.id}:`, error);
-        
-        // If token expired, try to return cached data
-        if (error.message?.includes('token') || error.message?.includes('OAuth')) {
-          const cached = instagramCache.get(account.id);
-          if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
-            console.log('[Instagram Analytics] Using cached data for expired token');
-            // Add cached data to allMetrics
-            allMetrics.totalPosts += cached.data.totalPosts;
-            allMetrics.totalEngagement += cached.data.totalEngagement;
-            allMetrics.totalReach += cached.data.totalReach;
-            allMetrics.totalImpressions += cached.data.totalImpressions || 0;
-            allMetrics.posts.push(...cached.data.posts);
-          }
-        }
+        // Note: Removed cache fallback to ensure always-fresh data
       }
     }
 
@@ -285,7 +259,14 @@ export async function GET(request: NextRequest) {
     console.log('[Instagram Analytics] Total Impressions:', allMetrics.totalImpressions);
     console.log('[Instagram Analytics] Posts array length:', allMetrics.posts.length);
 
-    return NextResponse.json({ metrics: allMetrics });
+    // Return with cache-control headers to prevent stale data
+    return NextResponse.json({ metrics: allMetrics }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
 
   } catch (error) {
     console.error('Error fetching Instagram analytics:', error);
