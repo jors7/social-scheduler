@@ -44,6 +44,8 @@ export function AISuggestionsModal({
   const [hashtags, setHashtags] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedTone, setSelectedTone] = useState<string>('mixed')
+  const [progress, setProgress] = useState(0)
+  const [loadingMessage, setLoadingMessage] = useState('Analyzing context...')
 
   const tones = [
     { id: 'mixed', label: 'Mixed', icon: Wand2, description: 'Variety of styles' },
@@ -58,6 +60,23 @@ export function AISuggestionsModal({
     if (platforms.length === 0) return
 
     setLoading(true)
+    setProgress(0)
+    setLoadingMessage('Analyzing context...')
+
+    // Simulate progress updates
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev < 30) return prev + 10
+        if (prev < 60) return prev + 5
+        if (prev < 90) return prev + 3
+        return prev
+      })
+    }, 300)
+
+    // Update loading messages
+    setTimeout(() => setLoadingMessage('Crafting your caption...'), 1000)
+    setTimeout(() => setLoadingMessage('Adding the perfect touch...'), 2500)
+
     try {
       const [captionSuggestions, hashtagSuggestions] = await Promise.all([
         AICaptionService.generateSuggestions({
@@ -71,13 +90,22 @@ export function AISuggestionsModal({
         AICaptionService.generateHashtagSuggestions(content, platforms)
       ])
 
+      clearInterval(progressInterval)
+      setProgress(100)
+      setLoadingMessage('Complete!')
+
+      // Small delay to show 100%
+      await new Promise(resolve => setTimeout(resolve, 300))
+
       setSuggestions(captionSuggestions)
       setHashtags(hashtagSuggestions)
       setStep('suggestions')
     } catch (error) {
+      clearInterval(progressInterval)
       console.error('Failed to generate suggestions:', error)
     } finally {
       setLoading(false)
+      setProgress(0)
     }
   }, [content, platforms, selectedTone, context])
 
@@ -167,84 +195,135 @@ export function AISuggestionsModal({
           {/* Step 2: Suggestions Display */}
           {step === 'suggestions' && (
             <>
-          {/* Loading State */}
+          {/* Loading State with Progress Bar */}
           {loading && (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-              <span className="ml-2 text-muted-foreground">Crafting your perfect caption...</span>
+            <div className="py-12 px-6">
+              <div className="max-w-md mx-auto space-y-6">
+                <div className="text-center space-y-4">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg animate-pulse">
+                    <Sparkles className="h-10 w-10 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold mb-2">{loadingMessage}</h3>
+                    <p className="text-sm text-muted-foreground">Please wait while AI crafts your perfect caption</p>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 transition-all duration-300 ease-out rounded-full relative overflow-hidden"
+                      style={{ width: `${progress}%` }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Generating...</span>
+                    <span className="font-semibold">{progress}%</span>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
           {/* Single Caption Display */}
           {!loading && suggestions.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Your AI-Generated Caption</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => generateSuggestions(selectedTone, context || undefined)}
-                  disabled={loading}
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Regenerate
-                </Button>
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {/* Success Header */}
+              <div className="text-center space-y-3">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 shadow-lg">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Your Caption is Ready!
+                </h3>
               </div>
 
               {suggestions[0] && (
-                <Card className="border-2">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
+                <Card className="border-2 border-blue-200 dark:border-blue-800 shadow-xl hover:shadow-2xl transition-shadow duration-300 overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+                  <CardContent className="p-8">
+                    <div className="flex items-start justify-between mb-6">
                       <Badge
                         variant="secondary"
-                        className={getToneBadgeColor(suggestions[0].tone)}
+                        className={`${getToneBadgeColor(suggestions[0].tone)} px-4 py-2 text-sm font-semibold`}
                       >
-                        {suggestions[0].tone}
+                        {suggestions[0].tone.charAt(0).toUpperCase() + suggestions[0].tone.slice(1)} Tone
                       </Badge>
                       <div className="flex items-center gap-2">
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          onClick={() => copyToClipboard(suggestions[0].content)}
+                          onClick={() => generateSuggestions(selectedTone, context || undefined)}
+                          disabled={loading}
+                          className="hover:bg-gray-100"
                         >
-                          <Copy className="h-4 w-4 mr-1" />
-                          Copy
-                        </Button>
-                        <Button
-                          variant="default"
-                          onClick={() => handleSelectSuggestion(suggestions[0])}
-                        >
-                          Use This Caption
+                          <RefreshCw className="h-4 w-4 mr-1" />
+                          Regenerate
                         </Button>
                       </div>
                     </div>
 
-                    <div className="text-base mb-4 whitespace-pre-wrap leading-relaxed">
-                      {suggestions[0].content}
+                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg p-6 mb-6">
+                      <div className="text-base mb-4 whitespace-pre-wrap leading-relaxed font-medium">
+                        {suggestions[0].content}
+                      </div>
                     </div>
 
                     {suggestions[0].hashtags && suggestions[0].hashtags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
-                        {suggestions[0].hashtags.map((hashtag, index) => (
-                          <span
-                            key={index}
-                            className="text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full"
-                          >
-                            {hashtag}
-                          </span>
-                        ))}
+                      <div className="mb-6">
+                        <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                          <Hash className="h-4 w-4 text-blue-500" />
+                          Hashtags
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {suggestions[0].hashtags.map((hashtag, index) => (
+                            <span
+                              key={index}
+                              className="text-sm bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900 dark:to-purple-900 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-full font-medium border border-blue-200 dark:border-blue-700 hover:shadow-md transition-shadow"
+                            >
+                              {hashtag}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t text-sm text-muted-foreground">
-                      <span>{suggestions[0].characterCount} characters</span>
+                    <div className="flex items-center justify-between pt-4 border-t-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-base text-foreground">{suggestions[0].characterCount}</span>
+                        <span>characters</span>
+                      </div>
                       <div className="flex items-center gap-2">
                         {suggestions[0].platforms.map((platform) => (
-                          <span key={platform} className="capitalize bg-gray-100 px-2 py-1 rounded">
+                          <span key={platform} className="capitalize bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-md font-medium text-xs">
                             {platform}
                           </span>
                         ))}
                       </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 mt-6 pt-6 border-t-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1 h-12"
+                        onClick={() => copyToClipboard(suggestions[0].content)}
+                      >
+                        <Copy className="h-5 w-5 mr-2" />
+                        Copy Caption
+                      </Button>
+                      <Button
+                        className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                        onClick={() => handleSelectSuggestion(suggestions[0])}
+                      >
+                        <Sparkles className="h-5 w-5 mr-2" />
+                        Use This Caption
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

@@ -86,19 +86,6 @@ export async function POST(request: NextRequest) {
       if (context.audience) {
         contextParts.push(`**Target Audience:** ${context.audience}`)
       }
-
-      if (context.cta && context.cta.length > 0) {
-        const ctaMap: Record<string, string> = {
-          'visit': 'Visit our website',
-          'comment': 'Comment below with your thoughts',
-          'share': 'Share this post',
-          'signup': 'Sign up now',
-          'learn-more': 'Learn more',
-          'shop': 'Shop now',
-        }
-        const ctaTexts = context.cta.map((c: string) => ctaMap[c] || c)
-        contextParts.push(`**Desired Call-to-Action:** ${ctaTexts.join(', ')}`)
-      }
     }
 
     const contextSection = contextParts.length > 0 ? contextParts.join('\n') : ''

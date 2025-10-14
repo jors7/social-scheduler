@@ -14,7 +14,6 @@ export interface CaptionContext {
   topic: string
   keyMessage?: string
   audience?: string
-  cta?: string[]
 }
 
 export interface SuggestionRequest {
