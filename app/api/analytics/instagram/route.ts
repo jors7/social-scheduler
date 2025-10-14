@@ -142,22 +142,16 @@ export async function GET(request: NextRequest) {
             let saves = 0, reach = 0, total_interactions = 0, views = 0;
 
             // Try to get insights for all posts
-            // Note: Instagram API metrics (as of April 2025 - v22+):
-            // - REELS: Support 'views' metric (replaces deprecated 'plays')
-            // - Regular VIDEO posts: Support 'views' metric (replaces deprecated 'plays')
-            // - FEED (images): Do NOT support 'views' metric
-            // Reference: GET /v22.0/{ig-media-id}/insights?metric=views,reach,saves,likes,comments,shares,total_interactions
-            // Deprecation: 'plays' was deprecated April 21, 2025 and replaced with 'views'
+            // Note: Instagram API metrics (as of 2025):
+            // - ALL content types (Reels, Videos, Images, Carousels) support 'views' metric
+            // - 'plays' metric was deprecated April 21, 2025 and replaced with 'views'
+            // - Views = total times content was viewed (includes repeat views)
+            // - Reach = unique accounts that viewed the content
+            // Reference: GET /v22.0/{ig-media-id}/insights?metric=views,reach,saved,total_interactions
             try {
-              // Determine metrics to fetch based on media type
-              // Request 'views' for all videos including Reels (NOT 'plays' - it's deprecated!)
-              const isVideoOrReel = media.media_type === 'VIDEO' || media.media_product_type === 'REELS';
-
-              // Videos and Reels support 'views' metric (replaces deprecated 'plays')
-              // Images (FEED) do not support 'views'
-              const metrics = isVideoOrReel
-                ? 'reach,saved,total_interactions,views'  // Videos and Reels support 'views' (NOT plays!)
-                : 'reach,saved,total_interactions';       // Images don't support 'views'
+              // All Instagram content types now support 'views' metric
+              // Request views for all post types (images, carousels, videos, Reels)
+              const metrics = 'reach,saved,total_interactions,views';
 
               // Add cache-busting timestamp to ensure fresh data from Instagram API
               // Use Instagram Graph API (graph.instagram.com) with v22.0 for new 'views' metric
