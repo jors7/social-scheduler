@@ -59,8 +59,13 @@ export async function GET(request: NextRequest) {
     });
 
     if (!videosResponse.ok) {
-      const errorData = await videosResponse.json();
-      console.error(`[${account.display_name || account.username}] Failed to fetch TikTok videos:`, errorData);
+      const errorData = await videosResponse.json().catch(() => ({}));
+      console.error(`[TikTok Media] ========== TIKTOK API ERROR ==========`);
+      console.error(`[TikTok Media] Account: ${account.display_name || account.username} (${account.id})`);
+      console.error(`[TikTok Media] Status: ${videosResponse.status} ${videosResponse.statusText}`);
+      console.error(`[TikTok Media] Error Response:`, JSON.stringify(errorData, null, 2));
+      console.error(`[TikTok Media] Token Prefix:`, account.access_token?.substring(0, 20) + '...');
+      console.error(`[TikTok Media] ==========================================`);
 
       // Check for token expiration or scope issues
       if (errorData.error?.code === 'access_token_invalid' || errorData.error?.message?.includes('token')) {
