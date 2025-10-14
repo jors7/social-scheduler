@@ -521,7 +521,27 @@ function CreateNewPostPageContent() {
   }
 
   const handleAISuggestionSelect = (suggestion: string) => {
-    setPostContent(suggestion)
+    // Convert plain text with \n to HTML format for rich text editor
+    // Split by newlines and wrap each paragraph in <p> tags
+    const lines = suggestion.split('\n').filter(line => line.trim())
+
+    // Convert lines to HTML paragraphs
+    const htmlContent = lines.map(line => {
+      // Check if line starts with ** (bold markers from AI)
+      if (line.includes('**')) {
+        // Convert **text** to <strong>text</strong>
+        line = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      }
+
+      // Check if line starts with - (bullet point)
+      if (line.trim().startsWith('-')) {
+        return `<p>${line.trim()}</p>`
+      }
+
+      return `<p>${line}</p>`
+    }).join('')
+
+    setPostContent(htmlContent)
     // Don't automatically sync to platform content - let users explicitly customize if needed
   }
 
