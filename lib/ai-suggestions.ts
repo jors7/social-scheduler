@@ -84,11 +84,11 @@ export class AICaptionService {
   }
 
   static async generateSuggestions(request: SuggestionRequest): Promise<CaptionSuggestion[]> {
-    const { content = '', platforms, tone = 'casual', includeHashtags = true, includeEmojis = true } = request
+    const { content = '', platforms, tone = 'casual', includeHashtags = true, includeEmojis = true, context } = request
 
     try {
-      // Try OpenAI API route first
-      if (content.trim()) {
+      // Try OpenAI API route first - check if we have context or content
+      if (context?.topic || content.trim()) {
         const response = await fetch('/api/ai-suggestions', {
           method: 'POST',
           headers: {
@@ -99,13 +99,17 @@ export class AICaptionService {
             platforms,
             tone,
             includeHashtags,
-            includeEmojis
+            includeEmojis,
+            context
           })
         })
 
         if (response.ok) {
           const data = await response.json()
           return data.suggestions
+        } else {
+          const errorData = await response.json().catch(() => ({}))
+          console.error('OpenAI API error:', errorData)
         }
       }
     } catch (error) {
