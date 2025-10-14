@@ -184,13 +184,17 @@ Important: Return ONLY the JSON object, no additional text or markdown.`
     }
 
     // Convert to array format for compatibility (single item)
+    const hashtags = suggestion.hashtags || []
+    const hashtagsText = hashtags.length > 0 ? ' ' + hashtags.join(' ') : ''
+    const totalCharCount = suggestion.content.length + hashtagsText.length
+
     const formattedSuggestions = [{
       id: `openai-${Date.now()}`,
       content: suggestion.content,
       tone: suggestion.tone,
-      hashtags: suggestion.hashtags || [],
+      hashtags: hashtags,
       platforms: suggestion.platforms || platforms,
-      characterCount: suggestion.characterCount || suggestion.content.length
+      characterCount: totalCharCount
     }]
 
     // Increment usage after successful generation

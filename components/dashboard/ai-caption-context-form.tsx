@@ -52,11 +52,8 @@ export function AICaptionContextForm({ onSubmit, onCancel, loading = false }: AI
 
   return (
     <div className="space-y-8">
-      {/* Header with Gradient */}
+      {/* Header */}
       <div className="text-center space-y-3">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg mb-2">
-          <Sparkles className="h-8 w-8 text-white" />
-        </div>
         <div>
           <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             AI Caption Generator

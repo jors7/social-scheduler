@@ -521,24 +521,25 @@ function CreateNewPostPageContent() {
   }
 
   const handleAISuggestionSelect = (suggestion: string) => {
-    // Convert plain text with \n to HTML format for rich text editor
-    // Split by newlines and wrap each paragraph in <p> tags
-    const lines = suggestion.split('\n').filter(line => line.trim())
+    // Convert plain text to HTML format for rich text editor
+    // Preserve emojis and line breaks properly
 
-    // Convert lines to HTML paragraphs
-    const htmlContent = lines.map(line => {
-      // Check if line starts with ** (bold markers from AI)
-      if (line.includes('**')) {
-        // Convert **text** to <strong>text</strong>
-        line = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // Split by double newlines to identify paragraphs
+    const paragraphs = suggestion.split('\n\n').filter(p => p.trim())
+
+    const htmlContent = paragraphs.map(paragraph => {
+      // For each paragraph, convert **text** to <strong>text</strong>
+      let processedParagraph = paragraph
+      if (processedParagraph.includes('**')) {
+        processedParagraph = processedParagraph.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       }
 
-      // Check if line starts with - (bullet point)
-      if (line.trim().startsWith('-')) {
-        return `<p>${line.trim()}</p>`
+      // If paragraph contains single line breaks (like bullet lists), convert them to <br>
+      if (processedParagraph.includes('\n')) {
+        processedParagraph = processedParagraph.split('\n').map(line => line.trim()).filter(line => line).join('<br>')
       }
 
-      return `<p>${line}</p>`
+      return `<p>${processedParagraph}</p>`
     }).join('')
 
     setPostContent(htmlContent)
