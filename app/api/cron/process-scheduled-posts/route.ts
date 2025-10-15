@@ -16,8 +16,8 @@ import {
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// This endpoint will be called by QStash every minute
-export async function GET(request: NextRequest) {
+// Shared processing logic for both GET and POST
+async function processScheduledPosts(request: NextRequest) {
   try {
     // Verify authorization - accept both QStash signature and Bearer token
     const authHeader = request.headers.get('authorization');
@@ -487,4 +487,14 @@ async function cleanupMediaFiles(mediaUrls: string[], supabase: any) {
       console.error('Error cleaning up file:', url, error);
     }
   }
+}
+
+// Export GET handler - called by QStash or manual triggers
+export async function GET(request: NextRequest) {
+  return processScheduledPosts(request);
+}
+
+// Export POST handler - called by QStash
+export async function POST(request: NextRequest) {
+  return processScheduledPosts(request);
 }
