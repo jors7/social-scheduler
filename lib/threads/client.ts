@@ -6,7 +6,7 @@ export interface ThreadsCredentials {
 export class ThreadsClient {
   private accessToken: string;
   private userID: string;
-  private baseURL = 'https://graph.facebook.com/v21.0';
+  private baseURL = 'https://graph.threads.net/v1.0';
 
   constructor(credentials: ThreadsCredentials) {
     this.accessToken = credentials.accessToken;
