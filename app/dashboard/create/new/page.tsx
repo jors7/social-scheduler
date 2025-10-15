@@ -566,6 +566,25 @@ function CreateNewPostPageContent() {
       return []
     }
 
+    // Validate video sizes for Bluesky
+    if (selectedPlatforms.includes('bluesky')) {
+      const BLUESKY_VIDEO_SIZE_LIMIT = 900 * 1024 // 900KB (safety margin below 976.56KB limit)
+
+      for (const file of files) {
+        if (file.type.startsWith('video/')) {
+          const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+
+          if (file.size > BLUESKY_VIDEO_SIZE_LIMIT) {
+            toast.error(
+              `Video "${file.name}" is ${fileSizeMB}MB, but Bluesky has a 1MB limit. Please compress your video or deselect Bluesky.`,
+              { duration: 8000 }
+            )
+            return []
+          }
+        }
+      }
+    }
+
     const uploadedUrls: string[] = []
     const hasVideos = files.some(file => file.type.startsWith('video/'))
 
@@ -619,6 +638,25 @@ function CreateNewPostPageContent() {
 
     // Check if we have video files
     const hasVideos = selectedFiles.some(file => file.type.startsWith('video/'))
+
+    // Validate video sizes for Bluesky
+    if (selectedPlatforms.includes('bluesky') && hasVideos) {
+      const BLUESKY_VIDEO_SIZE_LIMIT = 900 * 1024 // 900KB (safety margin below 976.56KB limit)
+
+      for (const file of selectedFiles) {
+        if (file.type.startsWith('video/')) {
+          const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+
+          if (file.size > BLUESKY_VIDEO_SIZE_LIMIT) {
+            toast.error(
+              `Video "${file.name}" is ${fileSizeMB}MB, but Bluesky has a 1MB limit. Please compress your video or deselect Bluesky.`,
+              { duration: 8000 }
+            )
+            return []
+          }
+        }
+      }
+    }
 
     // For videos or mixed media, use direct upload to avoid Vercel size limits
     if (hasVideos) {
@@ -3087,6 +3125,11 @@ function CreateNewPostPageContent() {
                 {selectedPlatforms.includes('pinterest') && (
                   <p className="text-xs text-red-600 font-medium mt-2">
                     📌 Pinterest: 1 image/video = Pin | 2-5 images = Carousel | Video = Auto cover
+                  </p>
+                )}
+                {selectedPlatforms.includes('bluesky') && (
+                  <p className="text-xs text-blue-600 font-medium mt-2">
+                    ⚠️ Bluesky: Videos must be under 1MB (900KB recommended)
                   </p>
                 )}
               </div>
