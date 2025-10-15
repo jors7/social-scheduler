@@ -88,17 +88,31 @@ async function processScheduledPosts(request: NextRequest) {
     // First, check for YouTube scheduled posts that have passed their publish time
     // These are already uploaded to YouTube with publishAt, we just need to update their status
     console.log('=== Checking for YouTube scheduled posts ===');
-    const { data: youtubeScheduledPosts, error: youtubeError } = await supabase
+
+    // Get all pending posts scheduled before now, then filter for YouTube in JavaScript
+    // This avoids the PostgreSQL JSONB contains syntax issues
+    const { data: allPendingPosts, error: youtubeError } = await supabase
       .from('scheduled_posts')
       .select('*')
       .eq('status', 'pending')
-      .contains('platforms', ['youtube'])
       .lte('scheduled_for', now);
 
-    console.log('YouTube scheduled posts query:', {
+    console.log('All pending posts query:', {
       error: youtubeError,
-      count: youtubeScheduledPosts?.length || 0,
-      posts: youtubeScheduledPosts?.map(p => ({
+      count: allPendingPosts?.length || 0
+    });
+
+    // Filter for YouTube posts with scheduled flag in JavaScript
+    const youtubeScheduledPosts = allPendingPosts?.filter(post =>
+      post.platforms?.includes('youtube') &&
+      post.post_results?.some((result: any) =>
+        result.platform === 'youtube' && result.scheduled === true
+      )
+    ) || [];
+
+    console.log('YouTube scheduled posts after filtering:', {
+      count: youtubeScheduledPosts.length,
+      posts: youtubeScheduledPosts.map(p => ({
         id: p.id,
         scheduled_for: p.scheduled_for,
         has_post_results: !!p.post_results,
@@ -106,39 +120,24 @@ async function processScheduledPosts(request: NextRequest) {
       }))
     });
 
-    if (!youtubeError && youtubeScheduledPosts && youtubeScheduledPosts.length > 0) {
-      // Filter to only YouTube-scheduled posts (those with post_results indicating scheduled)
-      const youtubePostsToUpdate = youtubeScheduledPosts.filter(post => {
-        const hasScheduledResult = post.post_results?.some((result: any) =>
-          result.platform === 'youtube' && result.scheduled === true
-        );
-        console.log(`Post ${post.id} has scheduled result:`, hasScheduledResult, 'post_results:', post.post_results);
-        return hasScheduledResult;
-      });
+    if (!youtubeError && youtubeScheduledPosts.length > 0) {
+      console.log(`Found ${youtubeScheduledPosts.length} YouTube scheduled posts to mark as posted`);
 
-      console.log(`Filtered YouTube posts to update: ${youtubePostsToUpdate.length}`);
+      for (const post of youtubeScheduledPosts) {
+        // Update status to posted since YouTube handles the actual publishing
+        const { error: updateError } = await supabase
+          .from('scheduled_posts')
+          .update({
+            status: 'posted',
+            posted_at: post.scheduled_for // Use scheduled time as posted time
+          })
+          .eq('id', post.id);
 
-      if (youtubePostsToUpdate.length > 0) {
-        console.log(`Found ${youtubePostsToUpdate.length} YouTube scheduled posts to mark as posted`);
-
-        for (const post of youtubePostsToUpdate) {
-          // Update status to posted since YouTube handles the actual publishing
-          const { error: updateError } = await supabase
-            .from('scheduled_posts')
-            .update({
-              status: 'posted',
-              posted_at: post.scheduled_for // Use scheduled time as posted time
-            })
-            .eq('id', post.id);
-
-          if (updateError) {
-            console.error(`Failed to update YouTube post ${post.id}:`, updateError);
-          } else {
-            console.log(`✅ Marked YouTube post ${post.id} as posted`);
-          }
+        if (updateError) {
+          console.error(`Failed to update YouTube post ${post.id}:`, updateError);
+        } else {
+          console.log(`✅ Marked YouTube post ${post.id} as posted`);
         }
-      } else {
-        console.log('No YouTube posts matched the filter criteria (scheduled: true)');
       }
     } else {
       console.log('No YouTube scheduled posts found or error occurred');

@@ -3855,6 +3855,7 @@ function CreateNewPostPageContent() {
                                     📐 Vertical format (9:16) required<br/>
                                     ⏱️ Duration: up to 60 seconds<br/>
                                     🏷️ #Shorts tag will be added automatically<br/>
+                                    🖼️ Custom thumbnails not supported (YouTube auto-generates)<br/>
                                     ✨ Optimized for mobile viewing
                                   </p>
                                 </div>
