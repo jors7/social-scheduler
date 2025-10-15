@@ -1,81 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Helper function to check container status
-async function checkContainerStatus(containerId: string, accessToken: string): Promise<{
-  status: string;
-  statusCode: 'FINISHED' | 'IN_PROGRESS' | 'ERROR' | 'EXPIRED';
-  errorMessage?: string;
-}> {
-  try {
-    const response = await fetch(
-      `https://graph.threads.net/v1.0/${containerId}?fields=status_code,status&access_token=${accessToken}`
-    );
-
-    if (!response.ok) {
-      const error = await response.json();
-      console.error('Failed to check container status:', error);
-      return {
-        status: 'ERROR',
-        statusCode: 'ERROR',
-        errorMessage: error.error?.message || 'Failed to check status'
-      };
-    }
-
-    const data = await response.json();
-    return {
-      status: data.status || 'Unknown',
-      statusCode: data.status_code || 'ERROR',
-      errorMessage: data.error?.message
-    };
-  } catch (error: any) {
-    console.error('Error checking container status:', error);
-    return {
-      status: 'ERROR',
-      statusCode: 'ERROR',
-      errorMessage: error.message
-    };
-  }
-}
-
-// Helper function to wait for container to be ready
-async function waitForContainerReady(containerId: string, accessToken: string, maxWaitMs: number = 300000): Promise<void> {
-  const startTime = Date.now();
-  const pollInterval = 2000; // Poll every 2 seconds
-  let attempts = 0;
-
-  console.log(`Waiting for container ${containerId} to be ready...`);
-
-  while (true) {
-    attempts++;
-    const elapsed = Date.now() - startTime;
-
-    // Check if we've exceeded max wait time
-    if (elapsed > maxWaitMs) {
-      throw new Error(`Container processing timeout after ${Math.round(maxWaitMs / 1000)}s. Video may be too large or there may be a server issue.`);
-    }
-
-    // Check container status
-    const statusResult = await checkContainerStatus(containerId, accessToken);
-    console.log(`Container status check #${attempts} (${Math.round(elapsed / 1000)}s elapsed):`, statusResult.statusCode);
-
-    if (statusResult.statusCode === 'FINISHED') {
-      console.log(`✅ Container ready after ${Math.round(elapsed / 1000)}s (${attempts} checks)`);
-      return; // Container is ready!
-    }
-
-    if (statusResult.statusCode === 'ERROR') {
-      throw new Error(`Container processing failed: ${statusResult.errorMessage || 'Unknown error'}`);
-    }
-
-    if (statusResult.statusCode === 'EXPIRED') {
-      throw new Error('Container expired before processing completed');
-    }
-
-    // Still in progress, wait before next check
-    await new Promise(resolve => setTimeout(resolve, pollInterval));
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
     const { userId, accessToken, posts, mediaUrls = [] } = await request.json();
@@ -219,11 +143,14 @@ export async function POST(request: NextRequest) {
         const containerId = createData.id;
         console.log(`Container created: ${containerId}`);
 
-        // Wait for container to be ready if it has media
-        // This ensures the media is processed before publishing
+        // Add delay for media processing
+        // Threads needs time to download and process media before publishing
         if (mediaUrl) {
-          console.log(`Media detected for post ${i + 1} - waiting for container to be ready...`);
-          await waitForContainerReady(containerId, accessToken);
+          const videoExtensions = ['.mp4', '.mov', '.m4v'];
+          const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
+          const delay = isVideo ? 30000 : 5000; // 30s for videos, 5s for images
+          console.log(`Waiting ${delay}ms for Threads to process ${isVideo ? 'video' : 'image'}...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
 
         // Step 2: Publish this post
