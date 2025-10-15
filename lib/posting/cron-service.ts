@@ -91,6 +91,8 @@ export async function postToBlueskyDirect(content: string, account: any, mediaUr
   console.log('Content length:', content.length);
   console.log('First 10 chars:', JSON.stringify(content.substring(0, 10)));
   console.log('Content type:', typeof content);
+  console.log('Media URLs:', JSON.stringify(mediaUrls));
+  console.log('Has media:', !!mediaUrls && mediaUrls.length > 0);
 
   // Make absolutely sure content is a string
   const textContent = String(content);
