@@ -442,6 +442,7 @@ export async function postToThreadsDirect(
       return {
         success: true,
         id: threadResult.threadId,
+        thumbnailUrl: threadResult.thumbnailUrl, // Include thumbnail URL for display
         message: `Posted Threads thread with ${threadData.threadPosts.length} posts successfully`
       };
     } else {

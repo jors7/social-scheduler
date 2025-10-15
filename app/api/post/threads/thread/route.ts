@@ -230,6 +230,9 @@ export async function POST(request: NextRequest) {
 
     console.log(`Thread created successfully with ${publishedPosts.length} posts`);
 
+    // Get the first media URL for thumbnail (if any)
+    const firstMediaUrl = mediaUrls && mediaUrls.length > 0 ? mediaUrls[0] : undefined;
+
     return NextResponse.json({
       success: true,
       message: `Connected thread created with ${publishedPosts.length} posts`,
@@ -237,7 +240,8 @@ export async function POST(request: NextRequest) {
       posts: publishedPosts,
       totalPosts: posts.length,
       isConnectedThread: true, // Indicates this created real connected replies
-      note: 'Successfully created connected thread using reply_to_id with threads_content_publish'
+      note: 'Successfully created connected thread using reply_to_id with threads_content_publish',
+      thumbnailUrl: firstMediaUrl // Include first media URL as thumbnail
     });
 
   } catch (error) {
