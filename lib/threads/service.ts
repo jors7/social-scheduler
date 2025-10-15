@@ -13,11 +13,12 @@ export class ThreadsService {
 
   async createPost(content: {
     text: string;
+    imageUrl?: string;
     images?: Buffer[];
   }) {
-    // For now, Threads API requires image URLs, not direct uploads
-    // In production, you'd upload images to your storage first
-    return this.client.createPost(content.text);
+    // Threads API requires image URLs, not direct uploads
+    // Images should be uploaded to storage first and passed as imageUrl
+    return this.client.createPost(content.text, content.imageUrl);
   }
 
   async getProfile() {

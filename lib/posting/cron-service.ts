@@ -451,7 +451,15 @@ export async function postToThreadsDirect(
         userID: account.platform_user_id
       });
 
-      const result = await threadsService.createPost({ text: content });
+      // Use first media URL if available
+      const imageUrl = mediaUrls && mediaUrls.length > 0 ? mediaUrls[0] : undefined;
+
+      console.log('Creating single Threads post with media:', imageUrl);
+
+      const result = await threadsService.createPost({
+        text: content,
+        imageUrl: imageUrl
+      });
 
       return {
         success: true,
