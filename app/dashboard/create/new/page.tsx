@@ -2138,11 +2138,18 @@ function CreateNewPostPageContent() {
       // Upload thread media if in thread mode
       let threadsThreadMediaUrls: string[][] = []
       if (isThreadsThreadMode && threadsThreadMedia.length > 0) {
-        toast.info('Uploading thread media...')
+        const hasAnyMedia = threadsThreadMedia.some(files => files && files.length > 0)
+        if (hasAnyMedia) {
+          toast.info('Uploading thread media...')
+        }
         for (const mediaFiles of threadsThreadMedia) {
           if (mediaFiles && mediaFiles.length > 0) {
             const urls = await uploadFilesImmediately(mediaFiles)
-            threadsThreadMediaUrls.push(urls)
+            if (urls && urls.length > 0) {
+              threadsThreadMediaUrls.push(urls)
+            } else {
+              threadsThreadMediaUrls.push([])
+            }
           } else {
             threadsThreadMediaUrls.push([])
           }

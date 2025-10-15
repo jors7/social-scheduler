@@ -404,11 +404,22 @@ export async function postToThreadsDirect(
 
       // Convert thread media from array of arrays to flat array (one media per post)
       // Threads API expects mediaUrls[i] to be a single URL for post i
-      const flatMediaUrls = (threadData.threadsThreadMedia || []).map(mediaArray =>
-        mediaArray && mediaArray.length > 0 ? mediaArray[0] : undefined
-      ).filter(Boolean) as string[];
+      const flatMediaUrls = (threadData.threadsThreadMedia || [])
+        .map(mediaArray => {
+          // Check if mediaArray is an array and has valid string URLs
+          if (Array.isArray(mediaArray) && mediaArray.length > 0) {
+            const firstItem = mediaArray[0];
+            // Only return if it's a non-empty string (not an object or empty string)
+            if (typeof firstItem === 'string' && firstItem.trim().length > 0) {
+              return firstItem;
+            }
+          }
+          return undefined;
+        })
+        .filter((url): url is string => url !== undefined);
 
       console.log('Thread media URLs:', flatMediaUrls);
+      console.log('Raw thread media data:', JSON.stringify(threadData.threadsThreadMedia));
 
       // Call the thread posting API
       const threadResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/post/threads/thread`, {
