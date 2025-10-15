@@ -383,7 +383,7 @@ export async function postToThreadsDirect(content: string, account: any, mediaUr
         } else {
           console.error('Token refresh failed:', error);
           if (isExpired) {
-            throw new Error(`Threads token expired and refresh failed: ${error}. Please reconnect your Threads account.`);
+            throw new Error(`Threads token expired and refresh failed: ${error}. Please reconnect your Threads account in Settings.`);
           }
           // If not expired yet, try with existing token
           console.warn('Using existing token despite refresh failure');
@@ -405,6 +405,24 @@ export async function postToThreadsDirect(content: string, account: any, mediaUr
     };
   } catch (error) {
     console.error('Threads posting error:', error);
+
+    // Check for invalid token error
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('Invalid OAuth access token') || errorMessage.includes('code 190')) {
+      // Mark account as needing reconnection
+      if (supabase) {
+        await supabase
+          .from('social_accounts')
+          .update({
+            is_active: false,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', account.id);
+        console.log('Marked Threads account as inactive due to invalid token');
+      }
+      throw new Error('Threads token is invalid. Please disconnect and reconnect your Threads account in Settings → Social Accounts.');
+    }
+
     throw error;
   }
 }
