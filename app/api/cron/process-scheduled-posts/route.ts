@@ -243,7 +243,7 @@ async function processScheduledPosts(request: NextRequest) {
                 break;
 
               case 'threads':
-                result = await postToThreadsDirect(content, account, post.media_urls);
+                result = await postToThreadsDirect(content, account, post.media_urls, supabase);
                 break;
 
               case 'pinterest':

@@ -6,6 +6,111 @@ import { TwitterService } from '@/lib/twitter/service';
 import { ThreadsService } from '@/lib/threads/service';
 import { PinterestService, formatPinterestContent } from '@/lib/pinterest/service';
 import { TikTokService } from '@/lib/tiktok/service';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+/**
+ * Refresh Threads token (cron version with service role client)
+ */
+async function refreshThreadsTokenCron(account: any, supabase: SupabaseClient): Promise<{
+  success: boolean;
+  newToken?: string;
+  error?: string;
+}> {
+  try {
+    console.log('Attempting to refresh Threads token for account:', account.id);
+
+    // Check if token is at least 1 day old (Threads requirement)
+    const lastUpdated = account.updated_at ? new Date(account.updated_at) : null;
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    if (lastUpdated && lastUpdated > oneDayAgo) {
+      console.log('Token is less than 24 hours old, cannot refresh yet');
+      return {
+        success: false,
+        error: 'Token must be at least 24 hours old to refresh'
+      };
+    }
+
+    // Threads API token refresh endpoint
+    const refreshUrl = 'https://graph.threads.net/refresh_access_token';
+    const params = new URLSearchParams({
+      grant_type: 'th_refresh_token',
+      access_token: account.access_token
+    });
+
+    console.log('Refreshing token with grant_type: th_refresh_token');
+    const response = await fetch(`${refreshUrl}?${params}`, {
+      method: 'GET'
+    });
+
+    const responseText = await response.text();
+    console.log('Refresh response status:', response.status);
+
+    if (!response.ok) {
+      console.error('Failed to refresh token:', responseText);
+
+      try {
+        const errorData = JSON.parse(responseText);
+        console.error('Error details:', errorData);
+
+        if (errorData.error?.code === 190 ||
+            errorData.error?.message?.includes('Invalid OAuth') ||
+            errorData.error?.message?.includes('Error validating access token')) {
+          return {
+            success: false,
+            error: 'Token is invalid. Please reconnect your Threads account.'
+          };
+        }
+      } catch (e) {
+        // Not JSON, use raw text
+      }
+
+      return {
+        success: false,
+        error: 'Token refresh failed. Please reconnect your account.'
+      };
+    }
+
+    const data = JSON.parse(responseText);
+    const newToken = data.access_token;
+    const expiresIn = data.expires_in || 5183944; // Default to ~60 days
+
+    if (!newToken) {
+      console.error('No access token in refresh response:', data);
+      return {
+        success: false,
+        error: 'No new token received from refresh'
+      };
+    }
+
+    // Update the token in the database using service role client
+    const { error: updateError } = await supabase
+      .from('social_accounts')
+      .update({
+        access_token: newToken,
+        expires_at: new Date(Date.now() + expiresIn * 1000).toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', account.id);
+
+    if (updateError) {
+      console.error('Failed to update token in database:', updateError);
+      return {
+        success: false,
+        error: 'Failed to save refreshed token'
+      };
+    }
+
+    console.log('Successfully refreshed Threads token, expires in', Math.floor(expiresIn / 86400), 'days');
+    return { success: true, newToken };
+  } catch (error) {
+    console.error('Error refreshing Threads token:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
 
 export async function postToFacebookDirect(content: string, account: any, mediaUrls?: string[]) {
   console.log('=== DIRECT FACEBOOK POST ===');
@@ -233,7 +338,7 @@ export async function postToTwitterDirect(content: string, account: any, mediaUr
   }
 }
 
-export async function postToThreadsDirect(content: string, account: any, mediaUrls?: string[]) {
+export async function postToThreadsDirect(content: string, account: any, mediaUrls?: string[], supabase?: SupabaseClient) {
   console.log('=== DIRECT THREADS POST ===');
   console.log('Content:', content);
   console.log('Account details:', {
@@ -241,12 +346,53 @@ export async function postToThreadsDirect(content: string, account: any, mediaUr
     username: account.username,
     has_token: !!account.access_token,
     token_length: account.access_token?.length,
-    token_preview: account.access_token ? `${account.access_token.substring(0, 20)}...` : 'null'
+    token_preview: account.access_token ? `${account.access_token.substring(0, 20)}...` : 'null',
+    expires_at: account.expires_at
   });
 
   try {
+    // Check if token needs refresh
+    let accessToken = account.access_token;
+
+    if (account.expires_at) {
+      const expiryDate = new Date(account.expires_at);
+      const now = new Date();
+      const isExpired = expiryDate <= now;
+      const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const expiresSoon = expiryDate <= sevenDaysFromNow;
+
+      console.log('Token expiry check:', {
+        expires_at: account.expires_at,
+        isExpired,
+        expiresSoon,
+        daysUntilExpiry: Math.floor((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      });
+
+      if (isExpired || expiresSoon) {
+        console.log('Token expired or expiring soon, attempting refresh...');
+
+        if (!supabase) {
+          throw new Error('Supabase client required for token refresh');
+        }
+
+        const { success, newToken, error } = await refreshThreadsTokenCron(account, supabase);
+
+        if (success && newToken) {
+          console.log('Token refreshed successfully');
+          accessToken = newToken;
+        } else {
+          console.error('Token refresh failed:', error);
+          if (isExpired) {
+            throw new Error(`Threads token expired and refresh failed: ${error}. Please reconnect your Threads account.`);
+          }
+          // If not expired yet, try with existing token
+          console.warn('Using existing token despite refresh failure');
+        }
+      }
+    }
+
     const threadsService = new ThreadsService({
-      accessToken: account.access_token,
+      accessToken: accessToken,
       userID: account.platform_user_id
     });
 
