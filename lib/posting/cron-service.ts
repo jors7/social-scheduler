@@ -236,6 +236,13 @@ export async function postToTwitterDirect(content: string, account: any, mediaUr
 export async function postToThreadsDirect(content: string, account: any, mediaUrls?: string[]) {
   console.log('=== DIRECT THREADS POST ===');
   console.log('Content:', content);
+  console.log('Account details:', {
+    platform_user_id: account.platform_user_id,
+    username: account.username,
+    has_token: !!account.access_token,
+    token_length: account.access_token?.length,
+    token_preview: account.access_token ? `${account.access_token.substring(0, 20)}...` : 'null'
+  });
 
   try {
     const threadsService = new ThreadsService({
