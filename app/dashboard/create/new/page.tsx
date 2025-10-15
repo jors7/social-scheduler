@@ -2135,6 +2135,20 @@ function CreateNewPostPageContent() {
         mediaUrls = [...mediaUrls, ...newMediaUrls]  // Combine old and new
       }
 
+      // Upload thread media if in thread mode
+      let threadsThreadMediaUrls: string[][] = []
+      if (isThreadsThreadMode && threadsThreadMedia.length > 0) {
+        toast.info('Uploading thread media...')
+        for (const mediaFiles of threadsThreadMedia) {
+          if (mediaFiles && mediaFiles.length > 0) {
+            const urls = await uploadFilesImmediately(mediaFiles)
+            threadsThreadMediaUrls.push(urls)
+          } else {
+            threadsThreadMediaUrls.push([])
+          }
+        }
+      }
+
       // Combine date and time
       const scheduledFor = new Date(`${scheduledDate}T${scheduledTime}`)
       
@@ -2313,7 +2327,7 @@ function CreateNewPostPageContent() {
         ...(isThreadsThreadMode && {
           threadsMode: 'thread',
           threadPosts: threadPosts.filter(p => p.trim().length > 0),
-          threadsThreadMedia: threadsThreadMedia
+          threadsThreadMedia: threadsThreadMediaUrls
         }),
       }
       

@@ -402,6 +402,14 @@ export async function postToThreadsDirect(
     if (threadData?.threadsMode === 'thread' && threadData.threadPosts && threadData.threadPosts.length > 0) {
       console.log(`Creating Threads thread with ${threadData.threadPosts.length} posts`);
 
+      // Convert thread media from array of arrays to flat array (one media per post)
+      // Threads API expects mediaUrls[i] to be a single URL for post i
+      const flatMediaUrls = (threadData.threadsThreadMedia || []).map(mediaArray =>
+        mediaArray && mediaArray.length > 0 ? mediaArray[0] : undefined
+      ).filter(Boolean) as string[];
+
+      console.log('Thread media URLs:', flatMediaUrls);
+
       // Call the thread posting API
       const threadResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/post/threads/thread`, {
         method: 'POST',
@@ -410,7 +418,7 @@ export async function postToThreadsDirect(
           userId: account.platform_user_id,
           accessToken: accessToken,
           posts: threadData.threadPosts,
-          mediaUrls: threadData.threadsThreadMedia || []
+          mediaUrls: flatMediaUrls
         })
       });
 
