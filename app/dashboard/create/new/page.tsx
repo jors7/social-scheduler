@@ -2086,14 +2086,15 @@ function CreateNewPostPageContent() {
 
     try {
       // Upload files first if any
-      let mediaUrls: string[] = []
+      let mediaUrls: string[] = [...uploadedMediaUrls]  // Start with already uploaded URLs
       if (selectedFiles.length > 0) {
         toast.info('Uploading media...')
-        mediaUrls = await uploadFiles()
-        if (mediaUrls.length === 0 && selectedFiles.length > 0) {
+        const newMediaUrls = await uploadFiles()
+        if (newMediaUrls.length === 0 && selectedFiles.length > 0) {
           toast.error('Failed to upload media files')
           return
         }
+        mediaUrls = [...mediaUrls, ...newMediaUrls]  // Combine old and new
       }
 
       // Combine date and time
