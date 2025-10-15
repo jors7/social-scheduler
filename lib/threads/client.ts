@@ -42,10 +42,15 @@ export class ThreadsClient {
         access_token: this.accessToken,
       });
 
+      let mediaType = 'TEXT';
       if (imageUrl) {
-        // For Threads with images
-        createParams.set('media_type', 'IMAGE');
-        createParams.set('image_url', imageUrl);
+        // Detect if it's a video or image
+        const videoExtensions = ['.mp4', '.mov', '.m4v'];
+        const isVideo = videoExtensions.some(ext => imageUrl.toLowerCase().includes(ext));
+
+        mediaType = isVideo ? 'VIDEO' : 'IMAGE';
+        createParams.set('media_type', mediaType);
+        createParams.set(isVideo ? 'video_url' : 'image_url', imageUrl);
       }
 
       console.log('=== Threads Create Container Debug ===');
@@ -54,7 +59,8 @@ export class ThreadsClient {
       console.log('Token length:', this.accessToken?.length);
       console.log('Token preview:', this.accessToken ? `${this.accessToken.substring(0, 30)}...` : 'null');
       console.log('Text:', text);
-      console.log('Media type:', imageUrl ? 'IMAGE' : 'TEXT');
+      console.log('Media type:', mediaType);
+      console.log('Media URL:', imageUrl);
 
       // Use the threads endpoint for the Instagram Business Account
       const createResponse = await fetch(
@@ -75,6 +81,16 @@ export class ThreadsClient {
       }
 
       const { id: creationId } = await createResponse.json();
+
+      console.log('Container created:', creationId);
+
+      // Add delay to let Threads process the media
+      // Threads needs time to process the media before it can be published
+      if (imageUrl) {
+        const delay = 3000; // 3 seconds for media processing
+        console.log(`Waiting ${delay}ms for Threads to process media...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
 
       // Step 2: Publish the Threads post
       const publishParams = new URLSearchParams({
