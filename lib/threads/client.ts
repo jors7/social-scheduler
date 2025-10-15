@@ -87,8 +87,11 @@ export class ThreadsClient {
       // Add delay to let Threads process the media
       // Threads needs time to process the media before it can be published
       if (imageUrl) {
-        const delay = 3000; // 3 seconds for media processing
-        console.log(`Waiting ${delay}ms for Threads to process media...`);
+        // Videos need more time to process than images
+        const videoExtensions = ['.mp4', '.mov', '.m4v'];
+        const isVideo = videoExtensions.some(ext => imageUrl.toLowerCase().includes(ext));
+        const delay = isVideo ? 10000 : 3000; // 10 seconds for videos, 3 seconds for images
+        console.log(`Waiting ${delay}ms for Threads to process ${isVideo ? 'video' : 'image'}...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
 
