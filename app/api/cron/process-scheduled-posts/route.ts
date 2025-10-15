@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { PostingService } from '@/lib/posting/service';
+import { Receiver } from '@upstash/qstash';
 import {
   postToFacebookDirect,
   postToBlueskyDirect,
@@ -15,17 +16,51 @@ import {
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// This endpoint will be called by Vercel Cron every minute
+// This endpoint will be called by QStash every minute
 export async function GET(request: NextRequest) {
   try {
-    // Verify this is called by Vercel Cron (security check)
+    // Verify authorization - accept both QStash signature and Bearer token
     const authHeader = request.headers.get('authorization');
     const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
     const testAuth = 'Bearer test';
-    
-    if (authHeader !== expectedAuth && authHeader !== testAuth) {
+
+    // Check for QStash signature
+    const upstashSignature = request.headers.get('upstash-signature');
+    let isQStashVerified = false;
+
+    if (upstashSignature && process.env.QSTASH_CURRENT_SIGNING_KEY && process.env.QSTASH_NEXT_SIGNING_KEY) {
+      try {
+        // Verify QStash signature
+        const receiver = new Receiver({
+          currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY,
+          nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY,
+        });
+
+        // Get request body as text (empty for GET requests)
+        const body = await request.text();
+
+        // Verify the signature
+        await receiver.verify({
+          signature: upstashSignature,
+          body: body,
+        });
+
+        isQStashVerified = true;
+        console.log('✅ QStash signature verified');
+      } catch (error) {
+        console.log('❌ QStash signature verification failed:', error);
+        // Continue to check bearer token
+      }
+    }
+
+    // Accept if either QStash signature is valid OR bearer token is correct
+    const isBearerTokenValid = authHeader === expectedAuth || authHeader === testAuth;
+
+    if (!isQStashVerified && !isBearerTokenValid) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    console.log('Authorization method:', isQStashVerified ? 'QStash signature' : 'Bearer token');
 
     console.log('=== Processing Scheduled Posts ===', new Date().toISOString());
 

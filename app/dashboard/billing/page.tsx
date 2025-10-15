@@ -104,42 +104,16 @@ export default function BillingPage() {
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       if (userError || !user) throw userError
 
-      // First, fix subscription data (plan, cycle, dates) if needed
-      try {
-        const fixResponse = await fetch('/api/subscription/fix-subscription', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        })
-        const fixResult = await fixResponse.json()
-        console.log('Subscription fix result:', fixResult)
-      } catch (fixError) {
-        console.log('Could not fix subscription:', fixError)
-      }
-
+      // Get subscription data - webhooks keep it up to date
       const subData = await getClientSubscription()
       setSubscription(subData)
 
-      // Try to sync payment history from Stripe first
-      try {
-        await fetch('/api/subscription/sync-payments', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        })
-        
-        // Clean up duplicate payments after syncing
-        await fetch('/api/subscription/clean-payments', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        })
-      } catch (syncError) {
-        console.log('Could not sync payments from Stripe:', syncError)
-      }
-
-      const { data: payments, error: paymentsError } = await supabase
+      // Get payment history directly from database
+      const { data: payments, error: paymentsError} = await supabase
         .from('payment_history')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false})
         .limit(10)
 
       if (!paymentsError && payments) {
@@ -220,6 +194,27 @@ export default function BillingPage() {
           </h1>
           <p className="text-gray-600 mt-2 text-lg">Manage your subscription, billing, and usage</p>
         </div>
+        <Button
+          variant="outline"
+          onClick={async () => {
+            setLoading(true)
+            await loadBillingData()
+            toast.success('Billing data refreshed')
+          }}
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Refreshing...
+            </>
+          ) : (
+            <>
+              <Settings className="mr-2 h-4 w-4" />
+              Refresh Status
+            </>
+          )}
+        </Button>
       </div>
 
       {/* Main Layout Grid */}
@@ -316,6 +311,25 @@ export default function BillingPage() {
                       >
                         Cancel Scheduled Change
                       </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Trial Status Alert */}
+              {subscription?.isTrialing && subscription?.trialEndsAt && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-blue-900">Free Trial Active</h4>
+                      <p className="text-sm text-blue-700 mt-1">
+                        Your trial ends on <strong>{formatDate(subscription.trialEndsAt)}</strong>
+                        {(() => {
+                          const daysLeft = Math.ceil((new Date(subscription.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                          return daysLeft > 0 ? ` (${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining)` : ''
+                        })()}
+                      </p>
                     </div>
                   </div>
                 </div>

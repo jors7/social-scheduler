@@ -29,12 +29,14 @@ export function SubscriptionGate({ children, feature = 'premium features', class
   }, [searchParams])
 
   const handlePaymentSuccess = async () => {
-    toast.success('Payment successful! Your subscription is now active.')
-    
-    // Wait a moment for webhook to process then refresh
+    toast.success('Payment successful! Activating your subscription...')
+
+    // Wait for webhook to process then refresh
+    // Webhooks typically process within 1-2 seconds
     setTimeout(async () => {
       await refresh()
-    }, 2000)
+      toast.success('Your subscription is now active!')
+    }, 3000)
   }
 
   const handleSubscribe = () => {
@@ -42,14 +44,17 @@ export function SubscriptionGate({ children, feature = 'premium features', class
     router.push('/pricing')
   }
 
-  // Don't show loading state if we have cached data
-  if (loading && !subscription) {
+  // Show proper loading skeleton
+  if (loading) {
     return (
       <div className={cn("relative min-h-[400px]", className)}>
         <div className="flex items-center justify-center h-full">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-sm text-muted-foreground">Loading...</p>
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mx-auto"></div>
+            <div className="space-y-2">
+              <p className="text-base font-medium text-gray-900">Checking subscription status...</p>
+              <p className="text-sm text-muted-foreground">This will only take a moment</p>
+            </div>
           </div>
         </div>
       </div>

@@ -17,47 +17,18 @@ export interface ClientSubscription {
   stripeScheduleId?: string
 }
 
-export async function getClientSubscription(autoSync: boolean = true): Promise<ClientSubscription | null> {
+export async function getClientSubscription(): Promise<ClientSubscription | null> {
   try {
     const supabase = createClient()
-    
+
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return null
     }
-    
-    // Auto-sync subscription from Stripe if enabled and data might be stale
-    if (autoSync) {
-      // Check if we should sync (only if subscription exists and might be outdated)
-      const { data: existingSub } = await supabase
-        .from('user_subscriptions')
-        .select('updated_at, stripe_subscription_id')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .single()
-      
-      if (existingSub?.stripe_subscription_id) {
-        const lastUpdate = existingSub.updated_at ? new Date(existingSub.updated_at) : null
-        const timeSinceUpdate = lastUpdate ? Date.now() - lastUpdate.getTime() : Infinity
-        
-        // Sync if data is older than 5 minutes
-        if (timeSinceUpdate > 5 * 60 * 1000) {
-          console.log('Subscription data is stale, syncing from Stripe...')
-          try {
-            await fetch('/api/subscription/sync-user', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' }
-            })
-          } catch (syncError) {
-            console.error('Failed to sync subscription:', syncError)
-            // Continue anyway, use potentially stale data
-          }
-        }
-      }
-    }
-    
-    // Get user's ACTIVE subscription (potentially updated)
+
+    // Get user's ACTIVE subscription directly from database
+    // Stripe webhooks keep this up-to-date automatically
     const { data: subscription, error } = await supabase
       .from('user_subscriptions')
       .select('*')

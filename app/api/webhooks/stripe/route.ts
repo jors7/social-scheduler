@@ -21,35 +21,35 @@ const supabaseAdmin = createClient(
 )
 
 export async function POST(request: NextRequest) {
-  console.log('=== Webhook received ===')
+  const startTime = Date.now()
+  console.log('=== Stripe Webhook Received ===', new Date().toISOString())
+
   const body = await request.text()
-  const signature = request.headers.get('stripe-signature')!
-  
-  console.log('Webhook signature present:', !!signature)
+  const signature = request.headers.get('stripe-signature')
 
-  let event: Stripe.Event
-
-  // Try to verify with production secret first, then local secret
-  const secrets = [
-    process.env.STRIPE_WEBHOOK_SECRET,
-    process.env.STRIPE_WEBHOOK_SECRET_LOCAL
-  ].filter(Boolean)
-
-  let verified = false
-  for (const secret of secrets) {
-    try {
-      event = stripe.webhooks.constructEvent(body, signature, secret!)
-      console.log('✅ Webhook verified! Event type:', event.type)
-      verified = true
-      break
-    } catch (err) {
-      // Try next secret
-      continue
-    }
+  if (!signature) {
+    console.error('❌ No stripe-signature header present')
+    return NextResponse.json({ error: 'Missing signature' }, { status: 400 })
   }
 
-  if (!verified) {
-    console.error('❌ Webhook signature verification failed with all secrets')
+  // Use single webhook secret - no fallback logic
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+  if (!webhookSecret) {
+    console.error('❌ STRIPE_WEBHOOK_SECRET not configured')
+    return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 })
+  }
+
+  let event: Stripe.Event
+  try {
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    console.log('✅ Webhook verified:', {
+      type: event.type,
+      id: event.id,
+      created: new Date(event.created * 1000).toISOString()
+    })
+  } catch (err) {
+    const error = err as Error
+    console.error('❌ Webhook signature verification failed:', error.message)
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
@@ -261,11 +261,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ received: true })
+    const duration = Date.now() - startTime
+    console.log(`✅ Webhook processed successfully in ${duration}ms`, {
+      type: event.type,
+      id: event.id
+    })
+    return NextResponse.json({ received: true, event: event.type })
   } catch (error) {
-    console.error('Webhook handler error:', error)
+    const duration = Date.now() - startTime
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error(`❌ Webhook handler error after ${duration}ms:`, {
+      error: errorMessage,
+      type: event?.type,
+      id: event?.id,
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json(
-      { error: 'Webhook handler failed' },
+      { error: 'Webhook handler failed', details: errorMessage },
       { status: 500 }
     )
   }
