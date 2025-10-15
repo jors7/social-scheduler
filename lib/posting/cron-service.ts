@@ -283,11 +283,12 @@ export async function postToPinterestDirect(content: string, account: any, media
       boardId = boards[0].id;
     }
 
-    const result = await pinterestService.createPin(
+    // Use createSmartPin to automatically detect media type (image/video/carousel)
+    const result = await pinterestService.createSmartPin(
       boardId,
       title,
       description,
-      mediaUrls[0] // Pinterest pins have one main image
+      mediaUrls // Pass all media URLs for smart detection
     );
 
     return {
