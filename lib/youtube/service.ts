@@ -207,14 +207,18 @@ export class YouTubeService {
       // If thumbnail is provided, upload it
       if ((params.thumbnailPath || params.thumbnailBuffer) && response.data.id) {
         try {
+          console.log('Uploading custom thumbnail for video:', response.data.id);
           let thumbnailStream: Readable;
-          
+
           if (params.thumbnailBuffer) {
+            console.log('Using thumbnail buffer, size:', params.thumbnailBuffer.length);
             thumbnailStream = Readable.from(params.thumbnailBuffer);
           } else if (params.thumbnailPath) {
+            console.log('Fetching thumbnail from path:', params.thumbnailPath);
             if (params.thumbnailPath.startsWith('http')) {
-              const response = await fetch(params.thumbnailPath);
-              const buffer = Buffer.from(await response.arrayBuffer());
+              const thumbnailResponse = await fetch(params.thumbnailPath);
+              const buffer = Buffer.from(await thumbnailResponse.arrayBuffer());
+              console.log('Thumbnail fetched, size:', buffer.length);
               thumbnailStream = Readable.from(buffer);
             } else {
               throw new Error('Local file paths are not supported for thumbnails.');
@@ -223,15 +227,22 @@ export class YouTubeService {
             throw new Error('No thumbnail source provided');
           }
 
-          await this.youtube.thumbnails.set({
+          const thumbnailResult = await this.youtube.thumbnails.set({
             videoId: response.data.id,
             media: {
               body: thumbnailStream,
             },
           });
+          console.log('✅ Thumbnail uploaded successfully for video:', response.data.id);
         } catch (thumbnailError) {
-          console.warn('Failed to upload thumbnail:', thumbnailError);
+          console.error('❌ Failed to upload thumbnail:', thumbnailError);
           // Don't fail the entire upload if thumbnail fails
+        }
+      } else {
+        if (!response.data.id) {
+          console.log('No video ID in response, cannot upload thumbnail');
+        } else {
+          console.log('No thumbnail provided for video:', response.data.id);
         }
       }
 
@@ -326,6 +337,12 @@ export class YouTubeService {
       }
 
       // Upload video with Shorts-optimized settings
+      console.log('Uploading YouTube Short with thumbnail:', {
+        hasVideoBuffer: !!params.videoBuffer,
+        hasThumbnailBuffer: !!params.thumbnailBuffer,
+        hasThumbnailPath: !!params.thumbnailPath
+      });
+
       const result = await this.uploadVideo({
         title: params.title,
         description: description,
@@ -340,6 +357,8 @@ export class YouTubeService {
         thumbnailBuffer: params.thumbnailBuffer,
         onProgress: params.onProgress,
       });
+
+      console.log('YouTube Short uploaded successfully:', result.id);
 
       return {
         ...result,

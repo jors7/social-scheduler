@@ -87,37 +87,61 @@ async function processScheduledPosts(request: NextRequest) {
     
     // First, check for YouTube scheduled posts that have passed their publish time
     // These are already uploaded to YouTube with publishAt, we just need to update their status
+    console.log('=== Checking for YouTube scheduled posts ===');
     const { data: youtubeScheduledPosts, error: youtubeError } = await supabase
       .from('scheduled_posts')
       .select('*')
       .eq('status', 'pending')
       .contains('platforms', ['youtube'])
       .lte('scheduled_for', now);
-    
+
+    console.log('YouTube scheduled posts query:', {
+      error: youtubeError,
+      count: youtubeScheduledPosts?.length || 0,
+      posts: youtubeScheduledPosts?.map(p => ({
+        id: p.id,
+        scheduled_for: p.scheduled_for,
+        has_post_results: !!p.post_results,
+        post_results: p.post_results
+      }))
+    });
+
     if (!youtubeError && youtubeScheduledPosts && youtubeScheduledPosts.length > 0) {
       // Filter to only YouTube-scheduled posts (those with post_results indicating scheduled)
-      const youtubePostsToUpdate = youtubeScheduledPosts.filter(post => 
-        post.post_results?.some((result: any) => 
+      const youtubePostsToUpdate = youtubeScheduledPosts.filter(post => {
+        const hasScheduledResult = post.post_results?.some((result: any) =>
           result.platform === 'youtube' && result.scheduled === true
-        )
-      );
-      
+        );
+        console.log(`Post ${post.id} has scheduled result:`, hasScheduledResult, 'post_results:', post.post_results);
+        return hasScheduledResult;
+      });
+
+      console.log(`Filtered YouTube posts to update: ${youtubePostsToUpdate.length}`);
+
       if (youtubePostsToUpdate.length > 0) {
         console.log(`Found ${youtubePostsToUpdate.length} YouTube scheduled posts to mark as posted`);
-        
+
         for (const post of youtubePostsToUpdate) {
           // Update status to posted since YouTube handles the actual publishing
-          await supabase
+          const { error: updateError } = await supabase
             .from('scheduled_posts')
-            .update({ 
+            .update({
               status: 'posted',
               posted_at: post.scheduled_for // Use scheduled time as posted time
             })
             .eq('id', post.id);
-          
-          console.log(`Marked YouTube post ${post.id} as posted`);
+
+          if (updateError) {
+            console.error(`Failed to update YouTube post ${post.id}:`, updateError);
+          } else {
+            console.log(`✅ Marked YouTube post ${post.id} as posted`);
+          }
         }
+      } else {
+        console.log('No YouTube posts matched the filter criteria (scheduled: true)');
       }
+    } else {
+      console.log('No YouTube scheduled posts found or error occurred');
     }
     
     // Now get regular posts that need to be posted
