@@ -93,28 +93,35 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     console.log('Schedule request body:', JSON.stringify(body, null, 2));
-    
-    const { content, platforms, platformContent, mediaUrls, scheduledFor, pinterestBoardId, pinterestTitle, pinterestDescription, pinterestLink } = body;
+
+    const { content, platforms, platformContent, mediaUrls, scheduledFor, pinterestBoardId, pinterestTitle, pinterestDescription, pinterestLink, threadsMode, threadPosts, threadsThreadMedia } = body;
 
     // Check if this is a Pinterest-only post with media
-    const isPinterestOnlyWithMedia = platforms?.length === 1 && 
-                                     platforms[0] === 'pinterest' && 
-                                     pinterestBoardId && 
+    const isPinterestOnlyWithMedia = platforms?.length === 1 &&
+                                     platforms[0] === 'pinterest' &&
+                                     pinterestBoardId &&
                                      mediaUrls?.length > 0;
 
-    // Validate inputs - allow empty content for Pinterest-only posts with media
-    if ((!content && !isPinterestOnlyWithMedia) || !platforms || platforms.length === 0 || !scheduledFor) {
+    // Check if this is a Threads thread mode post
+    const isThreadsThreadMode = platforms?.length === 1 &&
+                                platforms[0] === 'threads' &&
+                                threadsMode === 'thread' &&
+                                threadPosts && threadPosts.length > 0;
+
+    // Validate inputs - allow empty content for Pinterest-only posts with media or Threads thread mode
+    if ((!content && !isPinterestOnlyWithMedia && !isThreadsThreadMode) || !platforms || platforms.length === 0 || !scheduledFor) {
       console.log('Validation failed:', {
         hasContent: !!content,
         hasPlatforms: !!platforms,
         platformsLength: platforms?.length,
         hasScheduledFor: !!scheduledFor,
-        isPinterestOnlyWithMedia
+        isPinterestOnlyWithMedia,
+        isThreadsThreadMode
       });
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Missing required fields',
         details: {
-          content: (!content && !isPinterestOnlyWithMedia) ? 'Content is required' : 'OK',
+          content: (!content && !isPinterestOnlyWithMedia && !isThreadsThreadMode) ? 'Content is required' : 'OK',
           platforms: !platforms || platforms.length === 0 ? 'At least one platform is required' : 'OK',
           scheduledFor: !scheduledFor ? 'Scheduled time is required' : 'OK'
         }
@@ -184,7 +191,18 @@ export async function POST(request: NextRequest) {
     if (pinterestLink) {
       insertData.pinterest_link = pinterestLink;
     }
-    
+
+    // Add Threads thread-specific fields if provided
+    if (threadsMode) {
+      insertData.threads_mode = threadsMode;
+    }
+    if (threadPosts && threadPosts.length > 0) {
+      insertData.thread_posts = threadPosts;
+    }
+    if (threadsThreadMedia) {
+      insertData.threads_thread_media = threadsThreadMedia;
+    }
+
     const { data, error } = await supabase
       .from('scheduled_posts')
       .insert(insertData);

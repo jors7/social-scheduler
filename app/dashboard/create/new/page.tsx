@@ -2299,7 +2299,7 @@ function CreateNewPostPageContent() {
       })
       
       const requestData = {
-        content: postContent,
+        content: isThreadsThreadMode ? (threadPosts.filter(p => p.trim()).length > 0 ? threadPosts[0] : '') : postContent,
         platforms: selectedPlatforms,
         platformContent: Object.keys(filteredPlatformContent).length > 0 ? filteredPlatformContent : undefined,
         mediaUrls: mediaUrls,
@@ -2309,6 +2309,12 @@ function CreateNewPostPageContent() {
         pinterestTitle: pinterestTitle || undefined,
         pinterestDescription: pinterestDescription || undefined,
         pinterestLink: pinterestLink || undefined,
+        // Include thread-specific data
+        ...(isThreadsThreadMode && {
+          threadsMode: 'thread',
+          threadPosts: threadPosts.filter(p => p.trim().length > 0),
+          threadsThreadMedia: threadsThreadMedia
+        }),
       }
       
       console.log('Sending schedule request:', requestData)
@@ -3416,14 +3422,15 @@ function CreateNewPostPageContent() {
                   <Button 
                     className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg" 
                     disabled={
-                      selectedPlatforms.length === 0 || 
-                      isPosting || 
+                      selectedPlatforms.length === 0 ||
+                      isPosting ||
                       loadingDraft ||
-                      (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) && 
+                      (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) &&
                         !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()) &&
                         !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
                         !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(url => url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')))) &&
-                        !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'instagram' && instagramAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)))
+                        !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'instagram' && instagramAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
+                        !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'threads' && threadsMode === 'thread' && threadPosts.some(p => p.trim().length > 0)))
                     }
                     onClick={handleSchedulePost}
                   >

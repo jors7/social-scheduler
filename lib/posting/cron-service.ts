@@ -338,9 +338,16 @@ export async function postToTwitterDirect(content: string, account: any, mediaUr
   }
 }
 
-export async function postToThreadsDirect(content: string, account: any, mediaUrls?: string[], supabase?: SupabaseClient) {
+export async function postToThreadsDirect(
+  content: string,
+  account: any,
+  mediaUrls?: string[],
+  supabase?: SupabaseClient,
+  threadData?: { threadsMode?: string; threadPosts?: string[]; threadsThreadMedia?: string[] }
+) {
   console.log('=== DIRECT THREADS POST ===');
   console.log('Content:', content);
+  console.log('Thread data:', threadData);
   console.log('Account details:', {
     platform_user_id: account.platform_user_id,
     username: account.username,
@@ -391,18 +398,48 @@ export async function postToThreadsDirect(content: string, account: any, mediaUr
       }
     }
 
-    const threadsService = new ThreadsService({
-      accessToken: accessToken,
-      userID: account.platform_user_id
-    });
+    // Check if this is a thread mode post
+    if (threadData?.threadsMode === 'thread' && threadData.threadPosts && threadData.threadPosts.length > 0) {
+      console.log(`Creating Threads thread with ${threadData.threadPosts.length} posts`);
 
-    const result = await threadsService.createPost({ text: content });
+      // Call the thread posting API
+      const threadResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/post/threads/thread`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: account.platform_user_id,
+          accessToken: accessToken,
+          posts: threadData.threadPosts,
+          mediaUrls: threadData.threadsThreadMedia || []
+        })
+      });
 
-    return {
-      success: true,
-      id: result.id,
-      message: 'Posted to Threads successfully'
-    };
+      if (!threadResponse.ok) {
+        const errorData = await threadResponse.json();
+        throw new Error(errorData.error || 'Failed to create thread');
+      }
+
+      const threadResult = await threadResponse.json();
+      return {
+        success: true,
+        id: threadResult.threadId,
+        message: `Posted Threads thread with ${threadData.threadPosts.length} posts successfully`
+      };
+    } else {
+      // Single post mode
+      const threadsService = new ThreadsService({
+        accessToken: accessToken,
+        userID: account.platform_user_id
+      });
+
+      const result = await threadsService.createPost({ text: content });
+
+      return {
+        success: true,
+        id: result.id,
+        message: 'Posted to Threads successfully'
+      };
+    }
   } catch (error) {
     console.error('Threads posting error:', error);
 
