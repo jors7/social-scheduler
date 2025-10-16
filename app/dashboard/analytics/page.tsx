@@ -93,27 +93,25 @@ export default function AnalyticsPage() {
         setRefreshing(true)
       }
 
-      // Fetch data from all platforms in parallel (including trends)
+      // Fetch data from all platforms in parallel
       // Add cache-busting timestamp to ensure fresh data
       const cacheBust = Date.now();
-      const [facebookRes, instagramRes, threadsRes, blueskyRes, pinterestRes, tiktokRes, trendsRes] = await Promise.all([
+      const [facebookRes, instagramRes, threadsRes, blueskyRes, pinterestRes, tiktokRes] = await Promise.all([
         fetch(`/api/analytics/facebook?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
         fetch(`/api/analytics/instagram?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
         fetch(`/api/analytics/threads?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
         fetch(`/api/analytics/bluesky?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
         fetch(`/api/analytics/pinterest?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
-        fetch(`/api/analytics/tiktok?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
-        fetch(`/api/analytics/trends?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' })
+        fetch(`/api/analytics/tiktok?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' })
       ])
 
-      const [facebookData, instagramData, threadsData, blueskyData, pinterestData, tiktokData, trendsDataRes] = await Promise.all([
+      const [facebookData, instagramData, threadsData, blueskyData, pinterestData, tiktokData] = await Promise.all([
         facebookRes.ok ? facebookRes.json() : { metrics: null },
         instagramRes.ok ? instagramRes.json() : { metrics: null },
         threadsRes.ok ? threadsRes.json() : { metrics: null },
         blueskyRes.ok ? blueskyRes.json() : { metrics: null },
         pinterestRes.ok ? pinterestRes.json() : { metrics: null },
-        tiktokRes.ok ? tiktokRes.json() : { metrics: null },
-        trendsRes.ok ? trendsRes.json() : { trends: null }
+        tiktokRes.ok ? tiktokRes.json() : { metrics: null }
       ])
 
       // Aggregate all metrics
@@ -314,10 +312,110 @@ export default function AnalyticsPage() {
         postedPosts: allPosts // Use allPosts for postedPosts as well
       })
 
-      // Set trend data if available
-      if (trendsDataRes && trendsDataRes.trends) {
-        setTrendData(trendsDataRes.trends)
-      }
+      // Calculate trends from the fetched posts data
+      const calculateTrendsFromPosts = () => {
+        const currentPeriodStart = new Date();
+        currentPeriodStart.setDate(currentPeriodStart.getDate() - parseInt(dateRange));
+        currentPeriodStart.setHours(0, 0, 0, 0);
+
+        const previousPeriodEnd = new Date(currentPeriodStart);
+        previousPeriodEnd.setMilliseconds(previousPeriodEnd.getMilliseconds() - 1);
+
+        const previousPeriodStart = new Date(previousPeriodEnd);
+        previousPeriodStart.setDate(previousPeriodStart.getDate() - parseInt(dateRange) + 1);
+        previousPeriodStart.setHours(0, 0, 0, 0);
+
+        // Filter posts by period
+        const currentPosts = allPosts.filter(post => {
+          const postDate = new Date(post.created_time || post.timestamp || post.createdAt || post.created_at);
+          return postDate >= currentPeriodStart && postDate <= new Date();
+        });
+
+        const previousPosts = allPosts.filter(post => {
+          const postDate = new Date(post.created_time || post.timestamp || post.createdAt || post.created_at);
+          return postDate >= previousPeriodStart && postDate <= previousPeriodEnd;
+        });
+
+        // Calculate metrics for each period
+        const calculateMetrics = (posts: any[]) => {
+          let engagement = 0, reach = 0, impressions = 0;
+
+          posts.forEach(post => {
+            if (post.platform === 'facebook') {
+              engagement += (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
+              reach += post.reach || 0;
+              impressions += post.impressions || 0;
+            } else if (post.platform === 'instagram') {
+              engagement += (post.likes || 0) + (post.comments || 0) + (post.saves || 0);
+              reach += post.reach || 0;
+              impressions += post.impressions || post.plays || 0;
+            } else if (post.platform === 'threads') {
+              engagement += (post.likes || 0) + (post.replies || 0) + (post.reposts || 0) + (post.quotes || 0);
+              reach += post.views || 0;
+              impressions += post.views || 0;
+            } else if (post.platform === 'bluesky') {
+              engagement += (post.likes || 0) + (post.replies || 0) + (post.reposts || 0);
+            } else if (post.platform === 'pinterest') {
+              engagement += (post.saves || 0) + (post.pin_clicks || 0) + (post.outbound_clicks || 0);
+              reach += post.impressions || 0;
+              impressions += post.impressions || 0;
+            } else if (post.platform === 'tiktok') {
+              engagement += (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
+              reach += post.views || 0;
+              impressions += post.views || 0;
+            }
+          });
+
+          return { posts: posts.length, engagement, reach, impressions };
+        };
+
+        const currentMetrics = calculateMetrics(currentPosts);
+        const previousMetrics = calculateMetrics(previousPosts);
+
+        const calculateChange = (current: number, previous: number) => {
+          if (previous === 0) return current > 0 ? 100 : 0;
+          return ((current - previous) / previous) * 100;
+        };
+
+        const currentEngagementRate = currentMetrics.impressions > 0
+          ? (currentMetrics.engagement / currentMetrics.impressions) * 100
+          : 0;
+        const previousEngagementRate = previousMetrics.impressions > 0
+          ? (previousMetrics.engagement / previousMetrics.impressions) * 100
+          : 0;
+
+        if (currentMetrics.posts > 0 || previousMetrics.posts > 0) {
+          setTrendData({
+            totalPosts: {
+              current: currentMetrics.posts,
+              previous: previousMetrics.posts,
+              change: calculateChange(currentMetrics.posts, previousMetrics.posts)
+            },
+            totalEngagement: {
+              current: currentMetrics.engagement,
+              previous: previousMetrics.engagement,
+              change: calculateChange(currentMetrics.engagement, previousMetrics.engagement)
+            },
+            totalReach: {
+              current: currentMetrics.reach,
+              previous: previousMetrics.reach,
+              change: calculateChange(currentMetrics.reach, previousMetrics.reach)
+            },
+            totalImpressions: {
+              current: currentMetrics.impressions,
+              previous: previousMetrics.impressions,
+              change: calculateChange(currentMetrics.impressions, previousMetrics.impressions)
+            },
+            engagementRate: {
+              current: currentEngagementRate,
+              previous: previousEngagementRate,
+              change: calculateChange(currentEngagementRate, previousEngagementRate)
+            }
+          });
+        }
+      };
+
+      calculateTrendsFromPosts();
 
     } catch (error) {
       console.error('Error fetching analytics:', error)
