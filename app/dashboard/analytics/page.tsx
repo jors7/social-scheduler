@@ -54,7 +54,6 @@ export default function AnalyticsPage() {
   const [trendData, setTrendData] = useState<TrendData | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [snapshotting, setSnapshotting] = useState(false)
 
   const dateRangeOptions = [
     { value: '7', label: 'Last 7 days' },
@@ -333,35 +332,6 @@ export default function AnalyticsPage() {
     setRefreshing(true)
     await fetchRealAnalytics()
   }
-
-  const handleSaveSnapshot = async () => {
-    try {
-      setSnapshotting(true)
-
-      const response = await fetch('/api/analytics/snapshot-now', {
-        method: 'POST'
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to create snapshot')
-      }
-
-      const data = await response.json()
-
-      toast.success('Analytics snapshot saved! Create another snapshot tomorrow to see trends.', {
-        duration: 5000
-      })
-
-      // Refresh the analytics data to potentially show new trends
-      await fetchRealAnalytics()
-
-    } catch (error) {
-      console.error('Snapshot error:', error)
-      toast.error('Failed to save analytics snapshot')
-    } finally {
-      setSnapshotting(false)
-    }
-  }
   
   const generateCSV = (data: AnalyticsData, days: string) => {
     const lines: string[] = []
@@ -606,17 +576,6 @@ export default function AnalyticsPage() {
                 >
                   <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                   Refresh
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSaveSnapshot}
-                  disabled={snapshotting || refreshing}
-                  className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 text-xs sm:text-sm px-3 sm:px-4 bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 border-purple-200"
-                  title="Save current analytics for trend comparison"
-                >
-                  <BarChart3 className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 ${snapshotting ? 'animate-pulse' : ''}`} />
-                  {snapshotting ? 'Saving...' : 'Save Snapshot'}
                 </Button>
                 <Button
                   variant="gradient"
