@@ -325,6 +325,11 @@ export default function AnalyticsPage() {
         previousPeriodStart.setDate(previousPeriodStart.getDate() - parseInt(dateRange) + 1);
         previousPeriodStart.setHours(0, 0, 0, 0);
 
+        console.log('📊 Trend Calculation Debug:');
+        console.log('Total posts available:', allPosts.length);
+        console.log('Current Period:', currentPeriodStart.toISOString(), 'to', new Date().toISOString());
+        console.log('Previous Period:', previousPeriodStart.toISOString(), 'to', previousPeriodEnd.toISOString());
+
         // Filter posts by period
         const currentPosts = allPosts.filter(post => {
           const postDate = new Date(post.created_time || post.timestamp || post.createdAt || post.created_at);
@@ -335,6 +340,12 @@ export default function AnalyticsPage() {
           const postDate = new Date(post.created_time || post.timestamp || post.createdAt || post.created_at);
           return postDate >= previousPeriodStart && postDate <= previousPeriodEnd;
         });
+
+        console.log('Current period posts:', currentPosts.length);
+        console.log('Previous period posts:', previousPosts.length);
+        if (allPosts.length > 0) {
+          console.log('Sample post dates:', allPosts.slice(0, 5).map(p => new Date(p.created_time || p.timestamp || p.createdAt || p.created_at).toISOString()));
+        }
 
         // Calculate metrics for each period
         const calculateMetrics = (posts: any[]) => {
