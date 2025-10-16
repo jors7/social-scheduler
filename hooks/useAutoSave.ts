@@ -70,7 +70,7 @@ export function useAutoSave(
           title,
           content: data.content,
           platforms: data.platforms,
-          platform_content: data.platformContent,
+          platformContent: data.platformContent,
           media_urls: data.mediaUrls
         }
 
