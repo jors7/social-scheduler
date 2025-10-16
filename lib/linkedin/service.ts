@@ -262,9 +262,8 @@ export class LinkedInService {
       console.log('LinkedIn: Uploading video...');
 
       const uploadResponse = await fetch(uploadUrl, {
-        method: 'POST',
+        method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
           'Content-Type': mimeType
         },
         body: videoBuffer as any
@@ -276,14 +275,22 @@ export class LinkedInService {
         throw new Error('Failed to upload video to LinkedIn');
       }
 
-      console.log('LinkedIn: Video uploaded successfully');
+      // Get the ETag from the upload response
+      const etag = uploadResponse.headers.get('ETag');
+      if (!etag) {
+        console.error('LinkedIn: No ETag in upload response');
+        throw new Error('No ETag received from video upload');
+      }
 
-      // Step 3: Finalize the upload
+      console.log('LinkedIn: Video uploaded successfully, ETag:', etag);
+
+      // Step 3: Finalize the upload with the ETag
+      const uploadToken = initializeData.value.uploadInstructions[0].uploadToken || '';
       const finalizeBody = {
         finalizeUploadRequest: {
           video: videoUrn,
-          uploadToken: '',
-          uploadedPartIds: []
+          uploadToken: uploadToken,
+          uploadedPartIds: [etag.replace(/"/g, '')] // Remove quotes from ETag
         }
       };
 
