@@ -539,8 +539,13 @@ export class LinkedInService {
       }
 
       console.log('LinkedIn posting with video, profile ID:', profile.id);
+      console.log('LinkedIn: Using video URN for post:', videoUrn);
 
       // Prepare the share request body with video
+      // Note: Videos need a slight delay even after AVAILABLE status
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      console.log('LinkedIn: Waited additional 5 seconds after AVAILABLE status');
+
       const shareBody = {
         author: `urn:li:person:${profile.id}`,
         lifecycleState: 'PUBLISHED',
@@ -566,6 +571,8 @@ export class LinkedInService {
           'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
         }
       };
+
+      console.log('LinkedIn: Post body:', JSON.stringify(shareBody, null, 2));
 
       // Make the API request to share content
       const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
