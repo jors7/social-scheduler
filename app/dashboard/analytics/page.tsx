@@ -330,6 +330,23 @@ export default function AnalyticsPage() {
         console.log('Current Period:', currentPeriodStart.toISOString(), 'to', new Date().toISOString());
         console.log('Previous Period:', previousPeriodStart.toISOString(), 'to', previousPeriodEnd.toISOString());
 
+        // Show all post dates grouped by platform
+        const postsByPlatform: Record<string, any[]> = {};
+        allPosts.forEach(post => {
+          if (!postsByPlatform[post.platform]) {
+            postsByPlatform[post.platform] = [];
+          }
+          postsByPlatform[post.platform].push({
+            date: new Date(post.created_time || post.timestamp || post.createdAt || post.created_at).toISOString(),
+            platform: post.platform
+          });
+        });
+        console.log('Posts by platform:', Object.entries(postsByPlatform).map(([platform, posts]) => ({
+          platform,
+          count: posts.length,
+          dates: posts.map(p => p.date).slice(0, 3)
+        })));
+
         // Filter posts by period
         const currentPosts = allPosts.filter(post => {
           const postDate = new Date(post.created_time || post.timestamp || post.createdAt || post.created_at);
@@ -343,9 +360,6 @@ export default function AnalyticsPage() {
 
         console.log('Current period posts:', currentPosts.length);
         console.log('Previous period posts:', previousPosts.length);
-        if (allPosts.length > 0) {
-          console.log('Sample post dates:', allPosts.slice(0, 5).map(p => new Date(p.created_time || p.timestamp || p.createdAt || p.created_at).toISOString()));
-        }
 
         // Calculate metrics for each period
         const calculateMetrics = (posts: any[]) => {
