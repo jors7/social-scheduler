@@ -321,19 +321,36 @@ export async function postToLinkedInDirect(content: string, account: any, mediaU
     const linkedInService = new LinkedInService(account.access_token, account.user_id);
 
     if (mediaUrls && mediaUrls.length > 0) {
-      // Post with image (LinkedIn only supports one image)
-      const imageUrl = mediaUrls[0];
-      const imageResponse = await fetch(imageUrl);
-      const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-      const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg';
+      // LinkedIn only supports one media item per post
+      const mediaUrl = mediaUrls[0];
+      const mediaResponse = await fetch(mediaUrl);
+      const mediaBuffer = Buffer.from(await mediaResponse.arrayBuffer());
+      const mimeType = mediaResponse.headers.get('content-type') || 'image/jpeg';
 
-      const result = await linkedInService.postWithImage(content, imageBuffer, mimeType);
+      // Detect if it's a video or image
+      const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
+      const isVideo = mimeType.startsWith('video/') ||
+                      videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
 
-      return {
-        success: true,
-        id: result.id,
-        message: 'Posted to LinkedIn with image successfully'
-      };
+      if (isVideo) {
+        console.log('LinkedIn: Detected video, using video upload API');
+        const result = await linkedInService.postWithVideo(content, mediaBuffer, mimeType);
+
+        return {
+          success: true,
+          id: result.id,
+          message: 'Posted to LinkedIn with video successfully'
+        };
+      } else {
+        console.log('LinkedIn: Detected image, using image upload API');
+        const result = await linkedInService.postWithImage(content, mediaBuffer, mimeType);
+
+        return {
+          success: true,
+          id: result.id,
+          message: 'Posted to LinkedIn with image successfully'
+        };
+      }
     } else {
       // Text-only post
       const result = await linkedInService.shareContent({ text: content });

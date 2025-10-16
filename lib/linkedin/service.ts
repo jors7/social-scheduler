@@ -181,7 +181,7 @@ export class LinkedInService {
 
       // Step 2: Upload the image binary
       console.log('LinkedIn: Uploading image, size:', imageBuffer.length, 'mime:', mimeType);
-      
+
       const uploadResponse = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
@@ -198,11 +198,118 @@ export class LinkedInService {
       }
 
       console.log('LinkedIn: Image uploaded successfully, asset URN:', asset);
-      
+
       // Return the asset URN which can be used in posts
       return asset;
     } catch (error) {
       console.error('LinkedIn image upload error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Upload a video to LinkedIn
+   * LinkedIn videos require a different upload process than images
+   * 1. Initialize video upload
+   * 2. Upload video binary
+   * 3. Finalize upload
+   * 4. Get the video asset URN
+   */
+  async uploadVideo(videoBuffer: Buffer, mimeType: string): Promise<string> {
+    try {
+      // Get the authenticated user's profile ID
+      const profile = await this.getProfile();
+      if (!profile.id) {
+        throw new Error('Could not get LinkedIn profile ID');
+      }
+
+      // Step 1: Initialize video upload
+      const initializeBody = {
+        initializeUploadRequest: {
+          owner: `urn:li:person:${profile.id}`,
+          fileSizeBytes: videoBuffer.length,
+          uploadCaptions: false,
+          uploadThumbnail: false
+        }
+      };
+
+      console.log('LinkedIn: Initializing video upload for profile:', profile.id, 'size:', videoBuffer.length);
+
+      const initializeResponse = await fetch('https://api.linkedin.com/v2/videos?action=initializeUpload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+          'X-Restli-Protocol-Version': '2.0.0',
+          'LinkedIn-Version': '202210'
+        },
+        body: JSON.stringify(initializeBody)
+      });
+
+      if (!initializeResponse.ok) {
+        const errorData = await initializeResponse.text();
+        console.error('LinkedIn video initialize failed:', errorData);
+        throw new Error('Failed to initialize video upload');
+      }
+
+      const initializeData = await initializeResponse.json();
+      const videoUrn = initializeData.value.video;
+      const uploadUrl = initializeData.value.uploadInstructions[0].uploadUrl;
+
+      console.log('LinkedIn: Got video URN and upload URL:', { videoUrn, uploadUrl });
+
+      // Step 2: Upload the video binary
+      console.log('LinkedIn: Uploading video...');
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': mimeType
+        },
+        body: videoBuffer as any
+      });
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        console.error('LinkedIn video upload failed:', uploadResponse.status, errorText);
+        throw new Error('Failed to upload video to LinkedIn');
+      }
+
+      console.log('LinkedIn: Video uploaded successfully');
+
+      // Step 3: Finalize the upload
+      const finalizeBody = {
+        finalizeUploadRequest: {
+          video: videoUrn,
+          uploadToken: '',
+          uploadedPartIds: []
+        }
+      };
+
+      const finalizeResponse = await fetch('https://api.linkedin.com/v2/videos?action=finalizeUpload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+          'X-Restli-Protocol-Version': '2.0.0',
+          'LinkedIn-Version': '202210'
+        },
+        body: JSON.stringify(finalizeBody)
+      });
+
+      if (!finalizeResponse.ok) {
+        const errorText = await finalizeResponse.text();
+        console.error('LinkedIn video finalize failed:', finalizeResponse.status, errorText);
+        throw new Error('Failed to finalize video upload');
+      }
+
+      console.log('LinkedIn: Video finalized successfully, video URN:', videoUrn);
+
+      // Return the video URN which can be used in posts
+      return videoUrn;
+    } catch (error) {
+      console.error('LinkedIn video upload error:', error);
       throw error;
     }
   }
@@ -345,6 +452,79 @@ export class LinkedInService {
       };
     } catch (error) {
       console.error('LinkedIn post with image error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Post with video support
+   */
+  async postWithVideo(text: string, videoBuffer: Buffer, mimeType: string): Promise<LinkedInShareResponse> {
+    try {
+      // First upload the video
+      const videoUrn = await this.uploadVideo(videoBuffer, mimeType);
+
+      // Get the authenticated user's profile ID
+      const profile = await this.getProfile();
+      if (!profile.id) {
+        throw new Error('Could not get LinkedIn profile ID');
+      }
+
+      console.log('LinkedIn posting with video, profile ID:', profile.id);
+
+      // Prepare the share request body with video
+      const shareBody = {
+        author: `urn:li:person:${profile.id}`,
+        lifecycleState: 'PUBLISHED',
+        specificContent: {
+          'com.linkedin.ugc.ShareContent': {
+            shareCommentary: {
+              text: LinkedInService.formatContent(text)
+            },
+            shareMediaCategory: 'VIDEO',
+            media: [{
+              status: 'READY',
+              description: {
+                text: 'Video shared from SocialCal'
+              },
+              media: videoUrn,
+              title: {
+                text: 'Video'
+              }
+            }]
+          }
+        },
+        visibility: {
+          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
+        }
+      };
+
+      // Make the API request to share content
+      const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+          'X-Restli-Protocol-Version': '2.0.0'
+        },
+        body: JSON.stringify(shareBody)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('LinkedIn share with video failed:', errorData);
+        throw new Error(`Failed to share on LinkedIn: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return {
+        id: result.id,
+        activity: result.activity,
+        lifecycleState: result.lifecycleState,
+        visibility: result.visibility
+      };
+    } catch (error) {
+      console.error('LinkedIn post with video error:', error);
       throw error;
     }
   }
