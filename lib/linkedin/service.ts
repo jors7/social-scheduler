@@ -313,12 +313,73 @@ export class LinkedInService {
 
       console.log('LinkedIn: Video finalized successfully, video URN:', videoUrn);
 
+      // Step 4: Wait for video processing to complete
+      console.log('LinkedIn: Waiting for video to be processed...');
+      await this.waitForVideoProcessing(videoUrn);
+      console.log('LinkedIn: Video is ready for posting');
+
       // Return the video URN which can be used in posts
       return videoUrn;
     } catch (error) {
       console.error('LinkedIn video upload error:', error);
       throw error;
     }
+  }
+
+  /**
+   * Wait for video processing to complete
+   * Poll the video status until it's ready or timeout
+   */
+  private async waitForVideoProcessing(videoUrn: string, maxAttempts: number = 30, delayMs: number = 2000): Promise<void> {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        // Check video status using LinkedIn API
+        const statusResponse = await fetch(`https://api.linkedin.com/v2/videos/${encodeURIComponent(videoUrn)}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${this.accessToken}`,
+            'X-Restli-Protocol-Version': '2.0.0',
+            'LinkedIn-Version': '202210'
+          }
+        });
+
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+          const status = statusData.status;
+
+          console.log(`LinkedIn: Video processing status (attempt ${attempt}/${maxAttempts}):`, status);
+
+          if (status === 'AVAILABLE' || status === 'READY') {
+            return; // Video is ready
+          }
+
+          if (status === 'PROCESSING' || status === 'WAITING_UPLOAD') {
+            // Video is still processing, wait and retry
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+            continue;
+          }
+
+          if (status === 'FAILED') {
+            throw new Error('Video processing failed on LinkedIn');
+          }
+        }
+
+        // If we can't get status, wait and retry
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      } catch (error) {
+        console.error(`LinkedIn: Error checking video status (attempt ${attempt}):`, error);
+
+        // On last attempt, throw the error
+        if (attempt === maxAttempts) {
+          throw new Error('Video processing timeout - LinkedIn is taking too long to process the video');
+        }
+
+        // Otherwise, wait and retry
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+
+    throw new Error('Video processing timeout after maximum attempts');
   }
 
   /**
