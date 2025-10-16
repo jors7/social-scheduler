@@ -40,6 +40,12 @@ interface PostedPost {
   pinterest_media_url?: string  // Deprecated, use platform_media_url
   pinterest_title?: string
   pinterest_description?: string
+  // Format flags
+  instagram_as_story?: boolean
+  instagram_as_reel?: boolean
+  facebook_as_story?: boolean
+  facebook_as_reel?: boolean
+  youtube_as_short?: boolean
 }
 
 interface PostStats {
@@ -483,7 +489,40 @@ export default function PostedPostsPage() {
 
                 // Helper function to get display content (prioritize Pinterest title)
                 const getDisplayContent = () => {
-                  // Check if it's a story post first (stories get special labels)
+                  // Check format flags first (for stories/reels/shorts without captions)
+                  const postWithFlags = post as any
+
+                  // Check for Facebook Story
+                  if (post.platforms?.includes('facebook') && postWithFlags.facebook_as_story) {
+                    const content = stripHtml(post.content)
+                    return content && content.trim() ? content : 'Facebook Story'
+                  }
+
+                  // Check for Facebook Reel
+                  if (post.platforms?.includes('facebook') && postWithFlags.facebook_as_reel) {
+                    const content = stripHtml(post.content)
+                    return content && content.trim() ? content : 'Facebook Reel'
+                  }
+
+                  // Check for Instagram Story
+                  if (post.platforms?.includes('instagram') && postWithFlags.instagram_as_story) {
+                    const content = stripHtml(post.content)
+                    return content && content.trim() ? content : 'Instagram Story'
+                  }
+
+                  // Check for Instagram Reel
+                  if (post.platforms?.includes('instagram') && postWithFlags.instagram_as_reel) {
+                    const content = stripHtml(post.content)
+                    return content && content.trim() ? content : 'Instagram Reel'
+                  }
+
+                  // Check for YouTube Short
+                  if (post.platforms?.includes('youtube') && postWithFlags.youtube_as_short) {
+                    const content = stripHtml(post.content)
+                    return content && content.trim() ? content : 'YouTube Short'
+                  }
+
+                  // Fallback: Check if it's a story post via post_results (for old posts)
                   if (isStoryPost()) {
                     // Determine which platform the story is from
                     if (post.platforms.includes('instagram')) {
