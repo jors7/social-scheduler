@@ -7,8 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { X, Plus, Info } from 'lucide-react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { X, Plus } from 'lucide-react'
 
 interface VideoMetadataProps {
   title: string
@@ -93,13 +92,6 @@ export default function VideoMetadata({
 
   return (
     <div className="space-y-6">
-      <Alert>
-        <Info className="h-4 w-4" />
-        <AlertDescription>
-          YouTube requires a video file to create a post. Make sure to upload your video below.
-        </AlertDescription>
-      </Alert>
-
       {/* Video Title */}
       <div className="space-y-2">
         <Label htmlFor="video-title">Video Title *</Label>

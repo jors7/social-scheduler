@@ -3841,9 +3841,7 @@ function CreateNewPostPageContent() {
                                 <div className="bg-red-50 border border-red-200 rounded-lg p-2">
                                   <p className="text-[10px] text-red-700 leading-relaxed">
                                     📹 Standard YouTube videos<br/>
-                                    📐 Any aspect ratio supported<br/>
-                                    ⏱️ Duration: no strict limit<br/>
-                                    ✨ Best for long-form content
+                                    📐 Any aspect ratio supported
                                   </p>
                                 </div>
                               )}
@@ -3854,9 +3852,7 @@ function CreateNewPostPageContent() {
                                     🎬 YouTube Shorts format<br/>
                                     📐 Vertical format (9:16) required<br/>
                                     ⏱️ Duration: up to 60 seconds<br/>
-                                    🏷️ #Shorts tag will be added automatically<br/>
-                                    🖼️ Custom thumbnails not supported (YouTube auto-generates)<br/>
-                                    ✨ Optimized for mobile viewing
+                                    🖼️ Custom thumbnails not supported (YouTube auto-generates)
                                   </p>
                                 </div>
                               )}
