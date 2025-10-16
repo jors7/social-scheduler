@@ -325,28 +325,6 @@ export default function AnalyticsPage() {
         previousPeriodStart.setDate(previousPeriodStart.getDate() - parseInt(dateRange) + 1);
         previousPeriodStart.setHours(0, 0, 0, 0);
 
-        console.log('📊 Trend Calculation Debug:');
-        console.log('Total posts available:', allPosts.length);
-        console.log('Current Period:', currentPeriodStart.toISOString(), 'to', new Date().toISOString());
-        console.log('Previous Period:', previousPeriodStart.toISOString(), 'to', previousPeriodEnd.toISOString());
-
-        // Show all post dates grouped by platform
-        const postsByPlatform: Record<string, any[]> = {};
-        allPosts.forEach(post => {
-          if (!postsByPlatform[post.platform]) {
-            postsByPlatform[post.platform] = [];
-          }
-          postsByPlatform[post.platform].push({
-            date: new Date(post.created_time || post.timestamp || post.createdAt || post.created_at).toISOString(),
-            platform: post.platform
-          });
-        });
-        console.log('Posts by platform:', Object.entries(postsByPlatform).map(([platform, posts]) => ({
-          platform,
-          count: posts.length,
-          dates: posts.map(p => p.date).slice(0, 3)
-        })));
-
         // Filter posts by period
         const currentPosts = allPosts.filter(post => {
           const postDate = new Date(post.created_time || post.timestamp || post.createdAt || post.created_at);
@@ -357,9 +335,6 @@ export default function AnalyticsPage() {
           const postDate = new Date(post.created_time || post.timestamp || post.createdAt || post.created_at);
           return postDate >= previousPeriodStart && postDate <= previousPeriodEnd;
         });
-
-        console.log('Current period posts:', currentPosts.length);
-        console.log('Previous period posts:', previousPosts.length);
 
         // Calculate metrics for each period
         const calculateMetrics = (posts: any[]) => {
@@ -438,10 +413,7 @@ export default function AnalyticsPage() {
               change: calculateChange(currentEngagementRate, previousEngagementRate)
             }
           });
-          console.log('✅ Trends calculated with both periods having data');
         } else {
-          console.log('ℹ️  Trends hidden - need data in both periods for comparison');
-          console.log('   Current:', currentMetrics.posts, 'posts | Previous:', previousMetrics.posts, 'posts');
           setTrendData(null);
         }
       };
