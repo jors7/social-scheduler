@@ -50,8 +50,8 @@ export function useAutoSave(
       const currentData = JSON.stringify(data)
       if (currentData === lastDataRef.current) return
 
-      // Check if there's content to save
-      if (!data.content && data.platforms.length === 0) return
+      // Check if there's content to save (both content and platforms are required)
+      if (!data.content || data.platforms.length === 0) return
 
       try {
         setIsSaving(true)
@@ -86,7 +86,10 @@ export function useAutoSave(
         })
 
         if (!response.ok) {
-          throw new Error('Failed to auto-save')
+          const errorData = await response.json().catch(() => ({}))
+          const errorMessage = errorData.error || `Failed to auto-save (${response.status})`
+          console.error('Auto-save API error:', response.status, errorData)
+          throw new Error(errorMessage)
         }
 
         const result = await response.json()
