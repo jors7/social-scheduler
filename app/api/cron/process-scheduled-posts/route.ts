@@ -246,7 +246,12 @@ async function processScheduledPosts(request: NextRequest) {
             // Post to platform using direct function calls (no HTTP)
             switch (platform) {
               case 'facebook':
-                result = await postToFacebookDirect(content, account, post.media_urls);
+                result = await postToFacebookDirect(content, account, post.media_urls, {
+                  isStory: post.facebook_as_story || false,
+                  isReel: post.facebook_as_reel || false,
+                  userId: post.user_id,
+                  supabase: supabase
+                });
                 break;
 
               case 'bluesky':
@@ -254,7 +259,10 @@ async function processScheduledPosts(request: NextRequest) {
                 break;
 
               case 'instagram':
-                result = await postToInstagramDirect(content, account, post.media_urls);
+                result = await postToInstagramDirect(content, account, post.media_urls, {
+                  isStory: post.instagram_as_story || false,
+                  isReel: post.instagram_as_reel || false
+                });
                 break;
 
               case 'linkedin':

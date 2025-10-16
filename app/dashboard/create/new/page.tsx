@@ -2330,6 +2330,12 @@ function CreateNewPostPageContent() {
         pinterestTitle: pinterestTitle || undefined,
         pinterestDescription: pinterestDescription || undefined,
         pinterestLink: pinterestLink || undefined,
+        // Include format flags for scheduled posts
+        instagramAsStory: instagramAsStory,
+        instagramAsReel: instagramAsReel,
+        facebookAsStory: facebookAsStory,
+        facebookAsReel: facebookAsReel,
+        youtubeAsShort: youtubeAsShort,
         // Include thread-specific data
         ...(isThreadsThreadMode && {
           threadsMode: 'thread',
@@ -2354,7 +2360,13 @@ function CreateNewPostPageContent() {
             platforms: requestData.platforms,
             platform_content: requestData.platformContent,
             media_urls: requestData.mediaUrls,
-            scheduled_for: requestData.scheduledFor
+            scheduled_for: requestData.scheduledFor,
+            // Include format flags
+            instagram_as_story: requestData.instagramAsStory,
+            instagram_as_reel: requestData.instagramAsReel,
+            facebook_as_story: requestData.facebookAsStory,
+            facebook_as_reel: requestData.facebookAsReel,
+            youtube_as_short: requestData.youtubeAsShort
           }),
         })
       } else {

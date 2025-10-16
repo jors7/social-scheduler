@@ -112,18 +112,66 @@ async function refreshThreadsTokenCron(account: any, supabase: SupabaseClient): 
   }
 }
 
-export async function postToFacebookDirect(content: string, account: any, mediaUrls?: string[]) {
+export async function postToFacebookDirect(
+  content: string,
+  account: any,
+  mediaUrls?: string[],
+  options?: {
+    isStory?: boolean;
+    isReel?: boolean;
+    userId?: string;
+    supabase?: SupabaseClient;
+  }
+) {
   console.log('=== DIRECT FACEBOOK POST ===');
   console.log('Content:', content);
   console.log('Page ID:', account.platform_user_id);
   console.log('Has media:', !!mediaUrls && mediaUrls.length > 0);
-  
+  console.log('Is story:', options?.isStory || false);
+  console.log('Is reel:', options?.isReel || false);
+
   try {
     const facebookService = new FacebookService();
     let result;
 
-    // Determine post type based on media
-    if (!mediaUrls || mediaUrls.length === 0) {
+    // Check if this is a story or reel post
+    if (options?.isStory && mediaUrls && mediaUrls.length > 0) {
+      // Facebook Story
+      if (!options.userId || !options.supabase) {
+        throw new Error('userId and supabase client are required for Facebook stories');
+      }
+
+      const mediaUrl = mediaUrls[0];
+      const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
+      const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
+      const mediaType = isVideo ? 'video' : 'photo';
+
+      console.log(`Creating Facebook ${mediaType} story`);
+      result = await facebookService.createStoryPost(
+        account.platform_user_id,
+        account.access_token,
+        mediaUrl,
+        mediaType,
+        options.supabase,
+        options.userId
+      );
+    } else if (options?.isReel && mediaUrls && mediaUrls.length > 0) {
+      // Facebook Reel
+      if (!options.userId || !options.supabase) {
+        throw new Error('userId and supabase client are required for Facebook reels');
+      }
+
+      const videoUrl = mediaUrls[0];
+      console.log('Creating Facebook Reel');
+      result = await facebookService.createReelPost(
+        account.platform_user_id,
+        account.access_token,
+        content,
+        videoUrl,
+        options.supabase,
+        options.userId
+      );
+    } else if (!mediaUrls || mediaUrls.length === 0) {
       // Text-only post
       console.log('Creating text-only Facebook post');
       result = await facebookService.createPost(
@@ -132,7 +180,7 @@ export async function postToFacebookDirect(content: string, account: any, mediaU
         content
       );
     } else if (mediaUrls.length === 1) {
-      // Single media post
+      // Single media post (feed)
       const mediaUrl = mediaUrls[0];
       const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
       const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
@@ -157,7 +205,7 @@ export async function postToFacebookDirect(content: string, account: any, mediaU
     } else {
       // Multiple photos (carousel)
       const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
-      const imageUrls = mediaUrls.filter(url => 
+      const imageUrls = mediaUrls.filter(url =>
         !videoExtensions.some(ext => url.toLowerCase().includes(ext))
       );
 
@@ -219,11 +267,21 @@ export async function postToBlueskyDirect(content: string, account: any, mediaUr
   };
 }
 
-export async function postToInstagramDirect(content: string, account: any, mediaUrls?: string[]) {
+export async function postToInstagramDirect(
+  content: string,
+  account: any,
+  mediaUrls?: string[],
+  options?: {
+    isStory?: boolean;
+    isReel?: boolean;
+  }
+) {
   console.log('=== DIRECT INSTAGRAM POST ===');
   console.log('Content:', content);
   console.log('Account ID:', account.platform_user_id);
   console.log('Has media:', !!mediaUrls && mediaUrls.length > 0);
+  console.log('Is story:', options?.isStory || false);
+  console.log('Is reel:', options?.isReel || false);
 
   try {
     const instagramService = new InstagramService({
@@ -238,7 +296,9 @@ export async function postToInstagramDirect(content: string, account: any, media
 
     const result = await instagramService.createPost({
       caption: content,
-      mediaUrls: mediaUrls
+      mediaUrls: mediaUrls,
+      isStory: options?.isStory,
+      isReel: options?.isReel
     });
 
     return {

@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Schedule request body:', JSON.stringify(body, null, 2));
 
-    const { content, platforms, platformContent, mediaUrls, scheduledFor, pinterestBoardId, pinterestTitle, pinterestDescription, pinterestLink, threadsMode, threadPosts, threadsThreadMedia } = body;
+    const { content, platforms, platformContent, mediaUrls, scheduledFor, pinterestBoardId, pinterestTitle, pinterestDescription, pinterestLink, threadsMode, threadPosts, threadsThreadMedia, instagramAsStory, instagramAsReel, facebookAsStory, facebookAsReel, youtubeAsShort } = body;
 
     // Check if this is a Pinterest-only post with media
     const isPinterestOnlyWithMedia = platforms?.length === 1 &&
@@ -201,6 +201,23 @@ export async function POST(request: NextRequest) {
     }
     if (threadsThreadMedia) {
       insertData.threads_thread_media = threadsThreadMedia;
+    }
+
+    // Add format flags if provided
+    if (instagramAsStory !== undefined) {
+      insertData.instagram_as_story = instagramAsStory;
+    }
+    if (instagramAsReel !== undefined) {
+      insertData.instagram_as_reel = instagramAsReel;
+    }
+    if (facebookAsStory !== undefined) {
+      insertData.facebook_as_story = facebookAsStory;
+    }
+    if (facebookAsReel !== undefined) {
+      insertData.facebook_as_reel = facebookAsReel;
+    }
+    if (youtubeAsShort !== undefined) {
+      insertData.youtube_as_short = youtubeAsShort;
     }
 
     const { data, error } = await supabase
@@ -325,8 +342,9 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json();
     console.log('PATCH request body:', JSON.stringify(body, null, 2));
-    const { postId, scheduledFor, status, content, platforms, platformContent, mediaUrls, 
-            pinterestBoardId, pinterestTitle, pinterestDescription, pinterestLink } = body;
+    const { postId, scheduledFor, status, content, platforms, platformContent, mediaUrls,
+            pinterestBoardId, pinterestTitle, pinterestDescription, pinterestLink,
+            instagram_as_story, instagram_as_reel, facebook_as_story, facebook_as_reel, youtube_as_short } = body;
 
     if (!postId) {
       return NextResponse.json({ error: 'Post ID is required' }, { status: 400 });
@@ -350,6 +368,12 @@ export async function PATCH(request: NextRequest) {
     if (pinterestTitle !== undefined) updateData.pinterest_title = pinterestTitle;
     if (pinterestDescription !== undefined) updateData.pinterest_description = pinterestDescription;
     if (pinterestLink !== undefined) updateData.pinterest_link = pinterestLink;
+    // Update format flags if provided
+    if (instagram_as_story !== undefined) updateData.instagram_as_story = instagram_as_story;
+    if (instagram_as_reel !== undefined) updateData.instagram_as_reel = instagram_as_reel;
+    if (facebook_as_story !== undefined) updateData.facebook_as_story = facebook_as_story;
+    if (facebook_as_reel !== undefined) updateData.facebook_as_reel = facebook_as_reel;
+    if (youtube_as_short !== undefined) updateData.youtube_as_short = youtube_as_short;
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: 'No update data provided' }, { status: 400 });
