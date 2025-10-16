@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient as createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
+import { Receiver } from '@upstash/qstash';
+
+export const dynamic = 'force-dynamic';
 
 // Helper function to fetch platform analytics
 async function fetchPlatformAnalytics(userId: string, platform: string, days: number = 30) {
@@ -129,15 +133,68 @@ async function processUserSnapshot(userId: string, supabase: any) {
   }
 }
 
-export async function GET(request: NextRequest) {
+// Shared processing logic for both GET and POST
+async function processAnalyticsSnapshot(request: NextRequest) {
   try {
-    // Verify this is a cron job request (basic auth check)
+    // Verify authorization - accept both QStash signature and Bearer token
     const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
+
+    // Check for QStash signature
+    const upstashSignature = request.headers.get('upstash-signature');
+    let isQStashVerified = false;
+
+    if (upstashSignature && process.env.QSTASH_CURRENT_SIGNING_KEY && process.env.QSTASH_NEXT_SIGNING_KEY) {
+      try {
+        // Verify QStash signature
+        const receiver = new Receiver({
+          currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY,
+          nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY,
+        });
+
+        // Get request body as text (empty for GET requests)
+        const body = await request.text();
+
+        // Verify the signature
+        await receiver.verify({
+          signature: upstashSignature,
+          body: body,
+        });
+
+        isQStashVerified = true;
+        console.log('✅ QStash signature verified for analytics snapshot');
+      } catch (error) {
+        console.log('❌ QStash signature verification failed:', error);
+        // Continue to check bearer token
+      }
+    }
+
+    // Accept if either QStash signature is valid OR bearer token is correct
+    const isBearerTokenValid = authHeader === expectedAuth;
+
+    if (!isQStashVerified && !isBearerTokenValid) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    console.log('Authorization method:', isQStashVerified ? 'QStash signature' : 'Bearer token');
+    console.log('=== Processing Analytics Snapshots ===', new Date().toISOString());
+
+    // Check required environment variables
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      console.error('Missing NEXT_PUBLIC_SUPABASE_URL');
+      return NextResponse.json({ error: 'Missing Supabase URL' }, { status: 500 });
+    }
+
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('Missing SUPABASE_SERVICE_ROLE_KEY');
+      return NextResponse.json({ error: 'Missing Supabase service role key' }, { status: 500 });
+    }
+
+    // Create Supabase client with service role key (bypasses RLS)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
 
     // Get all users with connected social accounts
     const { data: users, error: usersError } = await supabase
@@ -179,4 +236,14 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Export GET handler - called by manual triggers or testing
+export async function GET(request: NextRequest) {
+  return processAnalyticsSnapshot(request);
+}
+
+// Export POST handler - called by QStash
+export async function POST(request: NextRequest) {
+  return processAnalyticsSnapshot(request);
 }

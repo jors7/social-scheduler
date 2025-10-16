@@ -56,54 +56,90 @@ export async function POST(request: NextRequest) {
     console.log('Setting up QStash schedule...')
     console.log('Target endpoint:', cronEndpoint)
 
-    // Check if schedule already exists
-    const existingSchedules = await client.schedules.list()
-    const existingSchedule = existingSchedules.find(
-      (schedule: any) => schedule.destination === cronEndpoint
-    )
+    // Define all schedules to create
+    const schedulesToCreate = [
+      {
+        name: 'process-scheduled-posts',
+        destination: `${baseUrl}/api/cron/process-scheduled-posts`,
+        cron: '* * * * *', // Every minute
+        description: 'Posts scheduled content every minute'
+      },
+      {
+        name: 'snapshot-analytics',
+        destination: `${baseUrl}/api/cron/snapshot-analytics`,
+        cron: '0 0 * * *', // Daily at midnight UTC
+        description: 'Takes analytics snapshots daily for trend comparison'
+      }
+    ]
 
-    if (existingSchedule) {
-      return NextResponse.json({
-        success: true,
-        message: 'Schedule already exists',
-        schedule: {
+    // Check existing schedules
+    const existingSchedules = await client.schedules.list()
+    const createdSchedules = []
+    const skippedSchedules = []
+
+    // Create or skip each schedule
+    for (const scheduleConfig of schedulesToCreate) {
+      const existingSchedule = existingSchedules.find(
+        (schedule: any) => schedule.destination === scheduleConfig.destination
+      )
+
+      if (existingSchedule) {
+        console.log(`⏭️  Schedule already exists: ${scheduleConfig.name}`)
+        skippedSchedules.push({
+          name: scheduleConfig.name,
           id: existingSchedule.scheduleId,
           cron: existingSchedule.cron,
           destination: existingSchedule.destination,
-          created: existingSchedule.createdAt
-        }
-      })
+          created: existingSchedule.createdAt,
+          status: 'already_exists'
+        })
+        continue
+      }
+
+      // Create new schedule
+      try {
+        const scheduleId = await client.schedules.create({
+          destination: scheduleConfig.destination,
+          cron: scheduleConfig.cron,
+          headers: {
+            'Authorization': `Bearer ${process.env.CRON_SECRET}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            source: 'qstash',
+            timestamp: new Date().toISOString()
+          })
+        })
+
+        console.log(`✅ Created schedule: ${scheduleConfig.name} (${scheduleId})`)
+        createdSchedules.push({
+          name: scheduleConfig.name,
+          id: scheduleId,
+          cron: scheduleConfig.cron,
+          destination: scheduleConfig.destination,
+          description: scheduleConfig.description,
+          status: 'created'
+        })
+      } catch (error) {
+        console.error(`❌ Failed to create schedule ${scheduleConfig.name}:`, error)
+        createdSchedules.push({
+          name: scheduleConfig.name,
+          destination: scheduleConfig.destination,
+          status: 'failed',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        })
+      }
     }
 
-    // Create new schedule to run every minute
-    const schedule = await client.schedules.create({
-      destination: cronEndpoint,
-      cron: '* * * * *', // Every minute
-      headers: {
-        'Authorization': `Bearer ${process.env.CRON_SECRET}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        source: 'qstash',
-        timestamp: new Date().toISOString()
-      })
-    })
-
-    console.log('✅ QStash schedule created successfully')
-    console.log('Schedule ID:', schedule)
+    const allSchedules = [...createdSchedules, ...skippedSchedules]
 
     return NextResponse.json({
       success: true,
-      message: 'QStash schedule created successfully',
-      schedule: {
-        id: schedule,
-        cron: '* * * * *',
-        destination: cronEndpoint,
-        note: 'This will trigger your cron job every minute'
-      },
+      message: `QStash schedules setup complete. Created: ${createdSchedules.filter(s => s.status === 'created').length}, Skipped: ${skippedSchedules.length}`,
+      schedules: allSchedules,
       instructions: {
         monitor: 'Visit https://console.upstash.com/qstash to monitor executions',
-        pause: 'Use QStash dashboard to pause/resume the schedule',
+        pause: 'Use QStash dashboard to pause/resume schedules',
         delete: 'Use QStash dashboard or call DELETE /api/cron/setup-qstash to remove'
       }
     })
@@ -150,29 +186,39 @@ export async function DELETE(request: NextRequest) {
       }, { status: 500 })
     }
 
-    const cronEndpoint = `${baseUrl}/api/cron/process-scheduled-posts`
+    // Define all schedule endpoints
+    const cronEndpoints = [
+      `${baseUrl}/api/cron/process-scheduled-posts`,
+      `${baseUrl}/api/cron/snapshot-analytics`
+    ]
 
-    // Find and delete the schedule
+    // Find and delete all matching schedules
     const existingSchedules = await client.schedules.list()
-    const scheduleToDelete = existingSchedules.find(
-      (schedule: any) => schedule.destination === cronEndpoint
+    const schedulesToDelete = existingSchedules.filter(
+      (schedule: any) => cronEndpoints.includes(schedule.destination)
     )
 
-    if (!scheduleToDelete) {
+    if (schedulesToDelete.length === 0) {
       return NextResponse.json({
         success: true,
-        message: 'No schedule found to delete'
+        message: 'No schedules found to delete'
       })
     }
 
-    await client.schedules.delete(scheduleToDelete.scheduleId)
-
-    console.log('✅ QStash schedule deleted')
+    const deletedSchedules = []
+    for (const schedule of schedulesToDelete) {
+      await client.schedules.delete(schedule.scheduleId)
+      deletedSchedules.push({
+        id: schedule.scheduleId,
+        destination: schedule.destination
+      })
+      console.log(`✅ Deleted QStash schedule: ${schedule.scheduleId}`)
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'QStash schedule deleted successfully',
-      deletedScheduleId: scheduleToDelete.scheduleId
+      message: `Deleted ${deletedSchedules.length} QStash schedule(s)`,
+      deletedSchedules
     })
 
   } catch (error) {
@@ -214,20 +260,44 @@ export async function GET(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
                     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
 
-    const cronEndpoint = baseUrl ? `${baseUrl}/api/cron/process-scheduled-posts` : null
+    // Define expected schedule endpoints
+    const expectedEndpoints: Record<string, string> = baseUrl ? {
+      'process-scheduled-posts': `${baseUrl}/api/cron/process-scheduled-posts`,
+      'snapshot-analytics': `${baseUrl}/api/cron/snapshot-analytics`
+    } : {}
+
+    // Categorize schedules
+    const ourSchedules = allSchedules.filter((s: any) =>
+      Object.values(expectedEndpoints).includes(s.destination)
+    )
+
+    const otherSchedules = allSchedules.filter((s: any) =>
+      !Object.values(expectedEndpoints).includes(s.destination)
+    )
 
     return NextResponse.json({
       success: true,
       configured: !!process.env.QSTASH_TOKEN,
       totalSchedules: allSchedules.length,
-      schedules: allSchedules.map((s: any) => ({
+      ourSchedules: ourSchedules.map((s: any) => {
+        const name = Object.keys(expectedEndpoints).find(
+          (key: string) => expectedEndpoints[key] === s.destination
+        )
+        return {
+          name,
+          id: s.scheduleId,
+          destination: s.destination,
+          cron: s.cron,
+          created: s.createdAt
+        }
+      }),
+      otherSchedules: otherSchedules.map((s: any) => ({
         id: s.scheduleId,
         destination: s.destination,
         cron: s.cron,
-        created: s.createdAt,
-        isPrimarySchedule: cronEndpoint ? s.destination === cronEndpoint : false
+        created: s.createdAt
       })),
-      targetEndpoint: cronEndpoint
+      expectedEndpoints
     })
 
   } catch (error) {
