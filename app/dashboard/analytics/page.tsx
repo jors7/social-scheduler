@@ -395,7 +395,8 @@ export default function AnalyticsPage() {
           ? (previousMetrics.engagement / previousMetrics.impressions) * 100
           : 0;
 
-        if (currentMetrics.posts > 0 || previousMetrics.posts > 0) {
+        // Only show trends if we have data in BOTH periods for meaningful comparison
+        if (currentMetrics.posts > 0 && previousMetrics.posts > 0) {
           setTrendData({
             totalPosts: {
               current: currentMetrics.posts,
@@ -423,6 +424,11 @@ export default function AnalyticsPage() {
               change: calculateChange(currentEngagementRate, previousEngagementRate)
             }
           });
+          console.log('✅ Trends calculated with both periods having data');
+        } else {
+          console.log('ℹ️  Trends hidden - need data in both periods for comparison');
+          console.log('   Current:', currentMetrics.posts, 'posts | Previous:', previousMetrics.posts, 'posts');
+          setTrendData(null);
         }
       };
 
