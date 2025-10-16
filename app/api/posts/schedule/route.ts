@@ -108,20 +108,26 @@ export async function POST(request: NextRequest) {
                                 threadsMode === 'thread' &&
                                 threadPosts && threadPosts.length > 0;
 
-    // Validate inputs - allow empty content for Pinterest-only posts with media or Threads thread mode
-    if ((!content && !isPinterestOnlyWithMedia && !isThreadsThreadMode) || !platforms || platforms.length === 0 || !scheduledFor) {
+    // Check if this is a Facebook post with media (stories, reels, or feed posts don't require captions)
+    const isFacebookOnlyWithMedia = platforms?.length === 1 &&
+                                    platforms[0] === 'facebook' &&
+                                    mediaUrls?.length > 0;
+
+    // Validate inputs - allow empty content for Pinterest-only posts with media, Threads thread mode, or Facebook posts with media
+    if ((!content && !isPinterestOnlyWithMedia && !isThreadsThreadMode && !isFacebookOnlyWithMedia) || !platforms || platforms.length === 0 || !scheduledFor) {
       console.log('Validation failed:', {
         hasContent: !!content,
         hasPlatforms: !!platforms,
         platformsLength: platforms?.length,
         hasScheduledFor: !!scheduledFor,
         isPinterestOnlyWithMedia,
-        isThreadsThreadMode
+        isThreadsThreadMode,
+        isFacebookOnlyWithMedia
       });
       return NextResponse.json({
         error: 'Missing required fields',
         details: {
-          content: (!content && !isPinterestOnlyWithMedia && !isThreadsThreadMode) ? 'Content is required' : 'OK',
+          content: (!content && !isPinterestOnlyWithMedia && !isThreadsThreadMode && !isFacebookOnlyWithMedia) ? 'Content is required' : 'OK',
           platforms: !platforms || platforms.length === 0 ? 'At least one platform is required' : 'OK',
           scheduledFor: !scheduledFor ? 'Scheduled time is required' : 'OK'
         }
