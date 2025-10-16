@@ -51,6 +51,12 @@ interface UnifiedPost {
   pinterest_title?: string
   pinterest_description?: string
   title?: string
+  // Format flags
+  instagram_as_story?: boolean
+  instagram_as_reel?: boolean
+  facebook_as_story?: boolean
+  facebook_as_reel?: boolean
+  youtube_as_short?: boolean
 }
 
 const tabs = [
