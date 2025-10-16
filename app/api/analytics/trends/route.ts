@@ -22,6 +22,82 @@ function calculateChange(current: number, previous: number): number {
   return ((current - previous) / previous) * 100;
 }
 
+// Helper function to calculate metrics from platform data
+async function fetchPlatformMetrics(userId: string, startDate: Date, endDate: Date) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+
+  const platforms = ['facebook', 'instagram', 'threads', 'bluesky', 'pinterest', 'tiktok'];
+  let totalPosts = 0;
+  let totalEngagement = 0;
+  let totalReach = 0;
+  let totalImpressions = 0;
+
+  for (const platform of platforms) {
+    try {
+      const response = await fetch(`${baseUrl}/api/analytics/${platform}?days=${days}`, {
+        headers: {
+          'x-user-id': userId,
+          'x-start-date': startDate.toISOString(),
+          'x-end-date': endDate.toISOString()
+        }
+      });
+
+      if (!response.ok) continue;
+
+      const data = await response.json();
+      if (!data.metrics) continue;
+
+      // Filter posts to only those within the date range
+      const postsInRange = data.metrics.posts.filter((post: any) => {
+        const postDate = new Date(post.created_time || post.timestamp || post.createdAt || post.created_at);
+        return postDate >= startDate && postDate <= endDate;
+      });
+
+      totalPosts += postsInRange.length;
+
+      // Calculate metrics from posts in range
+      postsInRange.forEach((post: any) => {
+        // Platform-specific engagement calculation
+        if (platform === 'facebook') {
+          totalEngagement += (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
+          totalReach += post.reach || 0;
+          totalImpressions += post.impressions || 0;
+        } else if (platform === 'instagram') {
+          totalEngagement += (post.likes || 0) + (post.comments || 0) + (post.saves || 0);
+          totalReach += post.reach || 0;
+          totalImpressions += post.impressions || post.plays || 0;
+        } else if (platform === 'threads') {
+          totalEngagement += (post.likes || 0) + (post.replies || 0) + (post.reposts || 0) + (post.quotes || 0);
+          totalReach += post.views || 0;
+          totalImpressions += post.views || 0;
+        } else if (platform === 'bluesky') {
+          totalEngagement += (post.likes || 0) + (post.replies || 0) + (post.reposts || 0);
+          // Bluesky doesn't have reach/impressions
+        } else if (platform === 'pinterest') {
+          totalEngagement += (post.saves || 0) + (post.pin_clicks || 0) + (post.outbound_clicks || 0);
+          totalReach += post.impressions || 0;
+          totalImpressions += post.impressions || 0;
+        } else if (platform === 'tiktok') {
+          totalEngagement += (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
+          totalReach += post.views || 0;
+          totalImpressions += post.views || 0;
+        }
+      });
+
+    } catch (error) {
+      console.error(`Error fetching ${platform} data for trends:`, error);
+    }
+  }
+
+  return {
+    totalPosts,
+    totalEngagement,
+    totalReach,
+    totalImpressions
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -36,94 +112,74 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const days = parseInt(searchParams.get('days') || '7');
 
-    // Calculate date ranges
+    // Calculate date ranges for current and previous periods
     const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of today
+
     const currentPeriodStart = new Date(today);
     currentPeriodStart.setDate(currentPeriodStart.getDate() - days);
+    currentPeriodStart.setHours(0, 0, 0, 0); // Start of day
 
-    const previousPeriodStart = new Date(currentPeriodStart);
-    previousPeriodStart.setDate(previousPeriodStart.getDate() - days);
-    const previousPeriodEnd = currentPeriodStart;
+    const previousPeriodEnd = new Date(currentPeriodStart);
+    previousPeriodEnd.setMilliseconds(previousPeriodEnd.getMilliseconds() - 1); // Just before current period
 
-    // Fetch current period snapshot (most recent snapshot within the period)
-    const { data: currentSnapshot, error: currentError } = await supabase
-      .from('analytics_snapshots')
-      .select('*')
-      .eq('user_id', user.id)
-      .gte('snapshot_date', currentPeriodStart.toISOString().split('T')[0])
-      .lte('snapshot_date', today.toISOString().split('T')[0])
-      .order('snapshot_date', { ascending: false })
-      .limit(1)
-      .single();
+    const previousPeriodStart = new Date(previousPeriodEnd);
+    previousPeriodStart.setDate(previousPeriodStart.getDate() - days + 1); // +1 because we include the end day
+    previousPeriodStart.setHours(0, 0, 0, 0);
 
-    if (currentError && currentError.code !== 'PGRST116') {
-      console.error('Error fetching current snapshot:', currentError);
-    }
+    console.log('Trend calculation periods:');
+    console.log('Current:', currentPeriodStart.toISOString(), 'to', today.toISOString());
+    console.log('Previous:', previousPeriodStart.toISOString(), 'to', previousPeriodEnd.toISOString());
 
-    // Fetch previous period snapshot (most recent snapshot within the previous period)
-    const { data: previousSnapshot, error: previousError } = await supabase
-      .from('analytics_snapshots')
-      .select('*')
-      .eq('user_id', user.id)
-      .gte('snapshot_date', previousPeriodStart.toISOString().split('T')[0])
-      .lt('snapshot_date', previousPeriodEnd.toISOString().split('T')[0])
-      .order('snapshot_date', { ascending: false })
-      .limit(1)
-      .single();
+    // Fetch metrics for both periods from real post data
+    const [currentMetrics, previousMetrics] = await Promise.all([
+      fetchPlatformMetrics(user.id, currentPeriodStart, today),
+      fetchPlatformMetrics(user.id, previousPeriodStart, previousPeriodEnd)
+    ]);
 
-    if (previousError && previousError.code !== 'PGRST116') {
-      console.error('Error fetching previous snapshot:', previousError);
-    }
-
-    // If we don't have enough historical data, return null (UI will handle gracefully)
-    if (!currentSnapshot || !previousSnapshot) {
+    // If no data in either period, return null
+    if (currentMetrics.totalPosts === 0 && previousMetrics.totalPosts === 0) {
       return NextResponse.json({
         trends: null,
-        message: 'Not enough historical data yet. Trends will appear after collecting data for multiple periods.'
+        message: 'Not enough data yet. Trends will appear after posting content.'
       });
     }
 
-    // Calculate trends from real historical data
+    // Calculate engagement rates
+    const currentEngagementRate = currentMetrics.totalImpressions > 0
+      ? (currentMetrics.totalEngagement / currentMetrics.totalImpressions) * 100
+      : 0;
+
+    const previousEngagementRate = previousMetrics.totalImpressions > 0
+      ? (previousMetrics.totalEngagement / previousMetrics.totalImpressions) * 100
+      : 0;
+
+    // Calculate trends from real period data
     const trends: TrendData = {
       totalPosts: {
-        current: currentSnapshot.total_posts || 0,
-        previous: previousSnapshot.total_posts || 0,
-        change: calculateChange(
-          currentSnapshot.total_posts || 0,
-          previousSnapshot.total_posts || 0
-        )
+        current: currentMetrics.totalPosts,
+        previous: previousMetrics.totalPosts,
+        change: calculateChange(currentMetrics.totalPosts, previousMetrics.totalPosts)
       },
       totalEngagement: {
-        current: currentSnapshot.total_engagement || 0,
-        previous: previousSnapshot.total_engagement || 0,
-        change: calculateChange(
-          currentSnapshot.total_engagement || 0,
-          previousSnapshot.total_engagement || 0
-        )
+        current: currentMetrics.totalEngagement,
+        previous: previousMetrics.totalEngagement,
+        change: calculateChange(currentMetrics.totalEngagement, previousMetrics.totalEngagement)
       },
       totalReach: {
-        current: currentSnapshot.total_reach || 0,
-        previous: previousSnapshot.total_reach || 0,
-        change: calculateChange(
-          currentSnapshot.total_reach || 0,
-          previousSnapshot.total_reach || 0
-        )
+        current: currentMetrics.totalReach,
+        previous: previousMetrics.totalReach,
+        change: calculateChange(currentMetrics.totalReach, previousMetrics.totalReach)
       },
       totalImpressions: {
-        current: currentSnapshot.total_impressions || 0,
-        previous: previousSnapshot.total_impressions || 0,
-        change: calculateChange(
-          currentSnapshot.total_impressions || 0,
-          previousSnapshot.total_impressions || 0
-        )
+        current: currentMetrics.totalImpressions,
+        previous: previousMetrics.totalImpressions,
+        change: calculateChange(currentMetrics.totalImpressions, previousMetrics.totalImpressions)
       },
       engagementRate: {
-        current: parseFloat(currentSnapshot.engagement_rate?.toString() || '0'),
-        previous: parseFloat(previousSnapshot.engagement_rate?.toString() || '0'),
-        change: calculateChange(
-          parseFloat(currentSnapshot.engagement_rate?.toString() || '0'),
-          parseFloat(previousSnapshot.engagement_rate?.toString() || '0')
-        )
+        current: currentEngagementRate,
+        previous: previousEngagementRate,
+        change: calculateChange(currentEngagementRate, previousEngagementRate)
       }
     };
 
