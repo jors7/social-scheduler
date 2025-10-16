@@ -15,6 +15,12 @@ interface ScheduledPost {
   status: 'pending' | 'posting' | 'posted' | 'failed' | 'cancelled'
   created_at: string
   post_results?: any[]
+  // Format flags
+  instagram_as_story?: boolean
+  instagram_as_reel?: boolean
+  facebook_as_story?: boolean
+  facebook_as_reel?: boolean
+  youtube_as_short?: boolean
 }
 
 interface ScheduledPostsListProps {

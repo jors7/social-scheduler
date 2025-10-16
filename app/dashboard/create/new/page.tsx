@@ -948,8 +948,8 @@ function CreateNewPostPageContent() {
         toast.error('Please enter content for non-Facebook platforms')
         return
       }
-    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode && !isTwitterThreadMode) {
-      // No content at all for regular posts (skip this check for Threads thread mode and Twitter thread mode)
+    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode && !isTwitterThreadMode && !isFacebookStoryOnly && !isFacebookReelOnly) {
+      // No content at all for regular posts (skip this check for Threads thread mode, Twitter thread mode, and Facebook Stories/Reels)
       console.log('No content validation path - failing')
       console.log('Validation state:', {
         hasMainContent,
@@ -959,6 +959,8 @@ function CreateNewPostPageContent() {
         hasTikTokContent,
         hasInstagramStory,
         isInstagramStoryOnly,
+        isFacebookStoryOnly,
+        isFacebookReelOnly,
         isThreadsThreadMode,
         isTwitterThreadMode
       })
@@ -2073,8 +2075,8 @@ function CreateNewPostPageContent() {
         toast.error('Please enter content for non-Facebook platforms')
         return
       }
-    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode && !isTwitterThreadMode) {
-      // No content at all for regular posts (skip this check for Threads thread mode and Twitter thread mode)
+    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode && !isTwitterThreadMode && !isFacebookStoryOnly && !isFacebookReelOnly) {
+      // No content at all for regular posts (skip this check for Threads thread mode, Twitter thread mode, and Facebook Stories/Reels)
       console.log('No content validation path - failing')
       console.log('Validation state:', {
         hasMainContent,
@@ -2084,6 +2086,8 @@ function CreateNewPostPageContent() {
         hasTikTokContent,
         hasInstagramStory,
         isInstagramStoryOnly,
+        isFacebookStoryOnly,
+        isFacebookReelOnly,
         isThreadsThreadMode,
         isTwitterThreadMode
       })

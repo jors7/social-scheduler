@@ -31,6 +31,12 @@ interface PostedPost extends BasePost {
   platform_media_url?: string
   pinterest_title?: string
   pinterest_description?: string
+  // Format flags
+  instagram_as_story?: boolean
+  instagram_as_reel?: boolean
+  facebook_as_story?: boolean
+  facebook_as_reel?: boolean
+  youtube_as_short?: boolean
 }
 
 interface ScheduledPost extends BasePost {
@@ -38,6 +44,12 @@ interface ScheduledPost extends BasePost {
   status: 'pending' | 'posting' | 'posted' | 'failed' | 'cancelled'
   pinterest_title?: string
   pinterest_description?: string
+  // Format flags
+  instagram_as_story?: boolean
+  instagram_as_reel?: boolean
+  facebook_as_story?: boolean
+  facebook_as_reel?: boolean
+  youtube_as_short?: boolean
 }
 
 interface DraftPost extends BasePost {
@@ -150,7 +162,40 @@ export function PostCard({
 
   // Get the appropriate title/content for display
   const getDisplayContent = () => {
-    // Check for Pinterest title first (works for all variants)
+    // Check for format-specific labels first (for stories/reels/shorts without captions)
+    const postWithFlags = post as any
+
+    // Check for Facebook Story
+    if (post.platforms?.includes('facebook') && postWithFlags.facebook_as_story) {
+      const content = stripHtml(post.content)
+      return content && content.trim() ? content : 'Facebook Story'
+    }
+
+    // Check for Facebook Reel
+    if (post.platforms?.includes('facebook') && postWithFlags.facebook_as_reel) {
+      const content = stripHtml(post.content)
+      return content && content.trim() ? content : 'Facebook Reel'
+    }
+
+    // Check for Instagram Story
+    if (post.platforms?.includes('instagram') && postWithFlags.instagram_as_story) {
+      const content = stripHtml(post.content)
+      return content && content.trim() ? content : 'Instagram Story'
+    }
+
+    // Check for Instagram Reel
+    if (post.platforms?.includes('instagram') && postWithFlags.instagram_as_reel) {
+      const content = stripHtml(post.content)
+      return content && content.trim() ? content : 'Instagram Reel'
+    }
+
+    // Check for YouTube Short
+    if (post.platforms?.includes('youtube') && postWithFlags.youtube_as_short) {
+      const content = stripHtml(post.content)
+      return content && content.trim() ? content : 'YouTube Short'
+    }
+
+    // Check for Pinterest title (works for all variants)
     if (post.platforms?.includes('pinterest') && 'pinterest_title' in post) {
       const pinterestPost = post as any
       if (pinterestPost.pinterest_title) {
