@@ -576,18 +576,40 @@ export class LinkedInService {
         body: JSON.stringify(shareBody)
       });
 
+      console.log('LinkedIn: Response status:', response.status, response.statusText);
+      console.log('LinkedIn: Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
         const errorData = await response.text();
         console.error('LinkedIn share with video failed:', errorData);
         throw new Error(`Failed to share on LinkedIn: ${response.statusText}`);
       }
 
+      // Check if response has content
+      const contentType = response.headers.get('content-type');
+      console.log('LinkedIn: Response content-type:', contentType);
+
+      // Handle empty responses (201 Created or 204 No Content)
+      if (response.status === 201 || response.status === 204 || !contentType || !contentType.includes('application/json')) {
+        console.log('LinkedIn: Post created successfully (no JSON response body)');
+
+        // Try to extract post ID from headers or return success with video URN
+        const location = response.headers.get('location') || response.headers.get('x-restli-id');
+        return {
+          id: location || videoUrn,
+          activity: videoUrn,
+          lifecycleState: 'PUBLISHED',
+          visibility: 'PUBLIC'
+        };
+      }
+
       const result = await response.json();
+      console.log('LinkedIn: Post response:', result);
       return {
-        id: result.id,
-        activity: result.activity,
-        lifecycleState: result.lifecycleState,
-        visibility: result.visibility
+        id: result.id || videoUrn,
+        activity: result.activity || videoUrn,
+        lifecycleState: result.lifecycleState || 'PUBLISHED',
+        visibility: result.visibility || 'PUBLIC'
       };
     } catch (error) {
       console.error('LinkedIn post with video error:', error);
