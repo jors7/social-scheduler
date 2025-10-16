@@ -819,6 +819,13 @@ function CreateNewPostPageContent() {
       facebookAsReel &&
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
 
+    // Special handling for Facebook feed posts - caption optional with media
+    const isFacebookFeedOnly = selectedPlatforms.length === 1 &&
+      selectedPlatforms[0] === 'facebook' &&
+      !facebookAsStory &&
+      !facebookAsReel &&
+      (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
+
     // Debug logging for Instagram Story
     console.log('Instagram Story Debug:', {
       selectedPlatforms,
@@ -886,6 +893,15 @@ function CreateNewPostPageContent() {
       }
       console.log('Facebook Reel validation passed')
       // Facebook Reel validation passed - skip all other content checks
+    } else if (isFacebookFeedOnly) {
+      console.log('Facebook Feed Only path')
+      // Facebook feed posts with media don't require captions
+      if (selectedFiles.length === 0 && uploadedMediaUrls.length === 0) {
+        toast.error('Please select an image or video for your Facebook post')
+        return
+      }
+      console.log('Facebook Feed validation passed')
+      // Facebook Feed validation passed - skip all other content checks
     } else if (isYouTubeOnly) {
       // YouTube-only posts need video and title
       if (!youtubeVideoFile) {
@@ -948,8 +964,8 @@ function CreateNewPostPageContent() {
         toast.error('Please enter content for non-Facebook platforms')
         return
       }
-    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode && !isTwitterThreadMode && !isFacebookStoryOnly && !isFacebookReelOnly) {
-      // No content at all for regular posts (skip this check for Threads thread mode, Twitter thread mode, and Facebook Stories/Reels)
+    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode && !isTwitterThreadMode && !isFacebookStoryOnly && !isFacebookReelOnly && !isFacebookFeedOnly) {
+      // No content at all for regular posts (skip this check for Threads thread mode, Twitter thread mode, Facebook Stories/Reels/Feed)
       console.log('No content validation path - failing')
       console.log('Validation state:', {
         hasMainContent,
@@ -961,6 +977,7 @@ function CreateNewPostPageContent() {
         isInstagramStoryOnly,
         isFacebookStoryOnly,
         isFacebookReelOnly,
+        isFacebookFeedOnly,
         isThreadsThreadMode,
         isTwitterThreadMode
       })
@@ -1946,6 +1963,13 @@ function CreateNewPostPageContent() {
       facebookAsReel &&
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
 
+    // Special handling for Facebook feed posts - caption optional with media
+    const isFacebookFeedOnly = selectedPlatforms.length === 1 &&
+      selectedPlatforms[0] === 'facebook' &&
+      !facebookAsStory &&
+      !facebookAsReel &&
+      (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
+
     // Debug logging for Instagram Story
     console.log('Instagram Story Debug:', {
       selectedPlatforms,
@@ -2013,6 +2037,15 @@ function CreateNewPostPageContent() {
       }
       console.log('Facebook Reel validation passed')
       // Facebook Reel validation passed - skip all other content checks
+    } else if (isFacebookFeedOnly) {
+      console.log('Facebook Feed Only path')
+      // Facebook feed posts with media don't require captions
+      if (selectedFiles.length === 0 && uploadedMediaUrls.length === 0) {
+        toast.error('Please select an image or video for your Facebook post')
+        return
+      }
+      console.log('Facebook Feed validation passed')
+      // Facebook Feed validation passed - skip all other content checks
     } else if (isYouTubeOnly) {
       // YouTube-only posts need video and title
       if (!youtubeVideoFile) {
@@ -2075,8 +2108,8 @@ function CreateNewPostPageContent() {
         toast.error('Please enter content for non-Facebook platforms')
         return
       }
-    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode && !isTwitterThreadMode && !isFacebookStoryOnly && !isFacebookReelOnly) {
-      // No content at all for regular posts (skip this check for Threads thread mode, Twitter thread mode, and Facebook Stories/Reels)
+    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode && !isTwitterThreadMode && !isFacebookStoryOnly && !isFacebookReelOnly && !isFacebookFeedOnly) {
+      // No content at all for regular posts (skip this check for Threads thread mode, Twitter thread mode, Facebook Stories/Reels/Feed)
       console.log('No content validation path - failing')
       console.log('Validation state:', {
         hasMainContent,
@@ -2088,6 +2121,7 @@ function CreateNewPostPageContent() {
         isInstagramStoryOnly,
         isFacebookStoryOnly,
         isFacebookReelOnly,
+        isFacebookFeedOnly,
         isThreadsThreadMode,
         isTwitterThreadMode
       })

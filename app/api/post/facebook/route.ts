@@ -29,12 +29,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!isStory && !isReel && !text) {
-      return NextResponse.json(
-        { error: 'Facebook feed posts require text content' },
-        { status: 400 }
-      );
-    }
+    // Note: Facebook feed posts don't require text - they can be media-only posts
+    // Text is optional for feed posts with media
 
     console.log('=== Facebook Post Request ===');
     console.log('Page ID:', pageId);
