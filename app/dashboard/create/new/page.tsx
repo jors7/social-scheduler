@@ -3536,6 +3536,8 @@ function CreateNewPostPageContent() {
                       !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(url => url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')))) &&
                       !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'instagram' && instagramAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
                       !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && facebookAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
+                      !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && facebookAsReel && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
+                      !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && !facebookAsStory && !facebookAsReel && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
                       !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'threads' && threadsMode === 'thread' && threadPosts.some(p => p.trim())) &&
                       !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'twitter' && twitterMode === 'thread' && twitterThreadPosts.some(p => p.trim())))
                   }
