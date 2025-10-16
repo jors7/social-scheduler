@@ -542,45 +542,36 @@ export class LinkedInService {
       console.log('LinkedIn: Using video URN for post:', videoUrn);
 
       // Prepare the share request body with video
-      // Note: Videos need a slight delay even after AVAILABLE status
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      console.log('LinkedIn: Waited additional 5 seconds after AVAILABLE status');
-
+      // Note: Videos use the Posts API (not ugcPosts)
       const shareBody = {
         author: `urn:li:person:${profile.id}`,
-        lifecycleState: 'PUBLISHED',
-        specificContent: {
-          'com.linkedin.ugc.ShareContent': {
-            shareCommentary: {
-              text: LinkedInService.formatContent(text)
-            },
-            shareMediaCategory: 'VIDEO',
-            media: [{
-              status: 'READY',
-              description: {
-                text: 'Video shared from SocialCal'
-              },
-              media: videoUrn,
-              title: {
-                text: 'Video'
-              }
-            }]
+        commentary: LinkedInService.formatContent(text),
+        visibility: 'PUBLIC',
+        distribution: {
+          feedDistribution: 'MAIN_FEED',
+          targetEntities: [],
+          thirdPartyDistributionChannels: []
+        },
+        content: {
+          media: {
+            title: 'Video',
+            id: videoUrn
           }
         },
-        visibility: {
-          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
-        }
+        lifecycleState: 'PUBLISHED',
+        isReshareDisabledByAuthor: false
       };
 
       console.log('LinkedIn: Post body:', JSON.stringify(shareBody, null, 2));
 
-      // Make the API request to share content
-      const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
+      // Make the API request to share content using Posts API
+      const response = await fetch('https://api.linkedin.com/rest/posts', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.accessToken}`,
           'Content-Type': 'application/json',
-          'X-Restli-Protocol-Version': '2.0.0'
+          'X-Restli-Protocol-Version': '2.0.0',
+          'LinkedIn-Version': '202410'
         },
         body: JSON.stringify(shareBody)
       });
