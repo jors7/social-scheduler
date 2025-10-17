@@ -148,15 +148,23 @@ export async function GET(request: NextRequest) {
                 console.log(`[Pinterest Analytics] Error fetching analytics for pin ${pinId}:`, analyticsError);
               }
 
-              // Extract title from platform_content or content
-              const pinterestContent = dbPost.platform_content?.pinterest || dbPost.content || '';
-              const title = pinterestContent.includes(':')
-                ? pinterestContent.split(':')[0].trim()
-                : pinterestContent.substring(0, 100);
+              // Extract title and description - prioritize pinterest_title from database
+              let title = dbPost.pinterest_title || '';
+              let description = dbPost.pinterest_description || '';
 
-              const description = pinterestContent.includes(':')
-                ? pinterestContent.split(':').slice(1).join(':').trim()
-                : '';
+              // If no pinterest_title, fall back to extracting from platform_content or content
+              if (!title) {
+                const pinterestContent = dbPost.platform_content?.pinterest || dbPost.content || '';
+                title = pinterestContent.includes(':')
+                  ? pinterestContent.split(':')[0].trim()
+                  : pinterestContent.substring(0, 100);
+
+                if (!description) {
+                  description = pinterestContent.includes(':')
+                    ? pinterestContent.split(':').slice(1).join(':').trim()
+                    : '';
+                }
+              }
 
               // Use permanent Supabase Storage URL from database (NOT Pinterest CDN URLs)
               // Priority matches dashboard logic:
