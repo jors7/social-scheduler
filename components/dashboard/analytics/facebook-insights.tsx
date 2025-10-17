@@ -343,74 +343,86 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
       {/* Profile Overview */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Facebook className="h-5 w-5" />
-              Profile Overview
+          <div className="flex flex-col gap-3">
+            {/* Title Row */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Facebook className="h-4 w-4 sm:h-5 sm:w-5" />
+                Profile Overview
+              </CardTitle>
               {selectedAccount && (
-                <Badge variant="outline" className="ml-2 text-xs">
+                <Badge variant="outline" className="self-start sm:self-auto text-xs">
                   {selectedAccount.display_name || selectedAccount.username}
                 </Badge>
               )}
-            </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="hover:shadow-md transition-all"
-            >
-              <RefreshCw className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")} />
-              {refreshing ? 'Refreshing...' : 'Refresh'}
-            </Button>
-          </div>
-          <CardDescription>
-            Your Facebook performance metrics
-          </CardDescription>
-          {facebookAccounts.length > 1 && (
-            <div className="mt-2 flex items-center gap-2">
-              <select
-                className={cn(
-                  "text-sm border rounded-lg px-3 py-1.5 bg-white",
-                  switchingAccount && "opacity-60 cursor-wait"
-                )}
-                value={selectedAccount?.id || ''}
-                onChange={async (e) => {
-                  const account = facebookAccounts.find(acc => acc.id === e.target.value)
-                  if (account && !switchingAccount) {
-                    setSwitchingAccount(true)
-                    setLoadingMessage(`Loading analytics for ${account.display_name || account.username}...`)
-                    toast.info(`Switching to ${account.display_name || account.username}...`)
-                    
-                    // Set a timeout for long loading
-                    const timeoutId = setTimeout(() => {
-                      if (switchingAccount) {
-                        toast.info('Still loading, this may take a moment...')
-                      }
-                    }, 5000)
-                    
-                    setSelectedAccount(account)
-                    await fetchFacebookInsights(account.id)
-                    
-                    clearTimeout(timeoutId)
-                    setSwitchingAccount(false)
-                    setLoadingMessage('')
-                    toast.success('Analytics loaded successfully')
-                  }
-                }}
-                disabled={switchingAccount}
-              >
-                {facebookAccounts.map(account => (
-                  <option key={account.id} value={account.id}>
-                    {account.display_name || account.username}
-                  </option>
-                ))}
-              </select>
-              {switchingAccount && (
-                <RefreshCw className="h-4 w-4 animate-spin text-gray-500" />
-              )}
             </div>
-          )}
+
+            {/* Description */}
+            <CardDescription className="text-xs sm:text-sm">
+              Your Facebook performance metrics
+            </CardDescription>
+
+            {/* Actions Row - Stack on mobile */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              {facebookAccounts.length > 1 && (
+                <div className="flex items-center gap-2">
+                  <select
+                    className={cn(
+                      "text-xs sm:text-sm border rounded-lg px-3 py-1.5 bg-white flex-1 sm:flex-initial",
+                      switchingAccount && "opacity-60 cursor-wait"
+                    )}
+                    value={selectedAccount?.id || ''}
+                    onChange={async (e) => {
+                      const account = facebookAccounts.find(acc => acc.id === e.target.value)
+                      if (account && !switchingAccount) {
+                        setSwitchingAccount(true)
+                        setLoadingMessage(`Loading analytics for ${account.display_name || account.username}...`)
+                        toast.info(`Switching to ${account.display_name || account.username}...`)
+
+                        // Set a timeout for long loading
+                        const timeoutId = setTimeout(() => {
+                          if (switchingAccount) {
+                            toast.info('Still loading, this may take a moment...')
+                          }
+                        }, 5000)
+
+                        setSelectedAccount(account)
+                        await fetchFacebookInsights(account.id)
+
+                        clearTimeout(timeoutId)
+                        setSwitchingAccount(false)
+                        setLoadingMessage('')
+                        toast.success('Analytics loaded successfully')
+                      }
+                    }}
+                    disabled={switchingAccount}
+                  >
+                    {facebookAccounts.map(account => (
+                      <option key={account.id} value={account.id}>
+                        {account.display_name || account.username}
+                      </option>
+                    ))}
+                  </select>
+                  {switchingAccount && (
+                    <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 animate-spin text-gray-500" />
+                  )}
+                </div>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className={cn(
+                  "w-full sm:w-auto hover:shadow-md transition-all",
+                  facebookAccounts.length > 1 && "sm:ml-auto"
+                )}
+              >
+                <RefreshCw className={cn("h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2", refreshing && "animate-spin")} />
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="relative">
           {/* Loading overlay */}

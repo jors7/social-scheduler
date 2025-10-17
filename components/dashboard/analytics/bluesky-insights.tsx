@@ -157,26 +157,32 @@ export function BlueskyInsights({ className }: BlueskyInsightsProps) {
       {/* Overview Metrics */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <AtSign className="h-5 w-5" />
+          <div className="flex flex-col gap-3">
+            {/* Title Row */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <AtSign className="h-4 w-4 sm:h-5 sm:w-5" />
                 Bluesky Overview
-                <Badge variant="outline" className="ml-2 text-xs font-normal">
-                  Last 30 days
-                </Badge>
               </CardTitle>
-              <CardDescription>
-                Performance metrics for your Bluesky account
-              </CardDescription>
+              <Badge variant="outline" className="self-start sm:self-auto text-xs font-normal">
+                Last 30 days
+              </Badge>
             </div>
+
+            {/* Description */}
+            <CardDescription className="text-xs sm:text-sm">
+              Performance metrics for your Bluesky account
+            </CardDescription>
+
+            {/* Refresh Button - Full width on mobile */}
             <Button
               variant="outline"
               size="sm"
               onClick={handleRefresh}
               disabled={refreshing}
+              className="w-full sm:w-auto sm:self-end"
             >
-              <RefreshCw className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")} />
+              <RefreshCw className={cn("h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2", refreshing && "animate-spin")} />
               Refresh
             </Button>
           </div>

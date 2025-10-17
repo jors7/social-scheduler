@@ -135,39 +135,48 @@ export function LinkedInInsights({ className }: LinkedInInsightsProps) {
     return (
       <Card className={cn("", className)}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Linkedin className="h-5 w-5" />
-            LinkedIn Insights
-            <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
-          </CardTitle>
-          <CardDescription>
-            {selectedAccount 
-              ? `Connected: ${selectedAccount.display_name || selectedAccount.username}`
-              : 'Advanced analytics for your LinkedIn presence'}
-          </CardDescription>
-          {linkedInAccounts.length > 1 && (
-            <div className="mt-2">
-              <select
-                className="text-sm border rounded-lg px-3 py-1.5 bg-white"
-                value={selectedAccount?.id || ''}
-                onChange={(e) => {
-                  const account = linkedInAccounts.find(acc => acc.id === e.target.value)
-                  if (account) {
-                    setSelectedAccount(account)
-                  }
-                }}
-              >
-                {linkedInAccounts.map(account => (
-                  <option key={account.id} value={account.id}>
-                    {account.display_name || account.username}
-                  </option>
-                ))}
-              </select>
-              <span className="ml-2 text-xs text-gray-500">
-                {linkedInAccounts.length} account{linkedInAccounts.length !== 1 ? 's' : ''} connected
-              </span>
+          <div className="flex flex-col gap-3">
+            {/* Title Row */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Linkedin className="h-4 w-4 sm:h-5 sm:w-5" />
+                LinkedIn Insights
+              </CardTitle>
+              <Badge variant="secondary" className="self-start sm:self-auto text-xs">Coming Soon</Badge>
             </div>
-          )}
+
+            {/* Description */}
+            <CardDescription className="text-xs sm:text-sm">
+              {selectedAccount
+                ? `Connected: ${selectedAccount.display_name || selectedAccount.username}`
+                : 'Advanced analytics for your LinkedIn presence'}
+            </CardDescription>
+
+            {/* Account Selector - Only show if multiple accounts */}
+            {linkedInAccounts.length > 1 && (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <select
+                  className="text-xs sm:text-sm border rounded-lg px-3 py-1.5 bg-white"
+                  value={selectedAccount?.id || ''}
+                  onChange={(e) => {
+                    const account = linkedInAccounts.find(acc => acc.id === e.target.value)
+                    if (account) {
+                      setSelectedAccount(account)
+                    }
+                  }}
+                >
+                  {linkedInAccounts.map(account => (
+                    <option key={account.id} value={account.id}>
+                      {account.display_name || account.username}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs text-gray-500">
+                  {linkedInAccounts.length} account{linkedInAccounts.length !== 1 ? 's' : ''} connected
+                </span>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">

@@ -388,51 +388,61 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
       {/* Profile Overview */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Camera className="h-5 w-5" />
-              Profile Overview
+          <div className="flex flex-col gap-3">
+            {/* Title Row */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
+                Profile Overview
+              </CardTitle>
               {selectedAccount && (
-                <Badge variant="outline" className="ml-2 text-xs">
+                <Badge variant="outline" className="self-start sm:self-auto text-xs">
                   @{selectedAccount.username || selectedAccount.platform_user_id}
                 </Badge>
               )}
-            </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="hover:shadow-md transition-all"
-            >
-              <RefreshCw className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")} />
-              {refreshing ? 'Refreshing...' : 'Refresh'}
-            </Button>
-          </div>
-          <CardDescription>
-            Your Instagram performance metrics
-          </CardDescription>
-          {instagramAccounts.length > 1 && (
-            <div className="mt-2">
-              <select
-                className="text-sm border rounded-lg px-3 py-1.5 bg-white"
-                value={selectedAccount?.id || ''}
-                onChange={(e) => {
-                  const account = instagramAccounts.find(acc => acc.id === e.target.value)
-                  if (account) {
-                    setSelectedAccount(account)
-                    fetchInstagramInsights(account.id)
-                  }
-                }}
-              >
-                {instagramAccounts.map(account => (
-                  <option key={account.id} value={account.id}>
-                    @{account.username || account.platform_user_id}
-                  </option>
-                ))}
-              </select>
             </div>
-          )}
+
+            {/* Description */}
+            <CardDescription className="text-xs sm:text-sm">
+              Your Instagram performance metrics
+            </CardDescription>
+
+            {/* Actions Row - Stack on mobile */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              {instagramAccounts.length > 1 && (
+                <select
+                  className="text-xs sm:text-sm border rounded-lg px-3 py-1.5 bg-white"
+                  value={selectedAccount?.id || ''}
+                  onChange={(e) => {
+                    const account = instagramAccounts.find(acc => acc.id === e.target.value)
+                    if (account) {
+                      setSelectedAccount(account)
+                      fetchInstagramInsights(account.id)
+                    }
+                  }}
+                >
+                  {instagramAccounts.map(account => (
+                    <option key={account.id} value={account.id}>
+                      @{account.username || account.platform_user_id}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className={cn(
+                  "w-full sm:w-auto hover:shadow-md transition-all",
+                  instagramAccounts.length > 1 && "sm:ml-auto"
+                )}
+              >
+                <RefreshCw className={cn("h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2", refreshing && "animate-spin")} />
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
