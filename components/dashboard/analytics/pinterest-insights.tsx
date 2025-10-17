@@ -189,35 +189,38 @@ export function PinterestInsights({ className }: PinterestInsightsProps) {
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3">
-            {/* Title Row */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
-                Pinterest Overview
-              </CardTitle>
-              {selectedAccount && (
-                <Badge variant="outline" className="self-start sm:self-auto text-xs">
-                  {selectedAccount.username || selectedAccount.platform_user_id}
-                </Badge>
-              )}
+            {/* Title and Refresh Button Row */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div className="flex flex-col gap-2">
+                {/* Title and Badge */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                    <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
+                    Pinterest Overview
+                  </CardTitle>
+                  {selectedAccount && (
+                    <Badge variant="outline" className="self-start sm:self-auto text-xs">
+                      {selectedAccount.username || selectedAccount.platform_user_id}
+                    </Badge>
+                  )}
+                </div>
+                <CardDescription className="text-xs sm:text-sm">
+                  Last 30 days performance metrics
+                </CardDescription>
+              </div>
+
+              {/* Refresh Button - Top right on desktop */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="w-full sm:w-auto sm:flex-shrink-0"
+              >
+                <RefreshCw className={cn("h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2", refreshing && "animate-spin")} />
+                Refresh
+              </Button>
             </div>
-
-            {/* Description */}
-            <CardDescription className="text-xs sm:text-sm">
-              Last 30 days performance metrics
-            </CardDescription>
-
-            {/* Refresh Button - Full width on mobile */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="w-full sm:w-auto sm:self-end"
-            >
-              <RefreshCw className={cn("h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2", refreshing && "animate-spin")} />
-              Refresh
-            </Button>
           </div>
         </CardHeader>
         <CardContent>
