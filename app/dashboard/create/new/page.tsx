@@ -967,8 +967,8 @@ function CreateNewPostPageContent() {
         toast.error('Please enter content for non-Facebook platforms')
         return
       }
-    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode && !isTwitterThreadMode && !isFacebookStoryOnly && !isFacebookReelOnly && !isFacebookFeedOnly) {
-      // No content at all for regular posts (skip this check for Threads thread mode, Twitter thread mode, Facebook Stories/Reels/Feed)
+    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode && !isTwitterThreadMode && !isFacebookStoryOnly && !isFacebookReelOnly && !isFacebookFeedOnly && !isInstagramStoryOnly) {
+      // No content at all for regular posts (skip this check for Threads thread mode, Twitter thread mode, Facebook Stories/Reels/Feed, Instagram Stories)
       console.log('No content validation path - failing')
       console.log('Validation state:', {
         hasMainContent,
@@ -2111,8 +2111,8 @@ function CreateNewPostPageContent() {
         toast.error('Please enter content for non-Facebook platforms')
         return
       }
-    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode && !isTwitterThreadMode && !isFacebookStoryOnly && !isFacebookReelOnly && !isFacebookFeedOnly) {
-      // No content at all for regular posts (skip this check for Threads thread mode, Twitter thread mode, Facebook Stories/Reels/Feed)
+    } else if (!hasMainContent && !hasPlatformContent && !hasYouTubeContent && !hasPinterestContent && !hasTikTokContent && !isThreadsThreadMode && !isTwitterThreadMode && !isFacebookStoryOnly && !isFacebookReelOnly && !isFacebookFeedOnly && !isInstagramStoryOnly) {
+      // No content at all for regular posts (skip this check for Threads thread mode, Twitter thread mode, Facebook Stories/Reels/Feed, Instagram Stories)
       console.log('No content validation path - failing')
       console.log('Validation state:', {
         hasMainContent,
