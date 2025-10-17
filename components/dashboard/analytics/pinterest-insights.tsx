@@ -260,13 +260,15 @@ export function PinterestInsights({ className }: PinterestInsightsProps) {
       {/* Recent Pins Performance */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Recent Pins Performance
-          </CardTitle>
-          <CardDescription>
-            Your top performing pins from the last 30 days
-          </CardDescription>
+          <div className="flex flex-col gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <Activity className="h-4 w-4 sm:h-5 sm:w-5" />
+              Recent Pins Performance
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
+              Your top performing pins from the last 30 days
+            </CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           {recentPins.length === 0 ? (

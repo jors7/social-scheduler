@@ -231,13 +231,15 @@ export function BlueskyInsights({ className }: BlueskyInsightsProps) {
       {/* Recent Posts Performance */}
       <Card>
         <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            Recent Posts Performance
-          </CardTitle>
-          <CardDescription>
-            Your top performing Bluesky posts from the last 30 days
-          </CardDescription>
+          <div className="flex flex-col gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
+              Recent Posts Performance
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
+              Your top performing Bluesky posts from the last 30 days
+            </CardDescription>
+          </div>
         </CardHeader>
         <CardContent className="pt-6">
           {metrics && metrics.posts.length > 0 ? (

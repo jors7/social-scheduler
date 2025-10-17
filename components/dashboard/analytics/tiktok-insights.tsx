@@ -559,22 +559,24 @@ export function TikTokInsights({ className }: TikTokInsightsProps) {
       {/* Recent Videos Performance */}
       <Card className="overflow-hidden border border-gray-200">
         <CardHeader className="bg-gray-50 border-b border-gray-200">
-          <CardTitle className="flex items-center gap-2">
-            <div className="p-2 bg-gradient-to-r from-cyan-100 to-pink-100 rounded-lg">
-              <BarChart3 className="h-5 w-5 text-cyan-600" />
-            </div>
-            <span className="text-gray-900 font-bold">
-              Recent Videos Performance
-            </span>
+          <div className="flex flex-col gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <div className="p-1.5 sm:p-2 bg-gradient-to-r from-cyan-100 to-pink-100 rounded-lg">
+                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-600" />
+              </div>
+              <span className="text-gray-900 font-bold">
+                Recent Videos Performance
+              </span>
+            </CardTitle>
             {selectedAccount && (
-              <Badge className="ml-2 text-xs bg-gray-100 text-gray-700 border-gray-300">
+              <Badge className="self-start text-xs bg-gray-100 text-gray-700 border-gray-300">
                 @{selectedAccount.username || selectedAccount.platform_user_id}
               </Badge>
             )}
-          </CardTitle>
-          <CardDescription className="text-gray-600 mt-1">
-            Engagement metrics for your latest TikTok videos
-          </CardDescription>
+            <CardDescription className="text-gray-600 text-xs sm:text-sm">
+              Engagement metrics for your latest TikTok videos
+            </CardDescription>
+          </div>
         </CardHeader>
         <CardContent className="pt-6 relative">
           {/* Loading overlay for videos section */}
