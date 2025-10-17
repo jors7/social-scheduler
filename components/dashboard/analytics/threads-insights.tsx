@@ -416,58 +416,60 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3">
-            {/* Title Row */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <AtSign className="h-4 w-4 sm:h-5 sm:w-5" />
-                Profile Overview
-              </CardTitle>
-              {selectedAccount && (
-                <Badge variant="outline" className="self-start sm:self-auto text-xs">
-                  @{selectedAccount.username || selectedAccount.platform_user_id}
-                </Badge>
-              )}
-            </div>
+            {/* Title and Refresh Button Row */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div className="flex flex-col gap-2">
+                {/* Title and Badge */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                    <AtSign className="h-4 w-4 sm:h-5 sm:w-5" />
+                    Profile Overview
+                  </CardTitle>
+                  {selectedAccount && (
+                    <Badge variant="outline" className="self-start sm:self-auto text-xs">
+                      @{selectedAccount.username || selectedAccount.platform_user_id}
+                    </Badge>
+                  )}
+                </div>
 
-            {/* Description */}
-            <CardDescription className="text-xs sm:text-sm">
-              Your Threads performance metrics
-            </CardDescription>
+                {/* Description */}
+                <CardDescription className="text-xs sm:text-sm">
+                  Your Threads performance metrics
+                </CardDescription>
+              </div>
 
-            {/* Actions Row - Stack on mobile */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-              {threadsAccounts.length > 1 && (
-                <select
-                  className="text-xs sm:text-sm border rounded-lg px-3 py-1.5 bg-white"
-                  value={selectedAccount?.id || ''}
-                  onChange={(e) => {
-                    const account = threadsAccounts.find(acc => acc.id === e.target.value)
-                    if (account) {
-                      setSelectedAccount(account)
-                      fetchThreadsInsights(account.id)
-                    }
-                  }}
-                >
-                  {threadsAccounts.map(account => (
-                    <option key={account.id} value={account.id}>
-                      @{account.username || account.platform_user_id}
-                    </option>
-                  ))}
-                </select>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className={cn(
-                  "w-full sm:w-auto hover:shadow-md transition-all",
-                  threadsAccounts.length > 1 && "sm:ml-auto"
+              {/* Refresh Button - Top right on desktop */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:flex-shrink-0">
+                {threadsAccounts.length > 1 && (
+                  <select
+                    className="text-xs sm:text-sm border rounded-lg px-3 py-1.5 bg-white"
+                    value={selectedAccount?.id || ''}
+                    onChange={(e) => {
+                      const account = threadsAccounts.find(acc => acc.id === e.target.value)
+                      if (account) {
+                        setSelectedAccount(account)
+                        fetchThreadsInsights(account.id)
+                      }
+                    }}
+                  >
+                    {threadsAccounts.map(account => (
+                      <option key={account.id} value={account.id}>
+                        @{account.username || account.platform_user_id}
+                      </option>
+                    ))}
+                  </select>
                 )}
-              >
-                <RefreshCw className={cn("h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2", refreshing && "animate-spin")} />
-                {refreshing ? 'Refreshing...' : 'Refresh'}
-              </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="w-full sm:w-auto hover:shadow-md transition-all"
+                >
+                  <RefreshCw className={cn("h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2", refreshing && "animate-spin")} />
+                  {refreshing ? 'Refreshing...' : 'Refresh'}
+                </Button>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -642,19 +644,21 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
       <Card className="overflow-hidden border border-gray-200">
         <CardHeader className="bg-gray-50 border-b border-gray-200">
           <div className="flex flex-col gap-2">
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <div className="p-1.5 sm:p-2 bg-gray-100 rounded-lg">
-                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-gray-700" />
-              </div>
-              <span className="text-gray-900 font-bold">
-                Recent Threads Performance
-              </span>
-            </CardTitle>
-            {selectedAccount && (
-              <Badge className="self-start text-xs bg-gray-100 text-gray-700 border-gray-300">
-                @{selectedAccount.username || selectedAccount.platform_user_id}
-              </Badge>
-            )}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <div className="p-1.5 sm:p-2 bg-gray-100 rounded-lg">
+                  <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-gray-700" />
+                </div>
+                <span className="text-gray-900 font-bold">
+                  Recent Threads Performance
+                </span>
+              </CardTitle>
+              {selectedAccount && (
+                <Badge className="self-start sm:self-auto text-xs bg-gray-100 text-gray-700 border-gray-300">
+                  @{selectedAccount.username || selectedAccount.platform_user_id}
+                </Badge>
+              )}
+            </div>
             <CardDescription className="text-gray-600 text-xs sm:text-sm">
               Engagement metrics for your latest Threads posts
             </CardDescription>
