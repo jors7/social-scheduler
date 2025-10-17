@@ -261,6 +261,8 @@ export function SimpleDragCalendar({
       console.log('Calling onPostUpdate with:', post.id, newDateTime.toISOString())
       await onPostUpdate(post.id, newDateTime)
       toast.success('Post rescheduled successfully')
+      // Clear selected date to prevent ghost selection
+      setSelectedDate(null)
     } catch (error: any) {
       console.error('Reschedule error:', error)
       toast.error(error.message || 'Failed to reschedule post')
@@ -393,6 +395,8 @@ export function SimpleDragCalendar({
     setDraggedPostId(null)
     setDragOverDate(null)
     setIsDragging(false)
+    // Clear selected date to prevent ghost selection
+    setSelectedDate(null)
   }
 
   return (
