@@ -300,6 +300,10 @@ export function SimpleDragCalendar({
 
   // Touch event handlers for mobile drag-and-drop
   const handleTouchStart = (e: React.TouchEvent, postId: string, post: ScheduledPost) => {
+    // Reset dragging state to ensure clean start for new touch interaction
+    // This prevents race conditions from previous async state updates
+    setIsDragging(false)
+
     const touch = e.touches[0]
     setTouchStartPos({ x: touch.clientX, y: touch.clientY })
     setTouchedPost(post)
