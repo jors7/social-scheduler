@@ -185,43 +185,44 @@ export function PlatformInsightsTabs({ className, connectedPlatforms = [], days 
       {/* Tab Navigation */}
       <Card variant="glass" className="overflow-hidden">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <CardTitle className="text-xl">Platform Insights</CardTitle>
-              <CardDescription className="text-sm mt-1">
+              <CardTitle className="text-lg sm:text-xl">Platform Insights</CardTitle>
+              <CardDescription className="text-xs sm:text-sm mt-1">
                 Detailed analytics for your connected social media platforms
               </CardDescription>
             </div>
             {availablePlatforms.length > 0 && (
-              <Badge variant="secondary" className="ml-4">
+              <Badge variant="secondary" className="self-start sm:self-auto">
                 {availablePlatforms.length} platform{availablePlatforms.length !== 1 ? 's' : ''} connected
               </Badge>
             )}
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="flex flex-wrap gap-2 border-b pb-3">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 border-b pb-3">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id
               const isAvailable = tab.available || tab.id === 'all'
-              
+
               return (
                 <button
                   key={tab.id}
                   onClick={() => isAvailable && setActiveTab(tab.id)}
                   disabled={!isAvailable}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200",
+                    "flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200",
                     isActive && isAvailable && "text-white shadow-lg transform scale-105",
                     !isActive && isAvailable && "text-gray-600 hover:text-gray-900 hover:bg-gray-100",
                     !isAvailable && "text-gray-400 cursor-not-allowed opacity-50",
                     isActive && isAvailable && tab.color
                   )}
                 >
-                  {tab.icon}
-                  <span>{tab.label}</span>
+                  <span className="flex-shrink-0">{tab.icon}</span>
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.label.length > 8 ? tab.label.substring(0, 6) + '.' : tab.label}</span>
                   {!isAvailable && tab.id !== 'all' && (
-                    <Lock className="h-3 w-3 ml-1" />
+                    <Lock className="h-3 w-3 ml-0.5 sm:ml-1" />
                   )}
                 </button>
               )

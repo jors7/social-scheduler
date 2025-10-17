@@ -642,52 +642,55 @@ export default function AnalyticsPage() {
       <SubscriptionGate feature="analytics">
         <div className="space-y-8">
           <Card variant="glass" className="p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg">
-                    <CalendarDays className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />
-                  </div>
-                  <select 
-                    className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    value={dateRange}
-                    onChange={(e) => setDateRange(e.target.value)}
-                  >
-                    {dateRangeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+            <div className="flex flex-col gap-3">
+              {/* Date Selector - Full width on mobile */}
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg flex-shrink-0">
+                  <CalendarDays className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />
                 </div>
+                <select
+                  className="flex-1 sm:flex-initial bg-white/70 backdrop-blur-sm border border-gray-200 rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  value={dateRange}
+                  onChange={(e) => setDateRange(e.target.value)}
+                >
+                  {dateRangeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Action Buttons - Stack on mobile */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 {refreshing && (
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 sm:mr-auto">
                     <RefreshCw className="h-3 w-3 animate-spin" />
                     <span>Loading analytics data...</span>
                   </div>
                 )}
-              </div>
-              <div className="flex gap-2 sm:gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 text-xs sm:text-sm px-3 sm:px-4"
-                >
-                  <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                  Refresh
-                </Button>
-                <Button
-                  variant="gradient"
-                  size="sm"
-                  className="text-xs sm:text-sm px-3 sm:px-4"
-                  onClick={handleExport}
-                  disabled={!analyticsData || loading || refreshing}
-                >
-                  <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  Export
-                </Button>
+                <div className="flex gap-2 sm:gap-3 sm:ml-auto">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                    className="flex-1 sm:flex-initial hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 text-xs sm:text-sm px-3 sm:px-4"
+                  >
+                    <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                  <Button
+                    variant="gradient"
+                    size="sm"
+                    className="flex-1 sm:flex-initial text-xs sm:text-sm px-3 sm:px-4"
+                    onClick={handleExport}
+                    disabled={!analyticsData || loading || refreshing}
+                  >
+                    <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    Export
+                  </Button>
+                </div>
               </div>
             </div>
           </Card>

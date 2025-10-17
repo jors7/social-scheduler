@@ -491,26 +491,31 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
       {/* Combined Metrics Overview */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
+          <div className="flex flex-col gap-3">
+            {/* Title Row */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
                 All Platforms Combined
-                <Badge variant="outline" className="ml-1 text-xs font-normal bg-blue-50 text-blue-700 border-blue-200">
-                  Last 30 days
-                </Badge>
               </CardTitle>
-              <CardDescription className="mt-1">
-                Aggregated metrics across all your connected platforms
-              </CardDescription>
+              <Badge variant="outline" className="self-start sm:self-auto text-xs font-normal bg-blue-50 text-blue-700 border-blue-200">
+                Last 30 days
+              </Badge>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* Description */}
+            <CardDescription className="text-xs sm:text-sm">
+              Aggregated metrics across all your connected platforms
+            </CardDescription>
+
+            {/* Actions Row - Stack on mobile */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 pt-2 sm:pt-0">
               {lastUpdated && (
                 <div className="flex items-center gap-1 text-xs text-gray-500">
                   <Clock className="h-3 w-3" />
                   <span>
-                    Updated {new Date().getTime() - lastUpdated.getTime() < 60000 
-                      ? 'just now' 
+                    Updated {new Date().getTime() - lastUpdated.getTime() < 60000
+                      ? 'just now'
                       : `${Math.floor((new Date().getTime() - lastUpdated.getTime()) / 60000)} min ago`}
                   </span>
                 </div>
@@ -520,8 +525,9 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
                 size="sm"
                 onClick={() => fetchAllPlatformMetrics(true)}
                 disabled={refreshing}
+                className="w-full sm:w-auto sm:ml-auto"
               >
-                <RefreshCw className={cn("h-4 w-4 mr-1", refreshing && "animate-spin")} />
+                <RefreshCw className={cn("h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2", refreshing && "animate-spin")} />
                 Refresh
               </Button>
             </div>
@@ -599,16 +605,20 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
       {/* Compact Platform Performance Grid */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Platform Performance
-            <Badge variant="outline" className="ml-1 text-xs font-normal bg-blue-50 text-blue-700 border-blue-200">
-              Last 30 days
-            </Badge>
-          </CardTitle>
-          <CardDescription>
-            Posts published and reach by platform
-          </CardDescription>
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Activity className="h-4 w-4 sm:h-5 sm:w-5" />
+                Platform Performance
+              </CardTitle>
+              <Badge variant="outline" className="self-start sm:self-auto text-xs font-normal bg-blue-50 text-blue-700 border-blue-200">
+                Last 30 days
+              </Badge>
+            </div>
+            <CardDescription className="text-xs sm:text-sm">
+              Posts published and reach by platform
+            </CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
