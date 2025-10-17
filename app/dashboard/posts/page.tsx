@@ -80,7 +80,7 @@ export default function PostsPage() {
       // Fetch drafts, scheduled, and posted posts concurrently
       const [draftsResponse, scheduledResponse, postedResponse] = await Promise.all([
         fetch('/api/drafts'),
-        fetch('/api/posts/schedule?status=pending,posting,cancelled,failed'),
+        fetch('/api/posts/schedule?status=pending,posting,cancelled'),
         fetch('/api/posts/posted-with-media')
       ])
       
@@ -102,7 +102,7 @@ export default function PostsPage() {
       }))
 
       const scheduled: UnifiedPost[] = (scheduledData.posts || [])
-        .filter((post: any) => ['pending', 'posting', 'cancelled', 'failed'].includes(post.status))
+        .filter((post: any) => ['pending', 'posting', 'cancelled'].includes(post.status))
         .map((post: any) => ({
           ...post,
           // Keep the original status (pending, posting, cancelled, etc.)
