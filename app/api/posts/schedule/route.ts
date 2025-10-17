@@ -113,8 +113,14 @@ export async function POST(request: NextRequest) {
                                     platforms[0] === 'facebook' &&
                                     mediaUrls?.length > 0;
 
-    // Validate inputs - allow empty content for Pinterest-only posts with media, Threads thread mode, or Facebook posts with media
-    if ((!content && !isPinterestOnlyWithMedia && !isThreadsThreadMode && !isFacebookOnlyWithMedia) || !platforms || platforms.length === 0 || !scheduledFor) {
+    // Check if this is an Instagram Story with media (stories don't require captions)
+    const isInstagramStoryWithMedia = platforms?.length === 1 &&
+                                      platforms[0] === 'instagram' &&
+                                      instagramAsStory &&
+                                      mediaUrls?.length > 0;
+
+    // Validate inputs - allow empty content for Pinterest-only posts with media, Threads thread mode, Facebook posts with media, or Instagram Stories with media
+    if ((!content && !isPinterestOnlyWithMedia && !isThreadsThreadMode && !isFacebookOnlyWithMedia && !isInstagramStoryWithMedia) || !platforms || platforms.length === 0 || !scheduledFor) {
       console.log('Validation failed:', {
         hasContent: !!content,
         hasPlatforms: !!platforms,
@@ -122,12 +128,13 @@ export async function POST(request: NextRequest) {
         hasScheduledFor: !!scheduledFor,
         isPinterestOnlyWithMedia,
         isThreadsThreadMode,
-        isFacebookOnlyWithMedia
+        isFacebookOnlyWithMedia,
+        isInstagramStoryWithMedia
       });
       return NextResponse.json({
         error: 'Missing required fields',
         details: {
-          content: (!content && !isPinterestOnlyWithMedia && !isThreadsThreadMode && !isFacebookOnlyWithMedia) ? 'Content is required' : 'OK',
+          content: (!content && !isPinterestOnlyWithMedia && !isThreadsThreadMode && !isFacebookOnlyWithMedia && !isInstagramStoryWithMedia) ? 'Content is required' : 'OK',
           platforms: !platforms || platforms.length === 0 ? 'At least one platform is required' : 'OK',
           scheduledFor: !scheduledFor ? 'Scheduled time is required' : 'OK'
         }
