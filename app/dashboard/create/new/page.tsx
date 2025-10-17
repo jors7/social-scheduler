@@ -217,6 +217,9 @@ function CreateNewPostPageContent() {
   const [shouldAutoSchedule, setShouldAutoSchedule] = useState(false)
   const [showRequestPlatformModal, setShowRequestPlatformModal] = useState(false)
 
+  // Ref for preview panel to enable auto-scroll on mobile
+  const previewPanelRef = useRef<HTMLDivElement>(null)
+
   // Set up drag-and-drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -2718,6 +2721,24 @@ function CreateNewPostPageContent() {
     }
   }, [selectedPlatforms, postContent, shouldAutoSchedule, isPosting])
 
+  // Auto-scroll to preview panel on mobile when it opens
+  useEffect(() => {
+    if (showPreview && previewPanelRef.current) {
+      // Check if we're on mobile (below lg breakpoint which is 1024px)
+      const isMobile = window.matchMedia('(max-width: 1023px)').matches
+
+      if (isMobile) {
+        // Small delay to ensure the preview panel has rendered
+        setTimeout(() => {
+          previewPanelRef.current?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          })
+        }, 100)
+      }
+    }
+  }, [showPreview])
+
   const loadDraft = async (draftId: string, openSchedule: boolean, publishNow: boolean) => {
     setLoadingDraft(true)
     try {
@@ -2911,19 +2932,29 @@ function CreateNewPostPageContent() {
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         {/* Left Column - Main Content */}
         <div className="col-span-1 lg:col-span-2 space-y-4 sm:space-y-6 order-2 lg:order-1">
-          {/* Post Content */}
+          {/* Post Content - Hidden when only YouTube or Pinterest is selected, or Threads in thread mode */}
+          {!(selectedPlatforms.length === 1 && (selectedPlatforms[0] === 'youtube' || selectedPlatforms[0] === 'pinterest' || (selectedPlatforms[0] === 'threads' && threadsMode === 'thread'))) && (
           <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
             <CardHeader className="pb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Post Content</CardTitle>
                   <CardDescription className="text-sm sm:text-base text-gray-600">Write your message</CardDescription>
-                </div>
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                  {/* Subtle autosave indicator */}
+                  {/* Autosave indicator - below description on mobile, with buttons on desktop */}
                   {!editingScheduledPost && (isSaving || (lastSaved && timeAgo)) && (
                     <span className={cn(
-                      "text-xs transition-opacity duration-300",
+                      "text-xs transition-opacity duration-300 block sm:hidden mt-1",
+                      isSaving ? "text-gray-600 animate-pulse" : "text-gray-500"
+                    )}>
+                      {isSaving ? 'Saving...' : `Saved ${timeAgo}`}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  {/* Subtle autosave indicator - desktop only */}
+                  {!editingScheduledPost && (isSaving || (lastSaved && timeAgo)) && (
+                    <span className={cn(
+                      "hidden sm:inline text-xs transition-opacity duration-300",
                       isSaving ? "text-gray-600 animate-pulse" : "text-gray-500"
                     )}>
                       {isSaving ? 'Saving...' : `Saved ${timeAgo}`}
@@ -3012,6 +3043,7 @@ function CreateNewPostPageContent() {
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* Threads Thread Mode */}
           {selectedPlatforms.length === 1 && selectedPlatforms[0] === 'threads' && (
@@ -3155,7 +3187,8 @@ function CreateNewPostPageContent() {
             </Card>
           )}
 
-          {/* Media Upload */}
+          {/* Media Upload - Hidden when only YouTube is selected, or Threads in thread mode */}
+          {!(selectedPlatforms.length === 1 && (selectedPlatforms[0] === 'youtube' || (selectedPlatforms[0] === 'threads' && threadsMode === 'thread'))) && (
           <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Media</CardTitle>
@@ -3348,6 +3381,7 @@ function CreateNewPostPageContent() {
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* Scheduling */}
           <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
@@ -3564,7 +3598,8 @@ function CreateNewPostPageContent() {
         <div className="col-span-1 lg:col-span-1 order-1 lg:order-2 space-y-4">
           {/* Preview Panel - Show when preview is enabled */}
           {showPreview && selectedPlatforms.length > 0 && (
-            <PreviewPanel
+            <div ref={previewPanelRef}>
+              <PreviewPanel
               selectedPlatforms={selectedPlatforms}
               content={postContent}
               platformContent={platformContent}
@@ -3579,7 +3614,8 @@ function CreateNewPostPageContent() {
               pinterestDescription={pinterestDescription}
               pinterestBoard={pinterestBoards.find(b => b.id === selectedPinterestBoard)?.name}
               onClose={() => setShowPreview(false)}
-            />
+              />
+            </div>
           )}
 
          {/* Platform Selection */}
@@ -3590,7 +3626,7 @@ function CreateNewPostPageContent() {
               </CardHeader>
               <CardContent>
                 {/* Platform Selection Buttons - 2 Column Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {platforms.map((platform) => {
                     // Special handling for "Request Platform" card
                     if ((platform as any).isSpecial && platform.id === 'request') {
@@ -3952,19 +3988,46 @@ function CreateNewPostPageContent() {
             </Card>
 
             {/* Pinterest Board Selection */}
-            <PinterestBoardSelector
-              selectedPlatforms={selectedPlatforms}
-              selectedPinterestBoard={selectedPinterestBoard}
-              setSelectedPinterestBoard={setSelectedPinterestBoard}
-              pinterestTitle={pinterestTitle}
-              setPinterestTitle={setPinterestTitle}
-              pinterestDescription={pinterestDescription}
-              setPinterestDescription={setPinterestDescription}
-              pinterestLink={pinterestLink}
-              setPinterestLink={setPinterestLink}
-              pinterestBoards={pinterestBoards}
-              setPinterestBoards={setPinterestBoards}
-            />
+            {selectedPlatforms.includes('pinterest') && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="text-red-600">📌</span>
+                    Pinterest Pin Settings
+                  </CardTitle>
+                  <CardDescription>
+                    Configure your Pinterest pin details
+                  </CardDescription>
+                  {/* Preview button - only show when Pinterest is the only platform */}
+                  {selectedPlatforms.length === 1 && selectedPlatforms[0] === 'pinterest' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowPreview(!showPreview)}
+                      className="mt-4 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border-blue-200 hover:border-blue-300 w-full sm:w-auto"
+                    >
+                      <Eye className="mr-2 h-4 w-4 text-blue-600" />
+                      Preview
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  <PinterestBoardSelector
+                    selectedPlatforms={selectedPlatforms}
+                    selectedPinterestBoard={selectedPinterestBoard}
+                    setSelectedPinterestBoard={setSelectedPinterestBoard}
+                    pinterestTitle={pinterestTitle}
+                    setPinterestTitle={setPinterestTitle}
+                    pinterestDescription={pinterestDescription}
+                    setPinterestDescription={setPinterestDescription}
+                    pinterestLink={pinterestLink}
+                    setPinterestLink={setPinterestLink}
+                    pinterestBoards={pinterestBoards}
+                    setPinterestBoards={setPinterestBoards}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
             {/* YouTube Video Metadata */}
             {selectedPlatforms.includes('youtube') && (
@@ -3977,6 +4040,18 @@ function CreateNewPostPageContent() {
                   <CardDescription>
                     Configure your YouTube video details
                   </CardDescription>
+                  {/* Preview button - only show when YouTube is the only platform */}
+                  {selectedPlatforms.length === 1 && selectedPlatforms[0] === 'youtube' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowPreview(!showPreview)}
+                      className="mt-4 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border-blue-200 hover:border-blue-300 w-full sm:w-auto"
+                    >
+                      <Eye className="mr-2 h-4 w-4 text-blue-600" />
+                      Preview
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <VideoUpload

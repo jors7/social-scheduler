@@ -774,7 +774,8 @@ export default function DashboardPage() {
               <div>
                 <div className="flex items-center gap-3 mb-3">
                   <h1 className="text-3xl font-bold text-gray-900">
-                    {greeting && `${greeting}! 👋`}
+                    <span className="sm:hidden">Hello! 👋</span>
+                    <span className="hidden sm:inline">{greeting && `${greeting}! 👋`}</span>
                   </h1>
                   {subscription && (
                     <Badge className={cn(
@@ -799,15 +800,15 @@ export default function DashboardPage() {
                   Here&apos;s what&apos;s happening with your social media today
                 </p>
               </div>
-              
-              <div className="flex gap-3">
+
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 {/* Show Start Tour button for new users, Tour button for returning users */}
                 {!hasCompletedOnboarding ? (
                   <Button
                     variant="gradient"
                     size="lg"
                     onClick={startOnboarding}
-                    className="shadow-md hover:shadow-lg transition-all"
+                    className="shadow-md hover:shadow-lg transition-all w-full sm:w-auto"
                   >
                     <Play className="mr-2 h-5 w-5" />
                     Start Tour
@@ -816,15 +817,15 @@ export default function DashboardPage() {
                   <Button
                     size="lg"
                     onClick={startOnboarding}
-                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white shadow-md hover:shadow-lg transition-all"
+                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white shadow-md hover:shadow-lg transition-all w-full sm:w-auto"
                   >
                     <Play className="mr-2 h-5 w-5" />
                     Tour
                   </Button>
                 )}
                 {subscription && !subscription.hasSubscription && (
-                  <Link href="/#pricing">
-                    <Button variant="outline" size="lg" className="hover:bg-purple-50">
+                  <Link href="/#pricing" className="w-full sm:w-auto">
+                    <Button variant="outline" size="lg" className="hover:bg-purple-50 w-full sm:w-auto">
                       <Sparkles className="mr-2 h-5 w-5" />
                       Upgrade
                     </Button>
@@ -1619,29 +1620,31 @@ export default function DashboardPage() {
 
           {/* Stats Overview - Improved Design with Lazy Loading */}
           <div ref={activityOverviewRef} className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-gray-700" />
-                  Activity Overview
-                  {fetchingAnalytics && (
-                    <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />
-                  )}
-                  <Badge variant="outline" className="ml-2 text-xs font-normal bg-blue-50 text-blue-700 border-blue-200">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-gray-700" />
+                    Activity Overview
+                    {fetchingAnalytics && (
+                      <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />
+                    )}
+                  </h2>
+                  <Badge variant="outline" className="text-xs font-normal bg-blue-50 text-blue-700 border-blue-200">
                     Last 7 days
                   </Badge>
-                </h2>
-                <p className="text-sm text-gray-500 mt-0.5">
+                </div>
+                <p className="text-sm text-gray-500 mt-1">
                   Your social media performance at a glance
                   {analyticsCache && isUsingPlatformData && (
-                    <span className="text-xs text-gray-400 ml-2">
+                    <span className="hidden sm:inline text-xs text-gray-400 ml-2">
                       • Updated {Math.floor((Date.now() - analyticsCache.timestamp) / 60000)} min ago
                     </span>
                   )}
                 </p>
               </div>
-              <Link href="/dashboard/analytics">
-                <Button variant="outline" size="sm" className="text-xs">
+              <Link href="/dashboard/analytics" className="w-full sm:w-auto">
+                <Button variant="outline" size="sm" className="text-xs w-full sm:w-auto">
                   View Details
                   <ArrowUpRight className="h-3 w-3 ml-1" />
                 </Button>

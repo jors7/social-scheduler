@@ -228,15 +228,15 @@ export function AISuggestionsModal({
             {/* Step 2: Suggestions Display */}
             {step === 'suggestions' && (
               <>
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   {/* Success Header */}
-                  <div className="text-center space-y-3">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 shadow-lg">
-                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="text-center space-y-2 sm:space-y-3">
+                    <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 shadow-lg">
+                      <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    <h3 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                       Your Caption is Ready!
                     </h3>
                   </div>
@@ -245,45 +245,43 @@ export function AISuggestionsModal({
                   {suggestions.length > 0 && suggestions[0] && (
                     <Card className="border-2 border-blue-200 dark:border-blue-800 shadow-xl hover:shadow-2xl transition-shadow duration-300 overflow-hidden">
                       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
-                      <CardContent className="p-8">
-                        <div className="flex items-start justify-between mb-6">
+                      <CardContent className="p-4 sm:p-8">
+                        <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
                           <Badge
                             variant="secondary"
-                            className={`${getToneBadgeColor(suggestions[0].tone)} px-4 py-2 text-sm font-semibold`}
+                            className={`${getToneBadgeColor(suggestions[0].tone)} px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold`}
                           >
                             {suggestions[0].tone.charAt(0).toUpperCase() + suggestions[0].tone.slice(1)} Tone
                           </Badge>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => generateSuggestions(selectedTone, context || undefined)}
-                              disabled={loading}
-                              className="hover:bg-gray-100"
-                            >
-                              <RefreshCw className="h-4 w-4 mr-1" />
-                              Regenerate
-                            </Button>
-                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => generateSuggestions(selectedTone, context || undefined)}
+                            disabled={loading}
+                            className="hover:bg-gray-100 w-full sm:w-auto"
+                          >
+                            <RefreshCw className="h-4 w-4 mr-1" />
+                            Regenerate
+                          </Button>
                         </div>
 
-                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg p-6 mb-6">
-                          <div className="text-base mb-4 whitespace-pre-wrap leading-relaxed font-medium">
+                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+                          <div className="text-sm sm:text-base mb-4 whitespace-pre-wrap leading-relaxed font-medium">
                             {suggestions[0].content}
                           </div>
                         </div>
 
                         {suggestions[0].hashtags && suggestions[0].hashtags.length > 0 && (
-                          <div className="mb-6">
-                            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                              <Hash className="h-4 w-4 text-blue-500" />
+                          <div className="mb-4 sm:mb-6">
+                            <h4 className="text-xs sm:text-sm font-semibold mb-2 sm:mb-3 flex items-center gap-2">
+                              <Hash className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
                               Hashtags
                             </h4>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-1.5 sm:gap-2">
                               {suggestions[0].hashtags.map((hashtag, index) => (
                                 <span
                                   key={index}
-                                  className="text-sm bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900 dark:to-purple-900 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-full font-medium border border-blue-200 dark:border-blue-700 hover:shadow-md transition-shadow"
+                                  className="text-xs sm:text-sm bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900 dark:to-purple-900 text-blue-700 dark:text-blue-300 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-medium border border-blue-200 dark:border-blue-700 hover:shadow-md transition-shadow"
                                 >
                                   {hashtag}
                                 </span>
@@ -292,14 +290,14 @@ export function AISuggestionsModal({
                           </div>
                         )}
 
-                        <div className="flex items-center justify-between pt-4 border-t-2 text-sm text-muted-foreground">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-3 sm:gap-0 pt-3 sm:pt-4 border-t-2 text-xs sm:text-sm text-muted-foreground">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-base text-foreground">{suggestions[0].characterCount}</span>
+                            <span className="font-semibold text-sm sm:text-base text-foreground">{suggestions[0].characterCount}</span>
                             <span>characters</span>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                             {suggestions[0].platforms.map((platform) => (
-                              <span key={platform} className="capitalize bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-md font-medium text-xs">
+                              <span key={platform} className="capitalize bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 sm:px-3 py-1 rounded-md font-medium text-[10px] sm:text-xs">
                                 {platform}
                               </span>
                             ))}
@@ -307,20 +305,20 @@ export function AISuggestionsModal({
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex gap-3 mt-6 pt-6 border-t-2">
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t-2">
                           <Button
                             variant="outline"
-                            className="flex-1 h-12"
+                            className="flex-1 h-10 sm:h-12 text-sm sm:text-base"
                             onClick={() => copyToClipboard(suggestions[0].content)}
                           >
-                            <Copy className="h-5 w-5 mr-2" />
+                            <Copy className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                             Copy Caption
                           </Button>
                           <Button
-                            className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                            className="flex-1 h-10 sm:h-12 text-sm sm:text-base bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200"
                             onClick={() => handleSelectSuggestion(suggestions[0])}
                           >
-                            <Sparkles className="h-5 w-5 mr-2" />
+                            <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                             Use This Caption
                           </Button>
                         </div>

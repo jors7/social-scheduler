@@ -65,12 +65,12 @@ export function AICaptionContextForm({ onSubmit, onCancel, loading = false }: AI
       </div>
 
       {/* Tone Selection */}
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
-        <Label className="text-base font-semibold mb-4 block flex items-center gap-2">
+      <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+        <Label className="text-sm sm:text-base font-semibold mb-3 sm:mb-4 block flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-blue-500"></span>
           Choose Your Tone <span className="text-red-500">*</span>
         </Label>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="flex sm:grid sm:grid-cols-3 gap-2 sm:gap-3">
           {tones.map((tone) => {
             const Icon = tone.icon
             const isSelected = selectedTone === tone.id
@@ -80,17 +80,17 @@ export function AICaptionContextForm({ onSubmit, onCancel, loading = false }: AI
                 variant={isSelected ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setSelectedTone(tone.id)}
-                className={`h-auto p-3 flex-col gap-2 transition-all duration-200 ${
+                className={`h-auto flex-1 sm:flex-initial p-2 sm:p-3 flex flex-row sm:flex-col items-center gap-1.5 sm:gap-2 transition-all duration-200 ${
                   isSelected
-                    ? 'shadow-lg scale-105 bg-gradient-to-br from-blue-500 to-purple-600 border-0'
-                    : 'hover:shadow-md hover:scale-102 hover:border-blue-300'
+                    ? 'shadow-lg sm:scale-105 bg-gradient-to-br from-blue-500 to-purple-600 border-0'
+                    : 'hover:shadow-md sm:hover:scale-102 hover:border-blue-300'
                 }`}
                 type="button"
               >
-                <Icon className={`h-5 w-5 ${isSelected ? 'text-white' : ''}`} />
-                <div className="text-center">
-                  <div className={`font-semibold text-xs ${isSelected ? 'text-white' : ''}`}>{tone.label}</div>
-                  <div className={`text-[10px] mt-0.5 ${isSelected ? 'text-white/90' : 'opacity-70'}`}>{tone.description}</div>
+                <Icon className={`h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 ${isSelected ? 'text-white' : ''}`} />
+                <div className="text-center sm:text-center">
+                  <div className={`font-semibold text-[11px] sm:text-xs ${isSelected ? 'text-white' : ''}`}>{tone.label}</div>
+                  <div className={`hidden sm:block text-[10px] mt-0.5 ${isSelected ? 'text-white/90' : 'opacity-70'}`}>{tone.description}</div>
                 </div>
               </Button>
             )

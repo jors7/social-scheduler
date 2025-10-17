@@ -248,7 +248,7 @@ export function Sidebar() {
       <div className="flex-1 overflow-y-auto bg-gray-50">
         {/* Create Post Button */}
         <div className="px-4 py-4">
-          <Link href="/dashboard/create/new">
+          <Link href="/dashboard/create/new" onClick={() => setIsMobileMenuOpen(false)}>
             <Button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200" size="lg">
               <Sparkles className="mr-2 h-5 w-5" />
               Create New Post
@@ -309,10 +309,11 @@ export function Sidebar() {
                         <Link
                           key={child.href}
                           href={child.href}
+                          onClick={() => setIsMobileMenuOpen(false)}
                           className={cn(
                             'flex items-center rounded-lg px-3 py-2 text-sm transition-all duration-200',
-                            pathname === child.href 
-                              ? 'bg-purple-100 text-purple-700 font-medium' 
+                            pathname === child.href
+                              ? 'bg-purple-100 text-purple-700 font-medium'
                               : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                           )}
                         >
@@ -326,10 +327,11 @@ export function Sidebar() {
               ) : (
                 <Link
                   href={item.href!}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className={cn(
                     'flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 group',
-                    pathname === item.href 
-                      ? 'bg-purple-50 border border-purple-200 text-purple-700' 
+                    pathname === item.href
+                      ? 'bg-purple-50 border border-purple-200 text-purple-700'
                       : 'hover:bg-white hover:shadow-sm text-gray-700 hover:text-purple-600'
                   )}
                 >
@@ -389,6 +391,7 @@ export function Sidebar() {
           <div className="mt-2 space-y-0.5 relative z-20">
             <Link
               href="/dashboard/profile"
+              onClick={() => setIsMobileMenuOpen(false)}
               className="flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
             >
               <div className="p-1.5 bg-gray-100 rounded-lg mr-3">
@@ -398,6 +401,7 @@ export function Sidebar() {
             </Link>
             <Link
               href="/dashboard/billing"
+              onClick={() => setIsMobileMenuOpen(false)}
               className="flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
             >
               <div className="p-1.5 bg-gray-100 rounded-lg mr-3">
@@ -407,6 +411,7 @@ export function Sidebar() {
             </Link>
             <Link
               href="/support"
+              onClick={() => setIsMobileMenuOpen(false)}
               className="flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
             >
               <div className="p-1.5 bg-gray-100 rounded-lg mr-3">

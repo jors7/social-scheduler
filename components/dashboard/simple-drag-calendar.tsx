@@ -183,6 +183,12 @@ export function SimpleDragCalendar({
     return null
   }
 
+  const isVideoUrl = (url: string | null): boolean => {
+    if (!url) return false
+    const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v']
+    return videoExtensions.some(ext => url.toLowerCase().includes(ext))
+  }
+
   const handleDragStart = (e: React.DragEvent, postId: string) => {
     setDraggedPostId(postId)
     // Only set dragging to true after mouse actually moves
@@ -291,24 +297,27 @@ export function SimpleDragCalendar({
   return (
     <div className="space-y-6">
       {/* Calendar Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <h2 className="text-2xl font-bold">
-            {months[currentDate.getMonth()]} {currentDate.getFullYear()}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          <h2 className="text-lg sm:text-2xl font-bold">
+            <span className="hidden sm:inline">{months[currentDate.getMonth()]} {currentDate.getFullYear()}</span>
+            <span className="sm:hidden">{months[currentDate.getMonth()].substring(0, 3)} {currentDate.getFullYear()}</span>
           </h2>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => navigateMonth('prev')}
+            className="h-8 w-8 sm:h-9 sm:w-9 p-0"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setCurrentDate(new Date())}
+            className="h-8 px-2 sm:px-3 text-xs sm:text-sm"
           >
             Today
           </Button>
@@ -316,8 +325,9 @@ export function SimpleDragCalendar({
             variant="outline"
             size="sm"
             onClick={() => navigateMonth('next')}
+            className="h-8 w-8 sm:h-9 sm:w-9 p-0"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
         </div>
       </div>
@@ -330,15 +340,16 @@ export function SimpleDragCalendar({
             {weekDays.map(day => (
               <div
                 key={day}
-                className="bg-gray-50 p-3 text-center text-sm font-semibold text-gray-700 border-r border-gray-100 last:border-r-0"
+                className="bg-gray-50 p-2 md:p-3 text-center text-xs md:text-sm font-semibold text-gray-700 border-r border-gray-100 last:border-r-0"
               >
-                {day}
+                <span className="hidden sm:inline">{day}</span>
+                <span className="sm:hidden">{day.charAt(0)}</span>
               </div>
             ))}
           </div>
-          
-          {/* Calendar days */}
-          <div className="grid grid-cols-7">
+
+          {/* Calendar days - Scrollable on mobile */}
+          <div className="grid grid-cols-7 md:grid-cols-7">
             {getDaysInMonth.map((date) => {
               const posts = getPostsForDate(date)
               const dateString = date.toISOString().split('T')[0]
@@ -349,7 +360,7 @@ export function SimpleDragCalendar({
                   key={dateString}
                   style={{ height: '140px' }}
                   className={cn(
-                    "relative overflow-hidden bg-white p-2 border-r border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors",
+                    "relative overflow-hidden bg-white p-1 sm:p-2 border-r border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors",
                     !isCurrentMonth(date) ? "bg-gray-50 text-gray-400" : "",
                     isToday(date) ? "ring-2 ring-primary ring-inset" : "",
                     selectedDate?.toDateString() === date.toDateString() ? "bg-primary/10" : "",
@@ -360,13 +371,13 @@ export function SimpleDragCalendar({
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, date)}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="font-semibold text-sm">
+                  <div className="flex items-center justify-between mb-0.5 sm:mb-1">
+                    <div className="font-semibold text-xs sm:text-sm">
                       {date.getDate()}
                     </div>
                     {posts.length > 0 && (
                       <div className={cn(
-                        "text-xs px-1.5 py-0.5 rounded-full font-medium",
+                        "text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full font-medium",
                         posts.length >= 3 ? "bg-purple-100 text-purple-700" :
                         posts.length === 2 ? "bg-blue-100 text-blue-700" :
                         "bg-gray-100 text-gray-600"
@@ -376,21 +387,29 @@ export function SimpleDragCalendar({
                     )}
                   </div>
                   
-                  <div className="space-y-1">
+                  <div className="space-y-0.5 sm:space-y-1">
                     {posts.slice(0, posts.length > 1 ? 1 : 1).map((post) => (
                         <div
                           key={post.id}
                           draggable
                           onDragStart={(e) => handleDragStart(e, post.id)}
                           onDragEnd={handleDragEnd}
+                          onClick={(e) => {
+                            // On mobile, clicking the post card opens modal. On desktop, edits directly.
+                            const isMobile = window.matchMedia('(max-width: 640px)').matches
+                            if (isMobile) {
+                              e.stopPropagation()
+                              setSelectedDate(date)
+                            }
+                          }}
                           className={cn(
-                            "group text-xs px-1.5 py-1 rounded text-white cursor-move transition-all hover:shadow-md",
+                            "group text-xs px-1 sm:px-1.5 py-0.5 sm:py-1 rounded text-white cursor-move transition-all hover:shadow-md",
                             getPostColor(post),
                             draggedPostId === post.id ? "opacity-50" : "",
                             isPostSelected(post.id) ? "ring-2 ring-blue-400 ring-offset-1" : ""
                           )}
                       >
-                        <div className="flex items-start justify-between gap-1">
+                        <div className="flex items-start justify-between gap-0.5 sm:gap-1">
                           {onPostSelect && (
                             <input
                               type="checkbox"
@@ -400,27 +419,37 @@ export function SimpleDragCalendar({
                                 togglePostSelection(post.id)
                               }}
                               onClick={(e) => e.stopPropagation()}
-                              className="flex-shrink-0 mt-0.5 h-3 w-3 rounded border-white/50 cursor-pointer"
+                              className="hidden sm:block flex-shrink-0 mt-0.5 h-3 w-3 rounded border-white/50 cursor-pointer"
                             />
                           )}
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-[11px]">
+                            <div className="font-medium text-[10px] sm:text-[11px]">
                               {formatTime(post.scheduled_for)}
                             </div>
-                            <div className="truncate opacity-90 text-[10px] leading-tight">
+                            <div className="hidden sm:block truncate opacity-90 text-[10px] leading-tight">
                               {post.platforms?.includes('pinterest') && post.pinterest_title
                                 ? post.pinterest_title
                                 : stripHtml(post.content).slice(0, 35) + '...'}
                             </div>
-                            <div className="text-[9px] opacity-75 mt-0.5">
+                            <div className="hidden sm:block text-[9px] opacity-75 mt-0.5">
                               {post.platforms.join(' · ')}
+                            </div>
+                            {/* Mobile: Show only first platform initial */}
+                            <div className="sm:hidden text-[8px] opacity-75">
+                              {post.platforms[0].substring(0, 2).toUpperCase()}
                             </div>
                           </div>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               e.preventDefault()
-                              onPostEdit(post.id)
+                              // On mobile, open modal first. On desktop, edit directly.
+                              const isMobile = window.matchMedia('(max-width: 640px)').matches
+                              if (isMobile) {
+                                setSelectedDate(date)
+                              } else {
+                                onPostEdit(post.id)
+                              }
                             }}
                             onMouseDown={(e) => {
                               e.stopPropagation()
@@ -439,7 +468,7 @@ export function SimpleDragCalendar({
                           e.stopPropagation()
                           setSelectedDate(date)
                         }}
-                        className="w-full text-[10px] text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded text-center font-medium mt-1 py-0.5 transition-colors"
+                        className="w-full text-[8px] sm:text-[10px] text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded text-center font-medium mt-0.5 sm:mt-1 py-0.5 transition-colors"
                       >
                         +{posts.length - 1} more
                       </button>
@@ -513,6 +542,8 @@ export function SimpleDragCalendar({
                   const primaryPlatform = post.platforms[0]
                   const platformIcon = platformIcons[primaryPlatform] || '📝'
 
+                  const isVideo = isVideoUrl(mediaUrl)
+
                   return (
                     <div
                       key={post.id}
@@ -520,16 +551,88 @@ export function SimpleDragCalendar({
                       onDragStart={(e) => handleDragStart(e, post.id)}
                       onDragEnd={handleDragEnd}
                       className={cn(
-                        "group p-4 rounded-lg text-white cursor-move transition-all hover:shadow-lg",
+                        "group p-2 sm:p-4 rounded-lg text-white cursor-move transition-all hover:shadow-lg",
                         getPostColor(post),
                         draggedPostId === post.id ? "opacity-50" : "",
                         isPostSelected(post.id) ? "ring-2 ring-blue-400 ring-offset-2" : ""
                       )}
                     >
-                      <div className="flex items-start gap-4">
-                        {/* Checkbox */}
+                      <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+                        {/* Mobile: Checkbox and Media row */}
+                        <div className="flex sm:hidden items-center gap-3 w-full">
+                          {/* Checkbox */}
+                          {onPostSelect && (
+                            <div className="flex-shrink-0">
+                              <input
+                                type="checkbox"
+                                checked={isPostSelected(post.id)}
+                                onChange={(e) => {
+                                  e.stopPropagation()
+                                  togglePostSelection(post.id)
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="h-4 w-4 rounded border-white/50 cursor-pointer"
+                              />
+                            </div>
+                          )}
+
+                          {/* Media thumbnail or platform icon */}
+                          <div className="flex-shrink-0">
+                            {mediaUrl && !isVideo && (
+                              <img
+                                src={mediaUrl}
+                                alt="Post media"
+                                className="w-16 h-16 object-cover rounded-lg border-2 border-white/20"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement
+                                  target.style.display = 'none'
+                                  const fallback = target.nextElementSibling
+                                  if (fallback) {
+                                    (fallback as HTMLElement).style.display = 'flex'
+                                  }
+                                }}
+                              />
+                            )}
+                            {mediaUrl && isVideo && (
+                              <video
+                                src={mediaUrl}
+                                className="w-16 h-16 object-cover rounded-lg border-2 border-white/20"
+                                muted
+                                playsInline
+                                onError={(e) => {
+                                  const target = e.target as HTMLVideoElement
+                                  target.style.display = 'none'
+                                  const fallback = target.nextElementSibling
+                                  if (fallback) {
+                                    (fallback as HTMLElement).style.display = 'flex'
+                                  }
+                                }}
+                              />
+                            )}
+                            <div
+                              className={cn(
+                                "w-16 h-16 rounded-lg flex items-center justify-center text-2xl bg-white/10 border-2 border-white/20",
+                                mediaUrl ? "hidden" : ""
+                              )}
+                            >
+                              {platformIcon}
+                            </div>
+                          </div>
+
+                          {/* Time on mobile */}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4" />
+                              <span className="font-medium text-sm">
+                                {formatTime(post.scheduled_for)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Desktop: Checkbox */}
                         {onPostSelect && (
-                          <div className="flex-shrink-0 pt-1">
+                          <div className="hidden sm:block flex-shrink-0 pt-1">
                             <input
                               type="checkbox"
                               checked={isPostSelected(post.id)}
@@ -543,9 +646,9 @@ export function SimpleDragCalendar({
                           </div>
                         )}
 
-                        {/* Media thumbnail or platform icon */}
-                        <div className="flex-shrink-0">
-                          {mediaUrl ? (
+                        {/* Desktop: Media thumbnail or platform icon */}
+                        <div className="hidden sm:block flex-shrink-0">
+                          {mediaUrl && !isVideo && (
                             <img
                               src={mediaUrl}
                               alt="Post media"
@@ -559,7 +662,23 @@ export function SimpleDragCalendar({
                                 }
                               }}
                             />
-                          ) : null}
+                          )}
+                          {mediaUrl && isVideo && (
+                            <video
+                              src={mediaUrl}
+                              className="w-16 h-16 object-cover rounded-lg border-2 border-white/20"
+                              muted
+                              playsInline
+                              onError={(e) => {
+                                const target = e.target as HTMLVideoElement
+                                target.style.display = 'none'
+                                const fallback = target.nextElementSibling
+                                if (fallback) {
+                                  (fallback as HTMLElement).style.display = 'flex'
+                                }
+                              }}
+                            />
+                          )}
                           <div
                             className={cn(
                               "w-16 h-16 rounded-lg flex items-center justify-center text-2xl bg-white/10 border-2 border-white/20",
@@ -571,20 +690,23 @@ export function SimpleDragCalendar({
                         </div>
 
                         {/* Content */}
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
+                        <div className="flex-1 w-full">
+                          <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
+                            <div className="flex-1 w-full">
+                              {/* Desktop: Time */}
+                              <div className="hidden sm:flex items-center gap-2 mb-2">
                                 <Clock className="h-4 w-4" />
                                 <span className="font-medium">
                                   {formatTime(post.scheduled_for)}
                                 </span>
                               </div>
-                              <div className="text-sm opacity-90 mb-2">
+                              {/* Post content */}
+                              <div className="text-xs sm:text-sm opacity-90 mb-2">
                                 {post.platforms?.includes('pinterest') && post.pinterest_title
                                   ? post.pinterest_title
                                   : stripHtml(post.content).slice(0, 150) + '...'}
                               </div>
+                              {/* Platform badges */}
                               <div className="flex flex-wrap gap-1">
                                 {post.platforms.map(platform => (
                                   <span
@@ -596,23 +718,25 @@ export function SimpleDragCalendar({
                                 ))}
                               </div>
                             </div>
-                            <div className="flex gap-2 ml-4">
+                            {/* Action buttons - stack vertically on mobile, side by side on desktop */}
+                            <div className="flex sm:flex-col gap-2 w-full sm:w-auto sm:ml-4">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="hover:bg-white/20 text-white"
+                                className="flex-1 sm:flex-initial hover:bg-white/20 text-white"
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   setSelectedDate(null)
                                   onPostEdit(post.id)
                                 }}
                               >
-                                <Edit className="h-4 w-4" />
+                                <Edit className="h-4 w-4 sm:mr-0 mr-2" />
+                                <span className="sm:hidden">Edit</span>
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="hover:bg-white/20 text-white"
+                                className="flex-1 sm:flex-initial hover:bg-white/20 text-white"
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   if (confirm('Are you sure you want to delete this post?')) {
@@ -624,7 +748,8 @@ export function SimpleDragCalendar({
                                   }
                                 }}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4 sm:mr-0 mr-2" />
+                                <span className="sm:hidden">Delete</span>
                               </Button>
                             </div>
                           </div>

@@ -305,7 +305,7 @@ export function ThreadComposer({
         </Card>
       ))}
 
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <Button
           variant="outline"
           onClick={addPost}

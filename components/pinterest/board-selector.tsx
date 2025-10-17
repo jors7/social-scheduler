@@ -71,13 +71,7 @@ export function PinterestBoardSelector({
   }
 
   return (
-    <div className="mt-4 p-4 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl border border-red-200">
-      <Label className="text-sm font-medium text-red-800 mb-2 block">
-        Pinterest Settings
-      </Label>
-      
-      {/* Board Selection */}
-      <div className="space-y-3">
+    <div className="space-y-3">
         <div>
           <Label htmlFor="pinterest-board" className="text-xs text-gray-600">
             Select Board <span className="text-red-500">*</span>
@@ -161,9 +155,8 @@ export function PinterestBoardSelector({
           </p>
         </div>
 
-        <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
-          ⚠️ Pinterest requires at least one image to create a pin
-        </div>
+      <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
+        ⚠️ Pinterest requires at least one image to create a pin
       </div>
     </div>
   )
