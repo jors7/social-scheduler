@@ -642,7 +642,7 @@ export default function AnalyticsPage() {
       <SubscriptionGate feature="analytics">
         <div className="space-y-8">
           <Card variant="glass" className="p-4 sm:p-6">
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               {/* Date Selector - Full width on mobile */}
               <div className="flex items-center gap-2">
                 <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg flex-shrink-0">
