@@ -375,7 +375,7 @@ export default function PostsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
         <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
             <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white">
@@ -385,8 +385,8 @@ export default function PostsPage() {
           </h1>
           <p className="text-gray-600 mt-2 text-lg">Manage all your social media content in one place</p>
         </div>
-        <Button 
-          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg"
+        <Button
+          className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg"
           onClick={() => router.push('/dashboard/create/new')}
         >
           <Plus className="mr-2 h-5 w-5" />
