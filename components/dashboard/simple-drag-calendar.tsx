@@ -302,8 +302,7 @@ export function SimpleDragCalendar({
     setTouchStartPos({ x: touch.clientX, y: touch.clientY })
     setTouchedPost(post)
     setDraggedPostId(postId)
-    // Prevent default to avoid scrolling while dragging
-    e.preventDefault()
+    // Don't prevent default here - let the click event fire for taps
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
