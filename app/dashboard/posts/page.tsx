@@ -20,6 +20,7 @@ import {
 import dynamicImport from 'next/dynamic'
 import { toast } from 'sonner'
 import { PostCard } from '@/components/post-card'
+import { Pagination } from '@/components/ui/pagination'
 
 const SubscriptionGate = dynamicImport(
   () => import('@/components/subscription/subscription-gate-wrapper').then(mod => mod.SubscriptionGateWrapper),
@@ -74,6 +75,8 @@ export default function PostsPage() {
   const [allPosts, setAllPosts] = useState<UnifiedPost[]>([])
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState('recent')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(12)
 
   const fetchAllPosts = async () => {
     try {
@@ -203,6 +206,11 @@ export default function PostsPage() {
     return 0
   })
 
+  // Paginate the sorted posts
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedPosts = sortedPosts.slice(startIndex, endIndex)
+
   const togglePostSelection = (postId: string) => {
     setSelectedPosts(prev =>
       prev.includes(postId)
@@ -212,10 +220,10 @@ export default function PostsPage() {
   }
 
   const toggleAllPosts = () => {
-    if (selectedPosts.length === sortedPosts.length) {
+    if (selectedPosts.length === paginatedPosts.length) {
       setSelectedPosts([])
     } else {
-      setSelectedPosts(sortedPosts.map(post => post.id))
+      setSelectedPosts(paginatedPosts.map(post => post.id))
     }
   }
 
@@ -449,7 +457,7 @@ export default function PostsPage() {
             />
             {/* Add post count */}
             <div className="flex items-center text-sm text-gray-600">
-              {sortedPosts.length} post{sortedPosts.length !== 1 ? 's' : ''}
+              {filteredPosts.length} post{filteredPosts.length !== 1 ? 's' : ''}
             </div>
           </div>
 
@@ -508,16 +516,16 @@ export default function PostsPage() {
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  checked={selectedPosts.length === sortedPosts.length && sortedPosts.length > 0}
+                  checked={selectedPosts.length === paginatedPosts.length && paginatedPosts.length > 0}
                   onChange={toggleAllPosts}
                   className="rounded border-gray-300"
                 />
-                <span className="text-sm text-gray-600">Select all ({sortedPosts.length} posts)</span>
+                <span className="text-sm text-gray-600">Select all ({paginatedPosts.length} posts)</span>
               </div>
               
               {/* Grid of posts */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sortedPosts.map(post => (
+                {paginatedPosts.map(post => (
                   <PostCard
                     key={post.id}
                     post={post}
@@ -534,6 +542,18 @@ export default function PostsPage() {
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Pagination */}
+          {!loading && filteredPosts.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredPosts.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+              itemLabel="posts"
+            />
           )}
         </div>
       </SubscriptionGate>
