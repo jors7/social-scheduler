@@ -70,8 +70,9 @@ export async function GET(request: NextRequest) {
         // Try to get media URL from platform APIs
         // Prioritize database value if it exists, BUT for Pinterest always use media_urls
         let platformMediaUrl = post.platform_media_url || null;
-        let pinterestTitle = null;
-        let pinterestDescription = null;
+        // Preserve existing Pinterest title/description from database, only override if API returns new data
+        let pinterestTitle = post.pinterest_title || null;
+        let pinterestDescription = post.pinterest_description || null;
 
         // Check if this is a Pinterest post - if so, use media_urls from database instead
         const isPinterestPost = post.post_results && Array.isArray(post.post_results) &&
@@ -179,11 +180,11 @@ export async function GET(request: NextRequest) {
                         if (pinterestResponse.ok) {
                           const pinData = await pinterestResponse.json();
 
-                          // Extract title and description only
-                          pinterestTitle = pinData.title || '';
-                          pinterestDescription = pinData.description || '';
+                          // Extract title and description only (only override if API returns non-empty values)
+                          if (pinData.title) pinterestTitle = pinData.title;
+                          if (pinData.description) pinterestDescription = pinData.description;
 
-                          console.log('Pinterest title:', pinterestTitle);
+                          console.log('Pinterest title from API:', pinterestTitle);
                         }
                       } catch (metadataError) {
                         console.error('Error fetching Pinterest metadata:', metadataError);
