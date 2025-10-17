@@ -78,6 +78,8 @@ export function SimpleDragCalendar({
   const [draggedPostId, setDraggedPostId] = useState<string | null>(null)
   const [dragOverDate, setDragOverDate] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null)
+  const [touchedPost, setTouchedPost] = useState<ScheduledPost | null>(null)
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const months = [
@@ -294,6 +296,105 @@ export function SimpleDragCalendar({
 
   const isPostSelected = (postId: string) => selectedPosts.includes(postId)
 
+  // Touch event handlers for mobile drag-and-drop
+  const handleTouchStart = (e: React.TouchEvent, postId: string, post: ScheduledPost) => {
+    const touch = e.touches[0]
+    setTouchStartPos({ x: touch.clientX, y: touch.clientY })
+    setTouchedPost(post)
+    setDraggedPostId(postId)
+    // Prevent default to avoid scrolling while dragging
+    e.preventDefault()
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchedPost || !touchStartPos) return
+
+    const touch = e.touches[0]
+    const deltaX = Math.abs(touch.clientX - touchStartPos.x)
+    const deltaY = Math.abs(touch.clientY - touchStartPos.y)
+
+    // Only trigger drag if user moved more than 10px (prevents accidental drags)
+    if (deltaX > 10 || deltaY > 10) {
+      setIsDragging(true)
+
+      // Find which calendar day is under the finger
+      const element = document.elementFromPoint(touch.clientX, touch.clientY)
+      if (element) {
+        // Find the closest calendar day cell
+        const dayCell = element.closest('[data-date]')
+        if (dayCell) {
+          const dateString = dayCell.getAttribute('data-date')
+          if (dateString) {
+            setDragOverDate(dateString)
+          }
+        }
+      }
+
+      // Prevent scrolling while dragging
+      e.preventDefault()
+    }
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchedPost) {
+      return
+    }
+
+    if (!isDragging) {
+      // If not dragging, it's a tap - reset states and allow click event
+      setTouchStartPos(null)
+      setTouchedPost(null)
+      setDraggedPostId(null)
+      setDragOverDate(null)
+      return
+    }
+
+    // We were dragging - prevent the click event from firing
+    e.preventDefault()
+
+    const touch = e.changedTouches[0]
+    const element = document.elementFromPoint(touch.clientX, touch.clientY)
+
+    if (element) {
+      // Find the closest calendar day cell
+      const dayCell = element.closest('[data-date]')
+      if (dayCell) {
+        const dateString = dayCell.getAttribute('data-date')
+        if (dateString) {
+          // Parse the date string and reschedule the post
+          const targetDate = new Date(dateString)
+          const originalDateTime = new Date(touchedPost.scheduled_for)
+          const newDateTime = new Date(targetDate)
+
+          // Keep the same time, just change the date
+          newDateTime.setHours(originalDateTime.getHours())
+          newDateTime.setMinutes(originalDateTime.getMinutes())
+          newDateTime.setSeconds(0)
+          newDateTime.setMilliseconds(0)
+
+          // Don't reschedule if dropping on the same date
+          if (originalDateTime.toDateString() !== newDateTime.toDateString()) {
+            onPostUpdate(touchedPost.id, newDateTime)
+              .then(() => {
+                toast.success('Post rescheduled successfully')
+              })
+              .catch((error: any) => {
+                console.error('Reschedule error:', error)
+                toast.error(error.message || 'Failed to reschedule post')
+              })
+          }
+        }
+      }
+    }
+
+    // Reset all touch states
+    setTouchStartPos(null)
+    setTouchedPost(null)
+    setDraggedPostId(null)
+    setDragOverDate(null)
+    setIsDragging(false)
+  }
+
   return (
     <div className="space-y-6">
       {/* Calendar Header */}
@@ -358,6 +459,7 @@ export function SimpleDragCalendar({
               return (
                 <div
                   key={dateString}
+                  data-date={dateString}
                   style={{ height: '140px' }}
                   className={cn(
                     "relative overflow-hidden bg-white p-1 sm:p-2 border-r border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors",
@@ -394,6 +496,9 @@ export function SimpleDragCalendar({
                           draggable
                           onDragStart={(e) => handleDragStart(e, post.id)}
                           onDragEnd={handleDragEnd}
+                          onTouchStart={(e) => handleTouchStart(e, post.id, post)}
+                          onTouchMove={handleTouchMove}
+                          onTouchEnd={handleTouchEnd}
                           onClick={(e) => {
                             // On mobile, clicking the post card opens modal. On desktop, edits directly.
                             const isMobile = window.matchMedia('(max-width: 640px)').matches
@@ -550,6 +655,9 @@ export function SimpleDragCalendar({
                       draggable
                       onDragStart={(e) => handleDragStart(e, post.id)}
                       onDragEnd={handleDragEnd}
+                      onTouchStart={(e) => handleTouchStart(e, post.id, post)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
                       className={cn(
                         "group p-2 sm:p-4 rounded-lg text-white cursor-move transition-all hover:shadow-lg",
                         getPostColor(post),
