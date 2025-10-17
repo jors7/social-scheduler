@@ -61,6 +61,7 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
   const [postsLimit, setPostsLimit] = useState(5)
   const [hasMorePosts, setHasMorePosts] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [historicalMetrics, setHistoricalMetrics] = useState<any>(null)
 
   const fetchThreadsInsights = async (accountId?: string, forceRefresh: boolean = false) => {
     try {
@@ -164,7 +165,7 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
           ...(selectedAccountId && { accountId: selectedAccountId })
         })
         const insightsResponse = await fetch(`/api/threads/insights?${insightsQueryParams}`)
-        
+
         if (insightsResponse.ok) {
           const data = await insightsResponse.json()
           setUserInsights(data.insights)
@@ -172,7 +173,30 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
       } catch (error) {
         console.log('Could not fetch Threads user insights (permission may be missing)')
       }
-      
+
+      // Fetch historical snapshot for comparison
+      if (selectedAccountId) {
+        try {
+          const daysAgo = selectedPeriod === 'day' ? 1 : selectedPeriod === 'week' ? 7 : 28
+          const snapshotQueryParams = new URLSearchParams({
+            platform: 'threads',
+            accountId: selectedAccountId,
+            daysAgo: daysAgo.toString()
+          })
+          const snapshotResponse = await fetch(`/api/analytics/snapshot?${snapshotQueryParams}`)
+
+          if (snapshotResponse.ok) {
+            const snapshotData = await snapshotResponse.json()
+            setHistoricalMetrics(snapshotData.snapshot?.metrics || null)
+          } else {
+            setHistoricalMetrics(null)
+          }
+        } catch (error) {
+          console.log('No historical data available yet')
+          setHistoricalMetrics(null)
+        }
+      }
+
     } catch (error) {
       console.error('Error fetching Threads insights:', error)
       toast.error('Failed to load Threads insights')
@@ -242,7 +266,7 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
           'Content-Type': 'application/json'
         }
       })
-      
+
       if (updateResponse.ok) {
         const result = await updateResponse.json()
         console.log('Updated Threads metrics:', result)
@@ -253,9 +277,37 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
     } catch (error) {
       console.error('Error updating Threads metrics:', error)
     }
-    
+
     // If no token refresh happened, just fetch insights normally
     await fetchThreadsInsights()
+
+    // Create a snapshot of current metrics after refresh
+    if (selectedAccount && recentPosts.length > 0) {
+      try {
+        const currentMetrics = recentPosts.reduce((acc, post) => ({
+          views: acc.views + (post.metrics?.views || 0),
+          likes: acc.likes + (post.metrics?.likes || 0),
+          replies: acc.replies + (post.metrics?.replies || 0),
+          reposts: acc.reposts + (post.metrics?.reposts || 0),
+          quotes: acc.quotes + (post.metrics?.quotes || 0),
+          shares: acc.shares + (post.metrics?.shares || 0)
+        }), { views: 0, likes: 0, replies: 0, reposts: 0, quotes: 0, shares: 0 })
+
+        await fetch('/api/analytics/snapshot', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            platform: 'threads',
+            accountId: selectedAccount.id,
+            metrics: currentMetrics
+          })
+        })
+      } catch (error) {
+        console.error('Error creating snapshot:', error)
+      }
+    }
   }
 
   if (!hasThreadsAccount) {
@@ -430,7 +482,7 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
               <p className="text-2xl font-bold">
                 {formatNumber(totalMetrics.views)}
               </p>
-              {getChangeIndicator(totalMetrics.views, Math.floor(totalMetrics.views * 0.9))}
+              {getChangeIndicator(totalMetrics.views, historicalMetrics?.views || 0)}
             </div>
 
             {/* Likes */}
@@ -442,7 +494,7 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
               <p className="text-2xl font-bold">
                 {formatNumber(totalMetrics.likes)}
               </p>
-              {getChangeIndicator(totalMetrics.likes, Math.floor(totalMetrics.likes * 0.85))}
+              {getChangeIndicator(totalMetrics.likes, historicalMetrics?.likes || 0)}
             </div>
 
             {/* Replies */}
@@ -454,7 +506,7 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
               <p className="text-2xl font-bold">
                 {formatNumber(totalMetrics.replies)}
               </p>
-              {getChangeIndicator(totalMetrics.replies, Math.floor(totalMetrics.replies * 0.8))}
+              {getChangeIndicator(totalMetrics.replies, historicalMetrics?.replies || 0)}
             </div>
 
             {/* Reposts */}
@@ -466,7 +518,7 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
               <p className="text-2xl font-bold">
                 {formatNumber(totalMetrics.reposts)}
               </p>
-              {getChangeIndicator(totalMetrics.reposts, Math.floor(totalMetrics.reposts * 0.75))}
+              {getChangeIndicator(totalMetrics.reposts, historicalMetrics?.reposts || 0)}
             </div>
 
             {/* Quotes */}
@@ -478,7 +530,7 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
               <p className="text-2xl font-bold">
                 {formatNumber(totalMetrics.quotes)}
               </p>
-              {getChangeIndicator(totalMetrics.quotes, Math.floor(totalMetrics.quotes * 0.7))}
+              {getChangeIndicator(totalMetrics.quotes, historicalMetrics?.quotes || 0)}
             </div>
 
             {/* Engagement */}
@@ -492,7 +544,7 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
               </p>
               {getChangeIndicator(
                 totalMetrics.likes + totalMetrics.replies + totalMetrics.reposts + totalMetrics.quotes,
-                Math.floor((totalMetrics.likes + totalMetrics.replies + totalMetrics.reposts + totalMetrics.quotes) * 0.8)
+                (historicalMetrics?.likes || 0) + (historicalMetrics?.replies || 0) + (historicalMetrics?.reposts || 0) + (historicalMetrics?.quotes || 0)
               )}
             </div>
           </div>

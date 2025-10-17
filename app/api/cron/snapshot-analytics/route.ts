@@ -26,111 +26,172 @@ async function fetchPlatformAnalytics(userId: string, platform: string, days: nu
   }
 }
 
-// Calculate aggregate analytics from all platforms
-function calculateAggregateAnalytics(platformData: Record<string, any>) {
-  let totalPosts = 0;
-  let totalEngagement = 0;
-  let totalReach = 0;
-  let totalImpressions = 0;
 
-  const platformStats: Record<string, any> = {};
+// Process snapshots for all accounts of a single user
+async function processUserSnapshot(userId: string, supabase: any) {
+  try {
+    console.log(`Processing snapshots for user: ${userId}`);
 
-  for (const [platform, data] of Object.entries(platformData)) {
-    if (!data) continue;
+    // Get all active social accounts for this user
+    const { data: accounts, error: accountsError } = await supabase
+      .from('social_accounts')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true);
 
-    const stats = {
-      posts: data.posts?.length || 0,
-      engagement: data.totalEngagement || 0,
-      reach: data.totalReach || 0,
-      impressions: data.totalImpressions || 0
-    };
+    if (accountsError || !accounts || accounts.length === 0) {
+      console.log(`No active accounts for user ${userId}`);
+      return false;
+    }
 
-    platformStats[platform] = stats;
+    const today = new Date().toISOString().split('T')[0];
+    let successCount = 0;
 
-    totalPosts += stats.posts;
-    totalEngagement += stats.engagement;
-    totalReach += stats.reach;
-    totalImpressions += stats.impressions;
+    // Process each account separately
+    for (const account of accounts) {
+      try {
+        let metrics: any = null;
+
+        // Fetch current metrics based on platform
+        switch (account.platform) {
+          case 'facebook':
+            metrics = await fetchFacebookMetrics(userId, account);
+            break;
+          case 'instagram':
+            metrics = await fetchInstagramMetrics(userId, account);
+            break;
+          case 'threads':
+            metrics = await fetchThreadsMetrics(userId, account);
+            break;
+          case 'tiktok':
+            metrics = await fetchTikTokMetrics(userId, account);
+            break;
+          case 'pinterest':
+            metrics = await fetchPinterestMetrics(userId, account);
+            break;
+          case 'bluesky':
+            metrics = await fetchBlueskyMetrics(userId, account);
+            break;
+          default:
+            console.log(`Unsupported platform: ${account.platform}`);
+            continue;
+        }
+
+        if (!metrics) {
+          console.log(`No metrics for ${account.platform} account ${account.id}`);
+          continue;
+        }
+
+        // Create or update snapshot for this account
+        const { error } = await supabase
+          .from('analytics_snapshots')
+          .upsert({
+            user_id: userId,
+            platform: account.platform,
+            account_id: account.id,
+            snapshot_date: today,
+            metrics: metrics
+          }, {
+            onConflict: 'user_id,platform,account_id,snapshot_date'
+          });
+
+        if (error) {
+          console.error(`Error saving snapshot for ${account.platform} account ${account.id}:`, error);
+        } else {
+          successCount++;
+          console.log(`✓ Saved snapshot for ${account.platform} account ${account.username || account.id}`);
+        }
+      } catch (error) {
+        console.error(`Error processing ${account.platform} account ${account.id}:`, error);
+      }
+    }
+
+    console.log(`Processed ${successCount}/${accounts.length} accounts for user ${userId}`);
+    return successCount > 0;
+  } catch (error) {
+    console.error(`Error processing snapshots for user ${userId}:`, error);
+    return false;
   }
+}
 
-  // Calculate engagement rate
-  const engagementRate = totalImpressions > 0
-    ? (totalEngagement / totalImpressions) * 100
-    : 0;
+// Platform-specific metric fetchers
+async function fetchFacebookMetrics(userId: string, account: any): Promise<any | null> {
+  const data = await fetchPlatformAnalytics(userId, 'facebook');
+  if (!data?.metrics) return null;
 
   return {
-    total_posts: totalPosts,
-    total_engagement: totalEngagement,
-    total_reach: totalReach,
-    total_impressions: totalImpressions,
-    engagement_rate: parseFloat(engagementRate.toFixed(2)),
-    platform_stats: platformStats
+    impressions: data.metrics.totalImpressions || 0,
+    engagement: data.metrics.totalEngagement || 0,
+    reach: data.metrics.totalReach || 0,
+    page_views: 0, // Not available in current API
+    followers: 0 // Not available in current API
   };
 }
 
-// Process snapshots for a single user
-async function processUserSnapshot(userId: string, supabase: any) {
-  try {
-    console.log(`Processing snapshot for user: ${userId}`);
+async function fetchInstagramMetrics(userId: string, account: any): Promise<any | null> {
+  const data = await fetchPlatformAnalytics(userId, 'instagram');
+  if (!data?.metrics?.posts) return null;
 
-    // Fetch analytics from all platforms
-    const platforms = ['facebook', 'instagram', 'threads', 'bluesky', 'pinterest', 'tiktok'];
-    const platformData: Record<string, any> = {};
+  const posts = data.metrics.posts;
+  return posts.reduce((acc: any, post: any) => ({
+    reach: acc.reach + (post.metrics?.reach || 0),
+    likes: acc.likes + (post.metrics?.likes || 0),
+    comments: acc.comments + (post.metrics?.comments || 0),
+    saves: acc.saves + (post.metrics?.saves || 0),
+    shares: acc.shares + (post.metrics?.shares || 0)
+  }), { reach: 0, likes: 0, comments: 0, saves: 0, shares: 0 });
+}
 
-    for (const platform of platforms) {
-      platformData[platform] = await fetchPlatformAnalytics(userId, platform);
-    }
+async function fetchThreadsMetrics(userId: string, account: any): Promise<any | null> {
+  const data = await fetchPlatformAnalytics(userId, 'threads');
+  if (!data?.metrics?.posts) return null;
 
-    // Calculate aggregate metrics
-    const metrics = calculateAggregateAnalytics(platformData);
+  const posts = data.metrics.posts;
+  return posts.reduce((acc: any, post: any) => ({
+    views: acc.views + (post.metrics?.views || 0),
+    likes: acc.likes + (post.metrics?.likes || 0),
+    replies: acc.replies + (post.metrics?.replies || 0),
+    reposts: acc.reposts + (post.metrics?.reposts || 0),
+    quotes: acc.quotes + (post.metrics?.quotes || 0)
+  }), { views: 0, likes: 0, replies: 0, reposts: 0, quotes: 0 });
+}
 
-    // Check if snapshot already exists for today
-    const { data: existingSnapshot } = await supabase
-      .from('analytics_snapshots')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('snapshot_date', new Date().toISOString().split('T')[0])
-      .single();
+async function fetchTikTokMetrics(userId: string, account: any): Promise<any | null> {
+  const data = await fetchPlatformAnalytics(userId, 'tiktok');
+  if (!data?.metrics) return null;
 
-    if (existingSnapshot) {
-      // Update existing snapshot
-      const { error } = await supabase
-        .from('analytics_snapshots')
-        .update({
-          ...metrics,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existingSnapshot.id);
+  return {
+    follower_count: data.metrics.follower_count || 0,
+    following_count: data.metrics.following_count || 0,
+    likes_count: data.metrics.likes_count || 0,
+    video_count: data.metrics.video_count || 0
+  };
+}
 
-      if (error) {
-        console.error(`Error updating snapshot for user ${userId}:`, error);
-        return false;
-      }
+async function fetchPinterestMetrics(userId: string, account: any): Promise<any | null> {
+  const data = await fetchPlatformAnalytics(userId, 'pinterest');
+  if (!data?.metrics?.posts) return null;
 
-      console.log(`Updated snapshot for user ${userId}`);
-    } else {
-      // Create new snapshot
-      const { error } = await supabase
-        .from('analytics_snapshots')
-        .insert({
-          user_id: userId,
-          snapshot_date: new Date().toISOString().split('T')[0],
-          ...metrics
-        });
+  const posts = data.metrics.posts;
+  return posts.reduce((acc: any, pin: any) => ({
+    saves: acc.saves + (pin.saves || 0),
+    pin_clicks: acc.pin_clicks + (pin.pin_clicks || 0),
+    impressions: acc.impressions + (pin.impressions || 0),
+    outbound_clicks: acc.outbound_clicks + (pin.outbound_clicks || 0)
+  }), { saves: 0, pin_clicks: 0, impressions: 0, outbound_clicks: 0 });
+}
 
-      if (error) {
-        console.error(`Error creating snapshot for user ${userId}:`, error);
-        return false;
-      }
+async function fetchBlueskyMetrics(userId: string, account: any): Promise<any | null> {
+  const data = await fetchPlatformAnalytics(userId, 'bluesky');
+  if (!data?.metrics?.posts) return null;
 
-      console.log(`Created snapshot for user ${userId}`);
-    }
-
-    return true;
-  } catch (error) {
-    console.error(`Error processing snapshot for user ${userId}:`, error);
-    return false;
-  }
+  const posts = data.metrics.posts;
+  return posts.reduce((acc: any, post: any) => ({
+    likes: acc.likes + (post.likes || 0),
+    reposts: acc.reposts + (post.reposts || 0),
+    replies: acc.replies + (post.replies || 0),
+    quotes: acc.quotes + (post.quotes || 0)
+  }), { likes: 0, reposts: 0, replies: 0, quotes: 0 });
 }
 
 // Shared processing logic for both GET and POST
