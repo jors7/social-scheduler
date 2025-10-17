@@ -492,40 +492,41 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3">
-            {/* Title Row */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
-                All Platforms Combined
-              </CardTitle>
-              <Badge variant="outline" className="self-start sm:self-auto text-xs font-normal bg-blue-50 text-blue-700 border-blue-200">
-                Last 30 days
-              </Badge>
-            </div>
-
-            {/* Description */}
-            <CardDescription className="text-xs sm:text-sm">
-              Aggregated metrics across all your connected platforms
-            </CardDescription>
-
-            {/* Actions Row - Stack on mobile */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 pt-2 sm:pt-0">
-              {lastUpdated && (
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <Clock className="h-3 w-3" />
-                  <span>
-                    Updated {new Date().getTime() - lastUpdated.getTime() < 60000
-                      ? 'just now'
-                      : `${Math.floor((new Date().getTime() - lastUpdated.getTime()) / 60000)} min ago`}
-                  </span>
+            {/* Title and Refresh Button Row */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div className="flex flex-col gap-2">
+                {/* Title and Badge */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                    <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
+                    All Platforms Combined
+                  </CardTitle>
+                  <Badge variant="outline" className="self-start sm:self-auto text-xs font-normal bg-blue-50 text-blue-700 border-blue-200">
+                    Last 30 days
+                  </Badge>
                 </div>
-              )}
+                <CardDescription className="text-xs sm:text-sm">
+                  Aggregated metrics across all your connected platforms
+                </CardDescription>
+                {lastUpdated && (
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <Clock className="h-3 w-3" />
+                    <span>
+                      Updated {new Date().getTime() - lastUpdated.getTime() < 60000
+                        ? 'just now'
+                        : `${Math.floor((new Date().getTime() - lastUpdated.getTime()) / 60000)} min ago`}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Refresh Button - Top right on desktop */}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => fetchAllPlatformMetrics(true)}
                 disabled={refreshing}
-                className="w-full sm:w-auto sm:ml-auto"
+                className="w-full sm:w-auto sm:flex-shrink-0"
               >
                 <RefreshCw className={cn("h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2", refreshing && "animate-spin")} />
                 Refresh
