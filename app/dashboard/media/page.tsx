@@ -359,7 +359,7 @@ export default function MediaLibraryPage() {
   if (!mounted) {
     return (
       <div className="space-y-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
               <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white">
@@ -369,8 +369,8 @@ export default function MediaLibraryPage() {
             </h1>
             <p className="text-gray-600 mt-2 text-lg">Manage your uploaded images and videos</p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" size="lg" disabled className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+          <div className="w-full sm:w-auto flex gap-3">
+            <Button variant="outline" size="lg" disabled className="w-full sm:w-auto hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
               <Upload className="mr-2 h-5 w-5" />
               Upload Files
             </Button>
@@ -385,7 +385,7 @@ export default function MediaLibraryPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
         <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
             <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white">
@@ -395,8 +395,8 @@ export default function MediaLibraryPage() {
           </h1>
           <p className="text-gray-600 mt-2 text-lg">Manage your uploaded images and videos</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" size="lg" onClick={() => document.getElementById('file-upload')?.click()} className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+        <div className="w-full sm:w-auto flex gap-3">
+          <Button variant="outline" size="lg" onClick={() => document.getElementById('file-upload')?.click()} className="w-full sm:w-auto hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
             <Upload className="mr-2 h-5 w-5" />
             Upload Files
           </Button>
@@ -518,21 +518,25 @@ export default function MediaLibraryPage() {
         {/* Controls */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search by name or tag..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+            <div className="flex flex-col gap-4">
+              {/* Search Bar - Full width */}
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search by name or tag..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              {/* Filter Buttons - Wrap on mobile */}
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant={filterType === 'all' ? 'default' : 'outline'}
                   onClick={() => setFilterType('all')}
                   size="sm"
+                  className="flex-1 sm:flex-initial"
                 >
                   All
                 </Button>
@@ -540,6 +544,7 @@ export default function MediaLibraryPage() {
                   variant={filterType === 'images' ? 'default' : 'outline'}
                   onClick={() => setFilterType('images')}
                   size="sm"
+                  className="flex-1 sm:flex-initial"
                 >
                   Images
                 </Button>
@@ -547,6 +552,7 @@ export default function MediaLibraryPage() {
                   variant={filterType === 'videos' ? 'default' : 'outline'}
                   onClick={() => setFilterType('videos')}
                   size="sm"
+                  className="flex-1 sm:flex-initial"
                 >
                   Videos
                 </Button>
@@ -554,30 +560,48 @@ export default function MediaLibraryPage() {
                   variant={filterType === 'unused' ? 'default' : 'outline'}
                   onClick={() => setFilterType('unused')}
                   size="sm"
+                  className="flex-1 sm:flex-initial"
                 >
                   Unused
                 </Button>
               </div>
-              <div className="flex gap-2">
+
+              {/* Action Buttons - Stack on mobile */}
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button
                   variant="outline"
-                  size="icon"
+                  size="sm"
                   onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                  className="w-full sm:w-auto"
                 >
-                  {viewMode === 'grid' ? <List className="h-4 w-4" /> : <Grid className="h-4 w-4" />}
+                  {viewMode === 'grid' ? (
+                    <>
+                      <List className="h-4 w-4 mr-2" />
+                      List View
+                    </>
+                  ) : (
+                    <>
+                      <Grid className="h-4 w-4 mr-2" />
+                      Grid View
+                    </>
+                  )}
                 </Button>
                 {selectedItems.size > 0 && (
                   <Button
                     variant="destructive"
+                    size="sm"
                     onClick={() => setShowDeleteDialog(true)}
+                    className="w-full sm:w-auto"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete ({selectedItems.size})
                   </Button>
                 )}
                 <Button
+                  size="sm"
                   onClick={() => document.getElementById('file-upload')?.click()}
                   disabled={uploading}
+                  className="w-full sm:w-auto"
                 >
                   {uploading ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
