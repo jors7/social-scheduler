@@ -217,7 +217,20 @@ export function EngagementChart({ analyticsData }: EngagementChartProps) {
             dataKey="likes"
             strokeWidth={2}
             stroke="#3b82f6"
-            dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+            dot={(props: any) => {
+              // Hide dot if value is 0 by making it invisible
+              const radius = props.payload.likes === 0 ? 0 : 4
+              return (
+                <circle
+                  cx={props.cx}
+                  cy={props.cy}
+                  r={radius}
+                  fill="#3b82f6"
+                  strokeWidth={2}
+                  stroke="#3b82f6"
+                />
+              )
+            }}
             activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
           />
           <Line
@@ -225,7 +238,20 @@ export function EngagementChart({ analyticsData }: EngagementChartProps) {
             dataKey="comments"
             strokeWidth={2}
             stroke="#10b981"
-            dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+            dot={(props: any) => {
+              // Hide dot if value is 0 by making it invisible
+              const radius = props.payload.comments === 0 ? 0 : 4
+              return (
+                <circle
+                  cx={props.cx}
+                  cy={props.cy}
+                  r={radius}
+                  fill="#10b981"
+                  strokeWidth={2}
+                  stroke="#10b981"
+                />
+              )
+            }}
             activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2 }}
           />
           <Line
@@ -233,7 +259,20 @@ export function EngagementChart({ analyticsData }: EngagementChartProps) {
             dataKey="shares"
             strokeWidth={2}
             stroke="#f59e0b"
-            dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }}
+            dot={(props: any) => {
+              // Hide dot if value is 0 by making it invisible
+              const radius = props.payload.shares === 0 ? 0 : 4
+              return (
+                <circle
+                  cx={props.cx}
+                  cy={props.cy}
+                  r={radius}
+                  fill="#f59e0b"
+                  strokeWidth={2}
+                  stroke="#f59e0b"
+                />
+              )
+            }}
             activeDot={{ r: 6, stroke: '#f59e0b', strokeWidth: 2 }}
           />
         </LineChart>
