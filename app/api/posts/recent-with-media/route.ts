@@ -56,15 +56,18 @@ export async function GET(request: NextRequest) {
         let platformMediaUrl = post.platform_media_url || null;
 
         // Check if this is a Pinterest post - if so, use media_urls from database instead
-        const isPinterestPost = post.post_results && Array.isArray(post.post_results) &&
-          post.post_results.some((result: any) => result.platform === 'pinterest');
+        const isPinterestPost = post.platforms && Array.isArray(post.platforms) && post.platforms.includes('pinterest');
 
         if (isPinterestPost && post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
           const firstMedia = post.media_urls[0];
           if (typeof firstMedia === 'string' && firstMedia.trim() !== '') {
             platformMediaUrl = firstMedia.trim();
-            console.log('Pinterest: Using database media_urls instead of platform_media_url for permanent URL');
+            console.log('Pinterest: Using database media_urls instead of platform_media_url for permanent URL:', platformMediaUrl);
+          } else {
+            console.log('Pinterest post but media_urls[0] is not a valid string:', firstMedia);
           }
+        } else if (isPinterestPost) {
+          console.log('Pinterest post but no valid media_urls:', { media_urls: post.media_urls, postId: post.id });
         }
 
         // Only fetch from APIs if not already in database
