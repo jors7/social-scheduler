@@ -709,39 +709,10 @@ export default function AnalyticsPage() {
           {/* Overview Cards */}
           <OverviewCards analyticsData={analyticsData} trendData={trendData} dateRange={dateRange} />
 
-          {/* First Grid - Engagement + Platform (on mobile: will be reordered) */}
-          <div className="flex flex-col gap-4 sm:gap-8 md:grid md:grid-cols-2">
-            {/* Engagement Chart - 2nd on mobile, 1st on desktop (left) */}
-            <Card variant="elevated" className="order-2 md:order-none col-span-1 overflow-hidden">
-              <CardHeader variant="gradient" className="px-4 py-3 sm:px-6 sm:py-4">
-                <CardTitle className="text-white text-base sm:text-xl">Engagement Over Time</CardTitle>
-                <CardDescription className="text-purple-100 text-xs sm:text-sm">
-                  Track likes, comments, and shares across all platforms
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="bg-gradient-to-b from-white to-gray-50 p-3 sm:p-6">
-                <EngagementChart analyticsData={analyticsData} />
-              </CardContent>
-            </Card>
-
-            {/* Platform Breakdown - 3rd on mobile, 2nd on desktop (right) */}
-            <Card variant="elevated" className="order-3 md:order-none col-span-1 overflow-hidden">
-              <CardHeader variant="gradient" className="px-4 py-3 sm:px-6 sm:py-4">
-                <CardTitle className="text-white text-base sm:text-xl">Platform Performance</CardTitle>
-                <CardDescription className="text-purple-100 text-xs sm:text-sm">
-                  Compare engagement rates by platform
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="bg-gradient-to-b from-white to-gray-50 p-3 sm:p-6">
-                <PlatformBreakdown analyticsData={analyticsData} />
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Second Grid - Reach + Top Posts (on mobile: will be reordered) */}
-          <div className="flex flex-col gap-4 sm:gap-8 md:grid md:grid-cols-3 md:items-stretch">
-            {/* Reach Chart - 1st on mobile, 1st on desktop (spans 2 cols) */}
-            <Card variant="glass" className="order-1 md:order-none col-span-1 md:col-span-2 overflow-hidden flex flex-col h-full">
+          {/* Analytics Cards Container - Flexbox on mobile for ordering, Grid on desktop for 2-row layout */}
+          <div className="flex flex-col gap-4 sm:gap-8 md:grid md:grid-cols-5 md:grid-rows-2">
+            {/* Reach Chart - 1st on mobile, desktop: row 2, col 1-2 (spans 2) */}
+            <Card variant="glass" className="order-1 md:order-none md:col-start-1 md:col-span-2 md:row-start-2 overflow-hidden flex flex-col h-full">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4">
                 <CardTitle variant="gradient" className="text-base sm:text-xl">Reach & Impressions</CardTitle>
                 <CardDescription className="text-gray-600 text-xs sm:text-sm">
@@ -753,8 +724,34 @@ export default function AnalyticsPage() {
               </CardContent>
             </Card>
 
-            {/* Top Posts - 4th on mobile, 2nd on desktop (1 col) */}
-            <Card variant="glass" className="order-4 md:order-none col-span-1 overflow-hidden flex flex-col h-full">
+            {/* Engagement Chart - 2nd on mobile, desktop: row 1, col 1-2 (spans 2) */}
+            <Card variant="elevated" className="order-2 md:order-none md:col-start-1 md:col-span-2 md:row-start-1 overflow-hidden">
+              <CardHeader variant="gradient" className="px-4 py-3 sm:px-6 sm:py-4">
+                <CardTitle className="text-white text-base sm:text-xl">Engagement Over Time</CardTitle>
+                <CardDescription className="text-purple-100 text-xs sm:text-sm">
+                  Track likes, comments, and shares across all platforms
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="bg-gradient-to-b from-white to-gray-50 p-3 sm:p-6">
+                <EngagementChart analyticsData={analyticsData} />
+              </CardContent>
+            </Card>
+
+            {/* Platform Breakdown - 3rd on mobile, desktop: row 1, col 3-5 (spans 3) */}
+            <Card variant="elevated" className="order-3 md:order-none md:col-start-3 md:col-span-3 md:row-start-1 overflow-hidden">
+              <CardHeader variant="gradient" className="px-4 py-3 sm:px-6 sm:py-4">
+                <CardTitle className="text-white text-base sm:text-xl">Platform Performance</CardTitle>
+                <CardDescription className="text-purple-100 text-xs sm:text-sm">
+                  Compare engagement rates by platform
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="bg-gradient-to-b from-white to-gray-50 p-3 sm:p-6">
+                <PlatformBreakdown analyticsData={analyticsData} />
+              </CardContent>
+            </Card>
+
+            {/* Top Posts - 4th on mobile, desktop: row 2, col 3-5 (spans 3) */}
+            <Card variant="glass" className="order-4 md:order-none md:col-start-3 md:col-span-3 md:row-start-2 overflow-hidden flex flex-col h-full">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4">
                 <CardTitle variant="gradient" className="text-base sm:text-xl">Top Performing Posts</CardTitle>
                 <CardDescription className="text-gray-600 text-xs sm:text-sm">
