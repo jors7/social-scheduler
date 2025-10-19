@@ -623,7 +623,7 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-3 min-w-max md:min-w-0">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-9 gap-3 min-w-max md:min-w-0">
               {platformMetrics.sort((a, b) => {
                 // Sort by posts first, then by platform name for consistency
                 if (b.posts !== a.posts) return b.posts - a.posts
