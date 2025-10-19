@@ -58,6 +58,17 @@ export async function GET(request: NextRequest) {
         // Check if this is a Pinterest post - if so, use media_urls from database instead
         const isPinterestPost = post.platforms && Array.isArray(post.platforms) && post.platforms.includes('pinterest');
 
+        // Debug logging for Pinterest posts
+        if (isPinterestPost) {
+          console.log('🔍 Pinterest post detected:', {
+            postId: post.id,
+            platforms: post.platforms,
+            media_urls: post.media_urls,
+            platform_media_url: post.platform_media_url,
+            post_results: post.post_results
+          });
+        }
+
         if (isPinterestPost && post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
           const firstMedia = post.media_urls[0];
           if (typeof firstMedia === 'string' && firstMedia.trim() !== '') {
