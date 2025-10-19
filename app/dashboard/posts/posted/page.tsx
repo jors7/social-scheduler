@@ -587,12 +587,15 @@ export default function PostedPostsPage() {
 
                 // Determine if this should be rendered as a video
                 // Use video tag only if it's actually a video file (not an image thumbnail)
-                const isVideo = !hasImageThumbnail && firstMediaUrl && (
-                  firstMediaUrl.includes('.mp4') ||
-                  firstMediaUrl.includes('.mov') ||
-                  firstMediaUrl.includes('.webm') ||
-                  firstMediaUrl.includes('video')
-                )
+                // Note: Pinterest video pins have image thumbnails, not video files
+                const isVideo = !hasImageThumbnail &&
+                  !post.platforms?.includes('pinterest') && // Don't treat Pinterest thumbnails as videos
+                  firstMediaUrl && (
+                    firstMediaUrl.includes('.mp4') ||
+                    firstMediaUrl.includes('.mov') ||
+                    firstMediaUrl.includes('.webm') ||
+                    firstMediaUrl.includes('video')
+                  )
                 
                 return (
                   <Card key={post.id} variant="elevated" className="overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">

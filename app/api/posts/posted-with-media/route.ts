@@ -78,11 +78,23 @@ export async function GET(request: NextRequest) {
         const isPinterestPost = post.post_results && Array.isArray(post.post_results) &&
           post.post_results.some((result: any) => result.platform === 'pinterest');
 
-        if (isPinterestPost && post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
+        // Check if this is an Instagram/Facebook story - stories expire after 24h
+        const isInstagramStory = post.instagram_as_story === true;
+        const isFacebookStory = post.facebook_as_story === true;
+
+        // For Pinterest, Instagram Stories, and Facebook Stories, use database media_urls (permanent Supabase URLs)
+        if ((isPinterestPost || isInstagramStory || isFacebookStory) &&
+            post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
           const firstMedia = post.media_urls[0];
           if (typeof firstMedia === 'string' && firstMedia.trim() !== '') {
             platformMediaUrl = firstMedia.trim();
-            console.log('Pinterest: Using database media_urls instead of platform_media_url for permanent URL');
+            if (isInstagramStory) {
+              console.log('Instagram Story: Using database media_urls for permanent URL (stories expire after 24h)');
+            } else if (isFacebookStory) {
+              console.log('Facebook Story: Using database media_urls for permanent URL (stories expire after 24h)');
+            } else {
+              console.log('Pinterest: Using database media_urls instead of platform_media_url for permanent URL');
+            }
           }
         }
 
