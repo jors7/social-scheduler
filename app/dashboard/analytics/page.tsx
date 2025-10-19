@@ -709,36 +709,10 @@ export default function AnalyticsPage() {
           {/* Overview Cards */}
           <OverviewCards analyticsData={analyticsData} trendData={trendData} dateRange={dateRange} />
 
-          {/* Analytics Cards - Mobile order: Reach, Engagement, Platform, Top Posts */}
-          <div className="flex flex-col gap-4 sm:gap-8 md:grid md:grid-cols-3">
-            {/* Reach Chart - 1st on mobile, 1st row left on desktop (spans 2 cols) */}
-            <Card variant="glass" className="order-1 md:order-1 md:col-span-2 overflow-hidden flex flex-col h-full">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4">
-                <CardTitle variant="gradient" className="text-base sm:text-xl">Reach & Impressions</CardTitle>
-                <CardDescription className="text-gray-600 text-xs sm:text-sm">
-                  Monitor your content reach and impressions
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="bg-white/50 backdrop-blur-sm p-3 sm:p-4 pb-4 flex-1 flex flex-col">
-                <ReachChart analyticsData={analyticsData} dateRange={dateRange} />
-              </CardContent>
-            </Card>
-
-            {/* Top Posts - 4th on mobile, 1st row right on desktop */}
-            <Card variant="glass" className="order-4 md:order-2 md:col-span-1 md:row-start-1 overflow-hidden flex flex-col h-full">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4">
-                <CardTitle variant="gradient" className="text-base sm:text-xl">Top Performing Posts</CardTitle>
-                <CardDescription className="text-gray-600 text-xs sm:text-sm">
-                  Your best content from the selected period
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="bg-white/50 backdrop-blur-sm p-3 sm:p-6 flex-1 flex flex-col">
-                <TopPosts analyticsData={analyticsData} />
-              </CardContent>
-            </Card>
-
-            {/* Engagement Chart - 2nd on mobile, 2nd row left on desktop */}
-            <Card variant="elevated" className="order-2 md:order-3 md:col-span-1 md:row-start-2 overflow-hidden">
+          {/* First Grid - Engagement + Platform (on mobile: will be reordered) */}
+          <div className="flex flex-col gap-4 sm:gap-8 md:grid md:grid-cols-2">
+            {/* Engagement Chart - 2nd on mobile, 1st on desktop (left) */}
+            <Card variant="elevated" className="order-2 md:order-none col-span-1 overflow-hidden">
               <CardHeader variant="gradient" className="px-4 py-3 sm:px-6 sm:py-4">
                 <CardTitle className="text-white text-base sm:text-xl">Engagement Over Time</CardTitle>
                 <CardDescription className="text-purple-100 text-xs sm:text-sm">
@@ -750,8 +724,8 @@ export default function AnalyticsPage() {
               </CardContent>
             </Card>
 
-            {/* Platform Breakdown - 3rd on mobile, 2nd row right on desktop */}
-            <Card variant="elevated" className="order-3 md:order-4 md:col-span-1 md:row-start-2 overflow-hidden">
+            {/* Platform Breakdown - 3rd on mobile, 2nd on desktop (right) */}
+            <Card variant="elevated" className="order-3 md:order-none col-span-1 overflow-hidden">
               <CardHeader variant="gradient" className="px-4 py-3 sm:px-6 sm:py-4">
                 <CardTitle className="text-white text-base sm:text-xl">Platform Performance</CardTitle>
                 <CardDescription className="text-purple-100 text-xs sm:text-sm">
@@ -760,6 +734,35 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent className="bg-gradient-to-b from-white to-gray-50 p-3 sm:p-6">
                 <PlatformBreakdown analyticsData={analyticsData} />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Second Grid - Reach + Top Posts (on mobile: will be reordered) */}
+          <div className="flex flex-col gap-4 sm:gap-8 md:grid md:grid-cols-3 md:items-stretch">
+            {/* Reach Chart - 1st on mobile, 1st on desktop (spans 2 cols) */}
+            <Card variant="glass" className="order-1 md:order-none col-span-1 md:col-span-2 overflow-hidden flex flex-col h-full">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4">
+                <CardTitle variant="gradient" className="text-base sm:text-xl">Reach & Impressions</CardTitle>
+                <CardDescription className="text-gray-600 text-xs sm:text-sm">
+                  Monitor your content reach and impressions
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="bg-white/50 backdrop-blur-sm p-3 sm:p-4 pb-4 flex-1 flex flex-col">
+                <ReachChart analyticsData={analyticsData} dateRange={dateRange} />
+              </CardContent>
+            </Card>
+
+            {/* Top Posts - 4th on mobile, 2nd on desktop (1 col) */}
+            <Card variant="glass" className="order-4 md:order-none col-span-1 overflow-hidden flex flex-col h-full">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4">
+                <CardTitle variant="gradient" className="text-base sm:text-xl">Top Performing Posts</CardTitle>
+                <CardDescription className="text-gray-600 text-xs sm:text-sm">
+                  Your best content from the selected period
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="bg-white/50 backdrop-blur-sm p-3 sm:p-6 flex-1 flex flex-col">
+                <TopPosts analyticsData={analyticsData} />
               </CardContent>
             </Card>
           </div>
