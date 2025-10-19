@@ -1318,11 +1318,14 @@ export default function DashboardPage() {
 
                   // Determine if this should be rendered as a video
                   // Use video tag only if it's actually a video file (not an image thumbnail)
-                  const isVideo = !hasImageThumbnail && firstMediaUrl && (
-                    firstMediaUrl.includes('.mp4') ||
-                    firstMediaUrl.includes('.mov') ||
-                    firstMediaUrl.includes('.webm')
-                  )
+                  // Note: Pinterest video pins have image thumbnails, not video files
+                  const isVideo = !hasImageThumbnail &&
+                    !post.platforms?.includes('pinterest') && // Don't treat Pinterest thumbnails as videos
+                    firstMediaUrl && (
+                      firstMediaUrl.includes('.mp4') ||
+                      firstMediaUrl.includes('.mov') ||
+                      firstMediaUrl.includes('.webm')
+                    )
 
 
                   // Get display content - use Pinterest-specific fields if available

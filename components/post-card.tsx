@@ -247,12 +247,15 @@ export function PostCard({
   const isOverdue = timeUntil === 'Overdue'
 
   // Check if the media URL is a video
-  const isVideo = imageUrl && (
-    imageUrl.includes('.mp4') ||
-    imageUrl.includes('.mov') ||
-    imageUrl.includes('.webm') ||
-    imageUrl.includes('.avi')
-  )
+  // Note: Pinterest video pins have image thumbnails, not video files
+  const isVideo = imageUrl &&
+    !post.platforms?.includes('pinterest') && // Don't treat Pinterest thumbnails as videos
+    (
+      imageUrl.includes('.mp4') ||
+      imageUrl.includes('.mov') ||
+      imageUrl.includes('.webm') ||
+      imageUrl.includes('.avi')
+    )
 
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow group h-full flex flex-col">

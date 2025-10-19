@@ -222,6 +222,16 @@ export async function GET(request: NextRequest) {
           }
         }
 
+        // Final fallback: if platformMediaUrl is still null, try using media_urls from database
+        // This handles expired Instagram/Facebook stories and other edge cases
+        if (!platformMediaUrl && post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
+          const firstMedia = post.media_urls[0]
+          if (typeof firstMedia === 'string' && firstMedia.trim() !== '') {
+            platformMediaUrl = firstMedia.trim()
+            console.log('Using fallback media_urls for post:', post.id)
+          }
+        }
+
         return {
           ...post,
           platform_media_url: platformMediaUrl // Add the platform media URL
