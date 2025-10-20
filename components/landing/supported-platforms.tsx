@@ -118,7 +118,7 @@ export function SupportedPlatforms() {
             >
               <div className="relative aspect-square rounded-lg bg-white shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 flex flex-col items-center justify-center p-2 gap-1.5">
                 {/* Platform Icon - No Background */}
-                <div className="w-12 h-12 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+                <div className="w-[37px] h-[37px] flex items-center justify-center transition-all duration-300 group-hover:scale-110">
                   {platform.icon}
                 </div>
                 
