@@ -12,6 +12,7 @@ import { TwitterInsights } from './twitter-insights'
 import { BlueskyInsights } from './bluesky-insights'
 import { PinterestInsights } from './pinterest-insights'
 import { TikTokInsights } from './tiktok-insights'
+import { YouTubeInsights } from './youtube-insights'
 import { AllPlatformsOverview } from './all-platforms-overview'
 import {
   LayoutGrid,
@@ -23,6 +24,7 @@ import {
   Cloud,
   Pin,
   Music,
+  Youtube,
   Lock
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -33,7 +35,7 @@ interface PlatformInsightsTabsProps {
   days?: number // Date range in days to pass to AllPlatformsOverview
 }
 
-type TabType = 'all' | 'instagram' | 'threads' | 'facebook' | 'linkedin' | 'twitter' | 'bluesky' | 'pinterest' | 'tiktok'
+type TabType = 'all' | 'instagram' | 'threads' | 'facebook' | 'linkedin' | 'twitter' | 'bluesky' | 'pinterest' | 'tiktok' | 'youtube'
 
 interface TabConfig {
   id: TabType
@@ -127,6 +129,13 @@ export function PlatformInsightsTabs({ className, connectedPlatforms = [], days 
       available: availablePlatforms.includes('tiktok')
     },
     {
+      id: 'youtube',
+      label: 'YouTube',
+      icon: <Youtube className="h-4 w-4" />,
+      color: 'bg-red-600',
+      available: availablePlatforms.includes('youtube')
+    },
+    {
       id: 'linkedin',
       label: 'LinkedIn',
       icon: <Linkedin className="h-4 w-4" />,
@@ -162,6 +171,8 @@ export function PlatformInsightsTabs({ className, connectedPlatforms = [], days 
         return availablePlatforms.includes('pinterest') ? <PinterestInsights key="pinterest-insights" /> : null
       case 'tiktok':
         return availablePlatforms.includes('tiktok') ? <TikTokInsights key="tiktok-insights" /> : null
+      case 'youtube':
+        return availablePlatforms.includes('youtube') ? <YouTubeInsights key="youtube-insights" /> : null
       default:
         return null
     }
