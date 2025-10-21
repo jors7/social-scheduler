@@ -80,7 +80,6 @@ export function SimpleDragCalendar({
   const [isDragging, setIsDragging] = useState(false)
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null)
   const [touchedPost, setTouchedPost] = useState<ScheduledPost | null>(null)
-  const [backdropTouchStart, setBackdropTouchStart] = useState<{ x: number; y: number; time: number } | null>(null)
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const months = [
@@ -601,37 +600,12 @@ export function SimpleDragCalendar({
           <div
             className="absolute inset-0 bg-black/50"
             onClick={() => setSelectedDate(null)}
-            onTouchStart={(e) => {
-              // Track touch start position and time
-              const touch = e.touches[0]
-              setBackdropTouchStart({
-                x: touch.clientX,
-                y: touch.clientY,
-                time: Date.now()
-              })
-            }}
-            onTouchEnd={(e) => {
-              // Only close if it was a tap (not a scroll)
-              if (!backdropTouchStart) return
-
-              const touch = e.changedTouches[0]
-              const deltaX = Math.abs(touch.clientX - backdropTouchStart.x)
-              const deltaY = Math.abs(touch.clientY - backdropTouchStart.y)
-              const deltaTime = Date.now() - backdropTouchStart.time
-
-              // Consider it a tap if:
-              // - Movement is less than 10px in both directions
-              // - Touch duration is less than 300ms
-              const isTap = deltaX < 10 && deltaY < 10 && deltaTime < 300
-
-              if (isTap) {
-                setSelectedDate(null)
-              }
-
-              setBackdropTouchStart(null)
-            }}
           />
-          <Card className="relative z-10 w-full max-w-2xl max-h-[85vh] sm:max-h-[80vh] overflow-hidden">
+          <Card
+            className="relative z-10 w-full max-w-2xl max-h-[85vh] sm:max-h-[80vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+          >
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
