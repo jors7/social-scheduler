@@ -522,7 +522,7 @@ export function AllPlatformsOverview({ connectedPlatforms, className, days = 30 
                   <div
                     key={platform.name}
                     data-platform={platform.name}
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white animate-pulse"
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center text-white animate-pulse ${platform.name === 'threads' ? 'hidden md:flex' : ''}`}
                     style={{
                       animationDelay: `${index * 200}ms`,
                       background: platform.bgColor

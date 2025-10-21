@@ -686,7 +686,7 @@ export default function AnalyticsPage() {
                 ].map((platform, index) => (
                   <div
                     key={platform.name}
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white animate-pulse"
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center text-white animate-pulse ${platform.name === 'threads' ? 'hidden md:flex' : ''}`}
                     style={{
                       animationDelay: `${index * 200}ms`,
                       background: platform.bgColor
