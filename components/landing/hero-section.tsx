@@ -78,7 +78,7 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
               priority
               placeholder={heroBlurData ? "blur" : "empty"}
               blurDataURL={heroBlurData?.base64}
-              className="w-full h-auto scale-110 md:scale-[1.24] origin-left"
+              className="w-full h-auto scale-[1.15] md:scale-[1.24] origin-left"
             />
           </div>
         </div>
