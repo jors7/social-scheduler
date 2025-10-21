@@ -187,7 +187,7 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-4xl font-bold text-gray-900">
             Billing & Subscription
@@ -202,6 +202,7 @@ export default function BillingPage() {
             toast.success('Billing data refreshed')
           }}
           disabled={loading}
+          className="w-full md:w-auto"
         >
           {loading ? (
             <>
