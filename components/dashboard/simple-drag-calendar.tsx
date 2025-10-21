@@ -692,8 +692,8 @@ export function SimpleDragCalendar({
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-0 flex flex-col max-h-[calc(85vh-4rem)] sm:max-h-[calc(80vh-4rem)]">
-              <div className="overflow-y-auto p-4 sm:p-6 flex-1">
+            <CardContent className="p-0 flex flex-col">
+              <div className="overflow-y-auto p-4 sm:p-6 max-h-[calc(85vh-12rem)] sm:max-h-[calc(80vh-10rem)]">
                 <div className="space-y-4 px-1">
                   {getPostsForDate(selectedDate).map((post) => {
                   const mediaUrl = getMediaUrl(post)
