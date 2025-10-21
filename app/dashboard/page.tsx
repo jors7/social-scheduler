@@ -1527,16 +1527,19 @@ export default function DashboardPage() {
                 upcomingSchedule.map((day) => {
                   // Use vertical mobile layout only for days with 3+ posts
                   const hasMany = day.posts >= 3
+                  // Show 4 thumbnails on mobile, 2 on desktop for days with many posts
+                  const mobileLimit = 4
+                  const desktopLimit = 2
 
                   return (
                     <div
                       key={day.date}
                       className={cn(
                         "flex items-center justify-between p-5 border border-gray-100 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-gradient-to-r from-gray-50 to-white",
-                        hasMany && "flex-col sm:flex-row gap-3 p-4 sm:p-5"
+                        hasMany && "flex-col items-start sm:flex-row sm:items-center sm:justify-between gap-3 p-4 sm:p-5"
                       )}
                     >
-                      <div className={cn("flex-1", hasMany && "min-w-0")}>
+                      <div className={cn("flex-1", hasMany && "min-w-0 w-full sm:w-auto")}>
                         <span className={cn("font-medium", hasMany && "text-sm sm:text-base")}>
                           {day.date}, {day.dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                         </span>
@@ -1548,17 +1551,23 @@ export default function DashboardPage() {
                       </div>
                       <div className={cn(
                         "flex items-center gap-3",
-                        hasMany && "flex-col sm:flex-row gap-2 sm:gap-3"
+                        hasMany && "w-full sm:w-auto flex-col sm:flex-row gap-2 sm:gap-3"
                       )}>
                         {/* Media thumbnails */}
                         {day.media_urls.length > 0 && (
                           <div className="flex gap-1">
-                            {(hasMany ? day.media_urls.slice(0, 2) : day.media_urls).map((url, index) => {
+                            {/* Show more thumbnails on mobile (4) than desktop (2) for hasMany */}
+                            {(hasMany ? day.media_urls.slice(0, mobileLimit) : day.media_urls).map((url, index) => {
                               // Check if this is a video URL
                               const isVideo = url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') || url.includes('.avi'))
+                              // Hide thumbnails 3 and 4 on desktop (index 2 and 3)
+                              const isHiddenOnDesktop = hasMany && index >= desktopLimit
 
                               return (
-                                <div key={index} className="flex-shrink-0">
+                                <div key={index} className={cn(
+                                  "flex-shrink-0",
+                                  isHiddenOnDesktop && "sm:hidden"
+                                )}>
                                   {isVideo ? (
                                     <video
                                       src={url}
@@ -1590,10 +1599,18 @@ export default function DashboardPage() {
                                 </div>
                               )
                             })}
-                            {hasMany && day.posts > 2 && (
-                              <div className="flex-shrink-0">
-                                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
-                                  <span className="text-xs sm:text-sm font-medium text-gray-600">+{day.posts - 2}</span>
+                            {/* +X indicator - show different counts for mobile vs desktop */}
+                            {hasMany && day.posts > mobileLimit && (
+                              <div className="flex-shrink-0 sm:hidden">
+                                <div className="w-12 h-12 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
+                                  <span className="text-xs font-medium text-gray-600">+{day.posts - mobileLimit}</span>
+                                </div>
+                              </div>
+                            )}
+                            {hasMany && day.posts > desktopLimit && (
+                              <div className="flex-shrink-0 hidden sm:flex">
+                                <div className="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
+                                  <span className="text-sm font-medium text-gray-600">+{day.posts - desktopLimit}</span>
                                 </div>
                               </div>
                             )}
