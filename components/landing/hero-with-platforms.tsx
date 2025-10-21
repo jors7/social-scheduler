@@ -10,33 +10,33 @@ interface HeroWithPlatformsProps {
 
 export function HeroWithPlatforms({ isAuthenticated, onSignInClick }: HeroWithPlatformsProps) {
   return (
-    <div className="relative">
+    <div className="relative overflow-hidden">
       {/* Static gradient background on mobile - no absolute positioning or animations */}
       <div className="md:hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50 opacity-70" />
       </div>
-      
+
       {/* Animated gradient background - desktop only */}
       <div className="hidden md:block absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50">
         <div className="absolute inset-0 overflow-hidden">
           {/* Top left purple blob */}
           <div className="absolute top-20 left-20 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
-          
+
           {/* Top right blue blob */}
-          <div className="absolute top-40 right-0 md:right-20 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
-          
+          <div className="absolute top-40 right-20 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
+
           {/* Middle pink blob */}
           <div className="absolute top-96 left-40 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
-          
+
           {/* Bottom blue blob for platforms section */}
           <div className="absolute bottom-20 right-40 w-64 h-64 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
         </div>
       </div>
-      
+
       {/* Content sections with relative positioning */}
       <div className="relative z-10">
-        <HeroSection 
-          isAuthenticated={isAuthenticated} 
+        <HeroSection
+          isAuthenticated={isAuthenticated}
           onSignInClick={onSignInClick}
         />
         <PlatformsSection />

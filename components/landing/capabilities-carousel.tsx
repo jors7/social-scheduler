@@ -297,8 +297,8 @@ export function CapabilitiesCarousel() {
   const currentCapability = capabilities[currentIndex]
 
   return (
-    <section className="pt-12 pb-20 px-4 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
-      <div className="container mx-auto">
+    <section className="pt-12 pb-20 px-4 bg-gradient-to-b from-gray-50 to-white overflow-x-hidden">
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6">
         {/* Header */}
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -501,17 +501,17 @@ export function CapabilitiesCarousel() {
 
               {/* Right Side - Visual with Demo Player */}
               <div className="relative">
-                {/* Decorative background shapes */}
+                {/* Decorative background shapes - hidden on mobile to prevent overflow */}
                 {/* Top left blue rounded shape */}
-                <div className="absolute -top-12 -left-12 w-64 h-64 bg-gradient-to-br from-blue-400/20 to-cyan-400/10 rounded-[100px] blur-2xl" />
-                
+                <div className="hidden lg:block absolute -top-12 -left-12 w-64 h-64 bg-gradient-to-br from-blue-400/20 to-cyan-400/10 rounded-[100px] blur-2xl" />
+
                 {/* Bottom right purple rounded shape */}
-                <div className="absolute -bottom-16 -right-16 w-72 h-72 bg-gradient-to-tl from-purple-400/20 to-pink-400/10 rounded-[120px] blur-2xl" />
-                
+                <div className="hidden lg:block absolute -bottom-16 -right-16 w-72 h-72 bg-gradient-to-tl from-purple-400/20 to-pink-400/10 rounded-[120px] blur-2xl" />
+
                 {/* Additional accent shapes */}
-                <div className="absolute top-1/2 -left-8 w-32 h-32 bg-gradient-to-r from-indigo-400/15 to-blue-400/15 rounded-full blur-xl" />
-                <div className="absolute -top-8 right-1/3 w-24 h-24 bg-gradient-to-b from-cyan-400/15 to-teal-400/15 rounded-full blur-xl" />
-                
+                <div className="hidden lg:block absolute top-1/2 -left-8 w-32 h-32 bg-gradient-to-r from-indigo-400/15 to-blue-400/15 rounded-full blur-xl" />
+                <div className="hidden lg:block absolute -top-8 right-1/3 w-24 h-24 bg-gradient-to-b from-cyan-400/15 to-teal-400/15 rounded-full blur-xl" />
+
                 {/* Demo Player */}
                 <div className="relative z-10">
                   <DemoPlayer capability={currentCapability} />

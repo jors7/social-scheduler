@@ -76,7 +76,7 @@ export function ImpactSection() {
       </div>
 
       {/* Content above the curve - with more padding on mobile */}
-      <div className="container mx-auto max-w-6xl relative z-10 pb-48 md:pb-32">
+      <div className="container mx-auto max-w-6xl relative z-10 pb-48 md:pb-32 px-4 sm:px-6">
         <div className="text-left mb-6">
           <h2 className="text-3xl lg:text-4xl font-bold mb-3 text-gray-900">
             What&apos;s the SocialCal impact?

@@ -3,8 +3,8 @@ import { motion } from 'framer-motion';
 
 const HowItWorksSection = () => {
   return (
-    <section className="py-20 pb-24 bg-gray-50">
-      <div className="max-w-6xl mx-auto px-8 sm:px-12 lg:px-16">
+    <section className="py-20 pb-24 bg-gray-50 overflow-x-hidden">
+      <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
             Why Smart Creators Are Ditching Overpriced Schedulers

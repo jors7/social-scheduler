@@ -51,8 +51,8 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="pt-32 pb-16 px-4 bg-gradient-to-b from-white via-gray-50/50 to-white scroll-mt-20">
-      <div className="container mx-auto max-w-7xl">
+    <section id="features" className="pt-32 pb-16 px-4 bg-gradient-to-b from-white via-gray-50/50 to-white scroll-mt-20 overflow-x-hidden">
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6">
         {/* Section Header */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 border border-blue-200 rounded-full mb-4">

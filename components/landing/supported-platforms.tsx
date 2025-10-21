@@ -95,8 +95,8 @@ const platforms = [
 
 export function SupportedPlatforms() {
   return (
-    <section id="platforms" className="py-16 px-4 bg-gray-50 scroll-mt-20">
-      <div className="w-full max-w-[1600px] mx-auto px-6">
+    <section id="platforms" className="py-16 px-4 bg-gray-50 scroll-mt-20 overflow-x-hidden">
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6">
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 text-gray-900">
