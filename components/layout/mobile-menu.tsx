@@ -139,7 +139,7 @@ export function MobileMenu({
             </div>
           )}
           
-          <nav className="px-4 pb-6">
+          <nav className="px-4 pb-24">
             {isAuthenticated ? (
               // Authenticated Menu
               <>
