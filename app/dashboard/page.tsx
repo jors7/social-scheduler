@@ -1525,22 +1525,22 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 upcomingSchedule.map((day) => (
-                  <div key={day.date} className="flex items-center justify-between p-5 border border-gray-100 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-gradient-to-r from-gray-50 to-white">
-                    <div className="flex-1">
-                      <span className="font-medium">
+                  <div key={day.date} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 sm:p-5 border border-gray-100 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-gradient-to-r from-gray-50 to-white">
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-sm sm:text-base">
                         {day.date}, {day.dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                       </span>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-sm text-gray-600">
+                        <span className="text-xs sm:text-sm text-gray-600">
                           {day.posts} post{day.posts !== 1 ? 's' : ''}
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      {/* Media thumbnails */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                      {/* Media thumbnails - responsive sizing and limited on mobile */}
                       {day.media_urls.length > 0 && (
                         <div className="flex gap-1">
-                          {day.media_urls.map((url, index) => {
+                          {day.media_urls.slice(0, 2).map((url, index) => {
                             // Check if this is a video URL
                             const isVideo = url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') || url.includes('.avi'))
 
@@ -1549,14 +1549,14 @@ export default function DashboardPage() {
                                 {isVideo ? (
                                   <video
                                     src={url}
-                                    className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                                    className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg border border-gray-200"
                                     muted
                                     preload="metadata"
                                     onError={(e) => {
                                       // Replace video with placeholder on error
                                       const placeholder = document.createElement('div')
-                                      placeholder.className = 'w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center'
-                                      placeholder.innerHTML = '<svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>'
+                                      placeholder.className = 'w-12 h-12 sm:w-16 sm:h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center'
+                                      placeholder.innerHTML = '<svg class="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>'
                                       e.currentTarget.parentNode?.replaceChild(placeholder, e.currentTarget)
                                     }}
                                   />
@@ -1564,12 +1564,12 @@ export default function DashboardPage() {
                                   <img
                                     src={url}
                                     alt="Scheduled post media"
-                                    className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                                    className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg border border-gray-200"
                                     onError={(e) => {
                                       // Replace image with placeholder on error
                                       const placeholder = document.createElement('div')
-                                      placeholder.className = 'w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center'
-                                      placeholder.innerHTML = '<svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>'
+                                      placeholder.className = 'w-12 h-12 sm:w-16 sm:h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center'
+                                      placeholder.innerHTML = '<svg class="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>'
                                       e.currentTarget.parentNode?.replaceChild(placeholder, e.currentTarget)
                                     }}
                                   />
@@ -1577,10 +1577,10 @@ export default function DashboardPage() {
                               </div>
                             )
                           })}
-                          {day.posts > day.media_urls.length && (
+                          {day.posts > 2 && (
                             <div className="flex-shrink-0">
-                              <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
-                                <FileText className="h-8 w-8 text-gray-400" />
+                              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
+                                <span className="text-xs sm:text-sm font-medium text-gray-600">+{day.posts - 2}</span>
                               </div>
                             </div>
                           )}
@@ -1588,19 +1588,19 @@ export default function DashboardPage() {
                       )}
                       {day.media_urls.length === 0 && (
                         <div className="flex-shrink-0">
-                          <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
-                            <FileText className="h-8 w-8 text-gray-400" />
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
+                            <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
                           </div>
                         </div>
                       )}
-                      {/* Platform icons grouped by post */}
-                      <div className="flex gap-2">
+                      {/* Platform icons grouped by post - wrappable on mobile */}
+                      <div className="flex flex-wrap gap-1 sm:gap-2">
                         {day.postGroups.map((postPlatforms, groupIndex) => (
-                          <div key={groupIndex} className="flex gap-0.5 bg-indigo-100 rounded-md p-1">
+                          <div key={groupIndex} className="flex gap-0.5 bg-indigo-100 rounded-md p-0.5 sm:p-1">
                             {postPlatforms.map((platform) => (
                               <div
                                 key={`${groupIndex}-${platform}`}
-                                className="w-6 h-6 bg-white rounded flex items-center justify-center text-xs border border-indigo-200"
+                                className="w-5 h-5 sm:w-6 sm:h-6 bg-white rounded flex items-center justify-center text-[10px] sm:text-xs border border-indigo-200"
                                 title={platform}
                               >
                                 {platformIcons[platform] || platform[0].toUpperCase()}
