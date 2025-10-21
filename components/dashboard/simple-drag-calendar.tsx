@@ -80,6 +80,7 @@ export function SimpleDragCalendar({
   const [isDragging, setIsDragging] = useState(false)
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null)
   const [touchedPost, setTouchedPost] = useState<ScheduledPost | null>(null)
+  const [modalTouchStart, setModalTouchStart] = useState<{ x: number; y: number; time: number; target: EventTarget } | null>(null)
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const months = [
@@ -596,7 +597,45 @@ export function SimpleDragCalendar({
 
       {/* Selected Date Modal */}
       {selectedDate && getPostsForDate(selectedDate).length > 0 && !isDragging && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onTouchStart={(e) => {
+            // Track touch start for scroll detection (mobile only)
+            const touch = e.touches[0]
+            setModalTouchStart({
+              x: touch.clientX,
+              y: touch.clientY,
+              time: Date.now(),
+              target: e.target
+            })
+          }}
+          onTouchEnd={(e) => {
+            // Only close if it was a tap on backdrop, not a scroll (mobile only)
+            if (!modalTouchStart) return
+
+            const touch = e.changedTouches[0]
+            const deltaX = Math.abs(touch.clientX - modalTouchStart.x)
+            const deltaY = Math.abs(touch.clientY - modalTouchStart.y)
+            const deltaTime = Date.now() - modalTouchStart.time
+
+            // Check if user touched the backdrop element
+            const backdropElement = e.currentTarget.querySelector('.absolute.inset-0')
+            const touchedBackdrop = modalTouchStart.target === backdropElement ||
+                                    (modalTouchStart.target as HTMLElement).classList?.contains('bg-black/50')
+
+            // Consider it a tap (should close) if:
+            // - User touched the backdrop (not modal content)
+            // - Movement is less than 10px in both directions
+            // - Touch duration is less than 300ms
+            const isTap = touchedBackdrop && deltaX < 10 && deltaY < 10 && deltaTime < 300
+
+            if (isTap) {
+              setSelectedDate(null)
+            }
+
+            setModalTouchStart(null)
+          }}
+        >
           <div
             className="absolute inset-0 bg-black/50"
             onClick={() => setSelectedDate(null)}
@@ -604,7 +643,6 @@ export function SimpleDragCalendar({
           <Card
             className="relative z-10 w-full max-w-2xl max-h-[85vh] sm:max-h-[80vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
-            onTouchEnd={(e) => e.stopPropagation()}
           >
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
