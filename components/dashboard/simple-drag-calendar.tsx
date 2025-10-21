@@ -643,6 +643,8 @@ export function SimpleDragCalendar({
           <Card
             className="relative z-10 w-full max-w-2xl max-h-[85vh] sm:max-h-[80vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
           >
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
