@@ -69,7 +69,7 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
           </div>
 
           {/* Right Column - Hero Image */}
-          <div className="w-full max-w-full overflow-hidden md:max-w-[900px] md:overflow-visible lg:-ml-20 lg:mt-4">
+          <div className="w-full max-w-full overflow-hidden flex items-center justify-center md:block md:max-w-[900px] md:overflow-visible lg:-ml-20 lg:mt-4">
             <Image
               src="https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard.webp"
               alt="SocialCal Dashboard"
@@ -78,7 +78,7 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
               priority
               placeholder={heroBlurData ? "blur" : "empty"}
               blurDataURL={heroBlurData?.base64}
-              className="w-full h-auto scale-[1.19] md:scale-[1.24] origin-left"
+              className="w-full h-auto scale-[1.19] md:scale-[1.24] origin-center md:origin-left"
             />
           </div>
         </div>
