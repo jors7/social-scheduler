@@ -195,6 +195,29 @@ export async function POST(request: NextRequest) {
       case 'invoice.payment_succeeded': {
         const invoice = event!.data.object as any // Type assertion to avoid strict typing issues
 
+        // DEBUG: Log invoice details to understand structure
+        console.log('📨 invoice.payment_succeeded received:', {
+          invoice_id: invoice.id,
+          has_subscription: !!invoice.subscription,
+          subscription_id: invoice.subscription || 'MISSING',
+          amount_paid: invoice.amount_paid,
+          billing_reason: invoice.billing_reason,
+          line_items_count: invoice.lines?.data?.length || 0
+        })
+
+        // Check if invoice has subscription attached
+        if (!invoice.subscription) {
+          console.warn('⚠️ Invoice has no subscription property, checking line items...')
+          // Try to get subscription from line items (Stripe sometimes structures it this way)
+          if (invoice.lines?.data?.[0]?.subscription) {
+            invoice.subscription = invoice.lines.data[0].subscription
+            console.log('✅ Found subscription in line items:', invoice.subscription)
+          } else {
+            console.error('❌ Cannot process invoice without subscription - skipping payment recording')
+            break
+          }
+        }
+
         if (invoice.subscription) {
           const subscriptionResponse = await stripe.subscriptions.retrieve(
             invoice.subscription as string
