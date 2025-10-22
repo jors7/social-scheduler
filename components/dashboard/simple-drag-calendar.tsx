@@ -400,8 +400,7 @@ export function SimpleDragCalendar({
     setDraggedPostId(null)
     setDragOverDate(null)
     setIsDragging(false)
-    // Clear selected date to prevent ghost selection
-    setSelectedDate(null)
+    // Keep modal open after drag so user can reschedule multiple posts
   }
 
   return (
