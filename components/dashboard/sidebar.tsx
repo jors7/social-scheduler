@@ -164,28 +164,28 @@ export function Sidebar() {
           name: 'Blog Management',
           href: '/dashboard/blog',
           icon: BookOpen,
-          badge: 'Admin',
+          badge: null,
         },
         // Admin Dashboard
         {
           name: 'Admin Dashboard',
           href: '/admin',
           icon: Shield,
-          badge: 'Admin',
+          badge: null,
         },
         // SEO Settings
         {
           name: 'SEO Settings',
           href: '/dashboard/seo',
           icon: Search,
-          badge: 'Admin',
+          badge: null,
         },
         // Twitter Usage Monitor
         {
           name: 'Twitter Usage',
           href: '/dashboard/admin/twitter-usage',
           icon: BarChart3,
-          badge: 'Admin',
+          badge: null,
         }
       )
       
