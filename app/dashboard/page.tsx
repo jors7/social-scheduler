@@ -1638,27 +1638,24 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         )}
-                        {/* Platform icons grouped by post */}
+                        {/* Platform icons - show unique platforms only */}
                         <div className={cn(
-                          "flex gap-2",
-                          hasMany && "flex-wrap gap-1 sm:gap-2"
+                          "flex gap-1 sm:gap-1.5 bg-indigo-100 rounded-md p-1",
+                          hasMany && "p-0.5 sm:p-1 flex-wrap"
                         )}>
-                          {day.postGroups.map((postPlatforms, groupIndex) => (
-                            <div key={groupIndex} className={cn(
-                              "flex gap-0.5 bg-indigo-100 rounded-md p-1",
-                              hasMany && "p-0.5 sm:p-1"
-                            )}>
-                              {postPlatforms.map((platform) => (
-                                <div
-                                  key={`${groupIndex}-${platform}`}
-                                  className={hasMany ? "w-5 h-5 sm:w-6 sm:h-6 bg-white rounded flex items-center justify-center text-[10px] sm:text-xs border border-indigo-200" : "w-6 h-6 bg-white rounded flex items-center justify-center text-xs border border-indigo-200"}
-                                  title={platform}
-                                >
-                                  {platformIcons[platform] || platform[0].toUpperCase()}
-                                </div>
-                              ))}
-                            </div>
-                          ))}
+                          {(() => {
+                            // Get unique platforms from all posts for this day
+                            const uniquePlatforms = [...new Set(day.postGroups.flat())]
+                            return uniquePlatforms.map((platform) => (
+                              <div
+                                key={platform}
+                                className={hasMany ? "w-5 h-5 sm:w-6 sm:h-6 bg-white rounded flex items-center justify-center text-[10px] sm:text-xs border border-indigo-200" : "w-6 h-6 bg-white rounded flex items-center justify-center text-xs border border-indigo-200"}
+                                title={platform}
+                              >
+                                {platformIcons[platform] || platform[0].toUpperCase()}
+                              </div>
+                            ))
+                          })()}
                         </div>
                       </div>
                     </div>
