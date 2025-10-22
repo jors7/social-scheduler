@@ -214,9 +214,10 @@ export async function POST(request: NextRequest) {
           console.log('🔍 Fetching full invoice with expanded subscription...')
 
           try {
-            const fullInvoice = await stripe.invoices.retrieve(invoice.id, {
+            const fullInvoiceResponse = await stripe.invoices.retrieve(invoice.id, {
               expand: ['subscription']
             })
+            const fullInvoice = fullInvoiceResponse as any
 
             if (fullInvoice.subscription && typeof fullInvoice.subscription !== 'string') {
               invoice.subscription = fullInvoice.subscription.id
