@@ -1645,7 +1645,7 @@ export default function DashboardPage() {
                         )}>
                           {(() => {
                             // Get unique platforms from all posts for this day
-                            const uniquePlatforms = [...new Set(day.postGroups.flat())]
+                            const uniquePlatforms = Array.from(new Set(day.postGroups.flat()))
                             return uniquePlatforms.map((platform) => (
                               <div
                                 key={platform}
