@@ -17,7 +17,7 @@ interface AnalyticsData {
 interface TrendComparison {
   current: number
   previous: number
-  change: number
+  change: number | null
 }
 
 interface TrendData {
@@ -59,6 +59,10 @@ export function OverviewCards({ analyticsData, trendData, dateRange = '7' }: Ove
       return null;
     }
     const trend = trendData[metricKey];
+    // If change is null, don't show trend (no valid comparison)
+    if (trend.change === null) {
+      return null;
+    }
     return {
       change: trend.change,
       isPositive: trend.change > 0,

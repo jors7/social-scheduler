@@ -37,7 +37,7 @@ interface AnalyticsData {
 interface TrendComparison {
   current: number
   previous: number
-  change: number
+  change: number | null
 }
 
 interface TrendData {
@@ -97,15 +97,17 @@ export default function AnalyticsPage() {
 
       // Fetch data from all platforms in parallel
       // Add cache-busting timestamp to ensure fresh data
+      // Fetch double the date range to enable period-over-period comparison
       const cacheBust = Date.now();
+      const fetchDays = parseInt(dateRange) * 2; // Fetch current + previous period
       const [facebookRes, instagramRes, threadsRes, blueskyRes, pinterestRes, tiktokRes, youtubeRes] = await Promise.all([
-        fetch(`/api/analytics/facebook?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
-        fetch(`/api/analytics/instagram?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
-        fetch(`/api/analytics/threads?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
-        fetch(`/api/analytics/bluesky?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
-        fetch(`/api/analytics/pinterest?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
-        fetch(`/api/analytics/tiktok?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' }),
-        fetch(`/api/analytics/youtube?days=${dateRange}&_=${cacheBust}`, { cache: 'no-store' })
+        fetch(`/api/analytics/facebook?days=${fetchDays}&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/instagram?days=${fetchDays}&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/threads?days=${fetchDays}&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/bluesky?days=${fetchDays}&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/pinterest?days=${fetchDays}&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/tiktok?days=${fetchDays}&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/youtube?days=${fetchDays}&_=${cacheBust}`, { cache: 'no-store' })
       ])
 
       const [facebookData, instagramData, threadsData, blueskyData, pinterestData, tiktokData, youtubeData] = await Promise.all([
@@ -334,12 +336,61 @@ export default function AnalyticsPage() {
 
       const engagementRate = totalReach > 0 ? (totalEngagement / totalReach) * 100 : 0
 
+      // Recalculate totals for CURRENT period only (not the entire fetched range)
+      // This is needed because we fetch double the period for comparisons
+      const currentPeriodStart = new Date();
+      currentPeriodStart.setDate(currentPeriodStart.getDate() - parseInt(dateRange));
+      currentPeriodStart.setHours(0, 0, 0, 0);
+
+      const currentPeriodPosts = allPosts.filter(post => {
+        const postDate = new Date(post.created_time || post.timestamp || post.createdAt || post.created_at);
+        return postDate >= currentPeriodStart && postDate <= new Date();
+      });
+
+      // Recalculate metrics for current period only
+      let currentTotalPosts = currentPeriodPosts.length;
+      let currentTotalEngagement = 0;
+      let currentTotalReach = 0;
+      let currentTotalImpressions = 0;
+
+      currentPeriodPosts.forEach(post => {
+        if (post.platform === 'facebook') {
+          currentTotalEngagement += (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
+          currentTotalReach += post.reach || 0;
+          currentTotalImpressions += post.impressions || 0;
+        } else if (post.platform === 'instagram') {
+          currentTotalEngagement += (post.likes || 0) + (post.comments || 0) + (post.saves || 0);
+          currentTotalReach += post.reach || 0;
+          currentTotalImpressions += post.impressions || post.plays || 0;
+        } else if (post.platform === 'threads') {
+          currentTotalEngagement += (post.likes || 0) + (post.replies || 0) + (post.reposts || 0) + (post.quotes || 0);
+          currentTotalReach += post.views || 0;
+          currentTotalImpressions += post.views || 0;
+        } else if (post.platform === 'bluesky') {
+          currentTotalEngagement += (post.likes || 0) + (post.replies || 0) + (post.reposts || 0);
+        } else if (post.platform === 'pinterest') {
+          currentTotalEngagement += (post.saves || 0) + (post.pin_clicks || 0) + (post.outbound_clicks || 0);
+          currentTotalReach += post.impressions || 0;
+          currentTotalImpressions += post.impressions || 0;
+        } else if (post.platform === 'tiktok') {
+          currentTotalEngagement += (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
+          currentTotalReach += post.views || 0;
+          currentTotalImpressions += post.views || 0;
+        } else if (post.platform === 'youtube') {
+          currentTotalEngagement += (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
+          currentTotalReach += post.views || 0;
+          currentTotalImpressions += post.views || 0;
+        }
+      });
+
+      const currentEngagementRate = currentTotalReach > 0 ? (currentTotalEngagement / currentTotalReach) * 100 : 0;
+
       setAnalyticsData({
-        totalPosts,
-        totalEngagement,
-        totalReach,
-        totalImpressions,
-        engagementRate,
+        totalPosts: currentTotalPosts,
+        totalEngagement: currentTotalEngagement,
+        totalReach: currentTotalReach,
+        totalImpressions: currentTotalImpressions,
+        engagementRate: currentEngagementRate,
         topPlatform,
         platformStats,
         allPosts,
@@ -410,8 +461,11 @@ export default function AnalyticsPage() {
         const currentMetrics = calculateMetrics(currentPosts);
         const previousMetrics = calculateMetrics(previousPosts);
 
-        const calculateChange = (current: number, previous: number) => {
-          if (previous === 0) return current > 0 ? 100 : 0;
+        const calculateChange = (current: number, previous: number): number | null => {
+          // If both are zero, no change
+          if (previous === 0 && current === 0) return 0;
+          // If previous is zero but current is not, return null (no valid comparison)
+          if (previous === 0) return null;
           return ((current - previous) / previous) * 100;
         };
 
@@ -756,12 +810,20 @@ export default function AnalyticsPage() {
                     </option>
                   ))}
                 </select>
+                {/* Desktop loading indicator - shown immediately after dropdown */}
+                {refreshing && (
+                  <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500 ml-3">
+                    <RefreshCw className="h-3 w-3 animate-spin" />
+                    <span>Loading analytics data...</span>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons - Stack on mobile */}
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                {/* Mobile loading indicator - hidden on desktop */}
                 {refreshing && (
-                  <div className="flex items-center gap-2 text-xs text-gray-500 sm:mr-auto">
+                  <div className="flex sm:hidden items-center gap-2 text-xs text-gray-500">
                     <RefreshCw className="h-3 w-3 animate-spin" />
                     <span>Loading analytics data...</span>
                   </div>

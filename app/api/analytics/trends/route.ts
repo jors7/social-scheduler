@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 interface TrendComparison {
   current: number;
   previous: number;
-  change: number;
+  change: number | null;
 }
 
 interface TrendData {
@@ -15,10 +15,11 @@ interface TrendData {
   engagementRate: TrendComparison;
 }
 
-function calculateChange(current: number, previous: number): number {
-  if (previous === 0) {
-    return current > 0 ? 100 : 0;
-  }
+function calculateChange(current: number, previous: number): number | null {
+  // If both are zero, no change
+  if (previous === 0 && current === 0) return 0;
+  // If previous is zero but current is not, return null (no valid comparison)
+  if (previous === 0) return null;
   return ((current - previous) / previous) * 100;
 }
 
