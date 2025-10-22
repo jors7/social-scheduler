@@ -262,11 +262,18 @@ export function SimpleDragCalendar({
       console.log('Calling onPostUpdate with:', post.id, newDateTime.toISOString())
       await onPostUpdate(post.id, newDateTime)
       toast.success('Post rescheduled successfully')
-      // Modal will automatically close during drag (!isDragging in render condition)
-      // and can be reopened with +X button after drag completes
+
+      // Clean up drag state and close modal after successful update
+      setIsDragging(false)
+      // Use setTimeout to ensure state updates propagate before clearing selectedDate
+      setTimeout(() => {
+        setSelectedDate(null)
+      }, 0)
     } catch (error: any) {
       console.error('Reschedule error:', error)
       toast.error(error.message || 'Failed to reschedule post')
+      // Still clean up drag state on error
+      setIsDragging(false)
     }
   }
 
