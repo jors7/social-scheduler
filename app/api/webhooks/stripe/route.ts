@@ -208,12 +208,31 @@ export async function POST(request: NextRequest) {
         // Check if invoice has subscription attached
         if (!invoice.subscription) {
           console.warn('⚠️ Invoice has no subscription property, checking line items...')
-          // Try to get subscription from line items (Stripe sometimes structures it this way)
-          if (invoice.lines?.data?.[0]?.subscription) {
-            invoice.subscription = invoice.lines.data[0].subscription
-            console.log('✅ Found subscription in line items:', invoice.subscription)
-          } else {
-            console.error('❌ Cannot process invoice without subscription - skipping payment recording')
+
+          // Stripe doesn't always expand the subscription field in invoices
+          // We need to fetch the full invoice with expanded subscription
+          console.log('🔍 Fetching full invoice with expanded subscription...')
+
+          try {
+            const fullInvoice = await stripe.invoices.retrieve(invoice.id, {
+              expand: ['subscription']
+            })
+
+            if (fullInvoice.subscription && typeof fullInvoice.subscription !== 'string') {
+              invoice.subscription = fullInvoice.subscription.id
+              console.log('✅ Found subscription from expanded invoice:', invoice.subscription)
+            } else if (typeof fullInvoice.subscription === 'string') {
+              invoice.subscription = fullInvoice.subscription
+              console.log('✅ Found subscription ID from invoice:', invoice.subscription)
+            } else {
+              console.error('❌ Cannot find subscription even in expanded invoice')
+              console.error('Invoice structure:', JSON.stringify({
+                lines: fullInvoice.lines?.data?.[0]
+              }, null, 2))
+              break
+            }
+          } catch (retrieveError) {
+            console.error('❌ Error retrieving full invoice:', retrieveError)
             break
           }
         }
