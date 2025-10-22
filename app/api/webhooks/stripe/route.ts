@@ -194,42 +194,77 @@ export async function POST(request: NextRequest) {
 
       case 'invoice.payment_succeeded': {
         const invoice = event!.data.object as any // Type assertion to avoid strict typing issues
-        
+
         if (invoice.subscription) {
           const subscriptionResponse = await stripe.subscriptions.retrieve(
             invoice.subscription as string
           )
           const subscription = subscriptionResponse as any
-          
-          console.log('Processing invoice.payment_succeeded:', { 
-            user_id: subscription.metadata?.user_id,
+
+          // CRITICAL FIX: Get user_id from multiple sources
+          // For upgrades, metadata might be empty, so we look up by stripe_subscription_id
+          let userId = subscription.metadata?.user_id
+
+          if (!userId) {
+            console.log('⚠️ No user_id in subscription metadata, looking up by stripe_subscription_id')
+            const { data: existingSub } = await supabaseAdmin
+              .from('user_subscriptions')
+              .select('user_id')
+              .eq('stripe_subscription_id', subscription.id)
+              .single()
+
+            userId = existingSub?.user_id
+
+            if (!userId) {
+              console.error('❌ Could not find user_id for subscription:', subscription.id)
+              // Try to get from customer metadata as last resort
+              if (subscription.customer) {
+                const customer = await stripe.customers.retrieve(subscription.customer as string)
+                userId = (customer as any).metadata?.supabase_user_id
+              }
+            }
+          }
+
+          console.log('Processing invoice.payment_succeeded:', {
+            user_id: userId,
+            subscription_id: subscription.id,
             amount: invoice.amount_paid,
             total: invoice.total,
-            starting_balance: invoice.starting_balance
+            starting_balance: invoice.starting_balance,
+            billing_reason: invoice.billing_reason
           })
-          
+
+          if (!userId) {
+            console.error('❌ Failed to record payment: No user_id found')
+            break
+          }
+
           // Get or create subscription ID for linking
           const { data: userSub } = await supabaseAdmin
             .from('user_subscriptions')
-            .select('id')
-            .eq('user_id', subscription.metadata?.user_id)
+            .select('id, plan_id, billing_cycle')
+            .eq('user_id', userId)
             .eq('is_active', true)
             .single()
           
           // Check if there was a credit applied (negative starting balance indicates credit)
           const creditApplied = invoice.starting_balance < 0 ? Math.abs(invoice.starting_balance) : 0
-          
+
           // Build description including proration info
-          let description = `Payment for ${subscription.metadata?.plan_id || 'subscription'} plan (${subscription.metadata?.billing_cycle || 'recurring'})`
+          // Use metadata first, fallback to database values for upgrades
+          const planId = subscription.metadata?.plan_id || userSub?.plan_id || 'subscription'
+          const billingCycle = subscription.metadata?.billing_cycle || userSub?.billing_cycle || 'recurring'
+
+          let description = `Payment for ${planId} plan (${billingCycle})`
           if (creditApplied > 0) {
             description += ` - Credit applied: $${(creditApplied / 100).toFixed(2)}`
           }
-          
+
           // Record payment in database
           const { error } = await supabaseAdmin
             .from('payment_history')
             .insert({
-              user_id: subscription.metadata?.user_id,
+              user_id: userId,
               subscription_id: userSub?.id,
               amount: invoice.amount_paid,
               currency: invoice.currency,
@@ -240,8 +275,8 @@ export async function POST(request: NextRequest) {
               metadata: {
                 invoice_number: invoice.number,
                 billing_reason: invoice.billing_reason,
-                plan_id: subscription.metadata?.plan_id,
-                billing_cycle: subscription.metadata?.billing_cycle,
+                plan_id: planId,
+                billing_cycle: billingCycle,
                 credit_applied: creditApplied,
                 subtotal: invoice.subtotal,
                 total: invoice.total,
