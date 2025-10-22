@@ -1600,20 +1600,28 @@ export default function DashboardPage() {
                               )
                             })}
                             {/* +X indicator - show different counts for mobile vs desktop */}
-                            {hasMany && day.posts > mobileLimit && (
-                              <div className="flex-shrink-0 sm:hidden">
-                                <div className="w-12 h-12 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
-                                  <span className="text-xs font-medium text-gray-600">+{day.posts - mobileLimit}</span>
+                            {hasMany && (() => {
+                              const shownMobile = Math.min(day.media_urls.length, mobileLimit)
+                              const remainingMobile = day.posts - shownMobile
+                              return remainingMobile > 0 && (
+                                <div className="flex-shrink-0 sm:hidden">
+                                  <div className="w-12 h-12 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
+                                    <span className="text-xs font-medium text-gray-600">+{remainingMobile}</span>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                            {hasMany && day.posts > desktopLimit && (
-                              <div className="flex-shrink-0 hidden sm:flex">
-                                <div className="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
-                                  <span className="text-sm font-medium text-gray-600">+{day.posts - desktopLimit}</span>
+                              )
+                            })()}
+                            {hasMany && (() => {
+                              const shownDesktop = Math.min(day.media_urls.length, desktopLimit)
+                              const remainingDesktop = day.posts - shownDesktop
+                              return remainingDesktop > 0 && (
+                                <div className="flex-shrink-0 hidden sm:flex">
+                                  <div className="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
+                                    <span className="text-sm font-medium text-gray-600">+{remainingDesktop}</span>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )
+                            })()}
                             {!hasMany && day.posts > day.media_urls.length && (
                               <div className="flex-shrink-0">
                                 <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
