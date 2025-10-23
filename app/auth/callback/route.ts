@@ -1,16 +1,26 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/dashboard'
 
+  // Enhanced logging
   console.log('🔐 Auth callback received:', {
     code: code?.substring(0, 10),
     next,
+    origin,
     allParams: Array.from(searchParams.entries()),
-    fullUrl: request.url
+    fullUrl: request.url,
+    headers: {
+      host: request.headers.get('host'),
+      referer: request.headers.get('referer'),
+      'x-forwarded-host': request.headers.get('x-forwarded-host'),
+      'x-forwarded-proto': request.headers.get('x-forwarded-proto'),
+    }
   })
 
   if (code) {
