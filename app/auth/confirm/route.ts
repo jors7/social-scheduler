@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 
 // Force dynamic rendering
@@ -32,13 +33,13 @@ export async function GET(request: NextRequest) {
 
     console.log('🔐 Confirming auth with token type:', type)
 
-    // Verify the token and get the user
+    // Verify the token and get the session
     const { data, error } = await supabaseAdmin.auth.verifyOtp({
       token_hash: token,
       type: type as any,
     })
 
-    if (error || !data.user) {
+    if (error || !data.user || !data.session) {
       console.error('❌ Auth verification failed:', error)
       return NextResponse.redirect(
         new URL('/?error=auth_verification_failed', process.env.NEXT_PUBLIC_APP_URL!)
@@ -48,30 +49,51 @@ export async function GET(request: NextRequest) {
     console.log('✅ Auth verified for user:', data.user.id)
 
     // Create a response that will redirect
-    const response = NextResponse.redirect(
+    let response = NextResponse.redirect(
       new URL(redirectTo || '/dashboard?subscription=success', process.env.NEXT_PUBLIC_APP_URL!)
     )
 
-    // Set auth cookies manually
-    if (data.session) {
-      const maxAge = 60 * 60 * 24 * 7 // 7 days
+    // Create a Supabase SSR client to set cookies properly
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            response.cookies.set({
+              name,
+              value,
+              ...options,
+            })
+          },
+          remove(name: string, options: CookieOptions) {
+            response.cookies.set({
+              name,
+              value: '',
+              ...options,
+            })
+          },
+        },
+      }
+    )
 
-      response.cookies.set('sb-access-token', data.session.access_token, {
-        path: '/',
-        maxAge,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-      })
+    // Set the session using Supabase SSR client
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    })
 
-      response.cookies.set('sb-refresh-token', data.session.refresh_token, {
-        path: '/',
-        maxAge,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-      })
+    if (sessionError) {
+      console.error('❌ Failed to set session:', sessionError)
+      return NextResponse.redirect(
+        new URL('/?error=session_set_failed', process.env.NEXT_PUBLIC_APP_URL!)
+      )
     }
+
+    console.log('✅ Session set successfully, redirecting to dashboard')
 
     return response
 
