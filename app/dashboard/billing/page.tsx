@@ -345,7 +345,7 @@ export default function BillingPage() {
                       <h4 className="font-semibold text-orange-900">Subscription Ending</h4>
                       <p className="text-sm text-orange-700 mt-1">
                         Your subscription will cancel on <strong>{formatDate(subscription.cancelAt)}</strong>.
-                        You'll continue to have access to all features until then.
+                        You&apos;ll continue to have access to all features until then.
                       </p>
                       <Button
                         variant="outline"
