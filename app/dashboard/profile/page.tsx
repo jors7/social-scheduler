@@ -18,6 +18,7 @@ export default function ProfilePage() {
   const [subscription, setSubscription] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
+  const [sendingPasswordReset, setSendingPasswordReset] = useState(false)
   const [formData, setFormData] = useState({
     full_name: '',
     email: ''
@@ -99,6 +100,9 @@ export default function ProfilePage() {
   }
 
   const handleChangePassword = async () => {
+    if (sendingPasswordReset) return // Prevent multiple calls
+
+    setSendingPasswordReset(true)
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(
         user?.email || '',
@@ -108,17 +112,21 @@ export default function ProfilePage() {
       )
 
       if (error) {
+        console.error('Password reset error:', error)
         // Check for rate limit error
         if (error.message.includes('rate limit') || error.message.includes('too many requests')) {
           toast.error('Please wait a moment before requesting another reset email.')
         } else {
           toast.error(`Failed to send password reset email: ${error.message}`)
         }
-        throw error
+        return
       }
       toast.success('Password reset email sent! Check your inbox to set a new password.')
     } catch (error) {
-      console.error('Error sending password reset:', error)
+      console.error('Unexpected error sending password reset:', error)
+      toast.error('Failed to send password reset email. Please try again.')
+    } finally {
+      setSendingPasswordReset(false)
     }
   }
 
@@ -323,8 +331,16 @@ export default function ProfilePage() {
               variant="outline"
               className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
               onClick={handleChangePassword}
+              disabled={sendingPasswordReset}
             >
-              Change Password
+              {sendingPasswordReset ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                'Change Password'
+              )}
             </Button>
           </div>
           <div className="flex items-center justify-between">
