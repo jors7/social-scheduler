@@ -26,6 +26,8 @@ export function SignInModal({ open, onOpenChange, onSwitchToSignUp, onSwitchToFo
   const [loading, setLoading] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [error, setError] = useState('')
+  const [magicLinkSent, setMagicLinkSent] = useState(false)
+  const [sendingMagicLink, setSendingMagicLink] = useState(false)
   const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,26 +65,56 @@ export function SignInModal({ open, onOpenChange, onSwitchToSignUp, onSwitchToFo
     }, 100)
   }
 
+  const handleSendMagicLink = async () => {
+    if (!email) {
+      setError('Please enter your email address')
+      return
+    }
+
+    setSendingMagicLink(true)
+    setError('')
+    setMagicLinkSent(false)
+
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        },
+      })
+
+      if (error) {
+        setError(error.message)
+      } else {
+        setMagicLinkSent(true)
+      }
+    } catch (err) {
+      setError('Failed to send magic link. Please try again.')
+    } finally {
+      setSendingMagicLink(false)
+    }
+  }
+
   const handleGoogleSignIn = async () => {
     setLoading(true)
     setError('')
-    
+
     try {
       // Store OAuth attempt time to track redirect
       localStorage.setItem('oauth_attempt_time', Date.now().toString())
-      
+
       // OAuth will return to homepage, which will handle the redirect
-      const redirectTo = typeof window !== 'undefined' 
+      const redirectTo = typeof window !== 'undefined'
         ? `${window.location.origin}`
         : `${process.env.NEXT_PUBLIC_APP_URL}`
-        
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo,
         }
       })
-      
+
       if (error) {
         localStorage.removeItem('oauth_attempt_time')
         setError(error.message)
@@ -140,6 +172,14 @@ export function SignInModal({ open, onOpenChange, onSwitchToSignUp, onSwitchToFo
             {error && (
               <div className="mb-4 p-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg">
                 {error}
+              </div>
+            )}
+
+            {/* Success message for magic link */}
+            {magicLinkSent && (
+              <div className="mb-4 p-3 text-xs text-green-600 bg-green-50 border border-green-200 rounded-lg">
+                <p className="font-medium mb-1">Magic link sent!</p>
+                <p>Check your email and click the link to sign in. The link will expire in 60 minutes.</p>
               </div>
             )}
 
@@ -202,13 +242,34 @@ export function SignInModal({ open, onOpenChange, onSwitchToSignUp, onSwitchToFo
               </Button>
             </form>
 
+            {/* Or divider for magic link */}
+            <div className="relative my-3 sm:my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-white px-3 sm:px-4 text-gray-500">Or sign in with</span>
+              </div>
+            </div>
+
+            {/* Magic Link button */}
+            <Button
+              type="button"
+              onClick={handleSendMagicLink}
+              variant="outline"
+              className="w-full h-9 sm:h-10 border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300 text-xs sm:text-sm font-semibold rounded-xl transition-all"
+              disabled={sendingMagicLink || !email}
+            >
+              {sendingMagicLink ? 'Sending...' : 'Email me a magic link'}
+            </Button>
+
             {/* Divider */}
             <div className="relative my-4 sm:my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200"></div>
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-white px-3 sm:px-4 text-gray-500">Continue with</span>
+                <span className="bg-white px-3 sm:px-4 text-gray-500">Or continue with</span>
               </div>
             </div>
 
