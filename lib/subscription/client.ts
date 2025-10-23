@@ -9,6 +9,9 @@ export interface ClientSubscription {
   isTrialing: boolean
   trialEndsAt?: string
   currentPeriodEnd?: string
+  // Cancellation fields
+  cancelAt?: string
+  canceledAt?: string
   // Scheduled change fields
   scheduledPlanId?: PlanId
   scheduledBillingCycle?: string
@@ -59,6 +62,9 @@ export async function getClientSubscription(): Promise<ClientSubscription | null
       isTrialing: subscription.status === 'trialing',
       trialEndsAt: subscription.trial_end,
       currentPeriodEnd: subscription.current_period_end,
+      // Cancellation info
+      cancelAt: subscription.cancel_at,
+      canceledAt: subscription.canceled_at,
       // Include scheduled change info if present
       scheduledPlanId: subscription.scheduled_plan_id as PlanId | undefined,
       scheduledBillingCycle: subscription.scheduled_billing_cycle,

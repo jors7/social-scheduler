@@ -336,12 +336,55 @@ export default function BillingPage() {
                 </div>
               )}
 
+              {/* Cancellation Status Alert */}
+              {subscription?.hasSubscription && subscription?.cancelAt && !subscription?.isTrialing && (
+                <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-orange-900">Subscription Ending</h4>
+                      <p className="text-sm text-orange-700 mt-1">
+                        Your subscription will cancel on <strong>{formatDate(subscription.cancelAt)}</strong>.
+                        You'll continue to have access to all features until then.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-3 text-orange-700 border-orange-300 hover:bg-orange-100"
+                        onClick={async () => {
+                          try {
+                            const response = await fetch('/api/stripe/portal', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' }
+                            })
+                            const data = await response.json()
+                            if (data.url) {
+                              window.location.href = data.url
+                            } else {
+                              toast.error('Failed to open billing portal')
+                            }
+                          } catch (error) {
+                            toast.error('Failed to open billing portal')
+                          }
+                        }}
+                      >
+                        Reactivate Subscription
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Billing Details */}
               {subscription?.hasSubscription && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Next billing date</p>
-                    <p className="font-medium">{formatDate(subscription.currentPeriodEnd)}</p>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      {subscription.cancelAt ? 'Access until' : 'Next billing date'}
+                    </p>
+                    <p className="font-medium">
+                      {formatDate(subscription.cancelAt || subscription.currentPeriodEnd)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Payment method</p>
