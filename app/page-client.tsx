@@ -7,6 +7,7 @@ import { BarChart } from 'lucide-react'
 import { useEffect, useState, Suspense, lazy } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { toast } from 'sonner'
 import { AuthModals } from '@/components/auth/auth-modals'
 import { MobileMenu } from '@/components/layout/mobile-menu'
 import { Navbar } from '@/components/layout/navbar'
@@ -185,15 +186,20 @@ function LandingPageContent() {
   }, [])
 
   useEffect(() => {
-    
+
     // Check URL parameters for modal triggers and scrolling
     const shouldOpenSignIn = searchParams.get('signin') === 'true'
     const shouldOpenSignUp = searchParams.get('signup') === 'true'
+    const errorMessage = searchParams.get('error')
     const planFromUrl = searchParams.get('plan')
     const scrollTo = searchParams.get('scroll')
-    
+
     if (shouldOpenSignIn) {
       setSignInOpen(true)
+      // Show error toast if present
+      if (errorMessage) {
+        toast.error(errorMessage)
+      }
       router.replace('/', { scroll: false })
     } else if (shouldOpenSignUp) {
       if (planFromUrl) {
