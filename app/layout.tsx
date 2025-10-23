@@ -1,9 +1,15 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'sonner'
 
 const inter = Inter({ subsets: ['latin'] })
+
+// Viewport configuration (moved to separate export in Next.js 14)
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+}
 
 // Static metadata for root layout (dynamic metadata will be in page.tsx files)
 export const metadata: Metadata = {
@@ -13,10 +19,6 @@ export const metadata: Metadata = {
     template: '%s | SocialCal'
   },
   description: 'Save 15+ hours weekly with SocialCal. Schedule and manage social media posts across Twitter/X, Instagram, Facebook, LinkedIn, YouTube, TikTok, Threads, Bluesky, and Pinterest from one powerful dashboard. AI-powered captions, analytics, and team collaboration.',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-  },
   keywords: [
     'social media scheduler',
     'social media management',
