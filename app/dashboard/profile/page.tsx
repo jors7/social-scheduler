@@ -98,6 +98,23 @@ export default function ProfilePage() {
     }
   }
 
+  const handleChangePassword = async () => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        user?.email || '',
+        {
+          redirectTo: `${window.location.origin}/reset-password`,
+        }
+      )
+
+      if (error) throw error
+      toast.success('Password reset email sent! Check your inbox to set a new password.')
+    } catch (error) {
+      console.error('Error sending password reset:', error)
+      toast.error('Failed to send password reset email')
+    }
+  }
+
   if (loading) {
     return (
       <Card variant="elevated">
@@ -293,9 +310,15 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Password</p>
-              <p className="text-sm text-gray-600">Last changed: Never</p>
+              <p className="text-sm text-gray-600">Change your account password</p>
             </div>
-            <Button variant="outline" className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">Change Password</Button>
+            <Button
+              variant="outline"
+              className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+              onClick={handleChangePassword}
+            >
+              Change Password
+            </Button>
           </div>
           <div className="flex items-center justify-between">
             <div>
