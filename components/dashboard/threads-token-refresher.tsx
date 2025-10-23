@@ -23,7 +23,10 @@ export function ThreadsTokenRefresher() {
         lastCheckRef.current = now
         
         // Check token status
-        const statusResponse = await fetch('/api/threads/refresh-token')
+        const statusResponse = await fetch('/api/threads/refresh-token', {
+          method: 'GET',
+          credentials: 'include'
+        })
         if (!statusResponse.ok) {
           return
         }
@@ -37,6 +40,7 @@ export function ThreadsTokenRefresher() {
           
           const refreshResponse = await fetch('/api/threads/refresh-token', {
             method: 'POST',
+            credentials: 'include',
             headers: {
               'Content-Type': 'application/json'
             }
