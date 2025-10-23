@@ -38,7 +38,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { getClientSubscription } from '@/lib/subscription/client'
@@ -92,9 +92,23 @@ const platformIcons: Record<string, string> = {
   pinterest: 'P',
 }
 
-
-export default function DashboardPage() {
+// Component to handle auth success notification
+function AuthSuccessHandler() {
   const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const authStatus = searchParams.get('auth')
+    if (authStatus === 'success') {
+      toast.success('Successfully signed in!')
+      // Clear the parameter from URL
+      window.history.replaceState({}, '', '/dashboard')
+    }
+  }, [searchParams])
+
+  return null
+}
+
+function DashboardContent() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentPosts, setRecentPosts] = useState<PostData[]>([])
   const [upcomingSchedule, setUpcomingSchedule] = useState<{date: string, posts: number, platforms: string[], dateObj: Date, media_urls: string[], postGroups: string[][]}[]>([])
@@ -587,16 +601,6 @@ export default function DashboardPage() {
 
     loadDashboard()
   }, [])
-
-  // Show success message after magic link authentication
-  useEffect(() => {
-    const authStatus = searchParams.get('auth')
-    if (authStatus === 'success') {
-      toast.success('Successfully signed in!')
-      // Clear the parameter from URL
-      window.history.replaceState({}, '', '/dashboard')
-    }
-  }, [searchParams])
 
   // Auto-rotate tips every 15 seconds
   useEffect(() => {
@@ -1875,6 +1879,18 @@ export default function DashboardPage() {
         onComplete={completeOnboarding}
         onSkip={skipOnboarding}
       />
+    </>
+  )
+}
+
+// Main export with Suspense boundary
+export default function DashboardPage() {
+  return (
+    <>
+      <Suspense fallback={null}>
+        <AuthSuccessHandler />
+      </Suspense>
+      <DashboardContent />
     </>
   )
 }
