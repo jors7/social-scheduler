@@ -16,17 +16,39 @@ function ResetPasswordForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [sessionValid, setSessionValid] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
   const supabase = createClient()
 
   useEffect(() => {
-    // Check if we have the necessary tokens from the email link
-    const accessToken = searchParams.get('access_token')
-    const refreshToken = searchParams.get('refresh_token')
-    
-    if (!accessToken || !refreshToken) {
-      setError('Invalid reset link. Please request a new password reset.')
+    // Check if user has a valid session (after code exchange from email link)
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+
+        if (error || !session) {
+          setError('Invalid or expired reset link. Please request a new password reset.')
+          setSessionValid(false)
+        } else {
+          setSessionValid(true)
+          // Show success message if redirected from auth callback
+          const authSuccess = searchParams.get('auth')
+          if (authSuccess === 'success') {
+            setMessage('Link verified! You can now set a new password.')
+            // Clean up URL
+            window.history.replaceState({}, '', '/reset-password')
+          }
+        }
+      } catch (err) {
+        setError('Failed to verify reset link. Please try again.')
+        setSessionValid(false)
+      } finally {
+        setCheckingSession(false)
+      }
     }
-  }, [searchParams])
+
+    checkSession()
+  }, [searchParams, supabase.auth])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,13 +87,28 @@ function ResetPasswordForm() {
     }
   }
 
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 px-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="py-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-4 text-gray-600">Verifying reset link...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Set new password</CardTitle>
           <CardDescription className="text-center">
-            Enter your new password below
+            {sessionValid ? 'Enter your new password below' : 'Unable to reset password'}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -79,6 +116,19 @@ function ResetPasswordForm() {
             {error && (
               <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
                 {error}
+                {!sessionValid && (
+                  <div className="mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => router.push('/?signin=true')}
+                    >
+                      Go to Sign In
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
             {message && (
@@ -86,34 +136,42 @@ function ResetPasswordForm() {
                 {message}
               </div>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="password">New Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
+            {sessionValid && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="password">New Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    disabled={!sessionValid}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    disabled={!sessionValid}
+                  />
+                </div>
+              </>
+            )}
           </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full" disabled={loading || !!message}>
-              {loading ? 'Updating...' : 'Update password'}
-            </Button>
-          </CardFooter>
+          {sessionValid && (
+            <CardFooter>
+              <Button type="submit" className="w-full" disabled={loading || !!message || !sessionValid}>
+                {loading ? 'Updating...' : 'Update password'}
+              </Button>
+            </CardFooter>
+          )}
         </form>
       </Card>
     </div>

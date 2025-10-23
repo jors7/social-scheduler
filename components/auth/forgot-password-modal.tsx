@@ -35,11 +35,16 @@ export function ForgotPasswordModal({ open, onOpenChange, onBackToSignIn }: Forg
     
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
       })
 
       if (error) {
-        setError(error.message)
+        // Check for rate limit error
+        if (error.message.includes('rate limit') || error.message.includes('too many requests')) {
+          setError('Please wait a moment before requesting another reset email.')
+        } else {
+          setError(error.message)
+        }
       } else {
         setSuccess(true)
       }

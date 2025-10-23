@@ -103,15 +103,22 @@ export default function ProfilePage() {
       const { error } = await supabase.auth.resetPasswordForEmail(
         user?.email || '',
         {
-          redirectTo: `${window.location.origin}/reset-password`,
+          redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
         }
       )
 
-      if (error) throw error
+      if (error) {
+        // Check for rate limit error
+        if (error.message.includes('rate limit') || error.message.includes('too many requests')) {
+          toast.error('Please wait a moment before requesting another reset email.')
+        } else {
+          toast.error(`Failed to send password reset email: ${error.message}`)
+        }
+        throw error
+      }
       toast.success('Password reset email sent! Check your inbox to set a new password.')
     } catch (error) {
       console.error('Error sending password reset:', error)
-      toast.error('Failed to send password reset email')
     }
   }
 
