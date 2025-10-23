@@ -248,7 +248,6 @@ export async function POST(request: NextRequest) {
             stripe_subscription_id: null, // Remove Stripe subscription link
             is_active: true, // Keep user logged in with limited access
             canceled_at: new Date().toISOString(),
-            downgraded_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
           .eq('stripe_subscription_id', subscription.id)
