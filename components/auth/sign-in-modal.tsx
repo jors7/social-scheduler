@@ -79,7 +79,6 @@ export function SignInModal({ open, onOpenChange, onSwitchToSignUp, onSwitchToFo
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          // Use dedicated auth callback route to avoid PWA interference
           emailRedirectTo: `${window.location.origin}/auth/magic-link`,
         },
       })
