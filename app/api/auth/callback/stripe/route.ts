@@ -109,8 +109,13 @@ export async function GET(request: NextRequest) {
         userId = authData.user.id
         console.log('✅ New Supabase account created:', userId)
 
+        // Get customer ID (handle both string and object)
+        const customerId = typeof session.customer === 'string'
+          ? session.customer
+          : (session.customer as any)?.id
+
         // Update Stripe customer metadata with Supabase user ID
-        await stripe.customers.update(session.customer as string, {
+        await stripe.customers.update(customerId, {
           metadata: {
             supabase_user_id: userId
           }
@@ -144,7 +149,7 @@ export async function GET(request: NextRequest) {
               status: subscription.status,
               billing_cycle: metadata?.billing_cycle || 'monthly',
               stripe_subscription_id: subscription.id,
-              stripe_customer_id: session.customer as string,
+              stripe_customer_id: customerId,
               current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
               current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
               trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
