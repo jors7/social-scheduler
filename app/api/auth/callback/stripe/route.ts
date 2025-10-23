@@ -171,28 +171,31 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Generate a magic link for auto-login
-    console.log('🔐 Generating magic link for user:', userId)
+    // Create an OTP (One-Time Password) for the user to auto-login
+    console.log('🔐 Creating OTP for user:', userId)
 
-    const { data: magicLinkData, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
+    const { data: otpData, error: otpError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'signup',
       email: customerEmail,
       options: {
         redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?subscription=success`
       }
     })
 
-    if (magicLinkError || !magicLinkData) {
-      console.error('❌ Failed to generate magic link:', magicLinkError)
+    if (otpError || !otpData) {
+      console.error('❌ Failed to generate OTP:', otpError)
       return NextResponse.redirect(
         new URL('/?error=login_failed', process.env.NEXT_PUBLIC_APP_URL!)
       )
     }
 
-    console.log('✅ Magic link generated, redirecting to dashboard')
+    console.log('✅ OTP created, redirecting to auth confirmation')
 
-    // Redirect to the magic link (auto-logs in the user)
-    return NextResponse.redirect(magicLinkData.properties.action_link)
+    // Use the hashed token from the OTP to auto-login
+    // This will set the session cookies and redirect to dashboard
+    const confirmUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/verify?token=${otpData.properties.hashed_token}&type=signup&redirect_to=${encodeURIComponent(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?subscription=success`)}`
+
+    return NextResponse.redirect(confirmUrl)
 
   } catch (error) {
     console.error('❌ Stripe callback error:', error)
