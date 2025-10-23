@@ -130,6 +130,35 @@ export async function GET(request: NextRequest) {
               billing_cycle: metadata?.billing_cycle || 'monthly',
             }
           })
+
+          // Also create the subscription record in Supabase
+          console.log('📝 Creating subscription record in database')
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+
+          const { error: subError } = await supabaseAdmin
+            .from('user_subscriptions')
+            .upsert({
+              user_id: userId,
+              plan_id: metadata?.plan_id || 'starter',
+              status: subscription.status,
+              billing_cycle: metadata?.billing_cycle || 'monthly',
+              stripe_subscription_id: subscription.id,
+              stripe_customer_id: session.customer as string,
+              current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+              trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+              is_active: true,
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'stripe_subscription_id'
+            })
+
+          if (subError) {
+            console.error('⚠️ Error creating subscription record:', subError)
+            // Don't fail the whole flow, webhook can retry
+          } else {
+            console.log('✅ Subscription record created in database')
+          }
         }
       }
     }

@@ -65,14 +65,32 @@ export async function POST(request: NextRequest) {
         // Get the actual user_id from Stripe customer metadata (updated by callback endpoint)
         if (!user_id || user_id === 'new_signup' || user_id === 'pending') {
           console.log('⚠️ user_id is pending, fetching from customer metadata...')
+
+          // First, get the actual email from the session (not metadata)
+          let actualEmail = user_email
+          if (!actualEmail || actualEmail === 'pending') {
+            // Get email from session.customer_details (always present)
+            actualEmail = (session as any).customer_details?.email
+
+            if (!actualEmail) {
+              // Fallback: get from customer
+              const customer = await stripe.customers.retrieve(session.customer as string)
+              actualEmail = (customer as any).email
+            }
+
+            console.log('📧 Extracted email from session:', actualEmail)
+          }
+
+          // Try to get user_id from customer metadata
           const customer = await stripe.customers.retrieve(session.customer as string)
           user_id = (customer as any).metadata?.supabase_user_id
 
           if (!user_id || user_id === 'pending') {
-            // Last resort: Look up by email in Supabase
-            if (user_email) {
+            // Last resort: Look up by email in Supabase (callback might have created it)
+            if (actualEmail) {
+              console.log('🔍 Looking up user by email:', actualEmail)
               const { data: users } = await supabaseAdmin.auth.admin.listUsers()
-              const matchedUser = users.users.find(u => u.email === user_email)
+              const matchedUser = users.users.find(u => u.email === actualEmail)
               if (matchedUser) {
                 user_id = matchedUser.id
                 console.log('✅ Found user_id by email lookup:', user_id)
@@ -82,7 +100,17 @@ export async function POST(request: NextRequest) {
 
           if (!user_id || user_id === 'pending') {
             console.error('❌ Could not determine user_id for new signup')
-            throw new Error('Cannot process subscription without valid user_id')
+            console.error('Email used:', actualEmail)
+            console.error('This likely means callback endpoint hasnt created account yet')
+
+            // Return 200 to prevent Stripe from retrying, but log warning
+            // The callback will create the account and update the subscription
+            console.log('⏳ Returning 200 OK - callback will handle subscription creation')
+            return NextResponse.json({
+              received: true,
+              message: 'Waiting for callback to create account',
+              event: event.type
+            })
           }
         }
         
