@@ -32,10 +32,8 @@ export async function POST(request: NextRequest) {
       email?: string
     }
 
-    // For non-authenticated users, require email
-    if (!user && !email) {
-      return NextResponse.json({ error: 'Email required for new signups' }, { status: 400 })
-    }
+    // For non-authenticated users, Stripe will collect email during checkout
+    // So we don't require it here
 
     // Validate plan
     const plan = SUBSCRIPTION_PLANS[planId]
@@ -46,7 +44,7 @@ export async function POST(request: NextRequest) {
     // Get or create Stripe customer
     let customerId: string | undefined
     let userId: string | undefined = user?.id
-    const customerEmail = user?.email || email!
+    const customerEmail = user?.email || email || undefined // Stripe will collect if undefined
 
     // For authenticated users, check existing subscription
     if (user) {
@@ -92,12 +90,18 @@ export async function POST(request: NextRequest) {
 
     // Create Stripe customer if not exists
     if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: customerEmail,
+      const customerData: any = {
         metadata: {
           supabase_user_id: userId || 'pending', // Will be updated in webhook after account creation
         },
-      })
+      }
+
+      // Only set email if we have it (for authenticated users)
+      if (customerEmail) {
+        customerData.email = customerEmail
+      }
+
+      const customer = await stripe.customers.create(customerData)
       customerId = customer.id
     }
 
@@ -142,7 +146,7 @@ export async function POST(request: NextRequest) {
         billing_address_collection: 'auto',
         metadata: {
           user_id: userId || 'new_signup',
-          user_email: customerEmail,
+          user_email: customerEmail || 'pending',
           plan_id: planId,
           billing_cycle: billingCycle,
           is_new_signup: !user ? 'true' : 'false',
@@ -151,7 +155,7 @@ export async function POST(request: NextRequest) {
           trial_period_days: plan.features.trial_days,
           metadata: {
             user_id: userId || 'pending',
-            user_email: customerEmail,
+            user_email: customerEmail || 'pending',
             plan_id: planId,
             billing_cycle: billingCycle,
           },
@@ -180,7 +184,7 @@ export async function POST(request: NextRequest) {
       billing_address_collection: 'auto',
       metadata: {
         user_id: userId || 'new_signup',
-        user_email: customerEmail,
+        user_email: customerEmail || 'pending',
         plan_id: planId,
         billing_cycle: billingCycle,
         is_new_signup: !user ? 'true' : 'false',
@@ -189,7 +193,7 @@ export async function POST(request: NextRequest) {
         trial_period_days: plan.features.trial_days,
         metadata: {
           user_id: userId || 'pending',
-          user_email: customerEmail,
+          user_email: customerEmail || 'pending',
           plan_id: planId,
           billing_cycle: billingCycle,
         },
