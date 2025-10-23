@@ -12,10 +12,19 @@ export async function GET(request: NextRequest) {
     const type = requestUrl.searchParams.get('type')
     const next = requestUrl.searchParams.get('next') || '/dashboard'
 
-    console.log('🔐 Magic link callback received:', { token_hash: token_hash?.substring(0, 10), type })
+    console.log('🔐 Magic link callback received:', {
+      token_hash: token_hash?.substring(0, 10),
+      type,
+      next,
+      fullUrl: request.url
+    })
 
     if (token_hash && type) {
-      let response = NextResponse.redirect(new URL(next, request.url))
+      // Build redirect URL with success parameter
+      const redirectUrl = new URL(next, request.url)
+      redirectUrl.searchParams.set('auth', 'success')
+
+      let response = NextResponse.redirect(redirectUrl)
 
       const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -54,7 +63,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(new URL(`/?error=${encodeURIComponent(error.message)}`, request.url))
       }
 
-      console.log('✅ Magic link verified successfully, redirecting to:', next)
+      console.log('✅ Magic link verified successfully, redirecting to:', redirectUrl.toString())
       return response
     }
 

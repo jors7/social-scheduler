@@ -47,6 +47,7 @@ import { SUBSCRIPTION_PLANS } from '@/lib/subscription/plans'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 import { useOnboarding } from '@/providers/onboarding-provider'
 import { OnboardingWizard } from '@/components/onboarding/onboarding-wizard'
+import { useSearchParams } from 'next/navigation'
 
 interface PostData {
   id: string
@@ -93,6 +94,7 @@ const platformIcons: Record<string, string> = {
 
 
 export default function DashboardPage() {
+  const searchParams = useSearchParams()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentPosts, setRecentPosts] = useState<PostData[]>([])
   const [upcomingSchedule, setUpcomingSchedule] = useState<{date: string, posts: number, platforms: string[], dateObj: Date, media_urls: string[], postGroups: string[][]}[]>([])
@@ -585,6 +587,16 @@ export default function DashboardPage() {
 
     loadDashboard()
   }, [])
+
+  // Show success message after magic link authentication
+  useEffect(() => {
+    const authStatus = searchParams.get('auth')
+    if (authStatus === 'success') {
+      toast.success('Successfully signed in!')
+      // Clear the parameter from URL
+      window.history.replaceState({}, '', '/dashboard')
+    }
+  }, [searchParams])
 
   // Auto-rotate tips every 15 seconds
   useEffect(() => {
