@@ -65,42 +65,59 @@ export function BlueskyPreview({ content, mediaUrls = [] }: BlueskyPreviewProps)
             {renderContent()}
           </div>
 
-          {/* Media - up to 4 images in grid */}
+          {/* Media - up to 4 images (single image natural, grid for multiple) */}
           {mediaUrls && mediaUrls.length > 0 && (
             <div className="mt-3 rounded-xl overflow-hidden border border-gray-200">
-              <div
-                className={`grid gap-0.5 ${
-                  mediaUrls.length === 1
-                    ? 'grid-cols-1'
-                    : mediaUrls.length === 2
-                    ? 'grid-cols-2'
-                    : mediaUrls.length === 3
-                    ? 'grid-cols-3'
-                    : 'grid-cols-2'
-                }`}
-              >
-                {mediaUrls.slice(0, 4).map((url, index) => (
-                  <div
-                    key={index}
-                    className="relative bg-gray-200 aspect-square"
-                  >
-                    {isVideoUrl(url) ? (
-                      <video
-                        src={url}
-                        className="w-full h-full object-cover"
-                        muted
-                        preload="metadata"
-                      />
-                    ) : (
-                      <img
-                        src={url}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
+              {mediaUrls.length === 1 ? (
+                <div className="relative bg-gray-200 max-h-[500px]">
+                  {isVideoUrl(mediaUrls[0]) ? (
+                    <video
+                      src={mediaUrls[0]}
+                      className="w-full h-full object-contain"
+                      muted
+                      preload="metadata"
+                    />
+                  ) : (
+                    <img
+                      src={mediaUrls[0]}
+                      alt=""
+                      className="w-full h-full object-contain"
+                    />
+                  )}
+                </div>
+              ) : (
+                <div
+                  className={`grid gap-0.5 ${
+                    mediaUrls.length === 2
+                      ? 'grid-cols-2'
+                      : mediaUrls.length === 3
+                      ? 'grid-cols-3'
+                      : 'grid-cols-2'
+                  }`}
+                >
+                  {mediaUrls.slice(0, 4).map((url, index) => (
+                    <div
+                      key={index}
+                      className="relative bg-gray-200 aspect-square"
+                    >
+                      {isVideoUrl(url) ? (
+                        <video
+                          src={url}
+                          className="w-full h-full object-cover"
+                          muted
+                          preload="metadata"
+                        />
+                      ) : (
+                        <img
+                          src={url}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

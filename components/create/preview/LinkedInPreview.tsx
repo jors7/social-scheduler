@@ -79,14 +79,14 @@ export function LinkedInPreview({ content, mediaUrls = [] }: LinkedInPreviewProp
         </div>
       </div>
 
-      {/* Media - 1.91:1 aspect ratio */}
+      {/* Media - natural aspect ratio (1.91:1 landscape recommended for best display) */}
       {mediaUrls && mediaUrls.length > 0 && (
         <div className="relative">
-          <div className="relative bg-gray-100 aspect-[1.91/1]">
+          <div className="relative bg-gray-100">
             {isVideoUrl(mediaUrls[0]) ? (
               <video
                 src={mediaUrls[0]}
-                className="w-full h-full object-cover"
+                className="w-full max-h-[600px] object-contain"
                 muted
                 preload="metadata"
               />
@@ -94,7 +94,7 @@ export function LinkedInPreview({ content, mediaUrls = [] }: LinkedInPreviewProp
               <img
                 src={mediaUrls[0]}
                 alt=""
-                className="w-full h-full object-cover"
+                className="w-full max-h-[600px] object-contain"
               />
             )}
           </div>

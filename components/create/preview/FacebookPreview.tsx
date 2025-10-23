@@ -143,15 +143,15 @@ export function FacebookPreview({ content, mediaUrls = [], format = 'feed' }: Fa
         </div>
       </div>
 
-      {/* Media - 1.91:1 aspect ratio for landscape */}
+      {/* Media - displayed in natural aspect ratio */}
       {mediaUrls && mediaUrls.length > 0 && (
         <div className="relative">
           {mediaUrls.length === 1 ? (
-            <div className="relative bg-gray-100 aspect-[1.91/1]">
+            <div className="relative bg-gray-100">
               {isVideoUrl(mediaUrls[0]) ? (
                 <video
                   src={mediaUrls[0]}
-                  className="w-full h-full object-cover"
+                  className="w-full max-h-[600px] object-contain"
                   muted
                   preload="metadata"
                 />
@@ -159,7 +159,7 @@ export function FacebookPreview({ content, mediaUrls = [], format = 'feed' }: Fa
                 <img
                   src={mediaUrls[0]}
                   alt=""
-                  className="w-full h-full object-cover"
+                  className="w-full max-h-[600px] object-contain"
                 />
               )}
             </div>

@@ -93,7 +93,9 @@ export function TwitterPreview({ content, mediaUrls = [] }: TwitterPreviewProps)
                   <div
                     key={index}
                     className={`relative bg-gray-200 ${
-                      mediaUrls.length === 3 && index === 0
+                      mediaUrls.length === 1
+                        ? 'aspect-[16/9]'
+                        : mediaUrls.length === 3 && index === 0
                         ? 'row-span-2'
                         : 'aspect-[7/8]'
                     }`}

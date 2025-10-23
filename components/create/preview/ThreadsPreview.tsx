@@ -63,14 +63,14 @@ export function ThreadsPreview({ content, mediaUrls = [] }: ThreadsPreviewProps)
             {renderContent()}
           </div>
 
-          {/* Media - 9:16 vertical */}
+          {/* Media - natural aspect ratio (4:5 or 9:16 recommended for mobile) */}
           {mediaUrls && mediaUrls.length > 0 && (
             <div className="mt-3 rounded-xl overflow-hidden">
-              <div className="relative bg-gray-100 aspect-[9/16] max-h-[300px]">
+              <div className="relative bg-gray-100 max-h-[400px]">
                 {isVideoUrl(mediaUrls[0]) ? (
                   <video
                     src={mediaUrls[0]}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                     muted
                     preload="metadata"
                   />
@@ -78,7 +78,7 @@ export function ThreadsPreview({ content, mediaUrls = [] }: ThreadsPreviewProps)
                   <img
                     src={mediaUrls[0]}
                     alt=""
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                 )}
               </div>
