@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-11-20.acacia' as any,
 })
@@ -38,12 +42,29 @@ export async function GET(request: NextRequest) {
     })
 
     const metadata = session.metadata
-    const customerEmail = metadata?.user_email || (session.customer as any)?.email
+    let customerEmail = metadata?.user_email
     const isNewSignup = metadata?.is_new_signup === 'true'
+
+    // If email is 'pending', get it from the session or customer
+    if (!customerEmail || customerEmail === 'pending') {
+      // Try session.customer_details.email first (always present in checkout)
+      customerEmail = (session as any).customer_details?.email
+
+      // If still not found, try expanded customer object
+      if (!customerEmail && typeof session.customer === 'object') {
+        customerEmail = (session.customer as any)?.email
+      }
+
+      // If customer is just an ID, fetch the customer
+      if (!customerEmail && typeof session.customer === 'string') {
+        const customer = await stripe.customers.retrieve(session.customer)
+        customerEmail = (customer as any)?.email
+      }
+    }
 
     console.log('📧 Customer email:', customerEmail, '| New signup:', isNewSignup)
 
-    if (!customerEmail) {
+    if (!customerEmail || customerEmail === 'pending') {
       console.error('❌ No email found in session')
       return NextResponse.redirect(
         new URL('/?error=missing_email', process.env.NEXT_PUBLIC_APP_URL!)
