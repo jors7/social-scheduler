@@ -18,6 +18,7 @@ function ResetPasswordForm() {
   const [message, setMessage] = useState('')
   const [sessionValid, setSessionValid] = useState(false)
   const [checkingSession, setCheckingSession] = useState(true)
+  const [passwordUpdated, setPasswordUpdated] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -75,6 +76,7 @@ function ResetPasswordForm() {
       if (error) {
         setError(error.message)
       } else {
+        setPasswordUpdated(true)
         setMessage('Password updated successfully! Redirecting to sign in...')
         setTimeout(() => {
           router.push('/?signin=true')
@@ -167,7 +169,7 @@ function ResetPasswordForm() {
           </CardContent>
           {sessionValid && (
             <CardFooter>
-              <Button type="submit" className="w-full" disabled={loading || !!message || !sessionValid}>
+              <Button type="submit" className="w-full" disabled={loading || passwordUpdated || !sessionValid}>
                 {loading ? 'Updating...' : 'Update password'}
               </Button>
             </CardFooter>
