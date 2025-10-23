@@ -133,7 +133,8 @@ export async function GET(request: NextRequest) {
 
           // Also create the subscription record in Supabase
           console.log('📝 Creating subscription record in database')
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+          const subscriptionResponse = await stripe.subscriptions.retrieve(subscriptionId)
+          const subscription = subscriptionResponse as any // Type assertion to handle Stripe Response wrapper
 
           const { error: subError } = await supabaseAdmin
             .from('user_subscriptions')
