@@ -171,29 +171,26 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Create an OTP (One-Time Password) for the user to auto-login
-    console.log('🔐 Creating OTP for user:', userId)
+    // Create a magic link for the user to auto-login
+    console.log('🔐 Creating magic link for user:', userId)
 
-    const { data: otpData, error: otpError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'signup',
+    const { data: magicLinkData, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
       email: customerEmail,
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?subscription=success`
-      }
     })
 
-    if (otpError || !otpData) {
-      console.error('❌ Failed to generate OTP:', otpError)
+    if (magicLinkError || !magicLinkData) {
+      console.error('❌ Failed to generate magic link:', magicLinkError)
       return NextResponse.redirect(
         new URL('/?error=login_failed', process.env.NEXT_PUBLIC_APP_URL!)
       )
     }
 
-    console.log('✅ OTP created, redirecting to auth confirmation')
+    console.log('✅ Magic link created, redirecting to auth confirmation')
 
-    // Use the hashed token from the OTP to auto-login
+    // Use the hashed token from the magic link to auto-login
     // This will set the session cookies and redirect to dashboard
-    const confirmUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/verify?token=${otpData.properties.hashed_token}&type=signup&redirect_to=${encodeURIComponent(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?subscription=success`)}`
+    const confirmUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/verify?token=${magicLinkData.properties.hashed_token}&type=magiclink&redirect_to=${encodeURIComponent(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?subscription=success`)}`
 
     return NextResponse.redirect(confirmUrl)
 
