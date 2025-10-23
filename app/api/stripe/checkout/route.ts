@@ -23,15 +23,18 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Check if user is authenticated (optional for new trial signups)
+    const { data: { user } } = await supabase.auth.getUser()
 
-    const { planId, billingCycle } = await request.json() as {
+    const { planId, billingCycle, email } = await request.json() as {
       planId: PlanId
       billingCycle: BillingCycle
+      email?: string
+    }
+
+    // For non-authenticated users, require email
+    if (!user && !email) {
+      return NextResponse.json({ error: 'Email required for new signups' }, { status: 400 })
     }
 
     // Validate plan
@@ -42,51 +45,57 @@ export async function POST(request: NextRequest) {
 
     // Get or create Stripe customer
     let customerId: string | undefined
+    let userId: string | undefined = user?.id
+    const customerEmail = user?.email || email!
 
-    // Check if user already has a Stripe customer ID
-    const { data: subscription } = await supabase
-      .from('user_subscriptions')
-      .select('stripe_customer_id, stripe_subscription_id, status')
-      .eq('user_id', user.id)
-      .single()
+    // For authenticated users, check existing subscription
+    if (user) {
+      const { data: subscription } = await supabase
+        .from('user_subscriptions')
+        .select('stripe_customer_id, stripe_subscription_id, status')
+        .eq('user_id', user.id)
+        .single()
 
-    if (subscription?.stripe_customer_id) {
-      customerId = subscription.stripe_customer_id
-      
-      // CRITICAL: Cancel any existing active subscriptions with proration
-      if (subscription.stripe_subscription_id && 
-          ['active', 'trialing'].includes(subscription.status)) {
-        console.log(`Canceling existing subscription ${subscription.stripe_subscription_id} with proration`)
-        try {
-          // Cancel immediately with proration
-          // This will create a credit for unused time that automatically applies to the new subscription
-          const canceledSubscription = await stripe.subscriptions.cancel(
-            subscription.stripe_subscription_id,
-            {
-              prorate: true,
-              invoice_now: true, // Generate credit invoice immediately
-              expand: ['latest_invoice']
+      if (subscription?.stripe_customer_id) {
+        customerId = subscription.stripe_customer_id
+
+        // CRITICAL: Cancel any existing active subscriptions with proration
+        if (subscription.stripe_subscription_id &&
+            ['active', 'trialing'].includes(subscription.status)) {
+          console.log(`Canceling existing subscription ${subscription.stripe_subscription_id} with proration`)
+          try {
+            // Cancel immediately with proration
+            // This will create a credit for unused time that automatically applies to the new subscription
+            const canceledSubscription = await stripe.subscriptions.cancel(
+              subscription.stripe_subscription_id,
+              {
+                prorate: true,
+                invoice_now: true, // Generate credit invoice immediately
+                expand: ['latest_invoice']
+              }
+            )
+
+            // Log the proration details
+            const latestInvoice = canceledSubscription.latest_invoice as any
+            if (latestInvoice && latestInvoice.total < 0) {
+              console.log(`Proration credit generated: ${Math.abs(latestInvoice.total / 100)} ${latestInvoice.currency.toUpperCase()}`)
             }
-          )
-          
-          // Log the proration details
-          const latestInvoice = canceledSubscription.latest_invoice as any
-          if (latestInvoice && latestInvoice.total < 0) {
-            console.log(`Proration credit generated: ${Math.abs(latestInvoice.total / 100)} ${latestInvoice.currency.toUpperCase()}`)
+
+            console.log(`Successfully canceled subscription ${subscription.stripe_subscription_id} with proration`)
+          } catch (cancelError) {
+            console.error('Error canceling existing subscription:', cancelError)
+            // Continue anyway - better to allow upgrade than block it
           }
-          
-          console.log(`Successfully canceled subscription ${subscription.stripe_subscription_id} with proration`)
-        } catch (cancelError) {
-          console.error('Error canceling existing subscription:', cancelError)
-          // Continue anyway - better to allow upgrade than block it
         }
       }
-    } else {
-      // Create new Stripe customer
+    }
+
+    // Create Stripe customer if not exists
+    if (!customerId) {
       const customer = await stripe.customers.create({
-        email: user.email,
+        email: customerEmail,
         metadata: {
-          supabase_user_id: user.id,
+          supabase_user_id: userId || 'pending', // Will be updated in webhook after account creation
         },
       })
       customerId = customer.id
@@ -117,6 +126,7 @@ export async function POST(request: NextRequest) {
       // Use the newly created price
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
+        customer_email: !user ? customerEmail : undefined, // Only set if no existing customer
         payment_method_types: ['card'],
         line_items: [
           {
@@ -125,23 +135,23 @@ export async function POST(request: NextRequest) {
           },
         ],
         mode: 'subscription',
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?subscription=success`,
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/stripe?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/#pricing`,
-        // Allow promotion codes and apply any credit balance automatically
+        // Collect only minimal data (name is always collected by Stripe)
         allow_promotion_codes: true,
-        customer_update: {
-          address: 'auto',
-        },
+        billing_address_collection: 'auto',
         metadata: {
-          user_id: user.id,
+          user_id: userId || 'new_signup',
+          user_email: customerEmail,
           plan_id: planId,
           billing_cycle: billingCycle,
-          upgrade_with_proration: subscription?.stripe_subscription_id ? 'true' : 'false',
+          is_new_signup: !user ? 'true' : 'false',
         },
         subscription_data: {
           trial_period_days: plan.features.trial_days,
           metadata: {
-            user_id: user.id,
+            user_id: userId || 'pending',
+            user_email: customerEmail,
             plan_id: planId,
             billing_cycle: billingCycle,
           },
@@ -154,6 +164,7 @@ export async function POST(request: NextRequest) {
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
+      customer_email: !user ? customerEmail : undefined, // Only set if no existing customer
       payment_method_types: ['card'],
       line_items: [
         {
@@ -162,23 +173,23 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: 'subscription',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?subscription=success`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/stripe?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/#pricing`,
-      // Allow promotion codes and apply any credit balance automatically
+      // Collect only minimal data (name is always collected by Stripe)
       allow_promotion_codes: true,
-      customer_update: {
-        address: 'auto',
-      },
+      billing_address_collection: 'auto',
       metadata: {
-        user_id: user.id,
+        user_id: userId || 'new_signup',
+        user_email: customerEmail,
         plan_id: planId,
         billing_cycle: billingCycle,
-        upgrade_with_proration: subscription?.stripe_subscription_id ? 'true' : 'false',
+        is_new_signup: !user ? 'true' : 'false',
       },
       subscription_data: {
         trial_period_days: plan.features.trial_days,
         metadata: {
-          user_id: user.id,
+          user_id: userId || 'pending',
+          user_email: customerEmail,
           plan_id: planId,
           billing_cycle: billingCycle,
         },

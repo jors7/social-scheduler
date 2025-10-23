@@ -61,14 +61,20 @@ export function SubscriptionGate({ children, feature = 'premium features', class
     )
   }
 
-  if (!subscription?.hasSubscription) {
+  // Free tier users: Allow access but with limits (checked at action time)
+  // Paid subscribers: Full access
+  // No subscription (not logged in): Show gate
+  const isFreeUser = subscription?.planId === 'free'
+  const hasNoAccount = !subscription
+
+  if (hasNoAccount) {
     return (
       <div className={cn("relative", className)}>
         {/* Blurred content behind */}
         <div className="pointer-events-none select-none blur-sm">
           {children}
         </div>
-        
+
         {/* Overlay */}
         <div className="absolute inset-0 bg-background/30 backdrop-blur-sm z-10">
           <div className="absolute top-24 left-64 max-w-md">
@@ -79,7 +85,7 @@ export function SubscriptionGate({ children, feature = 'premium features', class
                 </div>
                 <CardTitle className="text-2xl">Unlock {feature}</CardTitle>
                 <CardDescription className="mt-2">
-                  Upgrade to a paid plan to access scheduling and advanced features
+                  Start your free trial to access scheduling and advanced features
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -106,18 +112,18 @@ export function SubscriptionGate({ children, feature = 'premium features', class
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="pt-2">
-                  <Button 
-                    onClick={handleSubscribe} 
-                    className="w-full" 
+                  <Button
+                    onClick={handleSubscribe}
+                    className="w-full"
                     size="lg"
                   >
                     <Sparkles className="mr-2 h-4 w-4" />
-                    Subscribe Now - Start 7-Day Trial
+                    Start 7-Day Free Trial
                   </Button>
                   <p className="text-center text-xs text-muted-foreground mt-3">
-                    No credit card required for trial
+                    Credit card required, cancel anytime
                   </p>
                 </div>
               </CardContent>
@@ -128,7 +134,8 @@ export function SubscriptionGate({ children, feature = 'premium features', class
     )
   }
 
-  // User has subscription, show content normally
+  // Free tier and paid users both get access
+  // Usage limits are enforced at action time (posting, AI, connecting accounts)
   return <>{children}</>
 }
 

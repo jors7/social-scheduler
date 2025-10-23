@@ -57,9 +57,34 @@ export async function POST(request: NextRequest) {
     switch (event!.type) {
       case 'checkout.session.completed': {
         const session = event!.data.object as Stripe.Checkout.Session
-        const { user_id, plan_id, billing_cycle } = session.metadata!
-        
-        console.log('Processing checkout.session.completed:', { user_id, plan_id, billing_cycle })
+        let { user_id, plan_id, billing_cycle, user_email } = session.metadata!
+
+        console.log('Processing checkout.session.completed:', { user_id, plan_id, billing_cycle, user_email })
+
+        // For new signups, user_id might be 'new_signup' or 'pending'
+        // Get the actual user_id from Stripe customer metadata (updated by callback endpoint)
+        if (!user_id || user_id === 'new_signup' || user_id === 'pending') {
+          console.log('⚠️ user_id is pending, fetching from customer metadata...')
+          const customer = await stripe.customers.retrieve(session.customer as string)
+          user_id = (customer as any).metadata?.supabase_user_id
+
+          if (!user_id || user_id === 'pending') {
+            // Last resort: Look up by email in Supabase
+            if (user_email) {
+              const { data: users } = await supabaseAdmin.auth.admin.listUsers()
+              const matchedUser = users.users.find(u => u.email === user_email)
+              if (matchedUser) {
+                user_id = matchedUser.id
+                console.log('✅ Found user_id by email lookup:', user_id)
+              }
+            }
+          }
+
+          if (!user_id || user_id === 'pending') {
+            console.error('❌ Could not determine user_id for new signup')
+            throw new Error('Cannot process subscription without valid user_id')
+          }
+        }
         
         if (session.subscription) {
           const subscriptionId = typeof session.subscription === 'string' 
@@ -171,24 +196,41 @@ export async function POST(request: NextRequest) {
 
       case 'customer.subscription.deleted': {
         const subscription = event!.data.object as any // Type assertion to avoid strict typing issues
-        const { user_id } = subscription.metadata
-        
-        console.log('Processing customer.subscription.deleted:', { user_id })
-        
+        let { user_id } = subscription.metadata
+
+        // Get user_id from database if not in metadata
+        if (!user_id) {
+          const { data: existingSub } = await supabaseAdmin
+            .from('user_subscriptions')
+            .select('user_id')
+            .eq('stripe_subscription_id', subscription.id)
+            .single()
+          user_id = existingSub?.user_id
+        }
+
+        console.log('Processing customer.subscription.deleted (downgrade to free):', { user_id })
+
+        // Instead of deactivating, downgrade to free tier
         const { error } = await supabaseAdmin
           .from('user_subscriptions')
           .update({
-            status: 'canceled', // Changed from subscription_status to status
-            is_active: false,
+            plan_id: 'free',
+            status: 'active', // Keep active but on free plan
+            billing_cycle: null,
+            stripe_subscription_id: null, // Remove Stripe subscription link
+            is_active: true, // Keep user logged in with limited access
             canceled_at: new Date().toISOString(),
+            downgraded_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
           .eq('stripe_subscription_id', subscription.id)
-          
+
         if (error) {
-          console.error('Error canceling subscription:', error)
+          console.error('Error downgrading subscription to free:', error)
           throw error
         }
+
+        console.log('✅ User downgraded to free tier successfully')
         break
       }
 

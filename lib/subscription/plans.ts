@@ -36,21 +36,21 @@ export const SUBSCRIPTION_PLANS: Record<PlanId, SubscriptionPlan> = {
   free: {
     id: 'free',
     name: 'Free',
-    description: 'Get started with basic features',
+    description: 'Limited access for cancelled subscriptions',
     price_monthly: 0,
     price_yearly: 0,
     features: {
-      posts_per_month: 0,
-      platforms: 0,
+      posts_per_month: 1,
+      platforms: 'all',
       analytics: false,
       ai_suggestions: false,
       trial_days: 0,
     },
     limits: {
-      posts_per_month: 0,
-      connected_accounts: 0,
+      posts_per_month: 1,
+      connected_accounts: 1,
       ai_suggestions_per_month: 0,
-      storage_mb: 0,
+      storage_mb: 50, // 50 MB for basic media storage
     },
   },
   starter: {

@@ -111,7 +111,7 @@ const faqs = [
   },
   {
     question: 'Do you offer a free trial?',
-    answer: 'Yes — we offer a 7-day free trial on all plans. No credit card required. Try the full app and see if it fits your workflow before committing.',
+    answer: 'Yes — we offer a 7-day free trial on all plans. Credit card required but you won&apos;t be charged until after the trial ends. Cancel anytime during the trial at no cost.',
   },
   {
     question: 'Is there a money-back guarantee?',
@@ -220,16 +220,9 @@ function PricingPageContent() {
   }
 
   const handleStartTrial = async (planId: string) => {
-    if (!isAuthenticated) {
-      // Not logged in, open signup modal with plan
-      setSignUpPlanId(planId)
-      setSignUpOpen(true)
-      return
-    }
-
-    // User is logged in, proceed to Stripe checkout
+    // Always proceed to Stripe checkout (for both logged in and non-logged-in users)
     setLoading(planId)
-    
+
     try {
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
@@ -237,6 +230,8 @@ function PricingPageContent() {
         body: JSON.stringify({
           planId,
           billingCycle,
+          // For non-authenticated users, Stripe will collect email
+          // For authenticated users, email will be filled automatically
         }),
       })
 
