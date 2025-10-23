@@ -3,7 +3,7 @@
   "short_name": "SocialCal",
   "description": "Schedule and manage social media posts across 9+ platforms with AI-powered captions and analytics",
   "start_url": "/",
-  "display": "standalone",
+  "display": "minimal-ui",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
   "orientation": "portrait",
