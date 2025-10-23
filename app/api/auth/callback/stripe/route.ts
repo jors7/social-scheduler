@@ -191,11 +191,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('✅ Magic link created, redirecting to auth confirmation')
+    console.log('✅ Magic link created, redirecting to custom auth confirmation')
 
-    // Use the hashed token from the magic link to auto-login
-    // This will set the session cookies and redirect to dashboard
-    const confirmUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/verify?token=${magicLinkData.properties.hashed_token}&type=magiclink&redirect_to=${encodeURIComponent(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?subscription=success`)}`
+    // Redirect to our custom auth confirmation endpoint
+    // This will verify the token and set session cookies
+    const confirmUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm?token=${encodeURIComponent(magicLinkData.properties.hashed_token)}&type=magiclink&redirect_to=${encodeURIComponent('/dashboard?subscription=success')}`
 
     return NextResponse.redirect(confirmUrl)
 
