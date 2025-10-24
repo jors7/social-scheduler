@@ -11,9 +11,12 @@ const LINKEDIN_AUTH_URL = 'https://www.linkedin.com/oauth/v2/authorization';
 // Requires: "Sign In with LinkedIn using OpenID Connect" and "Share on LinkedIn" products
 const SCOPES = [
   'openid',           // OpenID Connect
-  'profile',          // Basic profile  
+  'profile',          // Basic profile
   'email',            // Email address
   'w_member_social',  // Post on behalf of user (Share on LinkedIn product)
+  // Analytics scopes (pending approval - DO NOT UNCOMMENT until approved):
+  // 'r_member_postAnalytics',    // Retrieve posts and analytics (Community Management API)
+  // 'rw_organization_admin',     // Organization page analytics (requires admin role)
 ].join(' ');
 
 export async function GET(request: NextRequest) {

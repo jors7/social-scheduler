@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { 
-  Eye, 
-  Users, 
+import {
+  Eye,
+  Users,
   TrendingUp,
   Activity,
   Info,
@@ -31,27 +31,27 @@ export function LinkedInInsights({ className }: LinkedInInsightsProps) {
   const fetchLinkedInInsights = async (accountId?: string) => {
     try {
       setLoading(true)
-      
+
       // Check if LinkedIn account is connected
       const accountResponse = await fetch('/api/social-accounts')
       if (accountResponse.ok) {
         const accounts = await accountResponse.json()
         const linkedInAccountsList = accounts.filter((acc: any) => acc.platform === 'linkedin' && acc.is_active)
-        
+
         if (linkedInAccountsList.length === 0) {
           setHasLinkedInAccount(false)
           return
         }
-        
+
         setHasLinkedInAccount(true)
         setLinkedInAccounts(linkedInAccountsList)
-        
+
         // Select account to use
-        const accountToUse = accountId 
-          ? linkedInAccountsList.find((acc: any) => acc.id === accountId) 
-          : selectedAccount 
+        const accountToUse = accountId
+          ? linkedInAccountsList.find((acc: any) => acc.id === accountId)
+          : selectedAccount
           || linkedInAccountsList[0]
-        
+
         setSelectedAccount(accountToUse)
       } else {
         return
@@ -94,7 +94,7 @@ export function LinkedInInsights({ className }: LinkedInInsightsProps) {
     const timer = setTimeout(() => {
       fetchLinkedInInsights()
     }, 100)
-    
+
     return () => clearTimeout(timer)
   }, [])
 
@@ -252,7 +252,7 @@ export function LinkedInInsights({ className }: LinkedInInsightsProps) {
                 <div className="text-sm">
                   <p className="font-medium text-blue-900 mb-1">Why is this feature pending?</p>
                   <p className="text-blue-700">
-                    LinkedIn requires approval for their Community Management API to access analytics data. 
+                    LinkedIn requires approval for their Community Management API to access analytics data.
                     We&apos;ve applied for access and will enable this feature as soon as we receive approval.
                   </p>
                 </div>
