@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 
 const TIKTOK_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
 const CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY || '';
@@ -14,16 +14,20 @@ const CLIENT_SECRET = process.env.TIKTOK_CLIENT_SECRET || '';
  */
 export async function GET(request: NextRequest) {
   try {
-    // Verify this is a cron request (optional security check)
+    // Verify this is a cron request
     const authHeader = request.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const supabase = await createClient();
+    // Create Supabase client with service role key (bypasses RLS)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     // Get all active TikTok accounts that expire within 6 hours or have no expiry set
     const sixHoursFromNow = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();

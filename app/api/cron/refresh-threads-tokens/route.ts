@@ -1,26 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { headers } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
 
 // This can be called manually or via cron to refresh Threads tokens
 export async function GET(request: NextRequest) {
   try {
-    // Verify the request is authorized (from Vercel Cron or manual with auth)
-    const headersList = headers();
-    const authHeader = headersList.get('authorization');
-    
-    // Check if it's from Vercel Cron
+    // Verify the request is authorized (from Vercel Cron)
+    const authHeader = request.headers.get('authorization');
+
+    // Require CRON_SECRET for all requests
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      // If not from cron, check if user is authenticated
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
-    const supabase = await createClient();
+
+    // Create Supabase client with service role key (bypasses RLS)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
     
     // Get all Threads accounts that might need refresh
     // We'll check accounts that:
