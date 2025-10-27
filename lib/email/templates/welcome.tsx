@@ -1,4 +1,4 @@
-import { Text, Heading, Button, Section, Row, Column, Hr } from '@react-email/components';
+import { Text, Heading, Button } from '@react-email/components';
 import { EmailLayout } from './components/email-layout';
 
 interface WelcomeEmailProps {
@@ -16,28 +16,31 @@ export default function WelcomeEmail({ userName }: WelcomeEmailProps) {
         We&apos;re thrilled to have you on board! SocialCal makes it easy to schedule and manage your social media content across all platforms.
       </Text>
 
-      <Section style={featuresBox}>
-        <Text style={featuresTitle}>What you can do with SocialCal:</Text>
-        <Hr style={divider} />
-        <table width="100%" cellPadding="0" cellSpacing="0">
-          <tr>
-            <td style={iconCell}>✓</td>
-            <td style={featureText}>Schedule posts across multiple platforms</td>
-          </tr>
-          <tr>
-            <td style={iconCell}>✓</td>
-            <td style={featureText}>AI-powered caption suggestions</td>
-          </tr>
-          <tr>
-            <td style={iconCell}>✓</td>
-            <td style={featureText}>Analytics and insights</td>
-          </tr>
-          <tr>
-            <td style={iconCell}>✓</td>
-            <td style={featureText}>Team collaboration</td>
-          </tr>
-        </table>
-      </Section>
+      <table width="100%" cellPadding="0" cellSpacing="0" style={featuresBox}>
+        <tr>
+          <td style={featuresBoxInner}>
+            <Text style={featuresTitle}>What you can do with SocialCal:</Text>
+            <table width="100%" cellPadding="0" cellSpacing="0" style={{ marginTop: '16px' }}>
+              <tr>
+                <td style={iconCell}>✓</td>
+                <td style={featureText}>Schedule posts across multiple platforms</td>
+              </tr>
+              <tr>
+                <td style={iconCell}>✓</td>
+                <td style={featureText}>AI-powered caption suggestions</td>
+              </tr>
+              <tr>
+                <td style={iconCell}>✓</td>
+                <td style={featureText}>Analytics and insights</td>
+              </tr>
+              <tr>
+                <td style={iconCell}>✓</td>
+                <td style={featureText}>Team collaboration</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
 
       <Text style={text}>
         Ready to get started? Connect your social media accounts and create your first post!
@@ -77,20 +80,21 @@ const text = {
 
 const featuresBox = {
   margin: '32px 0',
-  padding: '0',
-  borderRadius: '0',
+  borderRadius: '8px',
+  overflow: 'hidden' as const,
+};
+
+const featuresBoxInner = {
+  backgroundColor: '#f9fafb',
+  padding: '32px',
+  borderLeft: '4px solid #6366f1',
 };
 
 const featuresTitle = {
   color: '#1a1a1a',
   fontSize: '18px',
   fontWeight: '600' as const,
-  margin: '0 0 16px',
-};
-
-const divider = {
-  borderColor: '#e6ebf1',
-  margin: '0 0 20px',
+  margin: '0',
 };
 
 const iconCell = {

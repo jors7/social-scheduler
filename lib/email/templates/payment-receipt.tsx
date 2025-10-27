@@ -36,24 +36,27 @@ export default function PaymentReceiptEmail({
         Thank you! Your payment has been processed successfully.
       </Text>
 
-      <Section style={receiptBox}>
-        <Text style={receiptTitle}>Payment Details</Text>
-        <Hr style={hr} />
-        <table width="100%" cellPadding="0" cellSpacing="0">
-          <tr>
-            <td style={label}>Date:</td>
-            <td style={value}>{formattedDate}</td>
-          </tr>
-          <tr>
-            <td style={label}>Plan:</td>
-            <td style={value}>{planName}</td>
-          </tr>
-          <tr>
-            <td style={label}>Amount:</td>
-            <td style={amountValue}>${formattedAmount} {currency.toUpperCase()}</td>
-          </tr>
-        </table>
-      </Section>
+      <table width="100%" cellPadding="0" cellSpacing="0" style={receiptBox}>
+        <tr>
+          <td style={receiptBoxInner}>
+            <Text style={receiptTitle}>Payment Details</Text>
+            <table width="100%" cellPadding="0" cellSpacing="0" style={{ marginTop: '20px' }}>
+              <tr>
+                <td style={label}>Date:</td>
+                <td style={value}>{formattedDate}</td>
+              </tr>
+              <tr>
+                <td style={label}>Plan:</td>
+                <td style={value}>{planName}</td>
+              </tr>
+              <tr>
+                <td style={label}>Amount:</td>
+                <td style={amountValue}>${formattedAmount} {currency.toUpperCase()}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
 
       {invoiceUrl && (
         <Button style={button} href={invoiceUrl}>
@@ -98,20 +101,21 @@ const text = {
 
 const receiptBox = {
   margin: '32px 0',
-  padding: '0',
-  borderRadius: '0',
+  borderRadius: '8px',
+  overflow: 'hidden' as const,
+};
+
+const receiptBoxInner = {
+  backgroundColor: '#ecfdf5',
+  padding: '32px',
+  borderLeft: '4px solid #10b981',
 };
 
 const receiptTitle = {
   color: '#059669',
   fontSize: '18px',
   fontWeight: '600' as const,
-  margin: '0 0 16px',
-};
-
-const hr = {
-  borderColor: '#d1fae5',
-  margin: '0 0 20px',
+  margin: '0',
 };
 
 const label = {

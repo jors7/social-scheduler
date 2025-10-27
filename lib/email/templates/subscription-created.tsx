@@ -30,24 +30,27 @@ export default function SubscriptionCreatedEmail({
         Your subscription is now active! Thank you for choosing SocialCal to power your social media strategy.
       </Text>
 
-      <Section style={summaryBox}>
-        <Text style={summaryTitle}>Subscription Summary</Text>
-        <Hr style={hr} />
-        <table width="100%" cellPadding="0" cellSpacing="0">
-          <tr>
-            <td style={summaryLabel}>Plan:</td>
-            <td style={summaryValue}>{planName}</td>
-          </tr>
-          <tr>
-            <td style={summaryLabel}>Billing:</td>
-            <td style={summaryValue}>{billingCycle}</td>
-          </tr>
-          <tr>
-            <td style={summaryLabel}>Amount:</td>
-            <td style={summaryValue}>${formattedAmount} / {interval}</td>
-          </tr>
-        </table>
-      </Section>
+      <table width="100%" cellPadding="0" cellSpacing="0" style={summaryBox}>
+        <tr>
+          <td style={summaryBoxInner}>
+            <Text style={summaryTitle}>Subscription Summary</Text>
+            <table width="100%" cellPadding="0" cellSpacing="0" style={{ marginTop: '20px' }}>
+              <tr>
+                <td style={summaryLabel}>Plan:</td>
+                <td style={summaryValue}>{planName}</td>
+              </tr>
+              <tr>
+                <td style={summaryLabel}>Billing:</td>
+                <td style={summaryValue}>{billingCycle}</td>
+              </tr>
+              <tr>
+                <td style={summaryLabel}>Amount:</td>
+                <td style={summaryValue}>${formattedAmount} / {interval}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
 
       <Text style={text}>
         You now have full access to all {planName} features. Start scheduling posts, generating AI captions, and tracking your social media performance.
@@ -90,20 +93,21 @@ const text = {
 
 const summaryBox = {
   margin: '32px 0',
-  padding: '0',
-  borderRadius: '0',
+  borderRadius: '8px',
+  overflow: 'hidden' as const,
+};
+
+const summaryBoxInner = {
+  backgroundColor: '#ede9fe',
+  padding: '32px',
+  borderLeft: '4px solid #6366f1',
 };
 
 const summaryTitle = {
   color: '#4f46e5',
   fontSize: '18px',
   fontWeight: '600' as const,
-  margin: '0 0 16px',
-};
-
-const hr = {
-  borderColor: '#c7d2fe',
-  margin: '0 0 20px',
+  margin: '0',
 };
 
 const summaryLabel = {
