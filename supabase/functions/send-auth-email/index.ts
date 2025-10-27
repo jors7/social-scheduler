@@ -178,20 +178,19 @@ async function verifySignature(req: Request, body: string): Promise<boolean> {
   }
 
   try {
-    // Standard Webhooks format: "v1,timestamp,signature"
+    // Supabase uses simpler format: "v1,signature" (no timestamp)
     const parts = signature.split(',')
     console.log('Signature parts:', parts.length, parts[0])
 
-    if (parts.length !== 3 || parts[0] !== 'v1') {
-      console.error('Invalid signature format. Expected "v1,timestamp,signature", got:', signature)
+    if (parts.length !== 2 || parts[0] !== 'v1') {
+      console.error('Invalid signature format. Expected "v1,signature", got:', signature)
       return false
     }
 
-    const timestamp = parts[1]
-    const receivedSignature = parts[2]
+    const receivedSignature = parts[1]
 
-    // Create the signed content: timestamp.body
-    const signedContent = `${timestamp}.${body}`
+    // Supabase signs just the raw body (no timestamp)
+    const signedContent = body
     console.log('Signed content length:', signedContent.length)
 
     const encoder = new TextEncoder()
