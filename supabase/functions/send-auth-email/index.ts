@@ -167,18 +167,23 @@ const EMAIL_CONFIRMATION_TEMPLATE = (confirmationLink: string) => ({
 // Verify webhook signature using Standard Webhooks format
 async function verifySignature(req: Request, body: string): Promise<boolean> {
   const signature = req.headers.get('webhook-signature')
+  const timestamp = req.headers.get('webhook-timestamp')
 
   console.log('Signature header:', signature)
+  console.log('Timestamp header:', timestamp)
   console.log('Webhook secret (first 10 chars):', webhookSecret?.substring(0, 10))
-  console.log('All headers:', JSON.stringify([...req.headers.entries()]))
 
-  if (!signature || !webhookSecret) {
-    console.error('Missing signature or webhook secret', { hasSignature: !!signature, hasSecret: !!webhookSecret })
+  if (!signature || !timestamp || !webhookSecret) {
+    console.error('Missing signature, timestamp, or webhook secret', {
+      hasSignature: !!signature,
+      hasTimestamp: !!timestamp,
+      hasSecret: !!webhookSecret
+    })
     return false
   }
 
   try {
-    // Supabase uses simpler format: "v1,signature" (no timestamp)
+    // Supabase uses Standard Webhooks: "v1,signature" with separate timestamp header
     const parts = signature.split(',')
     console.log('Signature parts:', parts.length, parts[0])
 
@@ -189,9 +194,9 @@ async function verifySignature(req: Request, body: string): Promise<boolean> {
 
     const receivedSignature = parts[1]
 
-    // Supabase signs just the raw body (no timestamp)
-    const signedContent = body
-    console.log('Signed content length:', signedContent.length)
+    // Standard Webhooks signed content format: timestamp.body
+    const signedContent = `${timestamp}.${body}`
+    console.log('Signed content (first 50 chars):', signedContent.substring(0, 50))
 
     const encoder = new TextEncoder()
     const key = await crypto.subtle.importKey(
