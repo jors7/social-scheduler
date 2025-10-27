@@ -34,29 +34,31 @@ export function EmailFooter() {
 
 const hr = {
   borderColor: '#e6ebf1',
-  margin: '20px 0',
+  margin: '40px 48px 32px',
 };
 
 const footer = {
-  padding: '0 48px',
+  padding: '0 48px 40px',
   textAlign: 'center' as const,
+  backgroundColor: '#ffffff',
 };
 
 const footerText = {
   margin: '12px 0',
-  color: '#8898aa',
+  color: '#6b7280',
   fontSize: '14px',
   lineHeight: '24px',
 };
 
 const footerLink = {
-  color: '#8898aa',
-  textDecoration: 'underline',
+  color: '#6366f1',
+  textDecoration: 'none',
+  fontWeight: '500',
 };
 
 const footerAddress = {
-  margin: '4px 0 0 0',
-  color: '#8898aa',
-  fontSize: '12px',
-  lineHeight: '16px',
+  margin: '16px 0 0 0',
+  color: '#9ca3af',
+  fontSize: '13px',
+  lineHeight: '20px',
 };

@@ -83,10 +83,10 @@ export default function PaymentReceiptEmail({
 
 const h1 = {
   color: '#1a1a1a',
-  fontSize: '28px',
+  fontSize: '32px',
   fontWeight: 'bold',
-  margin: '40px 0 20px',
-  lineHeight: '1.3',
+  margin: '0 0 16px',
+  lineHeight: '1.2',
 };
 
 const text = {
@@ -100,12 +100,12 @@ const receiptBox = {
   margin: '32px 0',
   padding: '24px',
   backgroundColor: '#f0fdf4',
-  borderRadius: '8px',
-  border: '1px solid #d1fae5',
+  borderRadius: '12px',
+  borderLeft: '4px solid #10b981',
 };
 
 const receiptTitle = {
-  color: '#1a1a1a',
+  color: '#059669',
   fontSize: '18px',
   fontWeight: 'bold',
   margin: '0 0 16px',
@@ -142,42 +142,43 @@ const amountValue = {
 };
 
 const button = {
-  backgroundColor: '#1a1a1a',
+  backgroundColor: '#10b981',
   borderRadius: '8px',
-  color: '#fff',
+  color: '#ffffff',
   fontSize: '16px',
-  fontWeight: 'bold',
+  fontWeight: '600',
   textDecoration: 'none',
   textAlign: 'center' as const,
-  display: 'block',
-  padding: '14px 24px',
-  margin: '24px 0',
+  display: 'inline-block',
+  padding: '16px 32px',
+  margin: '32px 0 16px',
+  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)',
 };
 
 const secondaryButton = {
   backgroundColor: 'transparent',
-  border: '1px solid #e6ebf1',
+  border: '2px solid #e5e7eb',
   borderRadius: '8px',
-  color: '#525f7f',
+  color: '#6b7280',
   fontSize: '14px',
   fontWeight: '600',
   textDecoration: 'none',
   textAlign: 'center' as const,
-  display: 'block',
+  display: 'inline-block',
   padding: '12px 24px',
-  margin: '16px 0',
+  margin: '8px 0',
 };
 
 const footnote = {
-  color: '#8898aa',
+  color: '#9ca3af',
   fontSize: '14px',
   lineHeight: '22px',
   margin: '24px 0 0',
 };
 
 const signature = {
-  color: '#525f7f',
-  fontSize: '16px',
-  lineHeight: '26px',
+  color: '#6b7280',
+  fontSize: '15px',
+  lineHeight: '24px',
   margin: '32px 0 0',
 };

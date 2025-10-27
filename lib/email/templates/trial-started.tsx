@@ -52,10 +52,10 @@ export default function TrialStartedEmail({ userName, planName }: TrialStartedEm
 
 const h1 = {
   color: '#1a1a1a',
-  fontSize: '28px',
+  fontSize: '32px',
   fontWeight: 'bold',
-  margin: '40px 0 20px',
-  lineHeight: '1.3',
+  margin: '0 0 16px',
+  lineHeight: '1.2',
 };
 
 const text = {
@@ -66,43 +66,45 @@ const text = {
 };
 
 const featuresBox = {
-  margin: '24px 0',
-  padding: '20px',
+  margin: '32px 0',
+  padding: '24px',
   backgroundColor: '#f0fdf4',
-  borderRadius: '8px',
+  borderRadius: '12px',
   borderLeft: '4px solid #10b981',
 };
 
 const featuresHeading = {
-  color: '#1a1a1a',
-  fontSize: '16px',
+  color: '#059669',
+  fontSize: '18px',
   fontWeight: 'bold',
-  margin: '0 0 12px',
+  margin: '0 0 16px',
 };
 
 const featureText = {
-  color: '#525f7f',
+  color: '#374151',
   fontSize: '15px',
   lineHeight: '28px',
-  margin: '4px 0',
+  margin: '8px 0',
+  fontWeight: '500',
 };
 
 const button = {
-  backgroundColor: '#1a1a1a',
+  backgroundColor: '#10b981',
   borderRadius: '8px',
-  color: '#fff',
+  color: '#ffffff',
   fontSize: '16px',
-  fontWeight: 'bold',
+  fontWeight: '600',
   textDecoration: 'none',
   textAlign: 'center' as const,
-  display: 'block',
-  padding: '14px 24px',
-  margin: '24px 0',
+  display: 'inline-block',
+  padding: '16px 32px',
+  margin: '32px 0',
+  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)',
 };
 
 const signature = {
-  color: '#525f7f',
-  fontSize: '16px',
-  lineHeight: '26px',
+  color: '#6b7280',
+  fontSize: '15px',
+  lineHeight: '24px',
   margin: '32px 0 0',
 };
