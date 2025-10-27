@@ -65,9 +65,9 @@ const text = {
 const features = {
   margin: '32px 0',
   padding: '24px',
-  backgroundColor: '#f6f9fc',
+  border: '2px solid #6366f1',
   borderRadius: '6px',
-  borderLeft: '4px solid #6366f1',
+  borderLeft: '6px solid #6366f1',
 };
 
 const featureText = {

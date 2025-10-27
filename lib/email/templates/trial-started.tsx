@@ -72,9 +72,9 @@ const text = {
 const featuresBox = {
   margin: '32px 0',
   padding: '24px',
-  backgroundColor: '#f0fdf4',
+  border: '2px solid #10b981',
   borderRadius: '6px',
-  borderLeft: '4px solid #10b981',
+  borderLeft: '6px solid #10b981',
 };
 
 const featuresHeading = {
