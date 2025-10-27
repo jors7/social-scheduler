@@ -1,4 +1,4 @@
-import { Text, Heading, Button, Section, Hr } from '@react-email/components';
+import { Text, Heading, Button, Section, Row, Column, Hr } from '@react-email/components';
 import { EmailLayout } from './components/email-layout';
 
 interface PaymentReceiptEmailProps {
@@ -36,23 +36,27 @@ export default function PaymentReceiptEmail({
         Thank you! Your payment has been processed successfully.
       </Text>
 
-      <Section style={receiptBox}>
-        <Text style={receiptTitle}>Payment Details</Text>
-        <Hr style={hr} />
-        <table style={receiptTable}>
-          <tr>
-            <td style={label}>Date:</td>
-            <td style={value}>{formattedDate}</td>
-          </tr>
-          <tr>
-            <td style={label}>Plan:</td>
-            <td style={value}>{planName}</td>
-          </tr>
-          <tr>
-            <td style={label}>Amount:</td>
-            <td style={amountValue}>${formattedAmount} {currency.toUpperCase()}</td>
-          </tr>
-        </table>
+      <Section>
+        <Row>
+          <Column style={receiptBox}>
+            <Text style={receiptTitle}>Payment Details</Text>
+            <Hr style={hr} />
+            <table style={receiptTable}>
+              <tr>
+                <td style={label}>Date:</td>
+                <td style={value}>{formattedDate}</td>
+              </tr>
+              <tr>
+                <td style={label}>Plan:</td>
+                <td style={value}>{planName}</td>
+              </tr>
+              <tr>
+                <td style={label}>Amount:</td>
+                <td style={amountValue}>${formattedAmount} {currency.toUpperCase()}</td>
+              </tr>
+            </table>
+          </Column>
+        </Row>
       </Section>
 
       {invoiceUrl && (

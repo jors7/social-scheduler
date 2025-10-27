@@ -1,4 +1,4 @@
-import { Text, Heading, Button, Section } from '@react-email/components';
+import { Text, Heading, Button, Section, Row, Column } from '@react-email/components';
 import { EmailLayout } from './components/email-layout';
 
 interface WelcomeEmailProps {
@@ -16,11 +16,15 @@ export default function WelcomeEmail({ userName }: WelcomeEmailProps) {
         We&apos;re thrilled to have you on board! SocialCal makes it easy to schedule and manage your social media content across all platforms.
       </Text>
 
-      <Section style={features}>
-        <Text style={featureText}>✓ Schedule posts across multiple platforms</Text>
-        <Text style={featureText}>✓ AI-powered caption suggestions</Text>
-        <Text style={featureText}>✓ Analytics and insights</Text>
-        <Text style={featureText}>✓ Team collaboration</Text>
+      <Section>
+        <Row>
+          <Column style={features}>
+            <Text style={featureText}>✓ Schedule posts across multiple platforms</Text>
+            <Text style={featureText}>✓ AI-powered caption suggestions</Text>
+            <Text style={featureText}>✓ Analytics and insights</Text>
+            <Text style={featureText}>✓ Team collaboration</Text>
+          </Column>
+        </Row>
       </Section>
 
       <Text style={text}>

@@ -1,4 +1,4 @@
-import { Text, Heading, Button, Section, Hr } from '@react-email/components';
+import { Text, Heading, Button, Section, Row, Column, Hr } from '@react-email/components';
 import { EmailLayout } from './components/email-layout';
 
 interface SubscriptionCreatedEmailProps {
@@ -30,23 +30,27 @@ export default function SubscriptionCreatedEmail({
         Your subscription is now active! Thank you for choosing SocialCal to power your social media strategy.
       </Text>
 
-      <Section style={summaryBox}>
-        <Text style={summaryTitle}>Subscription Summary</Text>
-        <Hr style={hr} />
-        <table style={summaryTable}>
-          <tr>
-            <td style={summaryLabel}>Plan:</td>
-            <td style={summaryValue}>{planName}</td>
-          </tr>
-          <tr>
-            <td style={summaryLabel}>Billing:</td>
-            <td style={summaryValue}>{billingCycle}</td>
-          </tr>
-          <tr>
-            <td style={summaryLabel}>Amount:</td>
-            <td style={summaryValue}>${formattedAmount} / {interval}</td>
-          </tr>
-        </table>
+      <Section>
+        <Row>
+          <Column style={summaryBox}>
+            <Text style={summaryTitle}>Subscription Summary</Text>
+            <Hr style={hr} />
+            <table style={summaryTable}>
+              <tr>
+                <td style={summaryLabel}>Plan:</td>
+                <td style={summaryValue}>{planName}</td>
+              </tr>
+              <tr>
+                <td style={summaryLabel}>Billing:</td>
+                <td style={summaryValue}>{billingCycle}</td>
+              </tr>
+              <tr>
+                <td style={summaryLabel}>Amount:</td>
+                <td style={summaryValue}>${formattedAmount} / {interval}</td>
+              </tr>
+            </table>
+          </Column>
+        </Row>
       </Section>
 
       <Text style={text}>

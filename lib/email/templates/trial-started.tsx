@@ -1,4 +1,4 @@
-import { Text, Heading, Button, Section } from '@react-email/components';
+import { Text, Heading, Button, Section, Row, Column } from '@react-email/components';
 import { EmailLayout } from './components/email-layout';
 
 interface TrialStartedEmailProps {
@@ -21,13 +21,17 @@ export default function TrialStartedEmail({ userName, planName }: TrialStartedEm
         Great news! Your 7-day free trial of the {planName} plan has started. You now have full access to all premium features.
       </Text>
 
-      <Section style={featuresBox}>
-        <Text style={featuresHeading}>What&apos;s included:</Text>
-        <Text style={featureText}>✓ Unlimited post scheduling</Text>
-        <Text style={featureText}>✓ AI caption suggestions</Text>
-        <Text style={featureText}>✓ Advanced analytics</Text>
-        <Text style={featureText}>✓ Team collaboration</Text>
-        <Text style={featureText}>✓ Priority support</Text>
+      <Section>
+        <Row>
+          <Column style={featuresBox}>
+            <Text style={featuresHeading}>What&apos;s included:</Text>
+            <Text style={featureText}>✓ Unlimited post scheduling</Text>
+            <Text style={featureText}>✓ AI caption suggestions</Text>
+            <Text style={featureText}>✓ Advanced analytics</Text>
+            <Text style={featureText}>✓ Team collaboration</Text>
+            <Text style={featureText}>✓ Priority support</Text>
+          </Column>
+        </Row>
       </Section>
 
       <Text style={text}>

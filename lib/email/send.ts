@@ -12,6 +12,13 @@ export async function sendEmail({ to, subject, react, replyTo }: SendEmailOption
   try {
     const resend = getResendClient();
 
+    console.log('📧 Sending email:', {
+      to,
+      subject,
+      from: EMAIL_FROM,
+      hasReactComponent: !!react
+    });
+
     // Resend handles React Email components directly
     const { data, error } = await resend.emails.send({
       from: EMAIL_FROM,
@@ -22,14 +29,15 @@ export async function sendEmail({ to, subject, react, replyTo }: SendEmailOption
     });
 
     if (error) {
-      console.error('Failed to send email:', error);
+      console.error('❌ Failed to send email:', error);
       return { success: false, error };
     }
 
-    console.log('Email sent successfully:', data?.id);
+    console.log('✅ Email sent successfully:', data?.id);
     return { success: true, data };
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('❌ Error sending email:', error);
+    console.error('Error details:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
