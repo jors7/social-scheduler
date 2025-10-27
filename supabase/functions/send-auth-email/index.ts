@@ -167,16 +167,23 @@ const EMAIL_CONFIRMATION_TEMPLATE = (confirmationLink: string) => ({
 // Verify webhook signature using Standard Webhooks format
 async function verifySignature(req: Request, body: string): Promise<boolean> {
   const signature = req.headers.get('webhook-signature')
+
+  console.log('Signature header:', signature)
+  console.log('Webhook secret (first 10 chars):', webhookSecret?.substring(0, 10))
+  console.log('All headers:', JSON.stringify([...req.headers.entries()]))
+
   if (!signature || !webhookSecret) {
-    console.error('Missing signature or webhook secret')
+    console.error('Missing signature or webhook secret', { hasSignature: !!signature, hasSecret: !!webhookSecret })
     return false
   }
 
   try {
     // Standard Webhooks format: "v1,timestamp,signature"
     const parts = signature.split(',')
+    console.log('Signature parts:', parts.length, parts[0])
+
     if (parts.length !== 3 || parts[0] !== 'v1') {
-      console.error('Invalid signature format')
+      console.error('Invalid signature format. Expected "v1,timestamp,signature", got:', signature)
       return false
     }
 
@@ -185,6 +192,7 @@ async function verifySignature(req: Request, body: string): Promise<boolean> {
 
     // Create the signed content: timestamp.body
     const signedContent = `${timestamp}.${body}`
+    console.log('Signed content length:', signedContent.length)
 
     const encoder = new TextEncoder()
     const key = await crypto.subtle.importKey(
@@ -203,6 +211,10 @@ async function verifySignature(req: Request, body: string): Promise<boolean> {
 
     // Convert to base64
     const expectedSignature = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)))
+
+    console.log('Expected signature:', expectedSignature.substring(0, 20) + '...')
+    console.log('Received signature:', receivedSignature.substring(0, 20) + '...')
+    console.log('Signatures match:', expectedSignature === receivedSignature)
 
     return expectedSignature === receivedSignature
   } catch (error) {
