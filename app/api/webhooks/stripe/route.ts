@@ -6,6 +6,8 @@ import { syncStripeSubscriptionToDatabase } from '@/lib/subscription/sync'
 import {
   sendPaymentReceiptEmail,
   sendSubscriptionCancelledEmail,
+  sendPlanUpgradedEmail,
+  sendPlanDowngradedEmail,
 } from '@/lib/email/send'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -429,21 +431,62 @@ export async function POST(request: NextRequest) {
           } else {
             console.log('Payment recorded with proration details')
 
+            // Check if this payment is related to an upgrade/downgrade
+            // Query subscription_change_log for recent changes (last 5 minutes)
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+            const { data: recentChange } = await supabaseAdmin
+              .from('subscription_change_log')
+              .select('*')
+              .eq('user_id', userId)
+              .gte('created_at', fiveMinutesAgo)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single()
+
             // Send payment receipt email (skip for trial charges)
             if (invoice.billing_reason !== 'subscription_create' || invoice.amount_paid > 0) {
               const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
               if (user?.user?.email) {
-                console.log('Sending payment receipt email to:', user.user.email)
                 const userName = user.user.user_metadata?.full_name || user.user.email?.split('@')[0] || 'there'
                 const planName = planId.charAt(0).toUpperCase() + planId.slice(1)
-                await sendPaymentReceiptEmail(
-                  user.user.email,
-                  userName,
-                  planName,
-                  invoice.amount_paid,
-                  invoice.currency,
-                  invoice.hosted_invoice_url || undefined
-                ).catch(err => console.error('Error sending payment receipt email:', err))
+
+                // Decide which email to send based on change type
+                if (recentChange && recentChange.change_type === 'upgrade') {
+                  console.log('Sending plan upgrade email to:', user.user.email)
+                  const oldPlanName = recentChange.old_plan_id.charAt(0).toUpperCase() + recentChange.old_plan_id.slice(1)
+                  const newPlanName = recentChange.new_plan_id.charAt(0).toUpperCase() + recentChange.new_plan_id.slice(1)
+                  await sendPlanUpgradedEmail(
+                    user.user.email,
+                    userName,
+                    oldPlanName,
+                    newPlanName,
+                    invoice.amount_paid // This is the prorated amount
+                  ).catch(err => console.error('Error sending plan upgrade email:', err))
+                } else if (recentChange && recentChange.change_type === 'downgrade') {
+                  console.log('Sending plan downgrade email to:', user.user.email)
+                  const oldPlanName = recentChange.old_plan_id.charAt(0).toUpperCase() + recentChange.old_plan_id.slice(1)
+                  const newPlanName = recentChange.new_plan_id.charAt(0).toUpperCase() + recentChange.new_plan_id.slice(1)
+                  // For downgrades, the change takes effect at period end
+                  const effectiveDate = subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : new Date()
+                  await sendPlanDowngradedEmail(
+                    user.user.email,
+                    userName,
+                    oldPlanName,
+                    newPlanName,
+                    effectiveDate
+                  ).catch(err => console.error('Error sending plan downgrade email:', err))
+                } else {
+                  // No recent change detected, send standard payment receipt
+                  console.log('Sending payment receipt email to:', user.user.email)
+                  await sendPaymentReceiptEmail(
+                    user.user.email,
+                    userName,
+                    planName,
+                    invoice.amount_paid,
+                    invoice.currency,
+                    invoice.hosted_invoice_url || undefined
+                  ).catch(err => console.error('Error sending payment receipt email:', err))
+                }
               }
             }
           }

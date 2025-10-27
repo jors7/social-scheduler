@@ -1,4 +1,4 @@
-import { Text, Heading, Button, Section } from '@react-email/components';
+import { Text, Heading, Button } from '@react-email/components';
 import { EmailLayout } from './components/email-layout';
 
 interface PlanUpgradedEmailProps {
@@ -21,25 +21,33 @@ export default function PlanUpgradedEmail({
       <Heading style={h1}>Plan Upgraded! 🎉</Heading>
 
       <Text style={text}>
-        Hi {userName},
+        Hi there,
       </Text>
 
       <Text style={text}>
         Great choice! You&apos;ve successfully upgraded from <strong>{oldPlan}</strong> to <strong>{newPlan}</strong>.
       </Text>
 
-      <Section style={upgradeBox}>
-        <Text style={upgradeText}>
-          ✨ Your new {newPlan} features are active immediately!
-        </Text>
-      </Section>
+      <table width="100%" cellPadding="0" cellSpacing="0" style={upgradeBox}>
+        <tr>
+          <td style={upgradeBoxInner}>
+            <Text style={upgradeText}>
+              ✨ Your new {newPlan} features are active immediately!
+            </Text>
+          </td>
+        </tr>
+      </table>
 
       {proratedAmount && proratedAmount > 0 && (
-        <Section style={prorationBox}>
-          <Text style={prorationText}>
-            📊 <strong>Proration Notice:</strong> You were charged ${(proratedAmount / 100).toFixed(2)} for the remainder of your current billing period. Your next full billing cycle will start on your renewal date.
-          </Text>
-        </Section>
+        <table width="100%" cellPadding="0" cellSpacing="0" style={prorationBox}>
+          <tr>
+            <td style={prorationBoxInner}>
+              <Text style={prorationText}>
+                📊 <strong>Proration Notice:</strong> You were charged ${(proratedAmount / 100).toFixed(2)} for the remainder of your current billing period. Your next full billing cycle will start on your renewal date.
+              </Text>
+            </td>
+          </tr>
+        </table>
       )}
 
       <Text style={text}>
@@ -68,24 +76,29 @@ export default function PlanUpgradedEmail({
 
 const h1 = {
   color: '#1a1a1a',
-  fontSize: '28px',
-  fontWeight: 'bold',
-  margin: '40px 0 20px',
-  lineHeight: '1.3',
+  fontSize: '32px',
+  fontWeight: '700' as const,
+  margin: '0 0 24px',
+  lineHeight: '1.25',
+  letterSpacing: '-0.5px',
 };
 
 const text = {
   color: '#525f7f',
   fontSize: '16px',
   lineHeight: '26px',
-  margin: '16px 0',
+  margin: '0 0 16px',
 };
 
 const upgradeBox = {
-  margin: '24px 0',
-  padding: '20px',
-  backgroundColor: '#f0fdf4',
+  margin: '32px 0',
   borderRadius: '8px',
+  overflow: 'hidden' as const,
+};
+
+const upgradeBoxInner = {
+  backgroundColor: '#ecfdf5',
+  padding: '32px',
   borderLeft: '4px solid #10b981',
   textAlign: 'center' as const,
 };
@@ -93,16 +106,20 @@ const upgradeBox = {
 const upgradeText = {
   color: '#059669',
   fontSize: '18px',
-  fontWeight: 'bold',
+  fontWeight: '600' as const,
   margin: '0',
 };
 
 const prorationBox = {
   margin: '24px 0',
-  padding: '16px',
-  backgroundColor: '#fff7ed',
   borderRadius: '8px',
-  border: '1px solid #fed7aa',
+  overflow: 'hidden' as const,
+};
+
+const prorationBoxInner = {
+  backgroundColor: '#fff7ed',
+  padding: '20px',
+  borderLeft: '4px solid #f59e0b',
 };
 
 const prorationText = {
