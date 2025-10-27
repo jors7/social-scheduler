@@ -216,20 +216,66 @@ export async function POST(request: NextRequest) {
 
       case 'customer.subscription.updated': {
         const subscription = event!.data.object as any
-        console.log('Processing customer.subscription.updated:', { 
+        console.log('Processing customer.subscription.updated:', {
           subscription_id: subscription.id,
-          status: subscription.status 
+          status: subscription.status
         })
-        
+
         // Use the sync function to properly update everything including plan changes
         const result = await syncStripeSubscriptionToDatabase(subscription.id)
-        
+
         if (!result.success) {
           console.error('Error syncing subscription update:', result.error)
           throw new Error(result.error || 'Failed to sync subscription')
         }
-        
+
         console.log('Successfully synced subscription update')
+
+        // Check if this was an upgrade/downgrade and send appropriate email
+        // Query subscription_change_log for recent changes (last 2 minutes)
+        const userId = subscription.metadata?.user_id
+        if (userId) {
+          const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString()
+          const { data: recentChange } = await supabaseAdmin
+            .from('subscription_change_log')
+            .select('*')
+            .eq('user_id', userId)
+            .gte('created_at', twoMinutesAgo)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+
+          if (recentChange && (recentChange.change_type === 'upgrade' || recentChange.change_type === 'downgrade')) {
+            const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
+            if (user?.user?.email) {
+              const userName = user.user.user_metadata?.full_name || user.user.email?.split('@')[0] || 'there'
+              const oldPlanName = recentChange.old_plan_id.charAt(0).toUpperCase() + recentChange.old_plan_id.slice(1)
+              const newPlanName = recentChange.new_plan_id.charAt(0).toUpperCase() + recentChange.new_plan_id.slice(1)
+
+              if (recentChange.change_type === 'upgrade') {
+                console.log('Detected upgrade in subscription.updated, sending upgrade email to:', user.user.email)
+                await sendPlanUpgradedEmail(
+                  user.user.email,
+                  userName,
+                  oldPlanName,
+                  newPlanName,
+                  0 // No prorated amount available in this event
+                ).catch(err => console.error('Error sending plan upgrade email:', err))
+              } else if (recentChange.change_type === 'downgrade') {
+                console.log('Detected downgrade in subscription.updated, sending downgrade email to:', user.user.email)
+                const effectiveDate = subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : new Date()
+                await sendPlanDowngradedEmail(
+                  user.user.email,
+                  userName,
+                  oldPlanName,
+                  newPlanName,
+                  effectiveDate
+                ).catch(err => console.error('Error sending plan downgrade email:', err))
+              }
+            }
+          }
+        }
+
         break
       }
 
