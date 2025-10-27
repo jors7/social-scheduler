@@ -218,8 +218,46 @@ export async function POST(request: NextRequest) {
         const subscription = event!.data.object as any
         console.log('Processing customer.subscription.updated:', {
           subscription_id: subscription.id,
-          status: subscription.status
+          status: subscription.status,
+          cancel_at_period_end: subscription.cancel_at_period_end
         })
+
+        // Check if subscription was just cancelled (cancel_at_period_end changed to true)
+        if (subscription.cancel_at_period_end) {
+          console.log('🚫 Subscription marked for cancellation at period end')
+
+          // Get user_id from subscription metadata or database
+          let userId = subscription.metadata?.user_id
+          if (!userId) {
+            const { data: existingSub } = await supabaseAdmin
+              .from('user_subscriptions')
+              .select('user_id')
+              .eq('stripe_subscription_id', subscription.id)
+              .single()
+            userId = existingSub?.user_id
+          }
+
+          // Send cancellation email immediately
+          if (userId) {
+            const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
+            if (user?.user?.email) {
+              console.log('📧 Sending cancellation email to:', user.user.email)
+              const userName = user.user.user_metadata?.full_name || user.user.email?.split('@')[0] || 'there'
+              const planName = subscription.metadata?.plan_id?.charAt(0).toUpperCase() + subscription.metadata?.plan_id?.slice(1) || 'Premium'
+              const endDate = subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : new Date()
+
+              await sendSubscriptionCancelledEmail(
+                user.user.email,
+                userName,
+                planName,
+                endDate
+              ).catch(err => {
+                console.error('❌ Error sending cancellation email:', err)
+                console.error('Full error details:', JSON.stringify(err, null, 2))
+              })
+            }
+          }
+        }
 
         // Use the sync function to properly update everything including plan changes
         const result = await syncStripeSubscriptionToDatabase(subscription.id)
