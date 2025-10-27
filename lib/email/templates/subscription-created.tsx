@@ -23,7 +23,7 @@ export default function SubscriptionCreatedEmail({
       <Heading style={h1}>Welcome to {planName}! 🎉</Heading>
 
       <Text style={text}>
-        Hi {userName},
+        Hi there,
       </Text>
 
       <Text style={text}>

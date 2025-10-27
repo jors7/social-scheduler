@@ -23,9 +23,13 @@ export function EmailLayout({ preview, children }: EmailLayoutProps) {
       <Body style={main}>
         <Container style={container}>
           <EmailHeader />
-          <Section style={content}>
-            {children}
-          </Section>
+          <table width="100%" cellPadding="0" cellSpacing="0">
+            <tr>
+              <td style={content}>
+                {children}
+              </td>
+            </tr>
+          </table>
           <EmailFooter />
         </Container>
       </Body>

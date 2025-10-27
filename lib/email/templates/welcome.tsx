@@ -10,7 +10,7 @@ export default function WelcomeEmail({ userName }: WelcomeEmailProps) {
 
   return (
     <EmailLayout preview="Welcome to SocialCal! Let's get you started.">
-      <Heading style={h1}>Welcome to SocialCal, {userName}! 👋</Heading>
+      <Heading style={h1}>Welcome to SocialCal! 👋</Heading>
 
       <Text style={text}>
         We&apos;re thrilled to have you on board! SocialCal makes it easy to schedule and manage your social media content across all platforms.

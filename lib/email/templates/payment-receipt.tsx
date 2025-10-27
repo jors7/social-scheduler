@@ -29,7 +29,7 @@ export default function PaymentReceiptEmail({
       <Heading style={h1}>Payment Received ✓</Heading>
 
       <Text style={text}>
-        Hi {userName},
+        Hi there,
       </Text>
 
       <Text style={text}>

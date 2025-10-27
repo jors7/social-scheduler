@@ -14,7 +14,7 @@ export default function TrialStartedEmail({ userName, planName }: TrialStartedEm
       <Heading style={h1}>Your {planName} Trial is Active! 🚀</Heading>
 
       <Text style={text}>
-        Hi {userName},
+        Hi there,
       </Text>
 
       <Text style={text}>
