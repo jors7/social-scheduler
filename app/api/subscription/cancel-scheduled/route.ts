@@ -50,22 +50,24 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // If there's a Stripe schedule ID, cancel it
+    // If there's a Stripe schedule ID, release it to return subscription to normal billing
     if (subscription.stripe_schedule_id) {
-      console.log('Canceling Stripe schedule:', subscription.stripe_schedule_id)
-      
+      console.log('Releasing Stripe schedule to cancel downgrade:', subscription.stripe_schedule_id)
+
       try {
-        const canceledSchedule = await stripe.subscriptionSchedules.cancel(
+        // Release the schedule immediately to return the subscription to normal billing
+        // This removes the schedule and keeps the current plan
+        const releasedSchedule = await stripe.subscriptionSchedules.release(
           subscription.stripe_schedule_id
         )
-        
-        console.log('Schedule canceled successfully:', canceledSchedule.id)
+
+        console.log('Schedule released successfully, subscription returned to normal billing:', releasedSchedule.id)
       } catch (stripeError: any) {
-        // If schedule does not exist or already canceled, that is OK
+        // If schedule does not exist or already released, that is OK
         if (stripeError.code !== 'resource_missing') {
           throw stripeError
         }
-        console.log('Schedule already canceled or does not exist')
+        console.log('Schedule already released/canceled or does not exist')
       }
     } else {
       console.log('No Stripe schedule to cancel, just clearing DB tracking')

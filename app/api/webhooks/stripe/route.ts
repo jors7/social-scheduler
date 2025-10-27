@@ -254,8 +254,8 @@ export async function POST(request: NextRequest) {
 
               if (recentChange.change_type === 'upgrade') {
                 // Check if there's a recent invoice that will/did handle the email
-                // If subscription has latest_invoice and is active, the invoice.payment_succeeded event will send the email with correct proration
-                const invoiceWillHandle = subscription.status === 'active' && subscription.latest_invoice
+                // If subscription has latest_invoice (regardless of status), the invoice.payment_succeeded event will send the email with correct proration
+                const invoiceWillHandle = subscription.latest_invoice !== null && subscription.latest_invoice !== undefined
 
                 if (invoiceWillHandle) {
                   console.log('Skipping upgrade email in subscription.updated - invoice.payment_succeeded will handle it with correct proration amount')
@@ -270,15 +270,9 @@ export async function POST(request: NextRequest) {
                   ).catch(err => console.error('Error sending plan upgrade email:', err))
                 }
               } else if (recentChange.change_type === 'downgrade') {
-                console.log('Detected downgrade in subscription.updated, sending downgrade email to:', user.user.email)
-                const effectiveDate = subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : new Date()
-                await sendPlanDowngradedEmail(
-                  user.user.email,
-                  userName,
-                  oldPlanName,
-                  newPlanName,
-                  effectiveDate
-                ).catch(err => console.error('Error sending plan downgrade email:', err))
+                console.log('Detected downgrade in subscription.updated - email already sent by change-plan API')
+                // Note: Downgrade emails are sent immediately by the change-plan API endpoint
+                // since no webhook fires when a downgrade is scheduled (Stripe subscription doesn't change)
               }
             }
           }

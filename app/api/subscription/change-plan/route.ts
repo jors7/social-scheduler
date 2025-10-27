@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import Stripe from 'stripe'
 import { SUBSCRIPTION_PLANS, PlanId, BillingCycle } from '@/lib/subscription/plans'
 import { syncStripeSubscriptionToDatabase } from '@/lib/subscription/sync'
+import { sendPlanDowngradedEmail } from '@/lib/email/send'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-11-20.acacia' as any,
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     // Get the Stripe subscription with expanded price data
     console.log('Retrieving Stripe subscription:', subscription.stripe_subscription_id)
     
-    let stripeSubscription
+    let stripeSubscription: Stripe.Subscription
     try {
       stripeSubscription = await stripe.subscriptions.retrieve(
         subscription.stripe_subscription_id,
@@ -170,35 +171,114 @@ export async function POST(request: NextRequest) {
       currentTier,
       newTier
     })
-    
+
+    // Initialize Supabase admin client early (needed for log entry)
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    // IMPORTANT: Create subscription_change_log BEFORE calling Stripe
+    // This ensures webhooks that fire during Stripe processing find the correct log entry
+    console.log(`Recording ${isUpgrade ? 'upgrade' : isDowngrade ? 'downgrade' : 'change'} in subscription_change_log BEFORE Stripe call`)
+    await supabaseAdmin
+      .from('subscription_change_log')
+      .insert({
+        user_id: user.id,
+        old_subscription_id: subscription.stripe_subscription_id,
+        new_subscription_id: subscription.stripe_subscription_id, // Same subscription, plan changed
+        old_plan_id: subscription.plan_id,
+        new_plan_id: newPlanId,
+        change_type: isUpgrade ? 'upgrade' : isDowngrade ? 'downgrade' : 'billing_change',
+        change_reason: `User-initiated plan ${isUpgrade ? 'upgrade' : isDowngrade ? 'downgrade' : 'change'} via billing page`,
+        metadata: {
+          old_billing_cycle: subscription.billing_cycle,
+          new_billing_cycle: billingCycle,
+          old_price: currentPrice,
+          new_price: newPrice,
+          scheduled_for: isDowngrade ? subscription.current_period_end : null
+        }
+      })
+
     // Update the subscription
     let updatedSubscription: any
     let scheduledChange: any = null
-    
+
     try {
       if (isDowngrade) {
-        console.log('Processing downgrade - scheduling for period end')
-        
-        // For downgrades, we DON'T change Stripe immediately
-        // Instead, we just track it in our database and apply it when the period ends
-        // This way the user keeps their current plan features until the billing period ends
-        
-        // Get the current subscription to keep it unchanged
-        updatedSubscription = stripeSubscription
-        
-        console.log('Downgrade scheduled - will take effect at next billing cycle')
-        
-        // Track this as a scheduled change in our system
-        scheduledChange = {
-          type: 'downgrade',
-          from_plan: subscription.plan_id,
-          to_plan: newPlanId,
-          from_cycle: subscription.billing_cycle,
-          to_cycle: billingCycle,
-          effective_date: subscription.current_period_end,
-          new_price_id: newPriceId
+        console.log('Processing downgrade - scheduling for period end using Stripe Subscription Schedules')
+
+        // For downgrades, create a Stripe Subscription Schedule
+        // This properly schedules the downgrade in Stripe, not just in our database
+        // The schedule will have two phases:
+        // Phase 1: Current plan until period end
+        // Phase 2: New (downgraded) plan starting at period end
+
+        try {
+          // Create subscription schedule from existing subscription
+          const schedule = await stripe.subscriptionSchedules.create({
+            from_subscription: subscription.stripe_subscription_id,
+          })
+
+          console.log('Created subscription schedule:', schedule.id)
+
+          // Now update the schedule to add the downgrade phase
+          const updatedSchedule = await stripe.subscriptionSchedules.update(
+            schedule.id,
+            {
+              end_behavior: 'release', // Release subscription back to normal billing after schedule completes
+              phases: [
+                {
+                  // Phase 1: Keep current plan until period end
+                  items: [{
+                    price: currentPriceId,
+                    quantity: 1,
+                  }],
+                  start_date: schedule.phases[0].start_date,
+                  end_date: (stripeSubscription as any).current_period_end,
+                },
+                {
+                  // Phase 2: Switch to new (downgraded) plan at period end
+                  items: [{
+                    price: newPriceId,
+                    quantity: 1,
+                  }],
+                  // Stripe will automatically start this phase when phase 1 ends
+                }
+              ],
+            }
+          )
+
+          console.log('Subscription schedule updated with downgrade phases:', updatedSchedule.id)
+
+          // Keep the subscription object for database sync
+          updatedSubscription = stripeSubscription
+
+          // Track this as a scheduled change in our system
+          scheduledChange = {
+            type: 'downgrade',
+            from_plan: subscription.plan_id,
+            to_plan: newPlanId,
+            from_cycle: subscription.billing_cycle,
+            to_cycle: billingCycle,
+            effective_date: subscription.current_period_end,
+            new_price_id: newPriceId,
+            schedule_id: updatedSchedule.id
+          }
+
+          console.log('Downgrade scheduled in Stripe - will take effect at:', new Date((stripeSubscription as any).current_period_end * 1000))
+
+        } catch (scheduleError: any) {
+          console.error('Failed to create subscription schedule:', scheduleError)
+          throw new Error(`Failed to schedule downgrade: ${scheduleError.message}`)
         }
-        
+
       } else {
         console.log('Processing upgrade or lateral change - applying immediately')
         
@@ -354,43 +434,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create subscription change log entry for webhooks to detect
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
-
-    // Record the change in subscription_change_log so webhooks can send appropriate emails
-    console.log(`Recording ${isUpgrade ? 'upgrade' : isDowngrade ? 'downgrade' : 'change'} in subscription_change_log`)
-    await supabaseAdmin
-      .from('subscription_change_log')
-      .insert({
-        user_id: user.id,
-        old_subscription_id: subscription.stripe_subscription_id,
-        new_subscription_id: subscription.stripe_subscription_id, // Same subscription, plan changed
-        old_plan_id: subscription.plan_id,
-        new_plan_id: newPlanId,
-        change_type: isUpgrade ? 'upgrade' : isDowngrade ? 'downgrade' : 'billing_change',
-        change_reason: `User-initiated plan ${isUpgrade ? 'upgrade' : isDowngrade ? 'downgrade' : 'change'} via billing page`,
-        metadata: {
-          old_billing_cycle: subscription.billing_cycle,
-          new_billing_cycle: billingCycle,
-          old_price: currentPrice,
-          new_price: newPrice,
-          scheduled_for: isDowngrade ? subscription.current_period_end : null
-        }
-      })
-
     if (isDowngrade) {
-      // For downgrades, we DON'T change Stripe, just track it in our database
+      // For downgrades, track the Stripe schedule in our database
       console.log('Tracking scheduled downgrade in database...')
-      
+
       // Keep current plan active, but track the scheduled change
       await supabaseAdmin
         .from('user_subscriptions')
@@ -402,13 +449,39 @@ export async function POST(request: NextRequest) {
           scheduled_plan_id: newPlanId,
           scheduled_billing_cycle: billingCycle,
           scheduled_change_date: subscription.current_period_end,
-          scheduled_stripe_price_id: scheduledChange.new_price_id, // Store the price ID for later use
+          scheduled_stripe_price_id: scheduledChange.new_price_id,
+          stripe_schedule_id: scheduledChange.schedule_id, // Store Stripe schedule ID for cancellation
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)
-      
+
       console.log('Downgrade scheduled - user keeps current plan until:', subscription.current_period_end)
-      
+      console.log('Stripe schedule ID:', scheduledChange.schedule_id)
+
+      // Send downgrade email immediately since no webhook will fire for downgrades
+      console.log('Sending downgrade email...')
+      try {
+        const { data: userData } = await supabaseAdmin.auth.admin.getUserById(user.id)
+        if (userData?.user?.email) {
+          const userName = userData.user.user_metadata?.full_name || userData.user.email?.split('@')[0] || 'there'
+          const effectiveDate = new Date(subscription.current_period_end)
+
+          await sendPlanDowngradedEmail(
+            userData.user.email,
+            userName,
+            currentPlan.name,
+            newPlan.name,
+            effectiveDate
+          )
+          console.log('Downgrade email sent successfully to:', userData.user.email)
+        } else {
+          console.error('Could not find user email for downgrade notification')
+        }
+      } catch (emailError) {
+        console.error('Error sending downgrade email:', emailError)
+        // Don't fail the entire request if email fails
+      }
+
     } else {
       // For upgrades, sync immediately
       console.log('Syncing upgraded subscription to database...')
