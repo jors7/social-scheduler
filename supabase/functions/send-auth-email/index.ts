@@ -164,32 +164,51 @@ const EMAIL_CONFIRMATION_TEMPLATE = (confirmationLink: string) => ({
   `
 })
 
-// Verify webhook signature
-async function verifySignature(req: Request): Promise<boolean> {
-  const signature = req.headers.get('x-supabase-signature')
+// Verify webhook signature using Standard Webhooks format
+async function verifySignature(req: Request, body: string): Promise<boolean> {
+  const signature = req.headers.get('webhook-signature')
   if (!signature || !webhookSecret) {
+    console.error('Missing signature or webhook secret')
     return false
   }
 
-  const body = await req.text()
-  const encoder = new TextEncoder()
-  const key = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(webhookSecret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['verify']
-  )
+  try {
+    // Standard Webhooks format: "v1,timestamp,signature"
+    const parts = signature.split(',')
+    if (parts.length !== 3 || parts[0] !== 'v1') {
+      console.error('Invalid signature format')
+      return false
+    }
 
-  const signatureBytes = Uint8Array.from(atob(signature), c => c.charCodeAt(0))
-  const bodyBytes = encoder.encode(body)
+    const timestamp = parts[1]
+    const receivedSignature = parts[2]
 
-  return await crypto.subtle.verify(
-    'HMAC',
-    key,
-    signatureBytes,
-    bodyBytes
-  )
+    // Create the signed content: timestamp.body
+    const signedContent = `${timestamp}.${body}`
+
+    const encoder = new TextEncoder()
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(webhookSecret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    )
+
+    const signatureBytes = await crypto.subtle.sign(
+      'HMAC',
+      key,
+      encoder.encode(signedContent)
+    )
+
+    // Convert to base64
+    const expectedSignature = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)))
+
+    return expectedSignature === receivedSignature
+  } catch (error) {
+    console.error('Signature verification error:', error)
+    return false
+  }
 }
 
 serve(async (req: Request) => {
@@ -199,14 +218,17 @@ serve(async (req: Request) => {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-signature',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, webhook-signature',
       },
     })
   }
 
   try {
+    // Get the raw body for signature verification
+    const body = await req.text()
+
     // Verify webhook signature
-    const isValid = await verifySignature(req)
+    const isValid = await verifySignature(req, body)
     if (!isValid) {
       console.error('Invalid webhook signature')
       return new Response(JSON.stringify({ error: 'Invalid signature' }), {
@@ -215,7 +237,8 @@ serve(async (req: Request) => {
       })
     }
 
-    const payload = await req.json()
+    // Parse the JSON payload
+    const payload = JSON.parse(body)
     console.log('Received auth email webhook:', payload.type)
 
     const {
