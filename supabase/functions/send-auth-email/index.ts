@@ -2,8 +2,12 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { Resend } from 'npm:resend@2.0.0'
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY'))
-const webhookSecret = Deno.env.get('AUTH_WEBHOOK_SECRET')
-const supabaseUrl = Deno.env.get('SUPABASE_URL')
+// Extract the actual secret from Standard Webhooks format "v1,whsec_<secret>"
+const rawWebhookSecret = Deno.env.get('AUTH_WEBHOOK_SECRET') || ''
+const webhookSecret = rawWebhookSecret.startsWith('v1,whsec_')
+  ? rawWebhookSecret.substring(9) // Remove "v1,whsec_" prefix
+  : rawWebhookSecret
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://vomglwxzhuyfkraertrm.supabase.co'
 
 // Import email templates (these will be bundled with the Edge Function)
 // Note: You'll need to copy the template files into the function directory or use a build step
