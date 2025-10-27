@@ -1,0 +1,5 @@
+# Supabase Edge Functions (deployed separately to Supabase)
+supabase/functions
+
+# Supabase temp files
+supabase/.temp
