@@ -48,52 +48,53 @@ export default function WelcomeEmail({ userName }: WelcomeEmailProps) {
 }
 
 const h1 = {
-  color: '#1a1a1a',
-  fontSize: '32px',
-  fontWeight: 'bold' as const,
-  margin: '0 0 16px',
-  lineHeight: '1.2',
+  color: '#111827',
+  fontSize: '28px',
+  fontWeight: '700' as const,
+  margin: '0 0 24px',
+  lineHeight: '1.3',
+  letterSpacing: '-0.02em',
 };
 
 const text = {
-  color: '#525f7f',
+  color: '#374151',
   fontSize: '16px',
-  lineHeight: '26px',
-  margin: '16px 0',
+  lineHeight: '28px',
+  margin: '0 0 20px',
 };
 
 const features = {
-  margin: '32px 0',
-  padding: '24px',
-  border: '2px solid #6366f1',
-  borderRadius: '6px',
-  borderLeft: '6px solid #6366f1',
+  margin: '28px 0',
+  padding: '32px 28px',
+  border: '2px solid #e5e7eb',
+  borderRadius: '8px',
+  borderLeft: '5px solid #6366f1',
 };
 
 const featureText = {
-  color: '#374151',
+  color: '#111827',
   fontSize: '15px',
-  lineHeight: '28px',
-  margin: '8px 0',
+  lineHeight: '30px',
+  margin: '0',
   fontWeight: '500' as const,
 };
 
 const button = {
   backgroundColor: '#6366f1',
-  borderRadius: '6px',
+  borderRadius: '8px',
   color: '#ffffff',
-  fontSize: '16px',
+  fontSize: '15px',
   fontWeight: '600' as const,
   textDecoration: 'none',
   textAlign: 'center' as const,
   display: 'inline-block',
-  padding: '16px 32px',
-  margin: '32px 0',
+  padding: '14px 28px',
+  margin: '28px 0',
 };
 
 const signature = {
   color: '#6b7280',
-  fontSize: '15px',
+  fontSize: '14px',
   lineHeight: '24px',
   margin: '32px 0 0',
 };
