@@ -1,4 +1,5 @@
 import { getResendClient, EMAIL_FROM, REPLY_TO } from './resend';
+import { render } from '@react-email/render';
 import { ReactElement } from 'react';
 
 interface SendEmailOptions {
@@ -11,11 +12,15 @@ interface SendEmailOptions {
 export async function sendEmail({ to, subject, react, replyTo }: SendEmailOptions) {
   try {
     const resend = getResendClient();
+
+    // Render React component to HTML string
+    const html = await render(react);
+
     const { data, error } = await resend.emails.send({
       from: EMAIL_FROM,
       to,
       subject,
-      react,
+      html,
       replyTo: replyTo || REPLY_TO,
     });
 
