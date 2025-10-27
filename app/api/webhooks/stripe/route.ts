@@ -3,6 +3,14 @@ import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 import { PlanId, BillingCycle } from '@/lib/subscription/plans'
 import { syncStripeSubscriptionToDatabase } from '@/lib/subscription/sync'
+import {
+  sendWelcomeEmail,
+  sendTrialStartedEmail,
+  sendSubscriptionCreatedEmail,
+  sendPaymentReceiptEmail,
+  sendPlanUpgradedEmail,
+  sendSubscriptionCancelledEmail,
+} from '@/lib/email/send'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-11-20.acacia' as any,
@@ -176,8 +184,13 @@ export async function POST(request: NextRequest) {
           }
           
           console.log('Subscription updated successfully:', data)
-          
-          // If this is a trial, add a trial entry to payment history
+
+          // Get user email for sending notifications
+          const userEmail = (session as any).customer_details?.email || user_email
+          const userName = (session as any).customer_details?.name || 'there'
+          const planName = plan_id.charAt(0).toUpperCase() + plan_id.slice(1)
+
+          // If this is a trial, add a trial entry to payment history and send trial email
           if ((subscription as any).status === 'trialing') {
             const { error: historyError } = await supabaseAdmin
               .from('payment_history')
@@ -187,16 +200,35 @@ export async function POST(request: NextRequest) {
                 amount: 0,
                 currency: 'usd',
                 status: 'succeeded',
-                description: `Started 7-day free trial for ${plan_id.charAt(0).toUpperCase() + plan_id.slice(1)} plan`,
+                description: `Started 7-day free trial for ${planName} plan`,
                 metadata: { type: 'trial_started', plan_id },
                 created_at: new Date().toISOString()
               })
-            
+
             if (historyError) {
               console.error('Error recording trial start:', historyError)
               // Don't throw, this is not critical
             } else {
               console.log('Trial start recorded in payment history')
+            }
+
+            // Send welcome and trial started emails
+            if (userEmail) {
+              console.log('Sending welcome and trial started emails to:', userEmail)
+              await Promise.all([
+                sendWelcomeEmail(userEmail, userName),
+                sendTrialStartedEmail(userEmail, userName, planName)
+              ]).catch(err => console.error('Error sending trial emails:', err))
+            }
+          } else {
+            // Not a trial, subscription started immediately - send subscription created email
+            if (userEmail) {
+              console.log('Sending subscription created email to:', userEmail)
+              const amount = (subscription as any).items?.data[0]?.price?.unit_amount || 0
+              await Promise.all([
+                sendWelcomeEmail(userEmail, userName),
+                sendSubscriptionCreatedEmail(userEmail, userName, planName, billing_cycle, amount)
+              ]).catch(err => console.error('Error sending subscription emails:', err))
             }
           }
         }
@@ -258,6 +290,23 @@ export async function POST(request: NextRequest) {
         }
 
         console.log('✅ User downgraded to free tier successfully')
+
+        // Send cancellation email
+        if (user_id) {
+          const { data: user } = await supabaseAdmin.auth.admin.getUserById(user_id)
+          if (user?.user?.email) {
+            console.log('Sending subscription cancelled email to:', user.user.email)
+            const userName = user.user.user_metadata?.full_name || user.user.email?.split('@')[0] || 'there'
+            const planName = subscription.metadata?.plan_id?.charAt(0).toUpperCase() + subscription.metadata?.plan_id?.slice(1) || 'Premium'
+            const endDate = subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : new Date()
+            await sendSubscriptionCancelledEmail(
+              user.user.email,
+              userName,
+              planName,
+              endDate
+            ).catch(err => console.error('Error sending cancellation email:', err))
+          }
+        }
         break
       }
 
@@ -402,6 +451,24 @@ export async function POST(request: NextRequest) {
             // Don't throw here, payment already succeeded
           } else {
             console.log('Payment recorded with proration details')
+
+            // Send payment receipt email (skip for trial charges)
+            if (invoice.billing_reason !== 'subscription_create' || invoice.amount_paid > 0) {
+              const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
+              if (user?.user?.email) {
+                console.log('Sending payment receipt email to:', user.user.email)
+                const userName = user.user.user_metadata?.full_name || user.user.email?.split('@')[0] || 'there'
+                const planName = planId.charAt(0).toUpperCase() + planId.slice(1)
+                await sendPaymentReceiptEmail(
+                  user.user.email,
+                  userName,
+                  planName,
+                  invoice.amount_paid,
+                  invoice.currency,
+                  invoice.hosted_invoice_url || undefined
+                ).catch(err => console.error('Error sending payment receipt email:', err))
+              }
+            }
           }
         }
         break
