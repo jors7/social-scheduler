@@ -13,8 +13,10 @@ export async function sendEmail({ to, subject, react, replyTo }: SendEmailOption
   try {
     const resend = getResendClient();
 
-    // Render React component to HTML string
-    const html = await render(react);
+    // Render React component to HTML string with proper options
+    const html = await render(react, {
+      pretty: false, // Minify for email clients
+    });
 
     const { data, error } = await resend.emails.send({
       from: EMAIL_FROM,

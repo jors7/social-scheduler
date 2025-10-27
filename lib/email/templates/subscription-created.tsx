@@ -76,7 +76,7 @@ export default function SubscriptionCreatedEmail({
 const h1 = {
   color: '#1a1a1a',
   fontSize: '32px',
-  fontWeight: 'bold',
+  fontWeight: 'bold' as const,
   margin: '0 0 16px',
   lineHeight: '1.2',
 };
@@ -92,14 +92,14 @@ const summaryBox = {
   margin: '32px 0',
   padding: '24px',
   backgroundColor: '#f6f9fc',
-  borderRadius: '12px',
+  borderRadius: '6px',
   borderLeft: '4px solid #6366f1',
 };
 
 const summaryTitle = {
   color: '#1a1a1a',
   fontSize: '18px',
-  fontWeight: 'bold',
+  fontWeight: 'bold' as const,
   margin: '0 0 16px',
 };
 
@@ -122,31 +122,30 @@ const summaryLabel = {
 const summaryValue = {
   color: '#1a1a1a',
   fontSize: '16px',
-  fontWeight: '600',
+  fontWeight: '600' as const,
   padding: '8px 0',
 };
 
 const button = {
   backgroundColor: '#6366f1',
-  borderRadius: '8px',
+  borderRadius: '6px',
   color: '#ffffff',
   fontSize: '16px',
-  fontWeight: '600',
+  fontWeight: '600' as const,
   textDecoration: 'none',
   textAlign: 'center' as const,
   display: 'inline-block',
   padding: '16px 32px',
   margin: '32px 0 16px',
-  boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)',
 };
 
 const secondaryButton = {
   backgroundColor: 'transparent',
   border: '2px solid #e5e7eb',
-  borderRadius: '8px',
+  borderRadius: '6px',
   color: '#6b7280',
   fontSize: '14px',
-  fontWeight: '600',
+  fontWeight: '600' as const,
   textDecoration: 'none',
   textAlign: 'center' as const,
   display: 'inline-block',

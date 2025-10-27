@@ -84,7 +84,7 @@ export default function PaymentReceiptEmail({
 const h1 = {
   color: '#1a1a1a',
   fontSize: '32px',
-  fontWeight: 'bold',
+  fontWeight: 'bold' as const,
   margin: '0 0 16px',
   lineHeight: '1.2',
 };
@@ -100,14 +100,14 @@ const receiptBox = {
   margin: '32px 0',
   padding: '24px',
   backgroundColor: '#f0fdf4',
-  borderRadius: '12px',
+  borderRadius: '6px',
   borderLeft: '4px solid #10b981',
 };
 
 const receiptTitle = {
   color: '#059669',
   fontSize: '18px',
-  fontWeight: 'bold',
+  fontWeight: 'bold' as const,
   margin: '0 0 16px',
 };
 
@@ -130,38 +130,37 @@ const label = {
 const value = {
   color: '#1a1a1a',
   fontSize: '16px',
-  fontWeight: '500',
+  fontWeight: '500' as const,
   padding: '8px 0',
 };
 
 const amountValue = {
   color: '#059669',
   fontSize: '20px',
-  fontWeight: 'bold',
+  fontWeight: 'bold' as const,
   padding: '8px 0',
 };
 
 const button = {
   backgroundColor: '#10b981',
-  borderRadius: '8px',
+  borderRadius: '6px',
   color: '#ffffff',
   fontSize: '16px',
-  fontWeight: '600',
+  fontWeight: '600' as const,
   textDecoration: 'none',
   textAlign: 'center' as const,
   display: 'inline-block',
   padding: '16px 32px',
   margin: '32px 0 16px',
-  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)',
 };
 
 const secondaryButton = {
   backgroundColor: 'transparent',
   border: '2px solid #e5e7eb',
-  borderRadius: '8px',
+  borderRadius: '6px',
   color: '#6b7280',
   fontSize: '14px',
-  fontWeight: '600',
+  fontWeight: '600' as const,
   textDecoration: 'none',
   textAlign: 'center' as const,
   display: 'inline-block',

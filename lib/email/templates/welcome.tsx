@@ -46,7 +46,7 @@ export default function WelcomeEmail({ userName }: WelcomeEmailProps) {
 const h1 = {
   color: '#1a1a1a',
   fontSize: '32px',
-  fontWeight: 'bold',
+  fontWeight: 'bold' as const,
   margin: '0 0 16px',
   lineHeight: '1.2',
 };
@@ -62,7 +62,7 @@ const features = {
   margin: '32px 0',
   padding: '24px',
   backgroundColor: '#f6f9fc',
-  borderRadius: '12px',
+  borderRadius: '6px',
   borderLeft: '4px solid #6366f1',
 };
 
@@ -71,21 +71,20 @@ const featureText = {
   fontSize: '15px',
   lineHeight: '28px',
   margin: '8px 0',
-  fontWeight: '500',
+  fontWeight: '500' as const,
 };
 
 const button = {
   backgroundColor: '#6366f1',
-  borderRadius: '8px',
+  borderRadius: '6px',
   color: '#ffffff',
   fontSize: '16px',
-  fontWeight: '600',
+  fontWeight: '600' as const,
   textDecoration: 'none',
   textAlign: 'center' as const,
   display: 'inline-block',
   padding: '16px 32px',
   margin: '32px 0',
-  boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)',
 };
 
 const signature = {

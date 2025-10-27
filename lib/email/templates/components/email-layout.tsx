@@ -47,9 +47,6 @@ const container = {
   marginBottom: '0',
   maxWidth: '600px',
   border: '1px solid #e6ebf1',
-  borderRadius: '8px',
-  overflow: 'hidden',
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
 };
 
 const content = {

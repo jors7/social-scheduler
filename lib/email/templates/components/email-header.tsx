@@ -13,7 +13,7 @@ export function EmailHeader() {
 
 const brandBar = {
   height: '4px',
-  background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
+  backgroundColor: '#6366f1',
   margin: '0',
   padding: '0',
 };
@@ -27,7 +27,7 @@ const header = {
 const heading = {
   margin: '0',
   fontSize: '28px',
-  fontWeight: 'bold',
+  fontWeight: 'bold' as const,
   color: '#1a1a1a',
   letterSpacing: '-0.5px',
 };

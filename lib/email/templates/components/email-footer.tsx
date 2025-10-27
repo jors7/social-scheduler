@@ -53,7 +53,7 @@ const footerText = {
 const footerLink = {
   color: '#6366f1',
   textDecoration: 'none',
-  fontWeight: '500',
+  fontWeight: '500' as const,
 };
 
 const footerAddress = {
