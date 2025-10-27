@@ -1,13 +1,18 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { Resend } from 'npm:resend@2.0.0'
+import { Webhook } from 'https://esm.sh/standardwebhooks@1.0.0'
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY'))
-// Extract the actual secret from Standard Webhooks format "v1,whsec_<secret>"
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://vomglwxzhuyfkraertrm.supabase.co'
+
+// Get webhook secret and prepare for Standard Webhooks library
 const rawWebhookSecret = Deno.env.get('AUTH_WEBHOOK_SECRET') || ''
+// Standard Webhooks library expects the secret without "v1,whsec_" prefix
 const webhookSecret = rawWebhookSecret.startsWith('v1,whsec_')
   ? rawWebhookSecret.substring(9) // Remove "v1,whsec_" prefix
   : rawWebhookSecret
-const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://vomglwxzhuyfkraertrm.supabase.co'
+
+const wh = new Webhook(webhookSecret)
 
 // Import email templates (these will be bundled with the Edge Function)
 // Note: You'll need to copy the template files into the function directory or use a build step
@@ -164,66 +169,25 @@ const EMAIL_CONFIRMATION_TEMPLATE = (confirmationLink: string) => ({
   `
 })
 
-// Verify webhook signature using Standard Webhooks format
-async function verifySignature(req: Request, body: string): Promise<boolean> {
-  const signature = req.headers.get('webhook-signature')
-  const timestamp = req.headers.get('webhook-timestamp')
-
-  console.log('Signature header:', signature)
-  console.log('Timestamp header:', timestamp)
-  console.log('Webhook secret (first 10 chars):', webhookSecret?.substring(0, 10))
-
-  if (!signature || !timestamp || !webhookSecret) {
-    console.error('Missing signature, timestamp, or webhook secret', {
-      hasSignature: !!signature,
-      hasTimestamp: !!timestamp,
-      hasSecret: !!webhookSecret
-    })
-    return false
-  }
-
+// Verify webhook signature using Standard Webhooks library
+function verifyWebhook(payload: string, headers: Headers): any {
   try {
-    // Supabase uses Standard Webhooks: "v1,signature" with separate timestamp header
-    const parts = signature.split(',')
-    console.log('Signature parts:', parts.length, parts[0])
+    // Convert Headers to plain object for Standard Webhooks library
+    const headersObj: Record<string, string> = {}
+    headers.forEach((value, key) => {
+      headersObj[key] = value
+    })
 
-    if (parts.length !== 2 || parts[0] !== 'v1') {
-      console.error('Invalid signature format. Expected "v1,signature", got:', signature)
-      return false
-    }
+    console.log('Verifying webhook with headers:', JSON.stringify(headersObj))
 
-    const receivedSignature = parts[1]
+    // Standard Webhooks library handles all the verification
+    const verified = wh.verify(payload, headersObj)
+    console.log('Webhook verification successful')
 
-    // Standard Webhooks signed content format: timestamp.body
-    const signedContent = `${timestamp}.${body}`
-    console.log('Signed content (first 50 chars):', signedContent.substring(0, 50))
-
-    const encoder = new TextEncoder()
-    const key = await crypto.subtle.importKey(
-      'raw',
-      encoder.encode(webhookSecret),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    )
-
-    const signatureBytes = await crypto.subtle.sign(
-      'HMAC',
-      key,
-      encoder.encode(signedContent)
-    )
-
-    // Convert to base64
-    const expectedSignature = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)))
-
-    console.log('Expected signature:', expectedSignature.substring(0, 20) + '...')
-    console.log('Received signature:', receivedSignature.substring(0, 20) + '...')
-    console.log('Signatures match:', expectedSignature === receivedSignature)
-
-    return expectedSignature === receivedSignature
+    return verified
   } catch (error) {
-    console.error('Signature verification error:', error)
-    return false
+    console.error('Webhook verification failed:', error)
+    throw error
   }
 }
 
@@ -243,19 +207,18 @@ serve(async (req: Request) => {
     // Get the raw body for signature verification
     const body = await req.text()
 
-    // Verify webhook signature
-    const isValid = await verifySignature(req, body)
-    if (!isValid) {
-      console.error('Invalid webhook signature')
+    // Verify webhook signature using Standard Webhooks library
+    let payload
+    try {
+      payload = verifyWebhook(body, req.headers)
+      console.log('Received auth email webhook:', payload.type || payload.email_action_type)
+    } catch (error) {
+      console.error('Webhook verification failed:', error)
       return new Response(JSON.stringify({ error: 'Invalid signature' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       })
     }
-
-    // Parse the JSON payload
-    const payload = JSON.parse(body)
-    console.log('Received auth email webhook:', payload.type)
 
     const {
       email,
