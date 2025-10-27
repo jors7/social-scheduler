@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
+import {
+  sendWelcomeEmail,
+  sendTrialStartedEmail,
+  sendSubscriptionCreatedEmail,
+} from '@/lib/email/send'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
@@ -164,6 +169,31 @@ export async function GET(request: NextRequest) {
             // Don't fail the whole flow, webhook can retry
           } else {
             console.log('✅ Subscription record created in database')
+
+            // Send welcome emails after account and subscription are created
+            const userName = customerEmail.split('@')[0] || 'there'
+            const planName = (metadata?.plan_id || 'starter').charAt(0).toUpperCase() +
+                            (metadata?.plan_id || 'starter').slice(1)
+            const billingCycle = metadata?.billing_cycle || 'monthly'
+
+            console.log('📧 Sending welcome emails to:', customerEmail)
+
+            if (subscription.status === 'trialing') {
+              // Send trial welcome emails
+              await Promise.all([
+                sendWelcomeEmail(customerEmail, userName),
+                sendTrialStartedEmail(customerEmail, userName, planName)
+              ]).catch(err => console.error('Error sending trial welcome emails:', err))
+              console.log('✅ Trial welcome emails sent')
+            } else {
+              // Send subscription welcome emails
+              const amount = subscription.items?.data[0]?.price?.unit_amount || 0
+              await Promise.all([
+                sendWelcomeEmail(customerEmail, userName),
+                sendSubscriptionCreatedEmail(customerEmail, userName, planName, billingCycle, amount)
+              ]).catch(err => console.error('Error sending subscription welcome emails:', err))
+              console.log('✅ Subscription welcome emails sent')
+            }
           }
         }
       }

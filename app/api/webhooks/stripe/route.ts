@@ -4,11 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { PlanId, BillingCycle } from '@/lib/subscription/plans'
 import { syncStripeSubscriptionToDatabase } from '@/lib/subscription/sync'
 import {
-  sendWelcomeEmail,
-  sendTrialStartedEmail,
-  sendSubscriptionCreatedEmail,
   sendPaymentReceiptEmail,
-  sendPlanUpgradedEmail,
   sendSubscriptionCancelledEmail,
 } from '@/lib/email/send'
 
@@ -185,12 +181,12 @@ export async function POST(request: NextRequest) {
           
           console.log('Subscription updated successfully:', data)
 
-          // Get user email for sending notifications
-          const userEmail = (session as any).customer_details?.email || user_email
-          const userName = (session as any).customer_details?.name || 'there'
+          // Note: Welcome emails are now sent from the callback endpoint
+          // after user account is created, to avoid race condition
+
           const planName = plan_id.charAt(0).toUpperCase() + plan_id.slice(1)
 
-          // If this is a trial, add a trial entry to payment history and send trial email
+          // If this is a trial, add a trial entry to payment history
           if ((subscription as any).status === 'trialing') {
             const { error: historyError } = await supabaseAdmin
               .from('payment_history')
@@ -210,25 +206,6 @@ export async function POST(request: NextRequest) {
               // Don't throw, this is not critical
             } else {
               console.log('Trial start recorded in payment history')
-            }
-
-            // Send welcome and trial started emails
-            if (userEmail) {
-              console.log('Sending welcome and trial started emails to:', userEmail)
-              await Promise.all([
-                sendWelcomeEmail(userEmail, userName),
-                sendTrialStartedEmail(userEmail, userName, planName)
-              ]).catch(err => console.error('Error sending trial emails:', err))
-            }
-          } else {
-            // Not a trial, subscription started immediately - send subscription created email
-            if (userEmail) {
-              console.log('Sending subscription created email to:', userEmail)
-              const amount = (subscription as any).items?.data[0]?.price?.unit_amount || 0
-              await Promise.all([
-                sendWelcomeEmail(userEmail, userName),
-                sendSubscriptionCreatedEmail(userEmail, userName, planName, billing_cycle, amount)
-              ]).catch(err => console.error('Error sending subscription emails:', err))
             }
           }
         }
