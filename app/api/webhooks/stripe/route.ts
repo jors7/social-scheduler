@@ -231,30 +231,62 @@ export async function POST(request: NextRequest) {
           if (!userId) {
             const { data: existingSub } = await supabaseAdmin
               .from('user_subscriptions')
-              .select('user_id')
+              .select('user_id, canceled_at')
               .eq('stripe_subscription_id', subscription.id)
               .single()
             userId = existingSub?.user_id
-          }
 
-          // Send cancellation email immediately
-          if (userId) {
-            const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
-            if (user?.user?.email) {
-              console.log('📧 Sending cancellation email to:', user.user.email)
-              const userName = user.user.user_metadata?.full_name || user.user.email?.split('@')[0] || 'there'
-              const planName = subscription.metadata?.plan_id?.charAt(0).toUpperCase() + subscription.metadata?.plan_id?.slice(1) || 'Premium'
-              const endDate = subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : new Date()
+            // Only send email if this is the first cancellation (canceled_at is null in our DB)
+            // This prevents duplicate emails when Stripe sends multiple webhooks
+            if (existingSub?.canceled_at) {
+              console.log('⏭️ Cancellation email already sent, skipping')
+            } else if (userId) {
+              const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
+              if (user?.user?.email) {
+                console.log('📧 Sending cancellation email to:', user.user.email)
+                const userName = user.user.user_metadata?.full_name || user.user.email?.split('@')[0] || 'there'
+                const planName = subscription.metadata?.plan_id?.charAt(0).toUpperCase() + subscription.metadata?.plan_id?.slice(1) || 'Premium'
+                const endDate = subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : new Date()
 
-              await sendSubscriptionCancelledEmail(
-                user.user.email,
-                userName,
-                planName,
-                endDate
-              ).catch(err => {
-                console.error('❌ Error sending cancellation email:', err)
-                console.error('Full error details:', JSON.stringify(err, null, 2))
-              })
+                await sendSubscriptionCancelledEmail(
+                  user.user.email,
+                  userName,
+                  planName,
+                  endDate
+                ).catch(err => {
+                  console.error('❌ Error sending cancellation email:', err)
+                  console.error('Full error details:', JSON.stringify(err, null, 2))
+                })
+              }
+            }
+          } else {
+            // userId from metadata, need to check if email was already sent
+            const { data: existingSub } = await supabaseAdmin
+              .from('user_subscriptions')
+              .select('canceled_at')
+              .eq('stripe_subscription_id', subscription.id)
+              .single()
+
+            if (existingSub?.canceled_at) {
+              console.log('⏭️ Cancellation email already sent, skipping')
+            } else {
+              const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
+              if (user?.user?.email) {
+                console.log('📧 Sending cancellation email to:', user.user.email)
+                const userName = user.user.user_metadata?.full_name || user.user.email?.split('@')[0] || 'there'
+                const planName = subscription.metadata?.plan_id?.charAt(0).toUpperCase() + subscription.metadata?.plan_id?.slice(1) || 'Premium'
+                const endDate = subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : new Date()
+
+                await sendSubscriptionCancelledEmail(
+                  user.user.email,
+                  userName,
+                  planName,
+                  endDate
+                ).catch(err => {
+                  console.error('❌ Error sending cancellation email:', err)
+                  console.error('Full error details:', JSON.stringify(err, null, 2))
+                })
+              }
             }
           }
         }
