@@ -1,4 +1,4 @@
-import { Text, Heading, Button, Section, Row, Column, Hr } from '@react-email/components';
+import { Text, Heading, Button, Section, Hr } from '@react-email/components';
 import { EmailLayout } from './components/email-layout';
 
 interface PaymentReceiptEmailProps {
@@ -36,27 +36,23 @@ export default function PaymentReceiptEmail({
         Thank you! Your payment has been processed successfully.
       </Text>
 
-      <Section>
-        <Row>
-          <Column style={receiptBox}>
-            <Text style={receiptTitle}>Payment Details</Text>
-            <Hr style={hr} />
-            <table style={receiptTable}>
-              <tr>
-                <td style={label}>Date:</td>
-                <td style={value}>{formattedDate}</td>
-              </tr>
-              <tr>
-                <td style={label}>Plan:</td>
-                <td style={value}>{planName}</td>
-              </tr>
-              <tr>
-                <td style={label}>Amount:</td>
-                <td style={amountValue}>${formattedAmount} {currency.toUpperCase()}</td>
-              </tr>
-            </table>
-          </Column>
-        </Row>
+      <Section style={receiptBox}>
+        <Text style={receiptTitle}>Payment Details</Text>
+        <Hr style={hr} />
+        <table width="100%" cellPadding="0" cellSpacing="0">
+          <tr>
+            <td style={label}>Date:</td>
+            <td style={value}>{formattedDate}</td>
+          </tr>
+          <tr>
+            <td style={label}>Plan:</td>
+            <td style={value}>{planName}</td>
+          </tr>
+          <tr>
+            <td style={label}>Amount:</td>
+            <td style={amountValue}>${formattedAmount} {currency.toUpperCase()}</td>
+          </tr>
+        </table>
       </Section>
 
       {invoiceUrl && (
@@ -102,26 +98,20 @@ const text = {
 
 const receiptBox = {
   margin: '32px 0',
-  padding: '24px',
-  border: '2px solid #10b981',
-  borderRadius: '6px',
-  borderLeft: '6px solid #10b981',
+  padding: '0',
+  borderRadius: '0',
 };
 
 const receiptTitle = {
   color: '#059669',
   fontSize: '18px',
-  fontWeight: 'bold' as const,
+  fontWeight: '600' as const,
   margin: '0 0 16px',
 };
 
 const hr = {
   borderColor: '#d1fae5',
-  margin: '0 0 16px',
-};
-
-const receiptTable = {
-  width: '100%',
+  margin: '0 0 20px',
 };
 
 const label = {

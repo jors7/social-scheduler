@@ -1,4 +1,4 @@
-import { Text, Heading, Button, Section, Row, Column } from '@react-email/components';
+import { Text, Heading, Button, Section, Row, Column, Hr } from '@react-email/components';
 import { EmailLayout } from './components/email-layout';
 
 interface WelcomeEmailProps {
@@ -16,15 +16,27 @@ export default function WelcomeEmail({ userName }: WelcomeEmailProps) {
         We&apos;re thrilled to have you on board! SocialCal makes it easy to schedule and manage your social media content across all platforms.
       </Text>
 
-      <Section>
-        <Row>
-          <Column style={features}>
-            <Text style={featureText}>✓ Schedule posts across multiple platforms</Text>
-            <Text style={featureText}>✓ AI-powered caption suggestions</Text>
-            <Text style={featureText}>✓ Analytics and insights</Text>
-            <Text style={featureText}>✓ Team collaboration</Text>
-          </Column>
-        </Row>
+      <Section style={featuresBox}>
+        <Text style={featuresTitle}>What you can do with SocialCal:</Text>
+        <Hr style={divider} />
+        <table width="100%" cellPadding="0" cellSpacing="0">
+          <tr>
+            <td style={iconCell}>✓</td>
+            <td style={featureText}>Schedule posts across multiple platforms</td>
+          </tr>
+          <tr>
+            <td style={iconCell}>✓</td>
+            <td style={featureText}>AI-powered caption suggestions</td>
+          </tr>
+          <tr>
+            <td style={iconCell}>✓</td>
+            <td style={featureText}>Analytics and insights</td>
+          </tr>
+          <tr>
+            <td style={iconCell}>✓</td>
+            <td style={featureText}>Team collaboration</td>
+          </tr>
+        </table>
       </Section>
 
       <Text style={text}>
@@ -48,53 +60,73 @@ export default function WelcomeEmail({ userName }: WelcomeEmailProps) {
 }
 
 const h1 = {
-  color: '#111827',
-  fontSize: '28px',
+  color: '#1a1a1a',
+  fontSize: '32px',
   fontWeight: '700' as const,
   margin: '0 0 24px',
-  lineHeight: '1.3',
-  letterSpacing: '-0.02em',
+  lineHeight: '1.25',
+  letterSpacing: '-0.5px',
 };
 
 const text = {
-  color: '#374151',
+  color: '#525f7f',
   fontSize: '16px',
-  lineHeight: '28px',
+  lineHeight: '26px',
+  margin: '0 0 16px',
+};
+
+const featuresBox = {
+  margin: '32px 0',
+  padding: '0',
+  borderRadius: '0',
+};
+
+const featuresTitle = {
+  color: '#1a1a1a',
+  fontSize: '18px',
+  fontWeight: '600' as const,
+  margin: '0 0 16px',
+};
+
+const divider = {
+  borderColor: '#e6ebf1',
   margin: '0 0 20px',
 };
 
-const features = {
-  margin: '28px 0',
-  padding: '32px 28px',
-  border: '2px solid #e5e7eb',
-  borderRadius: '8px',
-  borderLeft: '5px solid #6366f1',
+const iconCell = {
+  color: '#6366f1',
+  fontSize: '18px',
+  fontWeight: '700' as const,
+  width: '32px',
+  paddingRight: '12px',
+  paddingBottom: '12px',
+  verticalAlign: 'top',
 };
 
 const featureText = {
-  color: '#111827',
-  fontSize: '15px',
-  lineHeight: '30px',
-  margin: '0',
-  fontWeight: '500' as const,
+  color: '#1a1a1a',
+  fontSize: '16px',
+  lineHeight: '26px',
+  paddingBottom: '12px',
+  fontWeight: '400' as const,
 };
 
 const button = {
   backgroundColor: '#6366f1',
-  borderRadius: '8px',
+  borderRadius: '6px',
   color: '#ffffff',
-  fontSize: '15px',
+  fontSize: '16px',
   fontWeight: '600' as const,
   textDecoration: 'none',
   textAlign: 'center' as const,
   display: 'inline-block',
-  padding: '14px 28px',
-  margin: '28px 0',
+  padding: '14px 32px',
+  margin: '24px 0',
 };
 
 const signature = {
   color: '#6b7280',
-  fontSize: '14px',
+  fontSize: '15px',
   lineHeight: '24px',
   margin: '32px 0 0',
 };

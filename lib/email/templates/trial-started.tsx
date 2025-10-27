@@ -1,4 +1,4 @@
-import { Text, Heading, Button, Section, Row, Column } from '@react-email/components';
+import { Text, Heading, Button, Section, Hr } from '@react-email/components';
 import { EmailLayout } from './components/email-layout';
 
 interface TrialStartedEmailProps {
@@ -21,17 +21,31 @@ export default function TrialStartedEmail({ userName, planName }: TrialStartedEm
         Great news! Your 7-day free trial of the {planName} plan has started. You now have full access to all premium features.
       </Text>
 
-      <Section>
-        <Row>
-          <Column style={featuresBox}>
-            <Text style={featuresHeading}>What&apos;s included:</Text>
-            <Text style={featureText}>✓ Unlimited post scheduling</Text>
-            <Text style={featureText}>✓ AI caption suggestions</Text>
-            <Text style={featureText}>✓ Advanced analytics</Text>
-            <Text style={featureText}>✓ Team collaboration</Text>
-            <Text style={featureText}>✓ Priority support</Text>
-          </Column>
-        </Row>
+      <Section style={featuresBox}>
+        <Text style={featuresHeading}>What&apos;s included in your trial:</Text>
+        <Hr style={divider} />
+        <table width="100%" cellPadding="0" cellSpacing="0">
+          <tr>
+            <td style={iconCell}>✓</td>
+            <td style={featureText}>Unlimited post scheduling</td>
+          </tr>
+          <tr>
+            <td style={iconCell}>✓</td>
+            <td style={featureText}>AI caption suggestions</td>
+          </tr>
+          <tr>
+            <td style={iconCell}>✓</td>
+            <td style={featureText}>Advanced analytics</td>
+          </tr>
+          <tr>
+            <td style={iconCell}>✓</td>
+            <td style={featureText}>Team collaboration</td>
+          </tr>
+          <tr>
+            <td style={iconCell}>✓</td>
+            <td style={featureText}>Priority support</td>
+          </tr>
+        </table>
       </Section>
 
       <Text style={text}>
@@ -55,60 +69,73 @@ export default function TrialStartedEmail({ userName, planName }: TrialStartedEm
 }
 
 const h1 = {
-  color: '#111827',
-  fontSize: '28px',
+  color: '#1a1a1a',
+  fontSize: '32px',
   fontWeight: '700' as const,
   margin: '0 0 24px',
-  lineHeight: '1.3',
-  letterSpacing: '-0.02em',
+  lineHeight: '1.25',
+  letterSpacing: '-0.5px',
 };
 
 const text = {
-  color: '#374151',
+  color: '#525f7f',
   fontSize: '16px',
-  lineHeight: '28px',
-  margin: '0 0 20px',
+  lineHeight: '26px',
+  margin: '0 0 16px',
 };
 
 const featuresBox = {
-  margin: '28px 0',
-  padding: '28px 24px',
-  border: '2px solid #d1fae5',
-  borderRadius: '8px',
-  borderLeft: '5px solid #10b981',
+  margin: '32px 0',
+  padding: '0',
+  borderRadius: '0',
 };
 
 const featuresHeading = {
-  color: '#065f46',
-  fontSize: '17px',
+  color: '#059669',
+  fontSize: '18px',
+  fontWeight: '600' as const,
+  margin: '0 0 16px',
+};
+
+const divider = {
+  borderColor: '#d1fae5',
+  margin: '0 0 20px',
+};
+
+const iconCell = {
+  color: '#10b981',
+  fontSize: '18px',
   fontWeight: '700' as const,
-  margin: '0 0 18px',
+  width: '32px',
+  paddingRight: '12px',
+  paddingBottom: '12px',
+  verticalAlign: 'top',
 };
 
 const featureText = {
-  color: '#111827',
-  fontSize: '15px',
-  lineHeight: '30px',
-  margin: '0',
-  fontWeight: '500' as const,
+  color: '#1a1a1a',
+  fontSize: '16px',
+  lineHeight: '26px',
+  paddingBottom: '12px',
+  fontWeight: '400' as const,
 };
 
 const button = {
   backgroundColor: '#10b981',
-  borderRadius: '8px',
+  borderRadius: '6px',
   color: '#ffffff',
-  fontSize: '15px',
+  fontSize: '16px',
   fontWeight: '600' as const,
   textDecoration: 'none',
   textAlign: 'center' as const,
   display: 'inline-block',
-  padding: '14px 28px',
-  margin: '28px 0',
+  padding: '14px 32px',
+  margin: '24px 0',
 };
 
 const signature = {
   color: '#6b7280',
-  fontSize: '14px',
+  fontSize: '15px',
   lineHeight: '24px',
   margin: '32px 0 0',
 };

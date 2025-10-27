@@ -1,4 +1,4 @@
-import { Text, Heading, Button, Section, Row, Column, Hr } from '@react-email/components';
+import { Text, Heading, Button, Section, Hr } from '@react-email/components';
 import { EmailLayout } from './components/email-layout';
 
 interface SubscriptionCreatedEmailProps {
@@ -30,27 +30,23 @@ export default function SubscriptionCreatedEmail({
         Your subscription is now active! Thank you for choosing SocialCal to power your social media strategy.
       </Text>
 
-      <Section>
-        <Row>
-          <Column style={summaryBox}>
-            <Text style={summaryTitle}>Subscription Summary</Text>
-            <Hr style={hr} />
-            <table style={summaryTable}>
-              <tr>
-                <td style={summaryLabel}>Plan:</td>
-                <td style={summaryValue}>{planName}</td>
-              </tr>
-              <tr>
-                <td style={summaryLabel}>Billing:</td>
-                <td style={summaryValue}>{billingCycle}</td>
-              </tr>
-              <tr>
-                <td style={summaryLabel}>Amount:</td>
-                <td style={summaryValue}>${formattedAmount} / {interval}</td>
-              </tr>
-            </table>
-          </Column>
-        </Row>
+      <Section style={summaryBox}>
+        <Text style={summaryTitle}>Subscription Summary</Text>
+        <Hr style={hr} />
+        <table width="100%" cellPadding="0" cellSpacing="0">
+          <tr>
+            <td style={summaryLabel}>Plan:</td>
+            <td style={summaryValue}>{planName}</td>
+          </tr>
+          <tr>
+            <td style={summaryLabel}>Billing:</td>
+            <td style={summaryValue}>{billingCycle}</td>
+          </tr>
+          <tr>
+            <td style={summaryLabel}>Amount:</td>
+            <td style={summaryValue}>${formattedAmount} / {interval}</td>
+          </tr>
+        </table>
       </Section>
 
       <Text style={text}>
@@ -94,26 +90,20 @@ const text = {
 
 const summaryBox = {
   margin: '32px 0',
-  padding: '24px',
-  border: '2px solid #6366f1',
-  borderRadius: '6px',
-  borderLeft: '6px solid #6366f1',
+  padding: '0',
+  borderRadius: '0',
 };
 
 const summaryTitle = {
-  color: '#1a1a1a',
+  color: '#4f46e5',
   fontSize: '18px',
-  fontWeight: 'bold' as const,
+  fontWeight: '600' as const,
   margin: '0 0 16px',
 };
 
 const hr = {
-  borderColor: '#e6ebf1',
-  margin: '0 0 16px',
-};
-
-const summaryTable = {
-  width: '100%',
+  borderColor: '#c7d2fe',
+  margin: '0 0 20px',
 };
 
 const summaryLabel = {
