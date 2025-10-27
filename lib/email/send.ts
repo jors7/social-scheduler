@@ -1,4 +1,4 @@
-import { resend, EMAIL_FROM, REPLY_TO } from './resend';
+import { getResendClient, EMAIL_FROM, REPLY_TO } from './resend';
 import { ReactElement } from 'react';
 
 interface SendEmailOptions {
@@ -10,6 +10,7 @@ interface SendEmailOptions {
 
 export async function sendEmail({ to, subject, react, replyTo }: SendEmailOptions) {
   try {
+    const resend = getResendClient();
     const { data, error } = await resend.emails.send({
       from: EMAIL_FROM,
       to,
