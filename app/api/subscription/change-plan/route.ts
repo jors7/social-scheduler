@@ -354,7 +354,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Sync the updated subscription to database
+    // Create subscription change log entry for webhooks to detect
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -365,7 +365,28 @@ export async function POST(request: NextRequest) {
         }
       }
     )
-    
+
+    // Record the change in subscription_change_log so webhooks can send appropriate emails
+    console.log(`Recording ${isUpgrade ? 'upgrade' : isDowngrade ? 'downgrade' : 'change'} in subscription_change_log`)
+    await supabaseAdmin
+      .from('subscription_change_log')
+      .insert({
+        user_id: user.id,
+        old_subscription_id: subscription.stripe_subscription_id,
+        new_subscription_id: subscription.stripe_subscription_id, // Same subscription, plan changed
+        old_plan_id: subscription.plan_id,
+        new_plan_id: newPlanId,
+        change_type: isUpgrade ? 'upgrade' : isDowngrade ? 'downgrade' : 'billing_change',
+        change_reason: `User-initiated plan ${isUpgrade ? 'upgrade' : isDowngrade ? 'downgrade' : 'change'} via billing page`,
+        metadata: {
+          old_billing_cycle: subscription.billing_cycle,
+          new_billing_cycle: billingCycle,
+          old_price: currentPrice,
+          new_price: newPrice,
+          scheduled_for: isDowngrade ? subscription.current_period_end : null
+        }
+      })
+
     if (isDowngrade) {
       // For downgrades, we DON'T change Stripe, just track it in our database
       console.log('Tracking scheduled downgrade in database...')
