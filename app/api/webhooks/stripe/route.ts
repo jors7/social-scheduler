@@ -253,14 +253,22 @@ export async function POST(request: NextRequest) {
               const newPlanName = recentChange.new_plan_id.charAt(0).toUpperCase() + recentChange.new_plan_id.slice(1)
 
               if (recentChange.change_type === 'upgrade') {
-                console.log('Detected upgrade in subscription.updated, sending upgrade email to:', user.user.email)
-                await sendPlanUpgradedEmail(
-                  user.user.email,
-                  userName,
-                  oldPlanName,
-                  newPlanName,
-                  0 // No prorated amount available in this event
-                ).catch(err => console.error('Error sending plan upgrade email:', err))
+                // Check if there's a recent invoice that will/did handle the email
+                // If subscription has latest_invoice and is active, the invoice.payment_succeeded event will send the email with correct proration
+                const invoiceWillHandle = subscription.status === 'active' && subscription.latest_invoice
+
+                if (invoiceWillHandle) {
+                  console.log('Skipping upgrade email in subscription.updated - invoice.payment_succeeded will handle it with correct proration amount')
+                } else {
+                  console.log('Detected upgrade in subscription.updated, sending upgrade email to:', user.user.email)
+                  await sendPlanUpgradedEmail(
+                    user.user.email,
+                    userName,
+                    oldPlanName,
+                    newPlanName,
+                    0 // No prorated amount available in this event
+                  ).catch(err => console.error('Error sending plan upgrade email:', err))
+                }
               } else if (recentChange.change_type === 'downgrade') {
                 console.log('Detected downgrade in subscription.updated, sending downgrade email to:', user.user.email)
                 const effectiveDate = subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : new Date()
