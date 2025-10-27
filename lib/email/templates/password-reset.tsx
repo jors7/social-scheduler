@@ -1,52 +1,55 @@
 import { Text, Heading, Button } from '@react-email/components';
 import { EmailLayout } from './components/email-layout';
 
-interface MagicLinkEmailProps {
-  magicLink: string;
-  otpCode?: string;
+interface PasswordResetEmailProps {
+  resetLink: string;
 }
 
-export default function MagicLinkEmail({
-  magicLink,
-  otpCode
-}: MagicLinkEmailProps) {
+export default function PasswordResetEmail({
+  resetLink
+}: PasswordResetEmailProps) {
   return (
-    <EmailLayout preview="Sign in to your SocialCal account">
-      <Heading style={h1}>Sign In to SocialCal</Heading>
+    <EmailLayout preview="Reset your SocialCal password">
+      <Heading style={h1}>Reset Your Password</Heading>
 
       <Text style={text}>
-        Click the button below to securely sign in to your account:
+        We received a request to reset the password for your SocialCal account.
       </Text>
 
-      <Button style={button} href={magicLink}>
-        Sign In to SocialCal
+      <Text style={text}>
+        Click the button below to choose a new password:
+      </Text>
+
+      <Button style={button} href={resetLink}>
+        Reset Password
       </Button>
 
-      {otpCode && (
-        <>
-          <table width="100%" cellPadding="0" cellSpacing="0" style={otpBox}>
-            <tr>
-              <td style={otpBoxInner}>
-                <Text style={otpTitle}>Or use this code:</Text>
-                <Text style={otpCodeText}>{otpCode}</Text>
-                <Text style={otpSubtext}>
-                  This code will expire in 60 minutes
-                </Text>
-              </td>
-            </tr>
-          </table>
-        </>
-      )}
+      <table width="100%" cellPadding="0" cellSpacing="0" style={infoBox}>
+        <tr>
+          <td style={infoBoxInner}>
+            <Text style={infoTitle}>Important Information:</Text>
+            <Text style={infoText}>
+              • This link will expire in 1 hour for security<br />
+              • The link can only be used once<br />
+              • If you didn&apos;t request this, you can safely ignore this email
+            </Text>
+          </td>
+        </tr>
+      </table>
 
       <Text style={footnote}>
-        If you didn&apos;t request this email, you can safely ignore it.
+        If the button doesn&apos;t work, copy and paste this link into your browser:
+      </Text>
+
+      <Text style={linkText}>
+        {resetLink}
       </Text>
 
       <table width="100%" cellPadding="0" cellSpacing="0" style={securityBox}>
         <tr>
           <td style={securityBoxInner}>
             <Text style={securityText}>
-              🔒 <strong>Security tip:</strong> Never share this link or code with anyone. SocialCal will never ask for your password via email.
+              = <strong>Security reminder:</strong> Never share your password or reset link with anyone. SocialCal staff will never ask for your password.
             </Text>
           </td>
         </tr>
@@ -89,48 +92,44 @@ const button = {
   margin: '32px 0',
 };
 
-const otpBox = {
+const infoBox = {
   margin: '32px 0',
   borderRadius: '8px',
   overflow: 'hidden' as const,
 };
 
-const otpBoxInner = {
+const infoBoxInner = {
   backgroundColor: '#f9fafb',
   padding: '24px',
   borderLeft: '4px solid #6366f1',
-  textAlign: 'center' as const,
 };
 
-const otpTitle = {
-  color: '#6b7280',
-  fontSize: '14px',
+const infoTitle = {
+  color: '#1a1a1a',
+  fontSize: '16px',
   fontWeight: '600' as const,
   margin: '0 0 12px',
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.5px',
 };
 
-const otpCodeText = {
-  color: '#1a1a1a',
-  fontSize: '32px',
-  fontWeight: 'bold' as const,
-  letterSpacing: '8px',
-  margin: '12px 0',
-  fontFamily: 'monospace',
-};
-
-const otpSubtext = {
-  color: '#9ca3af',
-  fontSize: '13px',
-  margin: '8px 0 0',
+const infoText = {
+  color: '#525f7f',
+  fontSize: '15px',
+  lineHeight: '24px',
+  margin: '0',
 };
 
 const footnote = {
   color: '#9ca3af',
   fontSize: '14px',
   lineHeight: '22px',
-  margin: '24px 0 0',
+  margin: '32px 0 8px',
+};
+
+const linkText = {
+  color: '#6366f1',
+  fontSize: '13px',
+  wordBreak: 'break-all' as const,
+  margin: '0 0 24px',
 };
 
 const securityBox = {
