@@ -12,6 +12,33 @@ import { PlatformInsightsTabs } from '@/components/dashboard/analytics/platform-
 import { CalendarDays, Download, Filter, BarChart3, RefreshCw, AlertCircle, Camera, AtSign, Facebook, Youtube } from 'lucide-react'
 import { toast } from 'sonner'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
+import { MockDataOverlay } from '@/components/dashboard/analytics/mock-data-overlay'
+
+// Mock data for preview when no accounts are connected
+const MOCK_ANALYTICS_DATA: AnalyticsData = {
+  totalPosts: 15,
+  totalEngagement: 2847,
+  totalReach: 54320,
+  totalImpressions: 68500,
+  engagementRate: 5.2,
+  topPlatform: 'Instagram',
+  platformStats: {
+    facebook: { posts: 4, engagement: 680, reach: 12500 },
+    instagram: { posts: 6, engagement: 1240, reach: 25800 },
+    threads: { posts: 3, engagement: 520, reach: 8900 },
+    youtube: { posts: 2, engagement: 407, reach: 7120 }
+  },
+  allPosts: [],
+  postedPosts: []
+}
+
+const MOCK_TREND_DATA: TrendData = {
+  totalPosts: { current: 15, previous: 12, change: 25.0 },
+  totalEngagement: { current: 2847, previous: 2450, change: 16.2 },
+  totalReach: { current: 54320, previous: 47100, change: 15.3 },
+  totalImpressions: { current: 68500, previous: 59200, change: 15.7 },
+  engagementRate: { current: 5.2, previous: 4.8, change: 8.3 }
+}
 
 interface PlatformMetrics {
   platform: string
@@ -54,6 +81,7 @@ export default function AnalyticsPage() {
   const [trendData, setTrendData] = useState<TrendData | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [hasConnectedAccounts, setHasConnectedAccounts] = useState(true) // Track if user has connected accounts
 
   const dateRangeOptions = [
     { value: '7', label: 'Last 7 days' },
@@ -119,6 +147,23 @@ export default function AnalyticsPage() {
         tiktokRes.ok ? tiktokRes.json() : { metrics: null },
         youtubeRes.ok ? youtubeRes.json() : { metrics: null }
       ])
+
+      // Check if user has any connected accounts (by checking if any platform returned metrics)
+      const hasAnyData = [facebookData, instagramData, threadsData, blueskyData, pinterestData, tiktokData, youtubeData]
+        .some(data => data.metrics !== null)
+
+      // If no accounts are connected, use mock data
+      if (!hasAnyData) {
+        setHasConnectedAccounts(false)
+        setAnalyticsData(MOCK_ANALYTICS_DATA)
+        setTrendData(MOCK_TREND_DATA)
+        setLoading(false)
+        setRefreshing(false)
+        return
+      }
+
+      // User has connected accounts
+      setHasConnectedAccounts(true)
 
       // Aggregate all metrics
       let totalPosts = 0
@@ -791,7 +836,12 @@ export default function AnalyticsPage() {
       </div>
       
       <SubscriptionGate feature="analytics">
-        <div className="space-y-8">
+        <div className="space-y-8 relative">
+          {/* Show overlay when no accounts are connected */}
+          {!hasConnectedAccounts && <MockDataOverlay />}
+
+          {/* Analytics content - reduced opacity when showing mock data */}
+          <div className={!hasConnectedAccounts ? 'opacity-40 pointer-events-none' : ''}>
           <Card variant="glass" className="p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               {/* Date Selector - Full width on mobile */}
@@ -931,6 +981,7 @@ export default function AnalyticsPage() {
 
           {/* Platform Insights with Tabs */}
           <PlatformInsightsTabs className="mt-8" />
+          </div>
         </div>
       </SubscriptionGate>
     </div>
