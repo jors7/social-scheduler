@@ -56,16 +56,16 @@ const capabilities = [
     video: `${R2_PUBLIC_URL}/Drag-and-drop.mp4`
   },
   {
-    id: 'pricing',
+    id: 'analytics',
     icon: TrendingUp,
-    title: 'Low-Cost, High-Impact',
-    shortTitle: 'Low-Cost',
-    description: 'All the essential features at a fraction of the price of traditional schedulers. No paywalls, no bloat, no surprises.',
-    longDescription: 'Whether you\'re a creator just starting out or a team with big ambitions, our pricing is built to scale with you — not against you.',
+    title: 'Powerful Analytics Dashboard',
+    shortTitle: 'Analytics',
+    description: 'Track performance across all platforms in one unified dashboard. See what\'s working, when your audience is most active, and which content drives engagement.',
+    longDescription: 'Get actionable insights with detailed metrics for reach, engagement, follower growth, and post performance — all visualized beautifully so you can make data-driven decisions fast.',
     color: 'from-indigo-500 to-purple-500',
     iconColor: 'text-indigo-500',
-    image: '/Low-Cost.webp',
-    video: `${R2_PUBLIC_URL}/Low-cost.mp4`
+    image: '/Analytics.webp',
+    video: `${R2_PUBLIC_URL}/Analytics.mp4`
   },
   {
     id: 'customization',
