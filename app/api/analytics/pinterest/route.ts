@@ -159,7 +159,18 @@ export async function GET(request: NextRequest) {
             }
           });
 
-          const pinPromises = allPinsFromAPI.map(async (apiPin: any) => {
+          // Filter pins by date range BEFORE processing
+          const filteredPins = allPinsFromAPI.filter((apiPin: any) => {
+            const pinCreatedAt = apiPin.created_at || apiPin.createdAt;
+            if (!pinCreatedAt) return false;
+
+            const pinDate = new Date(pinCreatedAt);
+            return pinDate >= since && pinDate <= new Date();
+          });
+
+          console.log(`[Pinterest Analytics] Filtered to ${filteredPins.length} pins within date range (last ${days} days)`);
+
+          const pinPromises = filteredPins.map(async (apiPin: any) => {
             try {
               const pinId = apiPin.id;
               if (!pinId) return null;

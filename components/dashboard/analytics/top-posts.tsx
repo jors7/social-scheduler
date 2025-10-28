@@ -101,7 +101,31 @@ export function TopPosts({ analyticsData }: TopPostsProps) {
         posted_at = post.createdAt || ''
         hasMedia = false // Would need to check post.embed for media
       }
-      
+      // Pinterest posts
+      else if (post.platform === 'pinterest') {
+        content = post.title || post.description || ''
+        totalEngagement = (post.saves || 0) + (post.pin_clicks || 0) + (post.outbound_clicks || 0)
+        totalReach = post.impressions || 0
+        posted_at = post.created_at || ''
+        hasMedia = !!post.media_url || !!post.thumbnail_url
+      }
+      // TikTok posts
+      else if (post.platform === 'tiktok') {
+        content = post.title || post.description || ''
+        totalEngagement = (post.likes || 0) + (post.comments || 0) + (post.shares || 0)
+        totalReach = post.views || 0
+        posted_at = post.created_time || ''
+        hasMedia = !!post.cover_image_url
+      }
+      // YouTube posts
+      else if (post.platform === 'youtube') {
+        content = post.title || post.description || ''
+        totalEngagement = (post.likes || 0) + (post.comments || 0) + (post.shares || 0)
+        totalReach = post.views || 0
+        posted_at = post.created_time || ''
+        hasMedia = !!post.thumbnail_url
+      }
+
       return {
         id: post.id,
         content: stripHtml(content),
