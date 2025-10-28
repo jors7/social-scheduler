@@ -101,20 +101,71 @@ export async function GET(request: NextRequest) {
       if (!account.access_token) continue;
 
       try {
-        // Process database posts with Pinterest API analytics
-        if (pinterestPosts && pinterestPosts.length > 0) {
-          console.log('[Pinterest Analytics] Processing database posts with API analytics');
+        // STEP 1: Fetch ALL pins from Pinterest API (including external pins)
+        console.log('[Pinterest Analytics] Fetching ALL pins from Pinterest API');
+        const allPinsFromAPI: any[] = [];
+        let bookmark: string | undefined = undefined;
+        let hasMore = true;
+        let pageCount = 0;
+        const maxPages = 5; // Limit to 5 pages (~500 pins) for performance
 
-          const pinPromises = pinterestPosts.map(async (dbPost: any) => {
-            try {
-              // Get Pinterest post ID from post_results
-              const pinterestResult = dbPost.post_results?.find((r: any) => r.platform === 'pinterest');
-              if (!pinterestResult || !pinterestResult.postId) {
-                console.log(`[Pinterest Analytics] No Pinterest postId found for post ${dbPost.id}`);
-                return null;
+        while (hasMore && pageCount < maxPages) {
+          try {
+            let pinsUrl = `https://api.pinterest.com/v5/pins?page_size=100`;
+            if (bookmark) {
+              pinsUrl += `&bookmark=${bookmark}`;
+            }
+
+            const pinsResponse = await fetch(pinsUrl, {
+              headers: {
+                'Authorization': `Bearer ${account.access_token}`,
+                'Content-Type': 'application/json',
               }
+            });
 
-              const pinId = pinterestResult.postId;
+            if (!pinsResponse.ok) {
+              console.log(`[Pinterest Analytics] Failed to fetch pins from API: ${pinsResponse.status}`);
+              break;
+            }
+
+            const pinsData = await pinsResponse.json();
+
+            if (pinsData.items && Array.isArray(pinsData.items)) {
+              allPinsFromAPI.push(...pinsData.items);
+              console.log(`[Pinterest Analytics] Fetched ${pinsData.items.length} pins from API (page ${pageCount + 1})`);
+            }
+
+            bookmark = pinsData.bookmark;
+            hasMore = !!bookmark;
+            pageCount++;
+          } catch (apiError) {
+            console.error('[Pinterest Analytics] Error fetching pins from API:', apiError);
+            break;
+          }
+        }
+
+        console.log(`[Pinterest Analytics] Total pins fetched from API: ${allPinsFromAPI.length}`);
+
+        // STEP 2: Process ALL pins (API + Database merged)
+        if (allPinsFromAPI.length > 0) {
+          console.log('[Pinterest Analytics] Processing API pins with analytics');
+
+          // Create a map of database posts by Pinterest pin ID for easy lookup
+          const dbPostsMap = new Map();
+          pinterestPosts.forEach((dbPost: any) => {
+            const pinterestResult = dbPost.post_results?.find((r: any) => r.platform === 'pinterest');
+            if (pinterestResult && pinterestResult.postId) {
+              dbPostsMap.set(pinterestResult.postId, dbPost);
+            }
+          });
+
+          const pinPromises = allPinsFromAPI.map(async (apiPin: any) => {
+            try {
+              const pinId = apiPin.id;
+              if (!pinId) return null;
+
+              // Check if this pin exists in our database
+              const dbPost = dbPostsMap.get(pinId);
               let saves = 0, pin_clicks = 0, impressions = 0, outbound_clicks = 0;
 
               // Get analytics for each pin from Pinterest API
@@ -148,53 +199,74 @@ export async function GET(request: NextRequest) {
                 console.log(`[Pinterest Analytics] Error fetching analytics for pin ${pinId}:`, analyticsError);
               }
 
-              // Extract title and description - prioritize pinterest_title from database
-              let title = dbPost.pinterest_title || '';
-              let description = dbPost.pinterest_description || '';
-
-              // If no pinterest_title, fall back to extracting from platform_content or content
-              if (!title) {
-                const pinterestContent = dbPost.platform_content?.pinterest || dbPost.content || '';
-                title = pinterestContent.includes(':')
-                  ? pinterestContent.split(':')[0].trim()
-                  : pinterestContent.substring(0, 100);
-
-                if (!description) {
-                  description = pinterestContent.includes(':')
-                    ? pinterestContent.split(':').slice(1).join(':').trim()
-                    : '';
-                }
-              }
-
-              // Use permanent Supabase Storage URL from database (NOT Pinterest CDN URLs)
-              // Priority matches dashboard logic:
-              // 1. platform_media_url (video thumbnail for Pinterest videos)
-              // 2. media_urls[0] (image file for regular Pinterest images)
+              // Extract title and description - prioritize database, fallback to API
+              let title = '';
+              let description = '';
               let thumbnailUrl = null;
 
-              // First check platform_media_url (this is where video thumbnails are stored)
-              if (dbPost.platform_media_url && typeof dbPost.platform_media_url === 'string') {
-                thumbnailUrl = dbPost.platform_media_url.trim();
-                console.log(`[Pinterest Analytics] Using platform_media_url: ${thumbnailUrl}`);
-              }
-              // Fall back to media_urls[0]
-              else if (dbPost.media_urls && Array.isArray(dbPost.media_urls) && dbPost.media_urls.length > 0) {
-                const firstMedia = dbPost.media_urls[0];
-                if (typeof firstMedia === 'string' && firstMedia.trim() !== '') {
-                  thumbnailUrl = firstMedia.trim();
-                  console.log(`[Pinterest Analytics] Using media_urls[0]: ${thumbnailUrl}`);
-                }
-              }
+              if (dbPost) {
+                // Database post exists - use database data (for SocialCal-created pins)
+                title = dbPost.pinterest_title || '';
+                description = dbPost.pinterest_description || '';
 
-              console.log(`[Pinterest Analytics] Post ${dbPost.id} final thumbnail URL:`, thumbnailUrl);
+                // If no pinterest_title, fall back to extracting from platform_content or content
+                if (!title) {
+                  const pinterestContent = dbPost.platform_content?.pinterest || dbPost.content || '';
+                  title = pinterestContent.includes(':')
+                    ? pinterestContent.split(':')[0].trim()
+                    : pinterestContent.substring(0, 100);
+
+                  if (!description) {
+                    description = pinterestContent.includes(':')
+                      ? pinterestContent.split(':').slice(1).join(':').trim()
+                      : '';
+                  }
+                }
+
+                // Use permanent Supabase Storage URL from database (NOT Pinterest CDN URLs)
+                // Priority matches dashboard logic:
+                // 1. platform_media_url (video thumbnail for Pinterest videos)
+                // 2. media_urls[0] (image file for regular Pinterest images)
+
+                // First check platform_media_url (this is where video thumbnails are stored)
+                if (dbPost.platform_media_url && typeof dbPost.platform_media_url === 'string') {
+                  thumbnailUrl = dbPost.platform_media_url.trim();
+                  console.log(`[Pinterest Analytics] Using platform_media_url: ${thumbnailUrl}`);
+                }
+                // Fall back to media_urls[0]
+                else if (dbPost.media_urls && Array.isArray(dbPost.media_urls) && dbPost.media_urls.length > 0) {
+                  const firstMedia = dbPost.media_urls[0];
+                  if (typeof firstMedia === 'string' && firstMedia.trim() !== '') {
+                    thumbnailUrl = firstMedia.trim();
+                    console.log(`[Pinterest Analytics] Using media_urls[0]: ${thumbnailUrl}`);
+                  }
+                }
+
+                console.log(`[Pinterest Analytics] Database post ${dbPost.id} final thumbnail URL:`, thumbnailUrl);
+              } else {
+                // External pin (not in database) - use API data
+                title = apiPin.title || apiPin.description || 'Untitled Pin';
+                description = apiPin.description || '';
+
+                // Use Pinterest CDN thumbnail for external pins
+                if (apiPin.media?.images?.['600x']) {
+                  thumbnailUrl = apiPin.media.images['600x'].url;
+                } else if (apiPin.media?.images?.['400x300']) {
+                  thumbnailUrl = apiPin.media.images['400x300'].url;
+                } else if (apiPin.media?.images?.['originals']) {
+                  thumbnailUrl = apiPin.media.images.originals.url;
+                }
+
+                console.log(`[Pinterest Analytics] External pin ${pinId} using API thumbnail`);
+              }
 
               return {
                 id: pinId,
                 title: title || 'Untitled Pin',
-                description: description || dbPost.content || '',
-                link: dbPost.pinterest_link || null,
-                created_at: dbPost.posted_at || dbPost.created_at,
-                board_id: dbPost.pinterest_board_id || null,
+                description: description || (dbPost ? dbPost.content : '') || '',
+                link: dbPost ? (dbPost.pinterest_link || null) : (apiPin.link || null),
+                created_at: dbPost ? (dbPost.posted_at || dbPost.created_at) : apiPin.created_at,
+                board_id: dbPost ? (dbPost.pinterest_board_id || null) : (apiPin.board_id || null),
                 media_url: thumbnailUrl,
                 thumbnail_url: thumbnailUrl,
                 saves,
@@ -204,7 +276,7 @@ export async function GET(request: NextRequest) {
                 totalEngagement: saves + pin_clicks + outbound_clicks
               };
             } catch (error) {
-              console.error(`[Pinterest Analytics] Error processing database post ${dbPost.id}:`, error);
+              console.error(`[Pinterest Analytics] Error processing pin ${apiPin?.id}:`, error);
               return null;
             }
           });
