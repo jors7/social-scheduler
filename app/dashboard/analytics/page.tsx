@@ -12,7 +12,7 @@ import { PlatformInsightsTabs } from '@/components/dashboard/analytics/platform-
 import { CalendarDays, Download, Filter, BarChart3, RefreshCw, AlertCircle, Camera, AtSign, Facebook, Youtube } from 'lucide-react'
 import { toast } from 'sonner'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
-import { MockDataOverlay } from '@/components/dashboard/analytics/mock-data-overlay'
+import { PreviewDataBanner } from '@/components/dashboard/analytics/preview-data-banner'
 
 // Mock data for preview when no accounts are connected
 const MOCK_ANALYTICS_DATA: AnalyticsData = {
@@ -832,12 +832,9 @@ export default function AnalyticsPage() {
       </div>
       
       <SubscriptionGate feature="analytics">
-        <div className="space-y-8 relative">
-          {/* Show overlay when no accounts are connected */}
-          {!hasConnectedAccounts && <MockDataOverlay />}
-
-          {/* Analytics content - reduced opacity when showing mock data */}
-          <div className={`space-y-8 ${!hasConnectedAccounts ? 'opacity-40 pointer-events-none' : ''}`}>
+        <div className="space-y-8">
+          {/* Show preview banner when no accounts are connected */}
+          {!hasConnectedAccounts && <PreviewDataBanner />}
           <Card variant="glass" className="p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               {/* Date Selector - Full width on mobile */}
@@ -977,7 +974,6 @@ export default function AnalyticsPage() {
 
           {/* Platform Insights with Tabs */}
           <PlatformInsightsTabs className="mt-8" />
-          </div>
         </div>
       </SubscriptionGate>
     </div>
