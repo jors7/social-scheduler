@@ -14,6 +14,89 @@ import { toast } from 'sonner'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 import { PreviewDataBanner } from '@/components/dashboard/analytics/preview-data-banner'
 
+// Generate mock posts with realistic data spread over the last 7 days
+const generateMockPosts = () => {
+  const posts = []
+  const now = new Date()
+
+  // Facebook posts (4 posts)
+  for (let i = 0; i < 4; i++) {
+    const daysAgo = Math.floor(i * 1.75) // Spread over 7 days
+    const postDate = new Date(now)
+    postDate.setDate(postDate.getDate() - daysAgo)
+
+    posts.push({
+      platform: 'facebook',
+      id: `fb_${i}`,
+      created_time: postDate.toISOString(),
+      message: 'Sample Facebook post content',
+      likes: Math.floor(Math.random() * 200) + 50,
+      comments: Math.floor(Math.random() * 30) + 5,
+      shares: Math.floor(Math.random() * 20) + 2,
+      reach: Math.floor(Math.random() * 4000) + 2000,
+      impressions: Math.floor(Math.random() * 5000) + 2500
+    })
+  }
+
+  // Instagram posts (6 posts)
+  for (let i = 0; i < 6; i++) {
+    const daysAgo = Math.floor(i * 1.16) // Spread over 7 days
+    const postDate = new Date(now)
+    postDate.setDate(postDate.getDate() - daysAgo)
+
+    posts.push({
+      platform: 'instagram',
+      id: `ig_${i}`,
+      timestamp: postDate.toISOString(),
+      caption: 'Sample Instagram post content',
+      likes: Math.floor(Math.random() * 300) + 100,
+      comments: Math.floor(Math.random() * 40) + 10,
+      saves: Math.floor(Math.random() * 50) + 10,
+      reach: Math.floor(Math.random() * 5000) + 3000,
+      impressions: Math.floor(Math.random() * 6000) + 3500
+    })
+  }
+
+  // Threads posts (3 posts)
+  for (let i = 0; i < 3; i++) {
+    const daysAgo = Math.floor(i * 2.3) // Spread over 7 days
+    const postDate = new Date(now)
+    postDate.setDate(postDate.getDate() - daysAgo)
+
+    posts.push({
+      platform: 'threads',
+      id: `threads_${i}`,
+      timestamp: postDate.toISOString(),
+      text: 'Sample Threads post content',
+      likes: Math.floor(Math.random() * 150) + 40,
+      replies: Math.floor(Math.random() * 20) + 5,
+      reposts: Math.floor(Math.random() * 15) + 3,
+      quotes: Math.floor(Math.random() * 10) + 2,
+      views: Math.floor(Math.random() * 3500) + 2000
+    })
+  }
+
+  // YouTube posts (2 posts)
+  for (let i = 0; i < 2; i++) {
+    const daysAgo = Math.floor(i * 3.5) // Spread over 7 days
+    const postDate = new Date(now)
+    postDate.setDate(postDate.getDate() - daysAgo)
+
+    posts.push({
+      platform: 'youtube',
+      id: `yt_${i}`,
+      created_time: postDate.toISOString(),
+      title: 'Sample YouTube video',
+      likes: Math.floor(Math.random() * 250) + 80,
+      comments: Math.floor(Math.random() * 35) + 10,
+      shares: Math.floor(Math.random() * 25) + 5,
+      views: Math.floor(Math.random() * 4000) + 2500
+    })
+  }
+
+  return posts
+}
+
 // Mock data for preview when no accounts are connected
 const MOCK_ANALYTICS_DATA: AnalyticsData = {
   totalPosts: 15,
@@ -23,13 +106,13 @@ const MOCK_ANALYTICS_DATA: AnalyticsData = {
   engagementRate: 5.2,
   topPlatform: 'Instagram',
   platformStats: {
-    facebook: { posts: 4, engagement: 680, reach: 12500 },
-    instagram: { posts: 6, engagement: 1240, reach: 25800 },
-    threads: { posts: 3, engagement: 520, reach: 8900 },
-    youtube: { posts: 2, engagement: 407, reach: 7120 }
+    facebook: { posts: 4, engagement: 680, reach: 12500, impressions: 14500 },
+    instagram: { posts: 6, engagement: 1240, reach: 25800, impressions: 31000 },
+    threads: { posts: 3, engagement: 520, reach: 8900, impressions: 8900 },
+    youtube: { posts: 2, engagement: 407, reach: 7120, impressions: 14100 }
   },
-  allPosts: [],
-  postedPosts: []
+  allPosts: generateMockPosts(),
+  postedPosts: generateMockPosts()
 }
 
 const MOCK_TREND_DATA: TrendData = {
