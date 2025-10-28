@@ -6,6 +6,7 @@ import {
   sendTrialStartedEmail,
   sendSubscriptionCreatedEmail,
 } from '@/lib/email/send'
+import { addContactToAudience } from '@/lib/email/audience'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
@@ -113,6 +114,12 @@ export async function GET(request: NextRequest) {
       } else {
         userId = authData.user.id
         console.log('✅ New Supabase account created:', userId)
+
+        // Add user to Resend marketing audience (non-blocking)
+        const firstName = customerEmail.split('@')[0] || 'User'
+        addContactToAudience(customerEmail, firstName).catch(err =>
+          console.error('⚠️ Failed to add to Resend audience (non-blocking):', err)
+        )
 
         // Get customer ID (handle both string and object)
         const customerId = typeof session.customer === 'string'
