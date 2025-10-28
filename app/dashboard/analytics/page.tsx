@@ -435,6 +435,22 @@ export default function AnalyticsPage() {
         })
       }
 
+      // Check if user has any posts at all (before date filtering)
+      // If no posts exist across all platforms, show mock data with banner
+      if (allPosts.length === 0) {
+        console.log('[Analytics] No posts found across all platforms - showing mock data')
+        setHasConnectedAccounts(false)
+        setAnalyticsData(MOCK_ANALYTICS_DATA)
+        setTrendData(MOCK_TREND_DATA)
+        setLoading(false)
+        setRefreshing(false)
+        return
+      }
+
+      // User has posts - show real data (even if current period might be empty)
+      setHasConnectedAccounts(true)
+      console.log('[Analytics] Found posts - showing real data')
+
       // Find top platform by engagement
       let topPlatform = 'N/A'
       let maxEngagement = 0
@@ -496,19 +512,7 @@ export default function AnalyticsPage() {
 
       const currentEngagementRate = currentTotalReach > 0 ? (currentTotalEngagement / currentTotalReach) * 100 : 0;
 
-      // Check if user has any real data - if no posts, show mock data with overlay
-      if (currentTotalPosts === 0) {
-        setHasConnectedAccounts(false)
-        setAnalyticsData(MOCK_ANALYTICS_DATA)
-        setTrendData(MOCK_TREND_DATA)
-        setLoading(false)
-        setRefreshing(false)
-        return
-      }
-
-      // User has connected accounts with real data
-      setHasConnectedAccounts(true)
-
+      // Set analytics data with current period metrics
       setAnalyticsData({
         totalPosts: currentTotalPosts,
         totalEngagement: currentTotalEngagement,
