@@ -55,7 +55,7 @@ export function MockDataOverlay() {
               <Settings className="h-5 w-5 text-indigo-600 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-gray-900">Platform-Specific Insights</p>
-                <p className="text-xs text-gray-600">Deep dive into each platform's unique metrics</p>
+                <p className="text-xs text-gray-600">Deep dive into each platform&apos;s unique metrics</p>
               </div>
             </div>
           </div>
