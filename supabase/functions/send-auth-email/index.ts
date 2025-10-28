@@ -211,7 +211,7 @@ serve(async (req: Request) => {
     let payload
     try {
       payload = verifyWebhook(body, req.headers)
-      console.log('Received auth email webhook:', payload.type || payload.email_action_type)
+      console.log('Received auth email webhook payload:', JSON.stringify(payload))
     } catch (error) {
       console.error('Webhook verification failed:', error)
       return new Response(JSON.stringify({ error: 'Invalid signature' }), {
@@ -220,14 +220,16 @@ serve(async (req: Request) => {
       })
     }
 
-    const {
-      email,
-      token_hash,
-      email_action_type,
-      redirect_to,
-      site_url,
-      token
-    } = payload
+    // Extract fields from the payload
+    const email_data = payload.email_data || {}
+    const email = email_data.email || payload.user?.email
+    const token_hash = email_data.token_hash
+    const email_action_type = email_data.email_action_type
+    const redirect_to = email_data.redirect_to
+    const site_url = payload.site_url
+    const token = email_data.token
+
+    console.log('Email action type:', email_action_type)
 
     // Build the verification URL
     const verificationUrl = `${supabaseUrl}/auth/v1/verify?token=${token_hash}&type=${email_action_type}${redirect_to ? `&redirect_to=${redirect_to}` : ''}`

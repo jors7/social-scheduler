@@ -81,6 +81,42 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/?signin=true', request.url))
   }
 
+  // If user is signed in but accessing dashboard, check for valid subscription
+  if (isProtectedRoute && user) {
+    try {
+      // Get user's subscription status
+      const { data: subscription, error: subError } = await supabase
+        .from('user_subscriptions')
+        .select('plan_id, status, current_period_end')
+        .eq('user_id', user.id)
+        .single()
+
+      // If no subscription exists, redirect to pricing
+      if (!subscription || subError) {
+        console.log('No subscription found, redirecting to pricing')
+        return NextResponse.redirect(new URL('/pricing?reason=no-subscription', request.url))
+      }
+
+      // If subscription is not active or trialing, redirect to pricing
+      if (!['active', 'trialing'].includes(subscription.status)) {
+        console.log('Inactive subscription, redirecting to pricing')
+        return NextResponse.redirect(new URL('/pricing?reason=inactive-subscription', request.url))
+      }
+
+      // Check if subscription has expired
+      if (subscription.current_period_end) {
+        const periodEnd = new Date(subscription.current_period_end)
+        if (periodEnd < new Date()) {
+          console.log('Expired subscription, redirecting to pricing')
+          return NextResponse.redirect(new URL('/pricing?reason=expired-subscription', request.url))
+        }
+      }
+    } catch (error) {
+      console.error('Error checking subscription in middleware:', error)
+      return NextResponse.redirect(new URL('/pricing?reason=error', request.url))
+    }
+  }
+
   // If user is signed in and the current path is login or signup, redirect to dashboard
   if (isAuthRoute && user) {
     return NextResponse.redirect(new URL('/dashboard', request.url))

@@ -17,7 +17,6 @@ export default function ContactPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [signInOpen, setSignInOpen] = useState(false)
-  const [signUpOpen, setSignUpOpen] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -49,7 +48,6 @@ export default function ContactPage() {
         isAuthenticated={isAuthenticated}
         userEmail={userEmail}
         onSignInClick={() => setSignInOpen(true)}
-        onSignUpClick={() => router.push('/pricing')}
       />
 
       {/* Main Content */}
@@ -220,9 +218,7 @@ export default function ContactPage() {
       {/* Auth Modals */}
       <AuthModals
         signInOpen={signInOpen}
-        signUpOpen={signUpOpen}
         onSignInOpenChange={setSignInOpen}
-        onSignUpOpenChange={setSignUpOpen}
       />
     </div>
   )

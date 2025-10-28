@@ -15,11 +15,10 @@ import { X } from 'lucide-react'
 interface SignInModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSwitchToSignUp: () => void
   onSwitchToForgotPassword?: () => void
 }
 
-export function SignInModal({ open, onOpenChange, onSwitchToSignUp, onSwitchToForgotPassword }: SignInModalProps) {
+export function SignInModal({ open, onOpenChange, onSwitchToForgotPassword }: SignInModalProps) {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -58,12 +57,6 @@ export function SignInModal({ open, onOpenChange, onSwitchToSignUp, onSwitchToFo
     }
   }
 
-  const handleSwitchToSignUp = () => {
-    onOpenChange(false)
-    setTimeout(() => {
-      onSwitchToSignUp()
-    }, 100)
-  }
 
   const handleSendMagicLink = async () => {
     if (!email) {
@@ -292,17 +285,6 @@ export function SignInModal({ open, onOpenChange, onSwitchToSignUp, onSwitchToFo
 
             </div>
 
-            {/* Sign up link */}
-            <div className="mt-4 sm:mt-6 text-center text-xs sm:text-sm">
-              <span className="text-gray-600">Don&apos;t have an account? </span>
-              <button
-                type="button"
-                onClick={handleSwitchToSignUp}
-                className="font-semibold text-purple-600 hover:text-purple-700 transition-colors"
-              >
-                Sign up for free
-              </button>
-            </div>
           </div>
         </div>
       </DialogContent>

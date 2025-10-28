@@ -27,7 +27,20 @@ export default function OAuthRedirectHandler() {
           const { data: { session } } = await supabase.auth.getSession()
           if (session) {
             localStorage.removeItem('oauth_attempt_time')
-            window.location.replace('/dashboard')
+
+            // Check if user has a valid subscription
+            const { data: subscription } = await supabase
+              .from('user_subscriptions')
+              .select('status, plan_id')
+              .eq('user_id', session.user.id)
+              .single()
+
+            // Redirect based on subscription status
+            if (subscription && ['active', 'trialing'].includes(subscription.status)) {
+              window.location.replace('/dashboard')
+            } else {
+              window.location.replace('/pricing?reason=no-subscription&message=Please subscribe to access the dashboard')
+            }
             return
           }
           setIsProcessing(false)
@@ -64,10 +77,23 @@ export default function OAuthRedirectHandler() {
         }
 
         if (session) {
+          // Check if user has a valid subscription before redirecting to dashboard
+          const { data: subscription } = await supabase
+            .from('user_subscriptions')
+            .select('status, plan_id')
+            .eq('user_id', session.user.id)
+            .single()
+
           // Clear the hash from URL
           window.history.replaceState(null, '', window.location.pathname)
-          // Force redirect to dashboard
-          window.location.replace('/dashboard')
+
+          // If user has active subscription, go to dashboard
+          // Otherwise, redirect to pricing page
+          if (subscription && ['active', 'trialing'].includes(subscription.status)) {
+            window.location.replace('/dashboard')
+          } else {
+            window.location.replace('/pricing?reason=no-subscription&message=Please subscribe to access the dashboard')
+          }
         } else {
           window.history.replaceState(null, '', window.location.pathname)
         }

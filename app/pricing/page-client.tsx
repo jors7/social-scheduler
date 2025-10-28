@@ -136,8 +136,6 @@ function PricingPageContent() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [loading, setLoading] = useState<string | null>(null)
   const [signInOpen, setSignInOpen] = useState(false)
-  const [signUpOpen, setSignUpOpen] = useState(false)
-  const [signUpPlanId, setSignUpPlanId] = useState<string | null>(null)
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly')
   const [selectedPlan, setSelectedPlan] = useState<string>('professional')
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null)
@@ -148,22 +146,13 @@ function PricingPageContent() {
 
   useEffect(() => {
     checkAuth()
-    
+
     // Check URL parameters for modal triggers and scrolling
     const shouldOpenSignIn = searchParams.get('signin') === 'true'
-    const shouldOpenSignUp = searchParams.get('signup') === 'true'
-    const planFromUrl = searchParams.get('plan')
     const scrollTo = searchParams.get('scroll')
-    
+
     if (shouldOpenSignIn) {
       setSignInOpen(true)
-      // Clean up URL
-      router.replace('/pricing', { scroll: false })
-    } else if (shouldOpenSignUp) {
-      if (planFromUrl) {
-        setSignUpPlanId(planFromUrl)
-      }
-      setSignUpOpen(true)
       // Clean up URL
       router.replace('/pricing', { scroll: false })
     }
@@ -269,7 +258,6 @@ function PricingPageContent() {
         isAuthenticated={isAuthenticated}
         userEmail={userEmail}
         onSignInClick={() => setSignInOpen(true)}
-        onSignUpClick={() => setSignUpOpen(true)}
       />
 
       {/* Pricing Section */}
@@ -537,10 +525,7 @@ function PricingPageContent() {
       {/* Auth Modals */}
       <AuthModals
         signInOpen={signInOpen}
-        signUpOpen={signUpOpen}
         onSignInOpenChange={setSignInOpen}
-        onSignUpOpenChange={setSignUpOpen}
-        signUpPlanId={signUpPlanId}
       />
     </div>
   )

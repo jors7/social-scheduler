@@ -14,8 +14,6 @@ import { Navbar } from '@/components/layout/navbar'
 export function BlogLayout({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [signInOpen, setSignInOpen] = useState(false)
-  const [signUpOpen, setSignUpOpen] = useState(false)
-  const [signUpPlanId, setSignUpPlanId] = useState<string | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const router = useRouter()
@@ -47,13 +45,12 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
       />
 
       {/* Mobile Menu */}
-      <MobileMenu 
+      <MobileMenu
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
         isAuthenticated={isAuthenticated}
         userEmail={userEmail}
         onSignInClick={() => setSignInOpen(true)}
-        onSignUpClick={() => setSignUpOpen(true)}
       />
 
       {/* Main Content */}
@@ -63,9 +60,6 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
       <AuthModals
         signInOpen={signInOpen}
         onSignInOpenChange={setSignInOpen}
-        signUpOpen={signUpOpen}
-        onSignUpOpenChange={setSignUpOpen}
-        signUpPlanId={signUpPlanId}
       />
 
       {/* Footer - Same as homepage */}

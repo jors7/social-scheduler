@@ -16,7 +16,6 @@ export default function AboutPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [signInOpen, setSignInOpen] = useState(false)
-  const [signUpOpen, setSignUpOpen] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -48,7 +47,6 @@ export default function AboutPage() {
         isAuthenticated={isAuthenticated}
         userEmail={userEmail}
         onSignInClick={() => setSignInOpen(true)}
-        onSignUpClick={() => setSignUpOpen(true)}
       />
 
       {/* Main Content */}
@@ -256,9 +254,7 @@ export default function AboutPage() {
       {/* Auth Modals */}
       <AuthModals
         signInOpen={signInOpen}
-        signUpOpen={signUpOpen}
         onSignInOpenChange={setSignInOpen}
-        onSignUpOpenChange={setSignUpOpen}
       />
     </div>
   )

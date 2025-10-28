@@ -16,7 +16,6 @@ export default function TermsOfServiceClient() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [signInOpen, setSignInOpen] = useState(false)
-  const [signUpOpen, setSignUpOpen] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -46,7 +45,6 @@ export default function TermsOfServiceClient() {
         isAuthenticated={isAuthenticated}
         userEmail={userEmail}
         onSignInClick={() => setSignInOpen(true)}
-        onSignUpClick={() => setSignUpOpen(true)}
       />
 
       <div className="container mx-auto max-w-4xl py-16 px-6">
@@ -292,9 +290,7 @@ export default function TermsOfServiceClient() {
 
       <AuthModals
         signInOpen={signInOpen}
-        signUpOpen={signUpOpen}
         onSignInOpenChange={setSignInOpen}
-        onSignUpOpenChange={setSignUpOpen}
       />
     </div>
   )

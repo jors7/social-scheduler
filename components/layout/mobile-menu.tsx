@@ -14,16 +14,14 @@ interface MobileMenuProps {
   isAuthenticated: boolean | null
   userEmail: string | null
   onSignInClick?: () => void
-  onSignUpClick?: () => void
 }
 
-export function MobileMenu({ 
-  isOpen, 
-  onClose, 
-  isAuthenticated, 
+export function MobileMenu({
+  isOpen,
+  onClose,
+  isAuthenticated,
   userEmail,
-  onSignInClick,
-  onSignUpClick
+  onSignInClick
 }: MobileMenuProps) {
   const router = useRouter()
   const pathname = usePathname()

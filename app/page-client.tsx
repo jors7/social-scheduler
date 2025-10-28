@@ -173,8 +173,6 @@ const faqData = {
 function LandingPageContent() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [signInOpen, setSignInOpen] = useState(false)
-  const [signUpOpen, setSignUpOpen] = useState(false)
-  const [signUpPlanId, setSignUpPlanId] = useState<string | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const router = useRouter()
@@ -189,9 +187,7 @@ function LandingPageContent() {
 
     // Check URL parameters for modal triggers and scrolling
     const shouldOpenSignIn = searchParams.get('signin') === 'true'
-    const shouldOpenSignUp = searchParams.get('signup') === 'true'
     const errorMessage = searchParams.get('error')
-    const planFromUrl = searchParams.get('plan')
     const scrollTo = searchParams.get('scroll')
 
     if (shouldOpenSignIn) {
@@ -200,12 +196,6 @@ function LandingPageContent() {
       if (errorMessage) {
         toast.error(errorMessage)
       }
-      router.replace('/', { scroll: false })
-    } else if (shouldOpenSignUp) {
-      if (planFromUrl) {
-        setSignUpPlanId(planFromUrl)
-      }
-      setSignUpOpen(true)
       router.replace('/', { scroll: false })
     }
     
@@ -232,7 +222,7 @@ function LandingPageContent() {
         router.replace('/', { scroll: false })
       }, 500) // Delay to ensure lazy-loaded components are rendered
     }
-  }, [searchParams, router, signUpPlanId])
+  }, [searchParams, router])
 
 
   const checkAuth = async () => {
@@ -275,13 +265,12 @@ function LandingPageContent() {
       />
 
       {/* Mobile Menu */}
-      <MobileMenu 
+      <MobileMenu
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
         isAuthenticated={isAuthenticated}
         userEmail={userEmail}
         onSignInClick={() => setSignInOpen(true)}
-        onSignUpClick={() => setSignUpOpen(true)}
       />
 
       {/* Main Content Wrapper - No margin needed as header is sticky */}
@@ -373,10 +362,7 @@ function LandingPageContent() {
       {/* Auth Modals */}
       <AuthModals
         signInOpen={signInOpen}
-        signUpOpen={signUpOpen}
         onSignInOpenChange={setSignInOpen}
-        onSignUpOpenChange={setSignUpOpen}
-        signUpPlanId={signUpPlanId}
       />
     </div>
       </HomePageWrapper>
