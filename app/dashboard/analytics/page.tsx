@@ -148,24 +148,7 @@ export default function AnalyticsPage() {
         youtubeRes.ok ? youtubeRes.json() : { metrics: null }
       ])
 
-      // Check if user has any connected accounts (by checking if any platform returned metrics)
-      const hasAnyData = [facebookData, instagramData, threadsData, blueskyData, pinterestData, tiktokData, youtubeData]
-        .some(data => data.metrics !== null)
-
-      // If no accounts are connected, use mock data
-      if (!hasAnyData) {
-        setHasConnectedAccounts(false)
-        setAnalyticsData(MOCK_ANALYTICS_DATA)
-        setTrendData(MOCK_TREND_DATA)
-        setLoading(false)
-        setRefreshing(false)
-        return
-      }
-
-      // User has connected accounts
-      setHasConnectedAccounts(true)
-
-      // Aggregate all metrics
+      // Aggregate all metrics first to determine if there's real data
       let totalPosts = 0
       let totalEngagement = 0
       let totalReach = 0
@@ -429,6 +412,19 @@ export default function AnalyticsPage() {
       });
 
       const currentEngagementRate = currentTotalReach > 0 ? (currentTotalEngagement / currentTotalReach) * 100 : 0;
+
+      // Check if user has any real data - if no posts, show mock data with overlay
+      if (currentTotalPosts === 0) {
+        setHasConnectedAccounts(false)
+        setAnalyticsData(MOCK_ANALYTICS_DATA)
+        setTrendData(MOCK_TREND_DATA)
+        setLoading(false)
+        setRefreshing(false)
+        return
+      }
+
+      // User has connected accounts with real data
+      setHasConnectedAccounts(true)
 
       setAnalyticsData({
         totalPosts: currentTotalPosts,
@@ -841,7 +837,7 @@ export default function AnalyticsPage() {
           {!hasConnectedAccounts && <MockDataOverlay />}
 
           {/* Analytics content - reduced opacity when showing mock data */}
-          <div className={!hasConnectedAccounts ? 'opacity-40 pointer-events-none' : ''}>
+          <div className={`space-y-8 ${!hasConnectedAccounts ? 'opacity-40 pointer-events-none' : ''}`}>
           <Card variant="glass" className="p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               {/* Date Selector - Full width on mobile */}
