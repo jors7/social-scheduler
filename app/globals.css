@@ -5,7 +5,7 @@
 /* Basic styles only */
 html {
   scroll-behavior: smooth;
-  /* Removed overflow-x: hidden from html to fix sticky positioning */
+  overflow-x: hidden;
 }
 
 body {
@@ -13,8 +13,6 @@ body {
   padding: 0;
   /* Prevent horizontal scroll on mobile */
   overflow-x: hidden;
-  max-width: 100vw;
-  width: 100vw;
   position: relative;
 }
 

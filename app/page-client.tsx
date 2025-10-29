@@ -274,7 +274,7 @@ function LandingPageContent() {
       />
 
       {/* Main Content Wrapper - No margin needed as header is sticky */}
-      <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 overflow-x-hidden max-w-[100vw]">
+      <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 overflow-x-hidden">
       {/* Hero Section with Platforms - Not lazy loaded for immediate display */}
       <HeroWithPlatforms 
         isAuthenticated={isAuthenticated} 
