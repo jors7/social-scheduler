@@ -35,7 +35,7 @@ function ResetPasswordForm() {
           // Show success message if redirected from auth callback
           const authSuccess = searchParams.get('auth')
           if (authSuccess === 'success') {
-            setMessage('Link verified! You can now set a new password.')
+            setMessage('Link verified! Create your password below.')
             // Clean up URL
             window.history.replaceState({}, '', '/reset-password')
           }
@@ -108,9 +108,9 @@ function ResetPasswordForm() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Set new password</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Set your password</CardTitle>
           <CardDescription className="text-center">
-            {sessionValid ? 'Enter your new password below' : 'Unable to reset password'}
+            {sessionValid ? 'Create a password to secure your account' : 'Unable to set password'}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -141,10 +141,11 @@ function ResetPasswordForm() {
             {sessionValid && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="password">New Password</Label>
+                  <Label htmlFor="password">Password</Label>
                   <Input
                     id="password"
                     type="password"
+                    placeholder="Enter your password (min. 6 characters)"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -153,10 +154,11 @@ function ResetPasswordForm() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
+                    placeholder="Confirm your password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
@@ -170,7 +172,7 @@ function ResetPasswordForm() {
           {sessionValid && (
             <CardFooter>
               <Button type="submit" className="w-full" disabled={loading || passwordUpdated || !sessionValid}>
-                {loading ? 'Updating...' : 'Update password'}
+                {loading ? 'Setting password...' : 'Set password'}
               </Button>
             </CardFooter>
           )}

@@ -48,9 +48,18 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ Auth verified for user:', data.user.id)
 
+    // Determine redirect based on type
+    let redirectUrl = redirectTo || '/dashboard?subscription=success'
+
+    // If this is a recovery link, redirect to password reset page
+    if (type === 'recovery') {
+      redirectUrl = '/reset-password?auth=success'
+      console.log('🔐 Recovery link detected, redirecting to password reset page')
+    }
+
     // Create a response that will redirect
     let response = NextResponse.redirect(
-      new URL(redirectTo || '/dashboard?subscription=success', process.env.NEXT_PUBLIC_APP_URL!)
+      new URL(redirectUrl, process.env.NEXT_PUBLIC_APP_URL!)
     )
 
     // Create a Supabase SSR client to set cookies properly
