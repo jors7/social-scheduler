@@ -50,7 +50,14 @@ export default function OAuthRedirectHandler() {
       }
 
       // Check for OAuth tokens in URL hash
+      // BUT skip if this is a recovery/password reset flow (type=recovery in hash)
       if (hash && (hash.includes('access_token') || hash.includes('error'))) {
+        // Skip processing if this is a password recovery flow
+        if (hash.includes('type=recovery') || window.location.pathname === '/reset-password') {
+          console.log('Skipping OAuth handler - this is a password recovery flow')
+          return
+        }
+
         setIsProcessing(true)
 
         if (hash.includes('error')) {

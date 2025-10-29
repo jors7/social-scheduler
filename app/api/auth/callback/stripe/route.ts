@@ -185,24 +185,8 @@ export async function GET(request: NextRequest) {
 
             console.log('📧 Sending welcome emails to:', customerEmail)
 
-            // Generate password setup link
-            let passwordSetupLink = ''
-            try {
-              const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-                type: 'recovery',
-                email: customerEmail,
-                options: {
-                  redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?from=email`
-                }
-              })
-              if (data && !error) {
-                // Use the action_link which now has our custom redirectTo
-                passwordSetupLink = data.properties.action_link
-                console.log('✅ Password setup link generated:', passwordSetupLink)
-              }
-            } catch (err) {
-              console.error('Error generating password setup link:', err)
-            }
+            // Don't send password setup link - user can set password from profile settings if needed
+            const passwordSetupLink = undefined
 
             if (subscription.status === 'trialing') {
               // Send trial email with password setup link (removed redundant welcome email)
