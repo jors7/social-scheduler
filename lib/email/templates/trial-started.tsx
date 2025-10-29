@@ -63,7 +63,7 @@ export default function TrialStartedEmail({ userName, planName, passwordSetupLin
               <td style={passwordBoxInner}>
                 <Text style={passwordHeading}>🔐 Set Your Password</Text>
                 <Text style={passwordText}>
-                  You're currently logged in automatically. To make logging in easier next time, set up your password now.
+                  You&apos;re currently logged in automatically. To make logging in easier next time, set up your password now.
                 </Text>
                 <Button style={secondaryButton} href={passwordSetupLink}>
                   Set Up Password

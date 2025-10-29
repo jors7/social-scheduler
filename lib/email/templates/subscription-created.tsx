@@ -6,13 +6,15 @@ interface SubscriptionCreatedEmailProps {
   planName: string;
   billingCycle: string;
   amount: number;
+  passwordSetupLink?: string;
 }
 
 export default function SubscriptionCreatedEmail({
   userName,
   planName,
   billingCycle,
-  amount
+  amount,
+  passwordSetupLink
 }: SubscriptionCreatedEmailProps) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.socialcal.app';
   const formattedAmount = (amount / 100).toFixed(2);
@@ -67,6 +69,24 @@ export default function SubscriptionCreatedEmail({
       <Button style={secondaryButton} href={`${appUrl}/dashboard/billing`}>
         Manage Subscription
       </Button>
+
+      {passwordSetupLink && (
+        <>
+          <table width="100%" cellPadding="0" cellSpacing="0" style={passwordBox}>
+            <tr>
+              <td style={passwordBoxInner}>
+                <Text style={passwordHeading}>🔐 Set Your Password</Text>
+                <Text style={passwordText}>
+                  You&apos;re currently logged in automatically. To make logging in easier next time, set up your password now.
+                </Text>
+                <Button style={passwordButton} href={passwordSetupLink}>
+                  Set Up Password
+                </Button>
+              </td>
+            </tr>
+          </table>
+        </>
+      )}
 
       <Text style={signature}>
         Thanks for being part of SocialCal!<br />
@@ -156,4 +176,42 @@ const signature = {
   fontSize: '15px',
   lineHeight: '24px',
   margin: '32px 0 0',
+};
+
+const passwordBox = {
+  margin: '32px 0',
+  borderRadius: '8px',
+  overflow: 'hidden' as const,
+};
+
+const passwordBoxInner = {
+  backgroundColor: '#fef3c7',
+  padding: '32px',
+  borderLeft: '4px solid #f59e0b',
+};
+
+const passwordHeading = {
+  color: '#92400e',
+  fontSize: '18px',
+  fontWeight: '600' as const,
+  margin: '0 0 12px',
+};
+
+const passwordText = {
+  color: '#78350f',
+  fontSize: '15px',
+  lineHeight: '24px',
+  margin: '0 0 20px',
+};
+
+const passwordButton = {
+  backgroundColor: '#f59e0b',
+  borderRadius: '6px',
+  color: '#ffffff',
+  fontSize: '15px',
+  fontWeight: '600' as const,
+  textDecoration: 'none',
+  textAlign: 'center' as const,
+  display: 'inline-block',
+  padding: '12px 28px',
 };
