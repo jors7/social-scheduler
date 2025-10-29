@@ -17,6 +17,9 @@ const subscriptionRoutes: string[] = [
 // Public routes that should redirect to dashboard if authenticated
 const authRoutes = ['/login', '/signup']
 
+// Routes that should be accessible without subscription check (auth flows)
+const publicAuthRoutes = ['/reset-password', '/auth/confirm']
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -75,6 +78,12 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = authRoutes.includes(request.nextUrl.pathname)
   const isAdminRoute = adminRoutes.some(route => request.nextUrl.pathname.startsWith(route))
   const isSubscriptionRoute = subscriptionRoutes.some(route => request.nextUrl.pathname.startsWith(route))
+  const isPublicAuthRoute = publicAuthRoutes.some(route => request.nextUrl.pathname.startsWith(route))
+
+  // Allow public auth routes without any checks (password reset, auth confirmation)
+  if (isPublicAuthRoute) {
+    return response
+  }
 
   // If user is not signed in and the current path is on the dashboard, redirect to homepage with signin modal
   if (isProtectedRoute && !user) {
