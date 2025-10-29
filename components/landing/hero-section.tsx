@@ -16,7 +16,7 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
   const heroBlurData = getBlurData('hero-dashboard')
 
   return (
-    <section className="relative pb-6 md:pb-2 px-4 overflow-hidden pt-6 lg:pt-0 lg:-mt-8">
+    <section className="relative pb-8 md:pb-2 px-4 overflow-hidden pt-6 lg:pt-0 lg:-mt-8">
       <div className="max-w-[1700px] mx-auto px-6 relative pt-0 mt-0">
         <div className="flex flex-col lg:flex-row gap-0 items-center justify-center lg:ml-40">
           {/* Left Column - Text Content */}
@@ -44,7 +44,7 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
             </p>
 
             {/* CTA button */}
-            <div className="mb-6 md:mb-8">
+            <div className="mb-8 md:mb-8">
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-lg font-semibold px-12 py-7 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
@@ -61,7 +61,7 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
           </div>
 
           {/* Right Column - Hero Image */}
-          <div className="w-[115%] md:w-full overflow-hidden flex items-center justify-center md:block md:max-w-[1035px] md:overflow-visible lg:-ml-64 -ml-[7.5%] md:ml-0">
+          <div className="w-[132%] md:w-full overflow-hidden flex items-center justify-center md:block md:max-w-[1035px] md:overflow-visible lg:-ml-64 -ml-[16%] md:ml-0">
             <Image
               src="https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard-v7.webp"
               alt="SocialCal Dashboard"
