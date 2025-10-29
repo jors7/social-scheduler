@@ -5,15 +5,13 @@
 /* Basic styles only */
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
 }
 
 body {
   margin: 0;
   padding: 0;
-  /* Prevent horizontal scroll on mobile */
-  overflow-x: hidden;
   position: relative;
+  overflow-x: hidden;
 }
 
 /* Ensure sticky header works properly */

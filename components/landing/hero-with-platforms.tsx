@@ -10,7 +10,7 @@ interface HeroWithPlatformsProps {
 
 export function HeroWithPlatforms({ isAuthenticated, onSignInClick }: HeroWithPlatformsProps) {
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative overflow-x-hidden">
       {/* Static gradient background on mobile - no absolute positioning or animations */}
       <div className="md:hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50 opacity-70" />
@@ -34,7 +34,7 @@ export function HeroWithPlatforms({ isAuthenticated, onSignInClick }: HeroWithPl
       </div>
 
       {/* Content sections with relative positioning */}
-      <div className="relative z-10">
+      <div className="relative z-0">
         <HeroSection
           isAuthenticated={isAuthenticated}
           onSignInClick={onSignInClick}

@@ -16,11 +16,11 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
   const heroBlurData = getBlurData('hero-dashboard')
 
   return (
-    <section className="relative pt-10 lg:pt-0 pb-2 md:pb-10 px-4 overflow-hidden">
-      <div className="max-w-[1500px] mx-auto px-6 relative">
-        <div className="flex flex-col lg:flex-row gap-0 items-center justify-center lg:pl-32">
+    <section className="relative pb-2 md:pb-10 px-4 overflow-hidden pt-6 lg:pt-0 lg:-mt-8">
+      <div className="max-w-[1500px] mx-auto px-6 relative pt-0 mt-0">
+        <div className="flex flex-col lg:flex-row gap-0 items-center lg:pl-32">
           {/* Left Column - Text Content */}
-          <div className="max-w-[600px]">
+          <div className="max-w-[600px] pt-0 mt-0">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-5 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-full mb-3 shadow-md">
               <span className="text-yellow-500 text-lg">✨</span>
@@ -69,7 +69,7 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
           </div>
 
           {/* Right Column - Hero Image */}
-          <div className="w-full max-w-full overflow-hidden flex items-center justify-center md:block md:max-w-[900px] md:overflow-visible lg:-ml-20 lg:mt-4">
+          <div className="w-full max-w-[90%] overflow-hidden flex items-center justify-center md:block md:max-w-[770px] md:overflow-visible lg:-ml-20 lg:mt-4">
             <Image
               src="https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard-v4.webp"
               alt="SocialCal Dashboard"
@@ -78,7 +78,7 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
               priority
               placeholder={heroBlurData ? "blur" : "empty"}
               blurDataURL={heroBlurData?.base64}
-              className="w-full h-auto scale-[1.19] md:scale-[1.24] origin-center md:origin-left"
+              className="w-full h-auto origin-center md:origin-left"
             />
           </div>
         </div>
