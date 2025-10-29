@@ -193,7 +193,9 @@ export async function GET(request: NextRequest) {
                 email: customerEmail,
               })
               if (data && !error) {
-                passwordSetupLink = data.properties.action_link
+                // Construct our own link with proper redirect instead of using action_link
+                const token = data.properties.hashed_token
+                passwordSetupLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm?token=${encodeURIComponent(token)}&type=recovery&redirect_to=${encodeURIComponent('/reset-password')}`
                 console.log('✅ Password setup link generated')
               }
             } catch (err) {

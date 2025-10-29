@@ -51,10 +51,10 @@ export async function GET(request: NextRequest) {
     // Determine redirect based on type
     let redirectUrl = redirectTo || '/dashboard?subscription=success'
 
-    // If this is a recovery link, redirect to password reset page
+    // If this is a recovery link, redirect to password reset page (or custom redirect if provided)
     if (type === 'recovery') {
-      redirectUrl = '/reset-password?auth=success'
-      console.log('🔐 Recovery link detected, redirecting to password reset page')
+      redirectUrl = redirectTo || '/reset-password?auth=success'
+      console.log('🔐 Recovery link detected, redirecting to:', redirectUrl)
     }
 
     // Create a response that will redirect
