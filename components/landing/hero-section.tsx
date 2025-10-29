@@ -36,6 +36,8 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
               <br />
               Nine platforms.
               <br />
+              Maximum reach.
+              <br />
               Unlimited possibilities.
               <br />
               Save 15+ hours weekly on social media management.
