@@ -16,7 +16,7 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
   const heroBlurData = getBlurData('hero-dashboard')
 
   return (
-    <section className="relative pb-2 md:pb-10 px-4 overflow-hidden pt-6 lg:pt-0 lg:-mt-8">
+    <section className="relative pb-12 md:pb-10 px-4 overflow-hidden pt-6 lg:pt-0 lg:-mt-8">
       <div className="max-w-[1500px] mx-auto px-6 relative pt-0 mt-0">
         <div className="flex flex-col lg:flex-row gap-0 items-center lg:pl-32">
           {/* Left Column - Text Content */}
@@ -44,7 +44,7 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
             </p>
 
             {/* CTA button */}
-            <div className="mb-8">
+            <div className="mb-16 md:mb-8">
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-lg font-semibold px-12 py-7 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
@@ -57,16 +57,6 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
               >
                 Start Free Trial
               </Button>
-              <p className="mt-4 text-xs text-gray-500">
-                By signing up, you agree to our{' '}
-                <Link href="/terms" className="text-gray-500 hover:text-gray-600 underline">
-                  Terms of Service
-                </Link>
-                {' '}and{' '}
-                <Link href="/privacy" className="text-gray-500 hover:text-gray-600 underline">
-                  Privacy Policy
-                </Link>
-              </p>
             </div>
           </div>
 
