@@ -77,13 +77,13 @@ export async function sendPasswordResetEmail(to: string, resetLink: string) {
   });
 }
 
-export async function sendTrialStartedEmail(to: string, userName: string, planName: string) {
+export async function sendTrialStartedEmail(to: string, userName: string, planName: string, passwordSetupLink?: string) {
   const { default: TrialStartedEmail } = await import('./templates/trial-started');
 
   return sendEmail({
     to,
     subject: `Your ${planName} Trial Has Started! 🚀`,
-    react: TrialStartedEmail({ userName, planName }),
+    react: TrialStartedEmail({ userName, planName, passwordSetupLink }),
   });
 }
 
@@ -92,14 +92,15 @@ export async function sendSubscriptionCreatedEmail(
   userName: string,
   planName: string,
   billingCycle: string,
-  amount: number
+  amount: number,
+  passwordSetupLink?: string
 ) {
   const { default: SubscriptionCreatedEmail } = await import('./templates/subscription-created');
 
   return sendEmail({
     to,
     subject: `Welcome to ${planName}! Your subscription is active`,
-    react: SubscriptionCreatedEmail({ userName, planName, billingCycle, amount }),
+    react: SubscriptionCreatedEmail({ userName, planName, billingCycle, amount, passwordSetupLink }),
   });
 }
 

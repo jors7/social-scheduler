@@ -33,10 +33,6 @@ export default function WelcomeEmail({ userName }: WelcomeEmailProps) {
                 <td style={iconCell}>✓</td>
                 <td style={featureText}>Analytics and insights</td>
               </tr>
-              <tr>
-                <td style={iconCell}>✓</td>
-                <td style={featureText}>Team collaboration</td>
-              </tr>
             </table>
           </td>
         </tr>

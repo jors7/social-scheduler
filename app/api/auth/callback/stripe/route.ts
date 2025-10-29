@@ -185,21 +185,32 @@ export async function GET(request: NextRequest) {
 
             console.log('📧 Sending welcome emails to:', customerEmail)
 
+            // Generate password setup link
+            let passwordSetupLink = ''
+            try {
+              const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+                type: 'recovery',
+                email: customerEmail,
+              })
+              if (data && !error) {
+                passwordSetupLink = data.properties.action_link
+                console.log('✅ Password setup link generated')
+              }
+            } catch (err) {
+              console.error('Error generating password setup link:', err)
+            }
+
             if (subscription.status === 'trialing') {
-              // Send trial welcome emails
-              await Promise.all([
-                sendWelcomeEmail(customerEmail, userName),
-                sendTrialStartedEmail(customerEmail, userName, planName)
-              ]).catch(err => console.error('Error sending trial welcome emails:', err))
-              console.log('✅ Trial welcome emails sent')
+              // Send trial email with password setup link (removed redundant welcome email)
+              await sendTrialStartedEmail(customerEmail, userName, planName, passwordSetupLink)
+                .catch(err => console.error('Error sending trial email:', err))
+              console.log('✅ Trial email sent')
             } else {
-              // Send subscription welcome emails
+              // Send subscription email with password setup link (removed redundant welcome email)
               const amount = subscription.items?.data[0]?.price?.unit_amount || 0
-              await Promise.all([
-                sendWelcomeEmail(customerEmail, userName),
-                sendSubscriptionCreatedEmail(customerEmail, userName, planName, billingCycle, amount)
-              ]).catch(err => console.error('Error sending subscription welcome emails:', err))
-              console.log('✅ Subscription welcome emails sent')
+              await sendSubscriptionCreatedEmail(customerEmail, userName, planName, billingCycle, amount, passwordSetupLink)
+                .catch(err => console.error('Error sending subscription email:', err))
+              console.log('✅ Subscription email sent')
             }
           }
         }
