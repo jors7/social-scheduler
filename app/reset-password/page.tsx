@@ -108,9 +108,9 @@ function ResetPasswordForm() {
         setError(error.message)
       } else {
         setPasswordUpdated(true)
-        setMessage('Password updated successfully! Redirecting to sign in...')
+        setMessage('Password updated successfully! Redirecting to dashboard...')
         setTimeout(() => {
-          router.push('/?signin=true')
+          router.push('/dashboard')
         }, 2000)
       }
     } catch (err) {
