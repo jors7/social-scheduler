@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 const HowItWorksSection = () => {
   return (
     <section className="py-20 pb-24 bg-gray-50 overflow-x-hidden">
-      <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto max-w-[68rem] px-6 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
             Why Smart Creators Are Ditching Overpriced Schedulers
@@ -40,8 +40,11 @@ const HowItWorksSection = () => {
                       No Confusion. No Learning Curve.
                     </h3>
                   </div>
-                  <p className="text-base text-gray-600 leading-relaxed mb-6">
+                  <p className="text-base text-gray-600 leading-relaxed mb-3">
                     Get set up in minutes — not hours. Our clean, creator-first dashboard lets you start scheduling right away. No overwhelming menus, no clunky setup.
+                  </p>
+                  <p className="text-base text-gray-600 leading-relaxed mb-6">
+                    Start posting to all your platforms within the same day you sign up.
                   </p>
                 </div>
                 
@@ -96,7 +99,7 @@ const HowItWorksSection = () => {
               </div>
 
               {/* Desktop Layout */}
-              <div className="hidden lg:flex lg:flex-row lg:items-center lg:gap-8">
+              <div className="hidden lg:flex lg:flex-row lg:items-center lg:gap-6">
                 {/* Step number on timeline - centered vertically */}
                 <div className="flex-shrink-0 relative self-center">
                   <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg z-10 relative">
@@ -106,17 +109,20 @@ const HowItWorksSection = () => {
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 pl-8">
+                <div className="flex-1">
                   <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4">
                     No Confusion. No Learning Curve.
                   </h3>
-                  <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
+                  <p className="text-lg text-gray-600 leading-relaxed max-w-2xl mb-3">
                     Get set up in minutes — not hours. Our clean, creator-first dashboard lets you start scheduling right away. No overwhelming menus, no clunky setup.
+                  </p>
+                  <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
+                    Start posting to all your platforms within the same day you sign up.
                   </p>
                 </div>
 
                 {/* Visual mockup */}
-                <div className="w-80">
+                <div className="w-72">
                 <div className="bg-gradient-to-br from-blue-50 to-white rounded-3xl p-8 shadow-2xl border border-blue-100">
                   <div className="space-y-5">
                     {/* Header */}
@@ -186,8 +192,11 @@ const HowItWorksSection = () => {
                       The Most Affordable Scheduler on the Market
                     </h3>
                   </div>
-                  <p className="text-base text-gray-600 leading-relaxed mb-6">
+                  <p className="text-base text-gray-600 leading-relaxed mb-3">
                     Why pay $50+/mo for features you&apos;ll never use? SocialCal packs the essentials — cross-platform scheduling, smart calendar, and repurposing tools — for a fraction of the price.
+                  </p>
+                  <p className="text-base text-gray-600 leading-relaxed mb-6">
+                    Get everything you need without the enterprise price tag.
                   </p>
                 </div>
                 
@@ -240,9 +249,9 @@ const HowItWorksSection = () => {
               </div>
 
               {/* Desktop Layout */}
-              <div className="hidden lg:flex lg:flex-row lg:items-center lg:gap-8">
+              <div className="hidden lg:flex lg:flex-row lg:items-center lg:gap-6">
                 {/* Visual mockup - Pricing comparison (moved left to align with circle above) */}
-                <div className="w-80 ml-0">
+                <div className="w-72 ml-0">
                 <div className="bg-gradient-to-br from-green-50 to-white rounded-3xl p-8 shadow-2xl border border-green-100">
                   <div className="space-y-5">
                     {/* Header with icon */}
@@ -289,12 +298,15 @@ const HowItWorksSection = () => {
               </div>
 
               {/* Content */}
-              <div className="flex-1 lg:pr-8">
+              <div className="flex-1">
                 <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4">
                   The Most Affordable Scheduler on the Market
                 </h3>
-                <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
+                <p className="text-lg text-gray-600 leading-relaxed max-w-2xl mb-3">
                   Why pay $50+/mo for features you&apos;ll never use? SocialCal packs the essentials — cross-platform scheduling, smart calendar, and repurposing tools — for a fraction of the price.
+                </p>
+                <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
+                  Get everything you need without the enterprise price tag.
                 </p>
               </div>
 
@@ -328,8 +340,11 @@ const HowItWorksSection = () => {
                       Built for All Major Platforms (Yes, Even Threads & Bluesky)
                     </h3>
                   </div>
-                  <p className="text-base text-gray-600 leading-relaxed mb-6">
+                  <p className="text-base text-gray-600 leading-relaxed mb-3">
                     Schedule once and publish across Instagram, X (Twitter), LinkedIn, Facebook, TikTok, Pinterest, YouTube, Threads, and Bluesky. We&apos;ve got you covered everywhere.
+                  </p>
+                  <p className="text-base text-gray-600 leading-relaxed mb-6">
+                    No need to juggle multiple apps or browser tabs ever again.
                   </p>
                 </div>
                 
@@ -372,7 +387,7 @@ const HowItWorksSection = () => {
               </div>
 
               {/* Desktop Layout */}
-              <div className="hidden lg:flex lg:flex-row lg:items-center lg:gap-8">
+              <div className="hidden lg:flex lg:flex-row lg:items-center lg:gap-6">
                 {/* Step number on timeline - centered vertically */}
                 <div className="flex-shrink-0 relative self-center">
                   <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg z-10 relative">
@@ -382,17 +397,20 @@ const HowItWorksSection = () => {
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 pl-8">
+                <div className="flex-1">
                   <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4">
                     Built for All Major Platforms (Yes, Even Threads & Bluesky)
                   </h3>
-                  <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
+                  <p className="text-lg text-gray-600 leading-relaxed max-w-2xl mb-3">
                     Schedule once and publish across Instagram, X (Twitter), LinkedIn, Facebook, TikTok, Pinterest, YouTube, Threads, and Bluesky. We&apos;ve got you covered everywhere.
+                  </p>
+                  <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
+                    No need to juggle multiple apps or browser tabs ever again.
                   </p>
                 </div>
 
                 {/* Visual mockup - Platform grid */}
-                <div className="w-80">
+                <div className="w-72">
                 <div className="bg-gradient-to-br from-purple-50 to-white rounded-3xl p-8 shadow-2xl border border-purple-100">
                   <div className="space-y-5">
                     {/* Header */}
@@ -450,8 +468,11 @@ const HowItWorksSection = () => {
                       Designed for Solopreneurs, Creators, and Small Teams
                     </h3>
                   </div>
-                  <p className="text-base text-gray-600 leading-relaxed mb-6">
+                  <p className="text-base text-gray-600 leading-relaxed mb-3">
                     Unlike enterprise platforms built for marketing departments, SocialCal was designed with solo creators and lean brands in mind — so every feature is relevant, simple, and effective.
+                  </p>
+                  <p className="text-base text-gray-600 leading-relaxed mb-6">
+                    Focus on creating great content, not wrestling with complicated software.
                   </p>
                 </div>
                 
@@ -517,9 +538,9 @@ const HowItWorksSection = () => {
               </div>
 
               {/* Desktop Layout */}
-              <div className="hidden lg:flex lg:flex-row lg:items-center lg:gap-8">
+              <div className="hidden lg:flex lg:flex-row lg:items-center lg:gap-6">
                 {/* Visual mockup - User types (moved left to align with circle above) */}
-                <div className="w-80 ml-0">
+                <div className="w-72 ml-0">
                 <div className="bg-gradient-to-br from-pink-50 to-white rounded-3xl p-8 shadow-2xl border border-pink-100">
                   <div className="space-y-5">
                     {/* Header */}
@@ -579,12 +600,15 @@ const HowItWorksSection = () => {
               </div>
 
               {/* Content */}
-              <div className="flex-1 lg:pr-8">
+              <div className="flex-1">
                 <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4">
                   Designed for Solopreneurs, Creators, and Small Teams
                 </h3>
-                <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
+                <p className="text-lg text-gray-600 leading-relaxed max-w-2xl mb-3">
                   Unlike enterprise platforms built for marketing departments, SocialCal was designed with solo creators and lean brands in mind — so every feature is relevant, simple, and effective.
+                </p>
+                <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
+                  Focus on creating great content, not wrestling with complicated software.
                 </p>
               </div>
 
