@@ -25,6 +25,36 @@ function ResetPasswordForm() {
     // Check if user has a valid session (after code exchange from email link)
     const checkSession = async () => {
       try {
+        // Check if we have hash params from Supabase (e.g., #access_token=...)
+        const hashParams = new URLSearchParams(window.location.hash.substring(1))
+        const accessToken = hashParams.get('access_token')
+        const refreshToken = hashParams.get('refresh_token')
+
+        // If we have tokens in the URL hash, set the session explicitly
+        if (accessToken && refreshToken) {
+          console.log('Setting session from URL tokens')
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          })
+
+          if (sessionError) {
+            console.error('Failed to set session:', sessionError)
+            setError('Invalid or expired reset link. Please request a new password reset.')
+            setSessionValid(false)
+            setCheckingSession(false)
+            return
+          }
+
+          // Clean up URL hash
+          window.history.replaceState({}, '', '/reset-password?from=email')
+          setMessage('Link verified! Create your password below.')
+          setSessionValid(true)
+          setCheckingSession(false)
+          return
+        }
+
+        // Otherwise check existing session
         const { data: { session }, error } = await supabase.auth.getSession()
 
         if (error || !session) {
@@ -33,14 +63,15 @@ function ResetPasswordForm() {
         } else {
           setSessionValid(true)
           // Show success message if redirected from auth callback
-          const authSuccess = searchParams.get('auth')
-          if (authSuccess === 'success') {
+          const fromEmail = searchParams.get('from')
+          if (fromEmail === 'email') {
             setMessage('Link verified! Create your password below.')
             // Clean up URL
             window.history.replaceState({}, '', '/reset-password')
           }
         }
       } catch (err) {
+        console.error('Error in checkSession:', err)
         setError('Failed to verify reset link. Please try again.')
         setSessionValid(false)
       } finally {

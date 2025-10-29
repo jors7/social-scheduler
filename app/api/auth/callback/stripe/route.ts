@@ -191,12 +191,14 @@ export async function GET(request: NextRequest) {
               const { data, error } = await supabaseAdmin.auth.admin.generateLink({
                 type: 'recovery',
                 email: customerEmail,
+                options: {
+                  redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?from=email`
+                }
               })
               if (data && !error) {
-                // Construct our own link with proper redirect instead of using action_link
-                const token = data.properties.hashed_token
-                passwordSetupLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm?token=${encodeURIComponent(token)}&type=recovery&redirect_to=${encodeURIComponent('/reset-password')}`
-                console.log('✅ Password setup link generated')
+                // Use the action_link which now has our custom redirectTo
+                passwordSetupLink = data.properties.action_link
+                console.log('✅ Password setup link generated:', passwordSetupLink)
               }
             } catch (err) {
               console.error('Error generating password setup link:', err)
