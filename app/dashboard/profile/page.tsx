@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,7 +14,7 @@ import { getClientSubscription } from '@/lib/subscription/client'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 
-export default function ProfilePage() {
+function ProfileContent() {
   const [user, setUser] = useState<any>(null)
   const [subscription, setSubscription] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -394,5 +394,23 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={
+      <Card variant="elevated">
+        <CardContent className="text-center py-16 bg-gradient-to-br from-purple-50 to-blue-50">
+          <div className="p-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full w-fit mx-auto mb-6">
+            <Loader2 className="h-12 w-12 text-white animate-spin" />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Loading profile...</h3>
+          <p className="text-gray-600">Please wait while we load your information</p>
+        </CardContent>
+      </Card>
+    }>
+      <ProfileContent />
+    </Suspense>
   )
 }
