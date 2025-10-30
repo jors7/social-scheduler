@@ -70,23 +70,19 @@ export default function SubscriptionCreatedEmail({
         Manage Subscription
       </Button>
 
-      {passwordSetupLink && (
-        <>
-          <table width="100%" cellPadding="0" cellSpacing="0" style={passwordBox}>
-            <tr>
-              <td style={passwordBoxInner}>
-                <Text style={passwordHeading}>🔐 Set Your Password</Text>
-                <Text style={passwordText}>
-                  You&apos;re currently logged in automatically. To make logging in easier next time, set up your password now.
-                </Text>
-                <Button style={passwordButton} href={passwordSetupLink}>
-                  Set Up Password
-                </Button>
-              </td>
-            </tr>
-          </table>
-        </>
-      )}
+      <table width="100%" cellPadding="0" cellSpacing="0" style={passwordBox}>
+        <tr>
+          <td style={passwordBoxInner}>
+            <Text style={passwordHeading}>🔐 Set Your Password (Optional)</Text>
+            <Text style={passwordText}>
+              You&apos;re currently logged in automatically. If you&apos;d like to set a password for easier sign-ins later, click below. We&apos;ll take you to your profile where you can complete the setup.
+            </Text>
+            <Button style={passwordButton} href={`${appUrl}/dashboard/profile?setup=password`}>
+              Set Up Password
+            </Button>
+          </td>
+        </tr>
+      </table>
 
       <Text style={signature}>
         Thanks for being part of SocialCal!<br />

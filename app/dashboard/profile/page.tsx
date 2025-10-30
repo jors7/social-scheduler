@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -19,15 +20,48 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [sendingPasswordReset, setSendingPasswordReset] = useState(false)
+  const [highlightPassword, setHighlightPassword] = useState(false)
   const [formData, setFormData] = useState({
     full_name: '',
     email: ''
   })
   const supabase = createClient()
+  const searchParams = useSearchParams()
+  const passwordButtonRef = useRef<HTMLButtonElement>(null)
+  const securityCardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     loadUserData()
   }, [])
+
+  // Handle password setup parameter from email
+  useEffect(() => {
+    const setupParam = searchParams.get('setup')
+    if (setupParam === 'password' && !loading) {
+      // Wait a bit for the page to fully render
+      setTimeout(() => {
+        // Scroll to security section
+        securityCardRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        })
+
+        // Highlight the button
+        setHighlightPassword(true)
+
+        // Show toast with instruction
+        toast.info('👇 Click "Change Password" below to set your password', {
+          duration: 5000,
+        })
+
+        // Remove highlight after 10 seconds
+        setTimeout(() => setHighlightPassword(false), 10000)
+
+        // Clean up URL
+        window.history.replaceState({}, '', '/dashboard/profile')
+      }, 500)
+    }
+  }, [searchParams, loading])
 
   const loadUserData = async () => {
     try {
@@ -314,7 +348,10 @@ export default function ProfilePage() {
       </div>
 
       {/* Security Settings */}
-      <Card className="bg-white shadow-xl hover:shadow-2xl transition-all duration-300 border-0 overflow-hidden hover:-translate-y-0.5">
+      <Card
+        ref={securityCardRef}
+        className="bg-white shadow-xl hover:shadow-2xl transition-all duration-300 border-0 overflow-hidden hover:-translate-y-0.5"
+      >
         <CardHeader className="border-b pb-6">
           <CardTitle>
             Security Settings
@@ -328,8 +365,12 @@ export default function ProfilePage() {
               <p className="text-sm text-gray-600">Change your account password</p>
             </div>
             <Button
+              ref={passwordButtonRef}
               variant="outline"
-              className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+              className={cn(
+                "hover:shadow-md hover:-translate-y-0.5 transition-all duration-200",
+                highlightPassword && "ring-4 ring-amber-400 ring-offset-2 animate-pulse bg-amber-50 border-amber-400"
+              )}
               onClick={handleChangePassword}
               disabled={sendingPasswordReset}
             >
