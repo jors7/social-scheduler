@@ -122,12 +122,12 @@ function ResetPasswordForm() {
 
   if (checkingSession) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 px-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-blue-50 to-purple-50 px-4">
+        <Card className="w-full max-w-md rounded-2xl shadow-xl">
           <CardContent className="py-8">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-gray-600">Verifying reset link...</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600 font-medium">Verifying reset link...</p>
             </div>
           </CardContent>
         </Card>
@@ -136,26 +136,37 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Set your password</CardTitle>
-          <CardDescription className="text-center">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-blue-50 to-purple-50 px-4">
+      <Card className="w-full max-w-md rounded-2xl shadow-xl relative">
+        {loading && (
+          <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center rounded-2xl">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600 mx-auto mb-3"></div>
+              <p className="text-sm font-medium text-gray-900">Updating password...</p>
+              <p className="text-xs text-gray-600 mt-1">Please wait</p>
+            </div>
+          </div>
+        )}
+        <CardHeader className="space-y-1 pt-6 sm:pt-8 pb-4 sm:pb-6">
+          <CardTitle className="text-xl sm:text-2xl md:text-3xl font-bold text-center bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            Set your password
+          </CardTitle>
+          <CardDescription className="text-center text-sm sm:text-base">
             {sessionValid ? 'Create a password to secure your account' : 'Unable to set password'}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
             {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+              <div className="p-3 sm:p-4 text-xs sm:text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl">
                 {error}
                 {!sessionValid && (
-                  <div className="mt-2">
+                  <div className="mt-3">
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="w-full"
+                      className="w-full rounded-xl hover:shadow-md transition-all duration-200"
                       onClick={() => router.push('/?signin=true')}
                     >
                       Go to Sign In
@@ -165,14 +176,14 @@ function ResetPasswordForm() {
               </div>
             )}
             {message && (
-              <div className="p-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-md">
+              <div className="p-3 sm:p-4 text-xs sm:text-sm text-green-600 bg-green-50 border border-green-200 rounded-xl">
                 {message}
               </div>
             )}
             {sessionValid && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password" className="text-xs sm:text-sm font-medium text-gray-700">Password</Label>
                   <Input
                     id="password"
                     type="password"
@@ -182,10 +193,11 @@ function ResetPasswordForm() {
                     required
                     minLength={6}
                     disabled={!sessionValid}
+                    className="rounded-xl h-9 sm:h-10 px-3 sm:px-4 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Label htmlFor="confirmPassword" className="text-xs sm:text-sm font-medium text-gray-700">Confirm Password</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
@@ -195,14 +207,19 @@ function ResetPasswordForm() {
                     required
                     minLength={6}
                     disabled={!sessionValid}
+                    className="rounded-xl h-9 sm:h-10 px-3 sm:px-4 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                   />
                 </div>
               </>
             )}
           </CardContent>
           {sessionValid && (
-            <CardFooter>
-              <Button type="submit" className="w-full" disabled={loading || passwordUpdated || !sessionValid}>
+            <CardFooter className="px-4 sm:px-6 pb-6 sm:pb-8">
+              <Button
+                type="submit"
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg transform hover:scale-[1.02] transition-all duration-200 rounded-xl h-10 sm:h-11 font-medium"
+                disabled={loading || passwordUpdated || !sessionValid}
+              >
                 {loading ? 'Setting password...' : 'Set password'}
               </Button>
             </CardFooter>
@@ -216,10 +233,10 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-blue-50 to-purple-50 px-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 font-medium">Loading...</p>
         </div>
       </div>
     }>
