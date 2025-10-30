@@ -20,7 +20,7 @@ After adding the column, run this command in your terminal:
 ```bash
 node scripts/generate-blur-for-existing-posts.js
 ```
-
+nothing
 This will:
 - Find all blog posts with featured images
 - Generate blur placeholders for each image
