@@ -137,7 +137,7 @@ export function MobileMenu({
             </div>
           )}
           
-          <nav className="px-4 pb-24">
+          <nav className="px-4 pb-8">
             {isAuthenticated ? (
               // Authenticated Menu
               <>
@@ -234,7 +234,7 @@ export function MobileMenu({
             ) : (
               // Non-authenticated Menu
               <>
-                <div className="space-y-1 mb-6">
+                <div className="space-y-1 mb-6 pt-6">
                   <button
                     onClick={() => {
                       onClose()
