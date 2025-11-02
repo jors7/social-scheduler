@@ -1474,19 +1474,11 @@ function DashboardContent() {
                       <div className="ml-3 flex-shrink-0">
                         {firstMediaUrl ? (
                           isVideo ? (
-                            <video
-                              src={firstMediaUrl}
-                              className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                              muted
-                              preload="metadata"
-                              onError={(e) => {
-                                // Replace video with placeholder on error
-                                const placeholder = document.createElement('div')
-                                placeholder.className = 'w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center'
-                                placeholder.innerHTML = '<svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>'
-                                e.currentTarget.parentNode?.replaceChild(placeholder, e.currentTarget)
-                              }}
-                            />
+                            <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
+                              <svg className="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                              </svg>
+                            </div>
                           ) : (
                             <img
                               src={firstMediaUrl}
@@ -1585,19 +1577,11 @@ function DashboardContent() {
                                   isHiddenOnDesktop && "sm:hidden"
                                 )}>
                                   {isVideo ? (
-                                    <video
-                                      src={url}
-                                      className={hasMany ? "w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg border border-gray-200" : "w-16 h-16 object-cover rounded-lg border border-gray-200"}
-                                      muted
-                                      preload="metadata"
-                                      onError={(e) => {
-                                        // Replace video with placeholder on error
-                                        const placeholder = document.createElement('div')
-                                        placeholder.className = hasMany ? 'w-12 h-12 sm:w-16 sm:h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center' : 'w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center'
-                                        placeholder.innerHTML = hasMany ? '<svg class="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>' : '<svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>'
-                                        e.currentTarget.parentNode?.replaceChild(placeholder, e.currentTarget)
-                                      }}
-                                    />
+                                    <div className={hasMany ? "w-12 h-12 sm:w-16 sm:h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center" : "w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center"}>
+                                      <svg className={hasMany ? "h-6 w-6 sm:h-8 sm:w-8 text-gray-400" : "h-8 w-8 text-gray-400"} fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                                      </svg>
+                                    </div>
                                   ) : (
                                     <img
                                       src={url}

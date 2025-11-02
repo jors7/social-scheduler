@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
+import { extractVideoThumbnail, isVideoFile } from '@/lib/utils/video-thumbnail'
 
 interface MediaItem {
   id: string
@@ -133,8 +134,27 @@ export function MediaPicker({
 
         // Get image dimensions if it's an image
         let dimensions: { width: number | null; height: number | null } = { width: null, height: null }
+        let thumbnailUrl: string | null = null
+
         if (file.type.startsWith('image/')) {
           dimensions = await getImageDimensions(file)
+        } else if (isVideoFile(file)) {
+          // Extract video thumbnail
+          const thumbnailFile = await extractVideoThumbnail(file)
+          if (thumbnailFile) {
+            // Upload thumbnail
+            const thumbFileName = `${user.id}/${Date.now()}_${Math.random().toString(36).substring(7)}_thumb.jpg`
+            const { error: thumbError } = await supabase.storage
+              .from('post-media')
+              .upload(thumbFileName, thumbnailFile)
+
+            if (!thumbError) {
+              const { data: { publicUrl: thumbUrl } } = supabase.storage
+                .from('post-media')
+                .getPublicUrl(thumbFileName)
+              thumbnailUrl = thumbUrl
+            }
+          }
         }
 
         // Save to media library
@@ -147,6 +167,7 @@ export function MediaPicker({
             file_size: file.size,
             mime_type: file.type,
             url: publicUrl,
+            thumbnail_url: thumbnailUrl,
             width: dimensions.width,
             height: dimensions.height,
             tags: []
@@ -310,8 +331,8 @@ export function MediaPicker({
                     key={item.id}
                     className={cn(
                       "relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all",
-                      selectedItems.has(item.url) 
-                        ? "border-primary ring-2 ring-primary ring-offset-2" 
+                      selectedItems.has(item.url)
+                        ? "border-primary ring-2 ring-primary ring-offset-2"
                         : "border-gray-200 hover:border-gray-300"
                     )}
                     onClick={() => handleSelect(item.url)}
@@ -323,13 +344,29 @@ export function MediaPicker({
                           alt={item.original_name}
                           className="w-full h-full object-cover"
                         />
+                      ) : item.thumbnail_url ? (
+                        <div className="relative w-full h-full">
+                          <img
+                            src={item.thumbnail_url}
+                            alt={item.original_name}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="bg-black/60 rounded-full p-2">
+                              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <video
-                            src={item.url}
-                            className="w-full h-full object-cover"
-                            muted
-                          />
+                          <div className="text-center">
+                            <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                            </svg>
+                            <p className="text-xs text-gray-500">Video</p>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -354,20 +391,31 @@ export function MediaPicker({
                     )}
                     onClick={() => handleSelect(item.url)}
                   >
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 relative">
                       {item.mime_type.startsWith('image/') ? (
                         <img
                           src={item.url}
                           alt={item.original_name}
                           className="w-12 h-12 object-cover rounded"
                         />
+                      ) : item.thumbnail_url ? (
+                        <>
+                          <img
+                            src={item.thumbnail_url}
+                            alt={item.original_name}
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <svg className="w-4 h-4 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                            </svg>
+                          </div>
+                        </>
                       ) : (
                         <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                          <video
-                            src={item.url}
-                            className="w-12 h-12 object-cover rounded"
-                            muted
-                          />
+                          <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                          </svg>
                         </div>
                       )}
                     </div>
