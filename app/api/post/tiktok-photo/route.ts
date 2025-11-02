@@ -78,11 +78,21 @@ export async function POST(request: NextRequest) {
         hasDescription: !!formattedDescription
       });
 
-      // Call photo posting method
+      // Convert photo URLs to use media proxy to avoid URL ownership verification issues
+      // TikTok requires domain ownership verification for PULL_FROM_URL
+      // Using our media proxy ensures the URLs are from a domain we control
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.socialcal.app';
+      const proxyPhotoUrls = photoUrls.map((url: string) =>
+        `${baseUrl}/api/media/proxy?url=${encodeURIComponent(url)}`
+      );
+
+      console.log('Using media proxy for photo URLs to avoid ownership verification issues');
+
+      // Call photo posting method with proxied URLs
       const result = await tiktokService.createPhotoPost(
         formattedTitle,
         formattedDescription,
-        photoUrls,
+        proxyPhotoUrls,
         photoCoverIndex || 0,
         privacyLevel || 'PUBLIC_TO_EVERYONE',
         {
