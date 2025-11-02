@@ -20,6 +20,7 @@ import {
   FileText
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getMediaUrl as extractMediaUrl, isVideoUrl } from '@/lib/utils/media'
 import { toast } from 'sonner'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 import { Pagination } from '@/components/ui/pagination'
@@ -568,7 +569,7 @@ export default function PostedPostsPage() {
                 const displayContent = getDisplayContent()
 
                 // Debug logging for Reel posts
-                if (post.platforms.includes('facebook') && post.media_urls?.some(url => url.includes('.mp4'))) {
+                if (post.platforms.includes('facebook') && post.media_urls?.some(media => isVideoUrl(extractMediaUrl(media)))) {
                   console.log('🎬 Facebook Reel detected:', {
                     postId: post.id,
                     platform_media_url: post.platform_media_url,

@@ -15,6 +15,7 @@ import {
   FileText
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getMediaUrl, getMediaThumbnail, isVideoUrl } from '@/lib/utils/media'
 
 type PostVariant = 'posted' | 'scheduled' | 'draft'
 
@@ -148,14 +149,25 @@ export function PostCard({
   const getImageUrl = () => {
     if (variant === 'posted') {
       const postedPost = post as PostedPost
-      return postedPost.platform_media_url || postedPost.media_urls?.[0]
+      // If platform_media_url exists, use it
+      if (postedPost.platform_media_url) return postedPost.platform_media_url
+      // Otherwise extract URL from media_urls (handles both string and object formats)
+      return getMediaUrl(postedPost.media_urls?.[0])
     }
     // For scheduled and draft posts, handle media_urls properly
     const mediaUrls = post.media_urls
     if (mediaUrls && Array.isArray(mediaUrls) && mediaUrls.length > 0) {
-      // Filter out any null/undefined values
-      const validUrl = mediaUrls.find(url => url && typeof url === 'string')
-      return validUrl || null
+      // Extract URL from first media item (handles both formats)
+      return getMediaUrl(mediaUrls[0])
+    }
+    return null
+  }
+
+  // Get video thumbnail if available (new format only)
+  const getVideoThumbnailUrl = () => {
+    const mediaUrls = post.media_urls
+    if (mediaUrls && Array.isArray(mediaUrls) && mediaUrls.length > 0) {
+      return getMediaThumbnail(mediaUrls[0])
     }
     return null
   }
@@ -241,6 +253,7 @@ export function PostCard({
   }
 
   const imageUrl = getImageUrl()
+  const videoThumbnail = getVideoThumbnailUrl()
   const displayContent = getDisplayContent()
   const status = getStatus()
   const timeUntil = variant === 'scheduled' ? formatScheduledDate((post as ScheduledPost).scheduled_for) : ''
@@ -250,12 +263,7 @@ export function PostCard({
   // Note: Pinterest video pins have image thumbnails, not video files
   const isVideo = imageUrl &&
     !post.platforms?.includes('pinterest') && // Don't treat Pinterest thumbnails as videos
-    (
-      imageUrl.includes('.mp4') ||
-      imageUrl.includes('.mov') ||
-      imageUrl.includes('.webm') ||
-      imageUrl.includes('.avi')
-    )
+    isVideoUrl(imageUrl)
 
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow group h-full flex flex-col">
@@ -263,20 +271,39 @@ export function PostCard({
       <div className="relative aspect-video bg-gray-100">
         {imageUrl ? (
           isVideo ? (
-            <video
-              src={imageUrl}
-              className="absolute inset-0 w-full h-full object-cover"
-              muted
-              preload="metadata"
-              onError={(e) => {
-                // Hide broken video and show placeholder instead
-                e.currentTarget.style.display = 'none'
-                const placeholder = e.currentTarget.nextElementSibling
-                if (placeholder) {
-                  (placeholder as HTMLElement).style.display = 'flex'
-                }
-              }}
-            />
+            videoThumbnail ? (
+              <div className="relative w-full h-full">
+                <img
+                  src={videoThumbnail}
+                  alt="Video thumbnail"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={(e) => {
+                    // Hide broken thumbnail and show placeholder instead
+                    e.currentTarget.style.display = 'none'
+                  }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="bg-black/60 rounded-full p-3">
+                    <Play className="w-6 h-6 text-white fill-white" />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <video
+                src={imageUrl}
+                className="absolute inset-0 w-full h-full object-cover"
+                muted
+                preload="metadata"
+                onError={(e) => {
+                  // Hide broken video and show placeholder instead
+                  e.currentTarget.style.display = 'none'
+                  const placeholder = e.currentTarget.nextElementSibling
+                  if (placeholder) {
+                    (placeholder as HTMLElement).style.display = 'flex'
+                  }
+                }}
+              />
+            )
           ) : (
             <img
               src={imageUrl}

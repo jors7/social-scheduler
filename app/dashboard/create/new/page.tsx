@@ -3702,7 +3702,10 @@ function CreateNewPostPageContent() {
                     (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) &&
                       !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()) &&
                       !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
-                      !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(url => url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')))) &&
+                      !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(media => {
+                        const url = getMediaUrl(media)
+                        return url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.avi'))
+                      }))) &&
                       !(selectedPlatforms.includes('instagram') && instagramAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
                       !(selectedPlatforms.includes('facebook') && facebookAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
                       !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && facebookAsReel && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
