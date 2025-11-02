@@ -460,7 +460,7 @@ export class TikTokService {
       // Build request body
       const requestBody: any = {
         media_type: 'PHOTO',
-        post_mode: 'DIRECT_POST', // Use DIRECT_POST for immediate posting
+        post_mode: isDraft ? 'MEDIA_UPLOAD' : 'DIRECT_POST', // Use MEDIA_UPLOAD for drafts, DIRECT_POST for immediate posting
         post_info: {
           title: title.substring(0, 150), // Max 150 chars for photos
           description: description.substring(0, 4000), // Max 4000 chars
