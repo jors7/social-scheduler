@@ -254,14 +254,7 @@ export function TikTokVideoSettings({
           promotionalContent={promotionalContent}
           onPromotionalChange={setPromotionalContent}
           brandedContent={brandedContent}
-          onBrandedChange={(checked) => {
-            // Prevent branded content with private visibility
-            if (checked && privacyLevel === 'SELF_ONLY') {
-              // Don't allow enabling
-              return
-            }
-            setBrandedContent(checked)
-          }}
+          onBrandedChange={setBrandedContent}
           privacyLevel={privacyLevel}
         />
 
