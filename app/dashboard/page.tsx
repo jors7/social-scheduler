@@ -111,7 +111,7 @@ function AuthSuccessHandler() {
 function DashboardContent() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentPosts, setRecentPosts] = useState<PostData[]>([])
-  const [upcomingSchedule, setUpcomingSchedule] = useState<{date: string, posts: number, platforms: string[], dateObj: Date, media_urls: string[], postGroups: string[][]}[]>([])
+  const [upcomingSchedule, setUpcomingSchedule] = useState<{date: string, posts: number, platforms: string[], dateObj: Date, media_urls: any[], postGroups: string[][]}[]>([])
   const [loading, setLoading] = useState(true)
   const [usageLoading, setUsageLoading] = useState(true)
   const [postsLoading, setPostsLoading] = useState(true)
@@ -404,15 +404,15 @@ function DashboardContent() {
         new Date(p.scheduled_for) > now  // Only show future posts
       )
       
-      const scheduleMap = new Map<string, { count: number, platforms: Set<string>, dateObj: Date, media_urls: string[], postGroups: string[][] }>()
+      const scheduleMap = new Map<string, { count: number, platforms: Set<string>, dateObj: Date, media_urls: any[], postGroups: string[][] }>()
       const today = new Date()
       const tomorrow = new Date(today)
       tomorrow.setDate(tomorrow.getDate() + 1)
-      
+
       upcomingPosts.forEach((post: PostData) => {
         const postDate = new Date(post.scheduled_for!)
         let dateKey: string
-        
+
         // Only show as "Today" if the scheduled time hasn't passed yet
         if (postDate.toDateString() === today.toDateString() && postDate > now) {
           dateKey = 'Today'
@@ -421,28 +421,30 @@ function DashboardContent() {
         } else {
           dateKey = postDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         }
-        
+
         const existing = scheduleMap.get(dateKey) || { count: 0, platforms: new Set<string>(), dateObj: postDate, media_urls: [], postGroups: [] }
         existing.count += 1
         post.platforms.forEach(platform => existing.platforms.add(platform))
-        
+
         // Add this post's platforms as a group
         existing.postGroups.push(post.platforms)
-        
-        // Collect media URLs (up to 3 per day)
+
+        // Collect media (up to 3 per day) - preserve full objects with thumbnails
         if (existing.media_urls.length < 3 && post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
           const firstMedia = post.media_urls[0]
-          let mediaUrl: string | null = null
           if (typeof firstMedia === 'string') {
-            mediaUrl = firstMedia
+            // Old format: just a string URL
+            if (!existing.media_urls.some((m: any) => (typeof m === 'string' ? m : m.url) === firstMedia)) {
+              existing.media_urls.push(firstMedia)
+            }
           } else if (firstMedia && typeof firstMedia === 'object' && firstMedia.url) {
-            mediaUrl = firstMedia.url
-          }
-          if (mediaUrl && !existing.media_urls.includes(mediaUrl)) {
-            existing.media_urls.push(mediaUrl)
+            // New format: object with url and possibly thumbnailUrl
+            if (!existing.media_urls.some((m: any) => (typeof m === 'string' ? m : m.url) === firstMedia.url)) {
+              existing.media_urls.push(firstMedia)
+            }
           }
         }
-        
+
         scheduleMap.set(dateKey, existing)
       })
       
@@ -1324,6 +1326,19 @@ function DashboardContent() {
 
                   const firstMediaUrl = getMediaUrl()
 
+                  // Check if media_urls contains objects with thumbnailUrl
+                  const getVideoThumbnail = () => {
+                    if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
+                      const firstMedia = post.media_urls[0]
+                      if (firstMedia && typeof firstMedia === 'object' && firstMedia.thumbnailUrl) {
+                        return firstMedia.thumbnailUrl
+                      }
+                    }
+                    return null
+                  }
+
+                  const videoThumbnail = getVideoThumbnail()
+
                   // Check if we have an image thumbnail (for all platforms including YouTube)
                   const hasImageThumbnail = firstMediaUrl && (
                     firstMediaUrl.includes('.jpg') ||
@@ -1474,11 +1489,35 @@ function DashboardContent() {
                       <div className="ml-3 flex-shrink-0">
                         {firstMediaUrl ? (
                           isVideo ? (
-                            <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
-                              <svg className="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-                              </svg>
-                            </div>
+                            videoThumbnail ? (
+                              <div className="relative w-16 h-16">
+                                <img
+                                  src={videoThumbnail}
+                                  alt="Video thumbnail"
+                                  className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                                  onError={(e) => {
+                                    // Replace with video icon on error
+                                    const placeholder = document.createElement('div')
+                                    placeholder.className = 'w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center'
+                                    placeholder.innerHTML = '<svg class="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"></path></svg>'
+                                    e.currentTarget.parentNode?.replaceChild(placeholder, e.currentTarget)
+                                  }}
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                  <div className="bg-black/60 rounded-full p-1.5">
+                                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
+                                <svg className="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                                </svg>
+                              </div>
+                            )
                           ) : (
                             <img
                               src={firstMediaUrl}
@@ -1565,7 +1604,11 @@ function DashboardContent() {
                         {day.media_urls.length > 0 && (
                           <div className="flex gap-1">
                             {/* Show more thumbnails on mobile (4) than desktop (2) for hasMany */}
-                            {(hasMany ? day.media_urls.slice(0, mobileLimit) : day.media_urls).map((url, index) => {
+                            {(hasMany ? day.media_urls.slice(0, mobileLimit) : day.media_urls).map((media, index) => {
+                              // Handle both string and object formats
+                              const url = typeof media === 'string' ? media : media.url
+                              const thumbnailUrl = typeof media === 'object' && media.thumbnailUrl ? media.thumbnailUrl : null
+
                               // Check if this is a video URL
                               const isVideo = url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') || url.includes('.avi'))
                               // Hide thumbnails 3 and 4 on desktop (index 2 and 3)
@@ -1577,11 +1620,35 @@ function DashboardContent() {
                                   isHiddenOnDesktop && "sm:hidden"
                                 )}>
                                   {isVideo ? (
-                                    <div className={hasMany ? "w-12 h-12 sm:w-16 sm:h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center" : "w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center"}>
-                                      <svg className={hasMany ? "h-6 w-6 sm:h-8 sm:w-8 text-gray-400" : "h-8 w-8 text-gray-400"} fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-                                      </svg>
-                                    </div>
+                                    thumbnailUrl ? (
+                                      <div className={cn("relative", hasMany ? "w-12 h-12 sm:w-16 sm:h-16" : "w-16 h-16")}>
+                                        <img
+                                          src={thumbnailUrl}
+                                          alt="Video thumbnail"
+                                          className={hasMany ? "w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg border border-gray-200" : "w-16 h-16 object-cover rounded-lg border border-gray-200"}
+                                          onError={(e) => {
+                                            // Replace with video icon on error
+                                            const placeholder = document.createElement('div')
+                                            placeholder.className = hasMany ? 'w-12 h-12 sm:w-16 sm:h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center' : 'w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center'
+                                            placeholder.innerHTML = hasMany ? '<svg class="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"></path></svg>' : '<svg class="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"></path></svg>'
+                                            e.currentTarget.parentNode?.replaceChild(placeholder, e.currentTarget)
+                                          }}
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                          <div className="bg-black/60 rounded-full p-1">
+                                            <svg className={hasMany ? "w-3 h-3 sm:w-4 sm:h-4 text-white" : "w-4 h-4 text-white"} fill="currentColor" viewBox="0 0 20 20">
+                                              <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                                            </svg>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className={hasMany ? "w-12 h-12 sm:w-16 sm:h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center" : "w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center"}>
+                                        <svg className={hasMany ? "h-6 w-6 sm:h-8 sm:w-8 text-gray-400" : "h-8 w-8 text-gray-400"} fill="currentColor" viewBox="0 0 20 20">
+                                          <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                                        </svg>
+                                      </div>
+                                    )
                                   ) : (
                                     <img
                                       src={url}

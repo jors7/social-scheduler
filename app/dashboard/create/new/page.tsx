@@ -61,6 +61,7 @@ import {
   GripVertical
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { extractVideoThumbnail, isVideoFile } from '@/lib/utils/video-thumbnail'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import {
@@ -568,7 +569,7 @@ function CreateNewPostPageContent() {
   }
 
   // Upload files immediately when selected (for autosave functionality)
-  const uploadFilesImmediately = async (files: File[]): Promise<string[]> => {
+  const uploadFilesImmediately = async (files: File[]): Promise<any[]> => {
     if (files.length === 0) return []
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -596,7 +597,7 @@ function CreateNewPostPageContent() {
       }
     }
 
-    const uploadedUrls: string[] = []
+    const uploadedUrls: any[] = []
     const hasVideos = files.some(file => file.type.startsWith('video/'))
 
     toast.info(`Uploading ${files.length} file(s)...`, { duration: 2000 })
@@ -625,7 +626,46 @@ function CreateNewPostPageContent() {
           .from('post-media')
           .getPublicUrl(fileName)
 
-        uploadedUrls.push(publicUrl)
+        // Check if this is a video file and extract thumbnail
+        if (isVideoFile(file)) {
+          let thumbnailUrl: string | null = null
+
+          try {
+            const thumbnailFile = await extractVideoThumbnail(file)
+            if (thumbnailFile) {
+              // Upload thumbnail
+              const thumbFileName = `${user.id}/${timestamp}-${randomString}_thumb.jpg`
+              const { error: thumbError } = await supabase.storage
+                .from('post-media')
+                .upload(thumbFileName, thumbnailFile)
+
+              if (!thumbError) {
+                const { data: { publicUrl: thumbUrl } } = supabase.storage
+                  .from('post-media')
+                  .getPublicUrl(thumbFileName)
+                thumbnailUrl = thumbUrl
+              }
+            }
+          } catch (thumbError) {
+            console.error('Failed to extract video thumbnail:', thumbError)
+            // Continue without thumbnail
+          }
+
+          // Store as object with thumbnail
+          uploadedUrls.push({
+            url: publicUrl,
+            thumbnailUrl: thumbnailUrl,
+            type: 'video',
+            mimeType: file.type
+          })
+        } else {
+          // Store as object for images
+          uploadedUrls.push({
+            url: publicUrl,
+            type: 'image',
+            mimeType: file.type
+          })
+        }
       } catch (error) {
         console.error('Upload error for file:', file.name, error)
         toast.error(`Failed to upload ${file.name}`)
