@@ -210,6 +210,7 @@ function CreateNewPostPageContent() {
   const [isPosting, setIsPosting] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploadedMediaUrls, setUploadedMediaUrls] = useState<string[]>([])
+  const [uploadedMediaTypes, setUploadedMediaTypes] = useState<string[]>([])
   const [loadingDraft, setLoadingDraft] = useState(false)
   const [editingScheduledPost, setEditingScheduledPost] = useState(false)
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
@@ -1278,6 +1279,7 @@ function CreateNewPostPageContent() {
             setSelectedPlatforms([])
             setSelectedFiles([])
             setUploadedMediaUrls([])
+            setUploadedMediaTypes([])
             setYoutubeVideoFile(null)
             setYoutubeThumbnailFile(null)
             setYoutubeTitle('')
@@ -1900,6 +1902,7 @@ function CreateNewPostPageContent() {
         setSelectedPlatforms([])
         setSelectedFiles([])
         setUploadedMediaUrls([])
+        setUploadedMediaTypes([])
         setCurrentDraftId(null)
       }
 
@@ -2391,6 +2394,7 @@ function CreateNewPostPageContent() {
             setSelectedPlatforms([])
             setSelectedFiles([])
             setUploadedMediaUrls([])
+            setUploadedMediaTypes([])
             setScheduledDate('')
             setScheduledTime('')
             setYoutubeVideoFile(null)
@@ -2513,6 +2517,7 @@ function CreateNewPostPageContent() {
       setSelectedPlatforms([])
       setSelectedFiles([])
       setUploadedMediaUrls([])
+      setUploadedMediaTypes([])
       setScheduledDate('')
       setScheduledTime('')
       setCurrentDraftId(null)
@@ -2601,6 +2606,7 @@ function CreateNewPostPageContent() {
       setSelectedPlatforms([])
       setSelectedFiles([])
       setUploadedMediaUrls([])
+      setUploadedMediaTypes([])
       setCurrentDraftId(null)
       
       // Redirect to drafts page
@@ -2652,6 +2658,8 @@ function CreateNewPostPageContent() {
     if (newUrls.length > 0) {
       // Add new URLs to existing uploaded media URLs
       setUploadedMediaUrls(prev => [...prev, ...newUrls])
+      // Track the types of uploaded media
+      setUploadedMediaTypes(prev => [...prev, ...validFiles.map(f => f.type)])
       // Clear selectedFiles since we have uploaded URLs now
       setSelectedFiles([])
     } else {
@@ -2664,6 +2672,7 @@ function CreateNewPostPageContent() {
     // Remove from uploadedMediaUrls if using that, otherwise from selectedFiles
     if (uploadedMediaUrls.length > 0) {
       setUploadedMediaUrls(prev => prev.filter((_, i) => i !== index))
+      setUploadedMediaTypes(prev => prev.filter((_, i) => i !== index))
       toast.info('Media removed from post')
     } else {
       setSelectedFiles(prev => prev.filter((_, i) => i !== index))
@@ -4157,7 +4166,7 @@ function CreateNewPostPageContent() {
                   setPromotionalContent={setTiktokPromotionalContent}
                   brandedContent={tiktokBrandedContent}
                   setBrandedContent={setTiktokBrandedContent}
-                  isPhotoPost={selectedFiles.some(f => f.type.startsWith('image/')) && !selectedFiles.some(f => f.type.startsWith('video/'))}
+                  isPhotoPost={uploadedMediaTypes.some(type => type.startsWith('image/')) && !uploadedMediaTypes.some(type => type.startsWith('video/'))}
                 />
               </div>
             )}
