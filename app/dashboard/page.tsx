@@ -1621,30 +1621,28 @@ function DashboardContent() {
                                 )}>
                                   {isVideo ? (
                                     thumbnailUrl ? (
-                                      <div className={cn("relative", hasMany ? "w-12 h-12 sm:w-16 sm:h-16" : "w-16 h-16")}>
+                                      <div className="relative w-16 h-16">
                                         <img
                                           src={thumbnailUrl}
                                           alt="Video thumbnail"
-                                          className={hasMany ? "w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg border border-gray-200" : "w-16 h-16 object-cover rounded-lg border border-gray-200"}
+                                          loading="lazy"
+                                          className="w-16 h-16 object-cover rounded-lg border border-gray-200"
                                           onError={(e) => {
-                                            // Replace with video icon on error
-                                            const placeholder = document.createElement('div')
-                                            placeholder.className = hasMany ? 'w-12 h-12 sm:w-16 sm:h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center' : 'w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center'
-                                            placeholder.innerHTML = hasMany ? '<svg class="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"></path></svg>' : '<svg class="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"></path></svg>'
-                                            e.currentTarget.parentNode?.replaceChild(placeholder, e.currentTarget)
+                                            // Hide image and show fallback container instead
+                                            e.currentTarget.style.display = 'none'
                                           }}
                                         />
                                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                           <div className="bg-black/60 rounded-full p-1">
-                                            <svg className={hasMany ? "w-3 h-3 sm:w-4 sm:h-4 text-white" : "w-4 h-4 text-white"} fill="currentColor" viewBox="0 0 20 20">
+                                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                                               <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
                                             </svg>
                                           </div>
                                         </div>
                                       </div>
                                     ) : (
-                                      <div className={hasMany ? "w-12 h-12 sm:w-16 sm:h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center" : "w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center"}>
-                                        <svg className={hasMany ? "h-6 w-6 sm:h-8 sm:w-8 text-gray-400" : "h-8 w-8 text-gray-400"} fill="currentColor" viewBox="0 0 20 20">
+                                      <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
+                                        <svg className="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                                           <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
                                         </svg>
                                       </div>
@@ -1653,13 +1651,11 @@ function DashboardContent() {
                                     <img
                                       src={url}
                                       alt="Scheduled post media"
-                                      className={hasMany ? "w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg border border-gray-200" : "w-16 h-16 object-cover rounded-lg border border-gray-200"}
+                                      loading="lazy"
+                                      className="w-16 h-16 object-cover rounded-lg border border-gray-200"
                                       onError={(e) => {
-                                        // Replace image with placeholder on error
-                                        const placeholder = document.createElement('div')
-                                        placeholder.className = hasMany ? 'w-12 h-12 sm:w-16 sm:h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center' : 'w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center'
-                                        placeholder.innerHTML = hasMany ? '<svg class="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>' : '<svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>'
-                                        e.currentTarget.parentNode?.replaceChild(placeholder, e.currentTarget)
+                                        // Hide image on error (shows empty space which is better than broken image)
+                                        e.currentTarget.style.display = 'none'
                                       }}
                                     />
                                   )}
