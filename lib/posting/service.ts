@@ -15,7 +15,15 @@ export interface PostData {
   pinterestTitle?: string; // Pinterest specific - pin title
   pinterestDescription?: string; // Pinterest specific - pin description
   pinterestLink?: string; // Pinterest specific - destination URL
-  tiktokPrivacyLevel?: 'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY'; // TikTok specific - privacy/draft setting
+  // TikTok specific settings - Updated for audit compliance
+  tiktokTitle?: string; // TikTok specific - separate title field
+  tiktokPrivacyLevel?: 'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY' | ''; // TikTok specific - privacy level (no default)
+  tiktokAllowComment?: boolean; // TikTok specific - allow comments (default: false)
+  tiktokAllowDuet?: boolean; // TikTok specific - allow duet (default: false)
+  tiktokAllowStitch?: boolean; // TikTok specific - allow stitch (default: false)
+  tiktokBrandContentToggle?: boolean; // TikTok specific - branded content (paid partnership)
+  tiktokBrandOrganicToggle?: boolean; // TikTok specific - promotional content (your brand)
+  tiktokPhotoCoverIndex?: number; // TikTok specific - photo cover index for photo posts (0-based, default: 0)
   instagramAsStory?: boolean; // Instagram specific - post as story instead of feed post
   instagramAsReel?: boolean; // Instagram specific - post as reel instead of feed post
   facebookAsStory?: boolean; // Facebook specific - post as story instead of feed post
@@ -53,12 +61,14 @@ export interface PostResult {
 
 export class PostingService {
   private supabase;
+  private postData: PostData; // Store postData for access in private methods
 
   constructor() {
     this.supabase = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
+    this.postData = {} as PostData; // Initialize empty
   }
 
   async postToMultiplePlatforms(
@@ -66,6 +76,8 @@ export class PostingService {
     onProgress?: (platform: string, status: string) => void,
     progressTracker?: PostingProgressTracker
   ): Promise<PostResult[]> {
+    // Store postData for use in private methods
+    this.postData = postData;
     const results: PostResult[] = [];
 
     // Get user's connected accounts
@@ -615,65 +627,141 @@ export class PostingService {
 
   private async postToTikTok(content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
     try {
-      // TikTok requires a video
+      // TikTok requires a video or photo
       if (!mediaUrls || mediaUrls.length === 0) {
-        throw new Error('TikTok requires a video to post');
+        throw new Error('TikTok requires a video or photo to post');
       }
 
-      // Use the first media URL as the video
-      const videoUrl = mediaUrls[0];
-      
-      console.log('Sending video URL to TikTok API:', videoUrl);
+      // Extract TikTok settings from postData - Updated for audit compliance
+      const {
+        tiktokTitle,
+        tiktokPrivacyLevel,
+        tiktokAllowComment,
+        tiktokAllowDuet,
+        tiktokAllowStitch,
+        tiktokBrandContentToggle,
+        tiktokBrandOrganicToggle,
+        tiktokPhotoCoverIndex
+      } = this.postData;
 
-      // Use privacy level from account (passed from postData) or default to public
-      const privacyLevel = account.tiktok_privacy_level || 'PUBLIC_TO_EVERYONE';
+      // Use privacy level from postData (required field, no default)
+      const privacyLevel = tiktokPrivacyLevel || 'PUBLIC_TO_EVERYONE';
       const isDraft = privacyLevel === 'SELF_ONLY';
 
-      const response = await fetch('/api/post/tiktok', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          accessToken: account.access_token,
-          content: content,
-          videoUrl: videoUrl,
-          privacyLevel: privacyLevel,
-          options: {
-            allowComment: !isDraft,
-            allowDuet: !isDraft,
-            allowStitch: !isDraft,
-            allowDownload: !isDraft,
-          }
-        }),
+      // Use title if provided, otherwise fall back to content
+      const postTitle = tiktokTitle || content;
+
+      // Detect if we're posting photos or video
+      const imageExtensions = /\.(jpg|jpeg|png|gif|webp)$/i;
+      const videoExtensions = /\.(mp4|mov|avi|wmv|flv|mkv)$/i;
+
+      const photoUrls = mediaUrls.filter(url => imageExtensions.test(url));
+      const videoUrls = mediaUrls.filter(url => videoExtensions.test(url));
+
+      const isPhotoPost = photoUrls.length > 0 && videoUrls.length === 0;
+
+      console.log('TikTok posting:', {
+        isPhotoPost,
+        photoCount: photoUrls.length,
+        videoCount: videoUrls.length
       });
 
-      const data = await response.json();
+      // Route to appropriate endpoint based on media type
+      if (isPhotoPost) {
+        // Photo post - call photo API endpoint
+        const response = await fetch('/api/post/tiktok-photo', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            accessToken: account.access_token,
+            title: postTitle,
+            description: content, // Full content as description
+            photoUrls: photoUrls,
+            photoCoverIndex: tiktokPhotoCoverIndex || 0,
+            privacyLevel: privacyLevel,
+            options: {
+              // Interaction settings - Photos only support comments
+              disableComment: !tiktokAllowComment,
+              autoAddMusic: false, // User can enable this in future
+              // Commercial content disclosure - REQUIRED by TikTok API
+              brandContentToggle: tiktokBrandContentToggle || false,
+              brandOrganicToggle: tiktokBrandOrganicToggle || false,
+            }
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error(data.error || 'TikTok posting failed');
-      }
+        const data = await response.json();
 
-      // Check if this is a draft posting (sandbox/unaudited mode)
-      if (data.sandbox && isDraft) {
-        // Draft posting is intentional and successful
+        if (!response.ok) {
+          throw new Error(data.error || 'TikTok photo posting failed');
+        }
+
         return {
           platform: 'tiktok',
           success: true,
           postId: data.publishId,
           data: {
             id: data.publishId,
-            isDraft: true,
-            message: 'Video saved as draft in your TikTok app'
+            isDraft: isDraft,
+            message: data.message || `Photo post ${isDraft ? 'saved as draft' : 'uploaded'} to TikTok`
           }
         };
-      }
+      } else {
+        // Video post - use existing video endpoint
+        const videoUrl = videoUrls[0] || mediaUrls[0];
 
-      return {
-        platform: 'tiktok',
-        success: true,
-        postId: data.publishId,
-      };
+        console.log('Sending video URL to TikTok API:', videoUrl);
+
+        const response = await fetch('/api/post/tiktok', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            accessToken: account.access_token,
+            content: postTitle, // Use title or content
+            videoUrl: videoUrl,
+            privacyLevel: privacyLevel,
+            options: {
+              // Interaction settings - Use values from postData (all default to false)
+              disableComment: !tiktokAllowComment, // Invert: allow -> disable
+              disableDuet: !tiktokAllowDuet,
+              disableStitch: !tiktokAllowStitch,
+              // Commercial content disclosure - REQUIRED by TikTok API
+              brandContentToggle: tiktokBrandContentToggle || false,
+              brandOrganicToggle: tiktokBrandOrganicToggle || false,
+            }
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'TikTok posting failed');
+        }
+
+        // Check if this is a draft posting (sandbox/unaudited mode)
+        if (data.sandbox && isDraft) {
+          return {
+            platform: 'tiktok',
+            success: true,
+            postId: data.publishId,
+            data: {
+              id: data.publishId,
+              isDraft: true,
+              message: 'Video saved as draft in your TikTok app'
+            }
+          };
+        }
+
+        return {
+          platform: 'tiktok',
+          success: true,
+          postId: data.publishId,
+        };
+      }
     } catch (error) {
       return {
         platform: 'tiktok',

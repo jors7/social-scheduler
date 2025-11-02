@@ -453,9 +453,16 @@ function CreateNewPostPageContent() {
     return urls
   }, [youtubeThumbnailFile, youtubeVideoThumbnail])
 
-  // TikTok states
-  const [tiktokPrivacyLevel, setTiktokPrivacyLevel] = useState<'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY'>('PUBLIC_TO_EVERYONE')
-  const [tiktokSaveAsDraft, setTiktokSaveAsDraft] = useState(false)
+  // TikTok states - Updated for TikTok audit compliance
+  const [tiktokTitle, setTiktokTitle] = useState('')
+  const [tiktokPrivacyLevel, setTiktokPrivacyLevel] = useState<'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY' | ''>('') // NO default - user must select
+  const [tiktokAllowComment, setTiktokAllowComment] = useState(false)
+  const [tiktokAllowDuet, setTiktokAllowDuet] = useState(false)
+  const [tiktokAllowStitch, setTiktokAllowStitch] = useState(false)
+  const [tiktokContentDisclosure, setTiktokContentDisclosure] = useState(false)
+  const [tiktokPromotionalContent, setTiktokPromotionalContent] = useState(false)
+  const [tiktokBrandedContent, setTiktokBrandedContent] = useState(false)
+  const [tiktokPhotoCoverIndex, setTiktokPhotoCoverIndex] = useState(0) // Photo cover index for photo posts
 
   // Auto-save hook - automatically saves draft every 30 seconds
   const { lastSaved, isSaving, error: autoSaveError, timeAgo, currentDraftId: autoSaveDraftId } = useAutoSave(
@@ -1007,10 +1014,32 @@ function CreateNewPostPageContent() {
       }
     }
     
-    // TikTok-specific validation
+    // TikTok-specific validation - Updated for TikTok audit compliance
     if (selectedPlatforms.includes('tiktok')) {
-      if (!hasVideoFiles) {
-        toast.error('TikTok requires a video file')
+      const hasImageFiles = selectedFiles.some(f => f.type.startsWith('image/')) || uploadedMediaUrls.some(url => url.match(/\.(jpg|jpeg|png|gif|webp)$/i))
+      const hasVideoFiles = selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(url => url.match(/\.(mp4|mov|avi|wmv|flv|mkv)$/i))
+
+      // TikTok requires either video or photo
+      if (!hasVideoFiles && !hasImageFiles) {
+        toast.error('TikTok requires at least one video or photo')
+        return
+      }
+
+      // Privacy level is REQUIRED (no default allowed)
+      if (!tiktokPrivacyLevel) {
+        toast.error('Please select a privacy level for TikTok')
+        return
+      }
+
+      // Commercial content disclosure validation
+      if (tiktokContentDisclosure && !tiktokPromotionalContent && !tiktokBrandedContent) {
+        toast.error('TikTok: Please select at least one commercial content option or disable content disclosure')
+        return
+      }
+
+      // Branded content cannot be private
+      if (tiktokBrandedContent && tiktokPrivacyLevel === 'SELF_ONLY') {
+        toast.error('TikTok: Branded content cannot be posted with private visibility. Please select Public or Friends.')
         return
       }
     }
@@ -1668,7 +1697,15 @@ function CreateNewPostPageContent() {
         pinterestTitle: pinterestTitle || undefined,
         pinterestDescription: pinterestDescription || undefined,
         pinterestLink: pinterestLink || undefined,
-        tiktokPrivacyLevel: selectedPlatforms.includes('tiktok') ? (tiktokSaveAsDraft ? 'SELF_ONLY' : tiktokPrivacyLevel) : undefined,
+        // TikTok settings - Updated for audit compliance
+        tiktokTitle: selectedPlatforms.includes('tiktok') ? tiktokTitle : undefined,
+        tiktokPrivacyLevel: selectedPlatforms.includes('tiktok') ? tiktokPrivacyLevel : undefined,
+        tiktokAllowComment: selectedPlatforms.includes('tiktok') ? tiktokAllowComment : undefined,
+        tiktokAllowDuet: selectedPlatforms.includes('tiktok') ? tiktokAllowDuet : undefined,
+        tiktokAllowStitch: selectedPlatforms.includes('tiktok') ? tiktokAllowStitch : undefined,
+        tiktokBrandContentToggle: selectedPlatforms.includes('tiktok') ? tiktokBrandedContent : undefined,
+        tiktokBrandOrganicToggle: selectedPlatforms.includes('tiktok') ? tiktokPromotionalContent : undefined,
+        tiktokPhotoCoverIndex: selectedPlatforms.includes('tiktok') ? tiktokPhotoCoverIndex : undefined,
         instagramAsStory: selectedPlatforms.includes('instagram') ? instagramAsStory : undefined,
         instagramAsReel: selectedPlatforms.includes('instagram') ? instagramAsReel : undefined,
         facebookAsStory: selectedPlatforms.includes('facebook') ? facebookAsStory : undefined,
@@ -1875,11 +1912,13 @@ function CreateNewPostPageContent() {
       clearTimeout(timeoutId)
       setIsPosting(false)
     }
-  }, [selectedPlatforms, postContent, platformContent, selectedFiles, uploadedMediaUrls, currentDraftId, 
+  }, [selectedPlatforms, postContent, platformContent, selectedFiles, uploadedMediaUrls, currentDraftId,
       youtubeVideoFile, youtubeTitle, youtubeDescription, youtubeTags, youtubeCategoryId, youtubePrivacyStatus, youtubeThumbnailFile,
       twitterMode, twitterThreadPosts, twitterThreadMedia,
       selectedPinterestBoard, pinterestTitle, pinterestDescription, pinterestLink,
-      tiktokPrivacyLevel, tiktokSaveAsDraft, instagramAsStory, threadPosts, threadsMode, threadsThreadMedia,
+      tiktokTitle, tiktokPrivacyLevel, tiktokAllowComment, tiktokAllowDuet, tiktokAllowStitch,
+      tiktokContentDisclosure, tiktokPromotionalContent, tiktokBrandedContent, tiktokPhotoCoverIndex,
+      instagramAsStory, threadPosts, threadsMode, threadsThreadMedia,
       supabase, selectedAccounts, uploadFiles])
 
   const handleSchedulePost = async () => {
@@ -2151,10 +2190,32 @@ function CreateNewPostPageContent() {
       }
     }
     
-    // TikTok-specific validation
+    // TikTok-specific validation - Updated for TikTok audit compliance
     if (selectedPlatforms.includes('tiktok')) {
-      if (!hasVideoFiles) {
-        toast.error('TikTok requires a video file')
+      const hasImageFiles = selectedFiles.some(f => f.type.startsWith('image/')) || uploadedMediaUrls.some(url => url.match(/\.(jpg|jpeg|png|gif|webp)$/i))
+      const hasVideoFiles = selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(url => url.match(/\.(mp4|mov|avi|wmv|flv|mkv)$/i))
+
+      // TikTok requires either video or photo
+      if (!hasVideoFiles && !hasImageFiles) {
+        toast.error('TikTok requires at least one video or photo')
+        return
+      }
+
+      // Privacy level is REQUIRED (no default allowed)
+      if (!tiktokPrivacyLevel) {
+        toast.error('Please select a privacy level for TikTok')
+        return
+      }
+
+      // Commercial content disclosure validation
+      if (tiktokContentDisclosure && !tiktokPromotionalContent && !tiktokBrandedContent) {
+        toast.error('TikTok: Please select at least one commercial content option or disable content disclosure')
+        return
+      }
+
+      // Branded content cannot be private
+      if (tiktokBrandedContent && tiktokPrivacyLevel === 'SELF_ONLY') {
+        toast.error('TikTok: Branded content cannot be posted with private visibility. Please select Public or Friends.')
         return
       }
     }
@@ -4080,10 +4141,23 @@ function CreateNewPostPageContent() {
             {selectedPlatforms.includes('tiktok') && (
               <div className="mt-6">
                 <TikTokVideoSettings
+                  title={tiktokTitle}
+                  setTitle={setTiktokTitle}
                   privacyLevel={tiktokPrivacyLevel}
-                  setPrivacyLevel={setTiktokPrivacyLevel}
-                  saveAsDraft={tiktokSaveAsDraft}
-                  setSaveAsDraft={setTiktokSaveAsDraft}
+                  setPrivacyLevel={setTiktokPrivacyLevel as any}
+                  allowComment={tiktokAllowComment}
+                  setAllowComment={setTiktokAllowComment}
+                  allowDuet={tiktokAllowDuet}
+                  setAllowDuet={setTiktokAllowDuet}
+                  allowStitch={tiktokAllowStitch}
+                  setAllowStitch={setTiktokAllowStitch}
+                  contentDisclosureEnabled={tiktokContentDisclosure}
+                  setContentDisclosureEnabled={setTiktokContentDisclosure}
+                  promotionalContent={tiktokPromotionalContent}
+                  setPromotionalContent={setTiktokPromotionalContent}
+                  brandedContent={tiktokBrandedContent}
+                  setBrandedContent={setTiktokBrandedContent}
+                  isPhotoPost={selectedFiles.some(f => f.type.startsWith('image/')) && !selectedFiles.some(f => f.type.startsWith('video/'))}
                 />
               </div>
             )}

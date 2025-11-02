@@ -5,6 +5,8 @@ import { cookies } from 'next/headers';
 const TIKTOK_DIRECT_POST_URL = 'https://open.tiktokapis.com/v2/post/publish/video/init/';
 // Use inbox endpoint for drafts
 const TIKTOK_INBOX_URL = 'https://open.tiktokapis.com/v2/post/publish/inbox/video/init/';
+// Photo posting endpoint (supports both direct post and upload modes)
+const TIKTOK_PHOTO_POST_URL = 'https://open.tiktokapis.com/v2/post/publish/content/init/';
 const TIKTOK_USER_INFO_URL = 'https://open.tiktokapis.com/v2/user/info/';
 const TIKTOK_STATUS_URL = 'https://open.tiktokapis.com/v2/post/publish/status/fetch/';
 
@@ -77,6 +79,8 @@ export class TikTokService {
       allowStitch?: boolean;
       allowDownload?: boolean;
       videoCoverTimestamp?: number;
+      brandContentToggle?: boolean;
+      brandOrganicToggle?: boolean;
     }
   ) {
     try {
@@ -121,6 +125,9 @@ export class TikTokService {
           disable_duet: options?.disableDuet || false,
           disable_stitch: options?.disableStitch || false,
           video_cover_timestamp_ms: options?.videoCoverTimestamp || 1000,
+          // Commercial content disclosure (REQUIRED by TikTok)
+          brand_content_toggle: options?.brandContentToggle || false,
+          brand_organic_toggle: options?.brandOrganicToggle || false,
         };
       }
       
@@ -255,6 +262,8 @@ export class TikTokService {
       allowStitch?: boolean;
       allowDownload?: boolean;
       videoCoverTimestamp?: number;
+      brandContentToggle?: boolean;
+      brandOrganicToggle?: boolean;
     }
   ) {
     try {
@@ -318,6 +327,9 @@ export class TikTokService {
           disable_duet: options?.disableDuet || false,
           disable_stitch: options?.disableStitch || false,
           video_cover_timestamp_ms: options?.videoCoverTimestamp || 1000,
+          // Commercial content disclosure (REQUIRED by TikTok)
+          brand_content_toggle: options?.brandContentToggle || false,
+          brand_organic_toggle: options?.brandOrganicToggle || false,
         };
       }
       
@@ -396,6 +408,139 @@ export class TikTokService {
       
     } catch (error) {
       console.error('TikTok FILE_UPLOAD error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a photo post using PULL_FROM_URL method
+   * TikTok will download the photos from the provided URLs
+   *
+   * @param title - Photo post title (max 150 UTF-16 runes)
+   * @param description - Photo post description (max 4000 UTF-16 runes)
+   * @param photoUrls - Array of publicly accessible photo URLs (1-35 photos)
+   * @param photoCoverIndex - Index of photo to use as cover (0-based)
+   * @param privacyLevel - Privacy level
+   * @param options - Additional photo options
+   */
+  async createPhotoPost(
+    title: string,
+    description: string,
+    photoUrls: string[],
+    photoCoverIndex: number = 0,
+    privacyLevel: 'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY' = 'PUBLIC_TO_EVERYONE',
+    options?: {
+      disableComment?: boolean;
+      autoAddMusic?: boolean;
+      brandContentToggle?: boolean;
+      brandOrganicToggle?: boolean;
+    }
+  ) {
+    try {
+      // Validation
+      if (photoUrls.length < 1 || photoUrls.length > 35) {
+        throw new Error('Photo posts must have between 1 and 35 photos');
+      }
+
+      if (photoCoverIndex < 0 || photoCoverIndex >= photoUrls.length) {
+        throw new Error('Invalid photo cover index');
+      }
+
+      // Check sandbox/unaudited status
+      const isSandbox = process.env.TIKTOK_SANDBOX === 'true';
+      const isUnaudited = process.env.TIKTOK_UNAUDITED === 'true';
+
+      if ((isSandbox || isUnaudited) && privacyLevel !== 'SELF_ONLY') {
+        console.warn('App is unaudited or in sandbox mode: Overriding privacy level to SELF_ONLY (draft)');
+        privacyLevel = 'SELF_ONLY';
+      }
+
+      const isDraft = privacyLevel === 'SELF_ONLY';
+
+      // Build request body
+      const requestBody: any = {
+        media_type: 'PHOTO',
+        post_mode: 'DIRECT_POST', // Use DIRECT_POST for immediate posting
+        post_info: {
+          title: title.substring(0, 150), // Max 150 chars for photos
+          description: description.substring(0, 4000), // Max 4000 chars
+          privacy_level: privacyLevel,
+          disable_comment: options?.disableComment || false,
+          auto_add_music: options?.autoAddMusic || false,
+          // Commercial content disclosure (REQUIRED by TikTok)
+          brand_content_toggle: options?.brandContentToggle || false,
+          brand_organic_toggle: options?.brandOrganicToggle || false,
+        },
+        source_info: {
+          source: 'PULL_FROM_URL',
+          photo_images: photoUrls,
+          photo_cover_index: photoCoverIndex
+        }
+      };
+
+      console.log('TikTok photo post request:', {
+        photoCount: photoUrls.length,
+        coverIndex: photoCoverIndex,
+        isDraft,
+        privacyLevel
+      });
+
+      // Initialize the photo post
+      const initResponse = await fetch(TIKTOK_PHOTO_POST_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!initResponse.ok) {
+        const errorData = await initResponse.json();
+        console.error('TikTok photo post error:', {
+          status: initResponse.status,
+          error: errorData
+        });
+
+        const errorMessage = errorData.error?.message || errorData.message || 'Unknown error';
+        const errorCode = errorData.error?.code || errorData.error_code;
+
+        // Handle specific errors
+        if (errorCode === 'invalid_param') {
+          throw new Error(`Invalid parameters: ${errorMessage}`);
+        }
+
+        if (errorCode === 'unaudited_client_can_only_post_to_private_accounts') {
+          throw new Error('Your app is pending review. Photos will be saved as drafts.');
+        }
+
+        if (errorCode === 'spam_risk_too_many_pending_share') {
+          throw new Error("You've reached the upload limit. Please try again later.");
+        }
+
+        throw new Error(`Failed to create photo post: ${errorMessage}`);
+      }
+
+      const initData = await initResponse.json();
+      console.log('TikTok photo post initialized:', initData);
+
+      const publishId = initData.data?.publish_id;
+
+      if (!publishId) {
+        console.warn('No publish_id returned from TikTok. Full response:', initData);
+      }
+
+      return {
+        success: true,
+        sandbox: isSandbox || isUnaudited,
+        publishId: publishId,
+        message: isDraft
+          ? `Photo post saved to TikTok drafts (ID: ${publishId}). Check your TikTok app.`
+          : `Photo post uploaded to TikTok successfully (ID: ${publishId}). Processing may take a few minutes.`
+      };
+
+    } catch (error) {
+      console.error('TikTok photo post creation error:', error);
       throw error;
     }
   }
