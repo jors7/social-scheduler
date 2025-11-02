@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image'
+import { useState } from 'react'
 import { User } from 'lucide-react'
 
 interface CreatorInfoDisplayProps {
@@ -28,6 +28,8 @@ export function CreatorInfoDisplay({
   avatarUrl,
   isLoading = false
 }: CreatorInfoDisplayProps) {
+  const [imageError, setImageError] = useState(false)
+
   if (isLoading) {
     return (
       <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-pink-50 to-blue-50 rounded-lg border border-gray-200">
@@ -44,13 +46,12 @@ export function CreatorInfoDisplay({
     <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-pink-50 to-blue-50 rounded-lg border border-gray-200">
       {/* Avatar */}
       <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
-        {avatarUrl ? (
-          <Image
+        {avatarUrl && !imageError ? (
+          <img
             src={avatarUrl}
             alt={`@${username}`}
-            width={40}
-            height={40}
             className="w-full h-full object-cover"
+            onError={() => setImageError(true)}
           />
         ) : (
           <User className="h-5 w-5 text-gray-400" />
