@@ -236,9 +236,18 @@ function CreateNewPostPageContent() {
 
     if (over && active.id !== over.id) {
       setUploadedMediaUrls((items) => {
-        const oldIndex = items.indexOf(active.id as string)
-        const newIndex = items.indexOf(over.id as string)
-        return arrayMove(items, oldIndex, newIndex)
+        // Extract indices from the ID (format: url + index)
+        const activeId = active.id as string
+        const overId = over.id as string
+
+        // Find indices by matching the constructed IDs
+        const oldIndex = items.findIndex((media, idx) => getMediaUrl(media) + idx === activeId)
+        const newIndex = items.findIndex((media, idx) => getMediaUrl(media) + idx === overId)
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          return arrayMove(items, oldIndex, newIndex)
+        }
+        return items
       })
     }
   }
@@ -566,6 +575,11 @@ function CreateNewPostPageContent() {
       current: textContent.length,
       limit: platform?.charLimit || 0
     }
+  }
+
+  // Helper to get URL from either string or object format
+  const getMediaUrl = (media: any): string => {
+    return typeof media === 'string' ? media : media.url
   }
 
   // Upload files immediately when selected (for autosave functionality)
@@ -903,8 +917,11 @@ function CreateNewPostPageContent() {
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
     
     // Check if we have video files for TikTok
-    const hasVideoFiles = selectedFiles.some(file => file.type.startsWith('video/')) || 
-                          uploadedMediaUrls.some(url => url.includes('.mp4') || url.includes('.mov') || url.includes('.avi'))
+    const hasVideoFiles = selectedFiles.some(file => file.type.startsWith('video/')) ||
+                          uploadedMediaUrls.some(media => {
+                            const url = getMediaUrl(media)
+                            return url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')
+                          })
     
     // Special handling for TikTok - requires video
     const hasTikTokContent = selectedPlatforms.includes('tiktok') && hasVideoFiles
@@ -1057,8 +1074,8 @@ function CreateNewPostPageContent() {
     
     // TikTok-specific validation - Updated for TikTok audit compliance
     if (selectedPlatforms.includes('tiktok')) {
-      const hasImageFiles = selectedFiles.some(f => f.type.startsWith('image/')) || uploadedMediaUrls.some(url => url.match(/\.(jpg|jpeg|png|gif|webp)$/i))
-      const hasVideoFiles = selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(url => url.match(/\.(mp4|mov|avi|wmv|flv|mkv)$/i))
+      const hasImageFiles = selectedFiles.some(f => f.type.startsWith('image/')) || uploadedMediaUrls.some(media => getMediaUrl(media).match(/\.(jpg|jpeg|png|gif|webp)$/i))
+      const hasVideoFiles = selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(media => getMediaUrl(media).match(/\.(mp4|mov|avi|wmv|flv|mkv)$/i))
 
       // TikTok requires either video or photo
       if (!hasVideoFiles && !hasImageFiles) {
@@ -2081,8 +2098,11 @@ function CreateNewPostPageContent() {
       (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)
     
     // Check if we have video files for TikTok
-    const hasVideoFiles = selectedFiles.some(file => file.type.startsWith('video/')) || 
-                          uploadedMediaUrls.some(url => url.includes('.mp4') || url.includes('.mov') || url.includes('.avi'))
+    const hasVideoFiles = selectedFiles.some(file => file.type.startsWith('video/')) ||
+                          uploadedMediaUrls.some(media => {
+                            const url = getMediaUrl(media)
+                            return url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')
+                          })
     
     // Special handling for TikTok - requires video
     const hasTikTokContent = selectedPlatforms.includes('tiktok') && hasVideoFiles
@@ -2235,8 +2255,8 @@ function CreateNewPostPageContent() {
     
     // TikTok-specific validation - Updated for TikTok audit compliance
     if (selectedPlatforms.includes('tiktok')) {
-      const hasImageFiles = selectedFiles.some(f => f.type.startsWith('image/')) || uploadedMediaUrls.some(url => url.match(/\.(jpg|jpeg|png|gif|webp)$/i))
-      const hasVideoFiles = selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(url => url.match(/\.(mp4|mov|avi|wmv|flv|mkv)$/i))
+      const hasImageFiles = selectedFiles.some(f => f.type.startsWith('image/')) || uploadedMediaUrls.some(media => getMediaUrl(media).match(/\.(jpg|jpeg|png|gif|webp)$/i))
+      const hasVideoFiles = selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(media => getMediaUrl(media).match(/\.(mp4|mov|avi|wmv|flv|mkv)$/i))
 
       // TikTok requires either video or photo
       if (!hasVideoFiles && !hasImageFiles) {
@@ -3462,18 +3482,20 @@ function CreateNewPostPageContent() {
                     onDragEnd={handleDragEnd}
                   >
                     <SortableContext
-                      items={uploadedMediaUrls}
+                      items={uploadedMediaUrls.map((media, idx) => getMediaUrl(media) + idx)}
                       strategy={verticalListSortingStrategy}
                     >
                       <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        {uploadedMediaUrls.map((url, index) => {
+                        {uploadedMediaUrls.map((media, index) => {
+                          // Extract URL from either string or object format
+                          const url = getMediaUrl(media)
                           // Detect if URL is a video based on file extension
                           const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v']
                           const isVideo = videoExtensions.some(ext => url.toLowerCase().includes(ext))
 
                           return (
                             <SortableMediaItem
-                              key={url}
+                              key={url + index}
                               url={url}
                               index={index}
                               isVideo={isVideo}
@@ -3643,7 +3665,10 @@ function CreateNewPostPageContent() {
                       (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) &&
                         !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()) &&
                         !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
-                        !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(url => url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')))) &&
+                        !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(media => {
+                          const url = getMediaUrl(media)
+                          return url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')
+                        }))) &&
                         !(selectedPlatforms.includes('instagram') && instagramAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
                         !(selectedPlatforms.includes('facebook') && facebookAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
                         !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && facebookAsReel && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
