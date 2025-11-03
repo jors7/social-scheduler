@@ -3,7 +3,7 @@ import { getValidThreadsToken } from '@/lib/threads/token-manager';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, accessToken, text, mediaUrl, accountId } = await request.json();
+    const { userId, accessToken, text, mediaUrl, accountId, replyControl } = await request.json();
 
     if (!userId || !accessToken || !text) {
       return NextResponse.json(
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     // Build form data for the request
     const formData = new URLSearchParams();
     formData.append('access_token', activeToken);
-    
+
     if (mediaUrl) {
       // For image posts
       formData.append('media_type', 'IMAGE');
@@ -65,6 +65,11 @@ export async function POST(request: NextRequest) {
       // For text-only posts
       formData.append('media_type', 'TEXT');
       formData.append('text', text);
+    }
+
+    // Add reply control if specified
+    if (replyControl) {
+      formData.append('reply_control', replyControl);
     }
 
     // Step 1: Create media container

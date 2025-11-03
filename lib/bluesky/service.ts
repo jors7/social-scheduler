@@ -1,13 +1,20 @@
 import { BlueskyClient } from './client';
 
 export class BlueskyService {
-  async createPost(identifier: string, password: string, text: string, mediaUrls?: string[]) {
+  async createPost(
+    identifier: string,
+    password: string,
+    text: string,
+    mediaUrls?: string[],
+    altText?: string,
+    replyControl?: 'everyone' | 'nobody' | 'following' | 'mentioned'
+  ) {
     try {
       const client = new BlueskyClient();
-      
+
       // Login to Bluesky
       await client.login({ identifier, password });
-      
+
       // Download images if provided
       let imageBuffers: Buffer[] = [];
       if (mediaUrls && mediaUrls.length > 0) {
@@ -21,10 +28,15 @@ export class BlueskyService {
           }
         }
       }
-      
-      // Create the post with images if any
-      const result = await client.createPost(text, imageBuffers.length > 0 ? imageBuffers : undefined);
-      
+
+      // Create the post with images, alt text, and reply control
+      const result = await client.createPost(
+        text,
+        imageBuffers.length > 0 ? imageBuffers : undefined,
+        altText,
+        replyControl
+      );
+
       return {
         uri: result.post.uri,
         cid: result.post.cid,

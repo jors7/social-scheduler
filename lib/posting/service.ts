@@ -26,9 +26,27 @@ export interface PostData {
   tiktokPhotoCoverIndex?: number; // TikTok specific - photo cover index for photo posts (0-based, default: 0)
   instagramAsStory?: boolean; // Instagram specific - post as story instead of feed post
   instagramAsReel?: boolean; // Instagram specific - post as reel instead of feed post
+  instagramLocation?: { id: string; name: string }; // Instagram specific - location tagging
+  instagramDisableComments?: boolean; // Instagram specific - disable comments on post
   facebookAsStory?: boolean; // Facebook specific - post as story instead of feed post
   facebookAsReel?: boolean; // Facebook specific - post as reel instead of feed post
   youtubeAsShort?: boolean; // YouTube specific - post as Short instead of regular video
+  // LinkedIn specific settings
+  linkedinVisibility?: 'PUBLIC' | 'CONNECTIONS' | 'LOGGED_IN'; // LinkedIn specific - who can see this post
+  // YouTube compliance settings
+  youtubeMadeForKids?: boolean; // YouTube specific - COPPA compliance (is video made for kids under 13?)
+  youtubeEmbeddable?: boolean; // YouTube specific - allow embedding on other websites (default: true)
+  youtubeLicense?: 'youtube' | 'creativeCommon'; // YouTube specific - video license (default: 'youtube')
+  // Threads reply controls
+  threadsReplyControl?: 'everyone' | 'accounts_you_follow' | 'mentioned_only'; // Threads specific - who can reply
+  // Bluesky reply controls
+  blueskyReplyControl?: 'everyone' | 'nobody' | 'following' | 'mentioned'; // Bluesky specific - who can reply via threadgates
+  // Facebook publish controls
+  facebookPublishAsDraft?: boolean; // Facebook specific - save as draft instead of publishing immediately
+  // Alt text for accessibility
+  instagramAltText?: string; // Instagram specific - alt text for images (accessibility)
+  pinterestAltText?: string; // Pinterest specific - alt text for pins (accessibility)
+  blueskyAltText?: string; // Bluesky specific - alt text for images (accessibility)
 }
 
 export interface PostResult {
@@ -238,7 +256,10 @@ export class PostingService {
           mediaUrls,
           onProgress ? (status) => onProgress('instagram', status) : undefined,
           postData?.instagramAsStory,
-          postData?.instagramAsReel
+          postData?.instagramAsReel,
+          postData?.instagramAltText,
+          postData?.instagramLocation?.id,
+          postData?.instagramDisableComments
         );
       
       case 'bluesky':
@@ -319,6 +340,7 @@ export class PostingService {
           isStory: isStory,
           isReel: isReel,
           userId: user.id,
+          publishAsDraft: this.postData.facebookPublishAsDraft,
         }),
       });
 
@@ -359,7 +381,10 @@ export class PostingService {
     mediaUrls?: string[],
     onProgress?: (status: string) => void,
     isStory?: boolean,
-    isReel?: boolean
+    isReel?: boolean,
+    altText?: string,
+    locationId?: string,
+    disableComments?: boolean
   ): Promise<PostResult> {
     try {
       // Instagram requires media
@@ -392,6 +417,9 @@ export class PostingService {
             mediaUrls: mediaUrls,
             isStory: isStory,
             isReel: isReel,
+            altText: altText,
+            locationId: locationId,
+            disableComments: disableComments,
             currentUserId: user?.id, // Pass current user ID for thumbnail upload
           }),
         });
@@ -470,6 +498,9 @@ export class PostingService {
             mediaUrls: mediaUrls, // Pass all media URLs for carousel support
             isStory: isStory,
             isReel: isReel,
+            altText: altText,
+            locationId: locationId,
+            disableComments: disableComments,
             currentUserId: user?.id, // Pass current user ID for thumbnail upload
           }),
         });
@@ -520,6 +551,8 @@ export class PostingService {
           password: account.access_secret,  // The app password is stored in access_secret
           text: content,
           mediaUrls: mediaUrls,
+          altText: this.postData.blueskyAltText,
+          replyControl: this.postData.blueskyReplyControl,
         }),
       });
 
@@ -581,6 +614,7 @@ export class PostingService {
           mediaUrls: mediaUrls, // Pass all media URLs
           pinType: pinType, // Specify the pin type
           link: account.pinterest_link, // Optional destination URL
+          altText: this.postData.pinterestAltText, // Alt text for accessibility
         }),
       });
 
@@ -842,6 +876,7 @@ export class PostingService {
           content: content,
           mediaUrl: mediaUrls?.[0], // LinkedIn supports one image per post
           mediaType: mediaUrls?.[0] ? 'image' : undefined,
+          visibility: this.postData.linkedinVisibility || 'PUBLIC',
         }),
       });
 
@@ -883,6 +918,7 @@ export class PostingService {
           accessToken: account.access_token,
           text: content,
           mediaUrl: mediaUrls?.[0], // Threads supports one image per post
+          replyControl: this.postData.threadsReplyControl || 'everyone',
         }),
       });
 
@@ -1047,6 +1083,9 @@ export class PostingService {
           isShort: isShort,
           privacyStatus: 'public', // Can be made configurable later
           userId: user.id, // Pass user ID for thumbnail upload
+          madeForKids: this.postData.youtubeMadeForKids,
+          embeddable: this.postData.youtubeEmbeddable !== false, // Default to true
+          license: this.postData.youtubeLicense || 'youtube',
         }),
       });
 

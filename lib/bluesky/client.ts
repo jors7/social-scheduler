@@ -43,10 +43,15 @@ export class BlueskyClient {
     }
   }
 
-  async createPost(text: string, images?: Buffer[]) {
+  async createPost(
+    text: string,
+    images?: Buffer[],
+    altText?: string,
+    replyControl?: 'everyone' | 'nobody' | 'following' | 'mentioned'
+  ) {
     try {
       let embed: any = undefined;
-      
+
       if (images && images.length > 0) {
         const uploadedImages = [];
         for (const image of images) {
@@ -54,11 +59,11 @@ export class BlueskyClient {
             encoding: 'image/jpeg',
           });
           uploadedImages.push({
-            alt: '',
+            alt: altText || '', // Use provided alt text or empty string
             image: uploadResponse.data.blob,
           });
         }
-        
+
         embed = {
           $type: 'app.bsky.embed.images',
           images: uploadedImages,
@@ -71,6 +76,17 @@ export class BlueskyClient {
         createdAt: new Date().toISOString(),
       } as any);
 
+      // Apply threadgate if reply control is set (and not "everyone")
+      if (replyControl && replyControl !== 'everyone') {
+        try {
+          await this.applyThreadgate(response.uri, replyControl);
+          console.log(`Threadgate applied: ${replyControl}`);
+        } catch (threadgateError: any) {
+          console.error('Failed to apply threadgate:', threadgateError);
+          // Don't fail the whole post if threadgate fails
+        }
+      }
+
       return {
         success: true,
         post: response,
@@ -78,6 +94,44 @@ export class BlueskyClient {
     } catch (error: any) {
       console.error('Error creating Bluesky post:', error);
       throw new Error(`Failed to create post: ${error.message}`);
+    }
+  }
+
+  /**
+   * Apply threadgate to control who can reply to a post
+   * @param postUri - The AT URI of the post
+   * @param replyControl - Who can reply (nobody, following, mentioned)
+   */
+  private async applyThreadgate(
+    postUri: string,
+    replyControl: 'nobody' | 'following' | 'mentioned'
+  ) {
+    try {
+      const allow: any[] = [];
+
+      // Build threadgate rules based on reply control
+      if (replyControl === 'following') {
+        allow.push({ $type: 'app.bsky.feed.threadgate#followingRule' });
+      } else if (replyControl === 'mentioned') {
+        allow.push({ $type: 'app.bsky.feed.threadgate#mentionRule' });
+      }
+      // If 'nobody', leave allow array empty to disable all replies
+
+      // Create threadgate record
+      await this.agent.api.com.atproto.repo.createRecord({
+        repo: this.agent.session?.did || '',
+        collection: 'app.bsky.feed.threadgate',
+        record: {
+          post: postUri,
+          allow: allow,
+          createdAt: new Date().toISOString(),
+        },
+      });
+
+      console.log('Threadgate created successfully');
+    } catch (error: any) {
+      console.error('Error applying threadgate:', error);
+      throw new Error(`Failed to apply threadgate: ${error.message}`);
     }
   }
 

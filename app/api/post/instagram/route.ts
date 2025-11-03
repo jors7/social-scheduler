@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, accessToken, text, mediaUrl, mediaUrls, isStory, isReel, currentUserId } = body;
+    const { userId, accessToken, text, mediaUrl, mediaUrls, isStory, isReel, altText, locationId, disableComments, currentUserId } = body;
 
     if (!userId || !accessToken) {
       return NextResponse.json(
@@ -60,7 +60,10 @@ export async function POST(request: NextRequest) {
       mediaUrls: allMediaUrls,
       caption: text || '',
       isStory: isStory,
-      isReel: isReel
+      isReel: isReel,
+      altText: altText,
+      locationId: locationId,
+      disableComments: disableComments
     });
 
     const postType = isStory ? 'story' : isReel ? 'reel' : 'post';

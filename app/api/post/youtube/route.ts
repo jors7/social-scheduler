@@ -17,7 +17,10 @@ export async function POST(request: NextRequest) {
       categoryId,
       publishAt, // ISO 8601 datetime for scheduled publishing
       isShort = false, // New parameter for YouTube Shorts
-      userId // User ID for thumbnail upload
+      userId, // User ID for thumbnail upload
+      madeForKids, // COPPA compliance
+      embeddable = true, // Allow embedding
+      license = 'youtube' // License type
     } = body;
 
     // Get current user
@@ -106,6 +109,9 @@ export async function POST(request: NextRequest) {
         privacyStatus: privacyStatus as 'private' | 'public' | 'unlisted',
         publishAt: publishAt,
         thumbnailUrl: thumbnailUrl,
+        madeForKids: madeForKids,
+        embeddable: embeddable,
+        license: license,
       });
     } else {
       console.log('Uploading regular YouTube video...');
@@ -117,6 +123,9 @@ export async function POST(request: NextRequest) {
         privacyStatus: privacyStatus as 'private' | 'public' | 'unlisted',
         publishAt: publishAt,
         thumbnailUrl: thumbnailUrl,
+        madeForKids: madeForKids,
+        embeddable: embeddable,
+        license: license,
       });
     }
 

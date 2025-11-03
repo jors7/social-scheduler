@@ -7,14 +7,16 @@ export class FacebookService {
   async createPost(
     pageId: string,
     pageAccessToken: string,
-    message: string
+    message: string,
+    publishAsDraft: boolean = false
   ): Promise<{ id: string }> {
     try {
-      console.log('Creating Facebook text post...');
-      
+      console.log(`Creating Facebook text post (draft: ${publishAsDraft})...`);
+
       const url = `${this.baseUrl}/${pageId}/feed`;
       const params = new URLSearchParams({
         message: message,
+        published: publishAsDraft ? 'false' : 'true',
         access_token: pageAccessToken
       });
 
@@ -48,15 +50,17 @@ export class FacebookService {
     pageId: string,
     pageAccessToken: string,
     message: string,
-    imageUrl: string
+    imageUrl: string,
+    publishAsDraft: boolean = false
   ): Promise<{ id: string }> {
     try {
-      console.log('Creating Facebook photo post...');
-      
+      console.log(`Creating Facebook photo post (draft: ${publishAsDraft})...`);
+
       const url = `${this.baseUrl}/${pageId}/photos`;
       const params = new URLSearchParams({
         message: message,
         url: imageUrl, // Facebook will fetch the image from this URL
+        published: publishAsDraft ? 'false' : 'true',
         access_token: pageAccessToken
       });
 
@@ -90,16 +94,18 @@ export class FacebookService {
     pageId: string,
     pageAccessToken: string,
     message: string,
-    videoUrl: string
+    videoUrl: string,
+    publishAsDraft: boolean = false
   ): Promise<{ id: string }> {
     try {
-      console.log('Creating Facebook video post...');
-      
+      console.log(`Creating Facebook video post (draft: ${publishAsDraft})...`);
+
       // For videos, we need to use the video upload endpoint
       const url = `${this.baseUrl}/${pageId}/videos`;
       const params = new URLSearchParams({
         description: message,
         file_url: videoUrl, // Facebook will fetch the video from this URL
+        published: publishAsDraft ? 'false' : 'true',
         access_token: pageAccessToken
       });
 
@@ -133,11 +139,12 @@ export class FacebookService {
     pageId: string,
     pageAccessToken: string,
     message: string,
-    imageUrls: string[]
+    imageUrls: string[],
+    publishAsDraft: boolean = false
   ): Promise<{ id: string }> {
     try {
-      console.log('Creating Facebook carousel post with', imageUrls.length, 'images...');
-      
+      console.log(`Creating Facebook carousel post with ${imageUrls.length} images (draft: ${publishAsDraft})...`);
+
       // First, upload each photo without publishing
       const photoIds = [];
       for (const imageUrl of imageUrls) {
@@ -171,6 +178,7 @@ export class FacebookService {
       const postUrl = `${this.baseUrl}/${pageId}/feed`;
       const postParams = new URLSearchParams({
         message: message,
+        published: publishAsDraft ? 'false' : 'true',
         access_token: pageAccessToken
       });
 

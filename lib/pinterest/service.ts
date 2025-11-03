@@ -45,7 +45,7 @@ export class PinterestService {
     }
   }
 
-  async createPin(boardId: string, title: string, description: string, imageUrl?: string, link?: string) {
+  async createPin(boardId: string, title: string, description: string, imageUrl?: string, link?: string, altText?: string) {
     try {
       // Note: This requires pins:write permission
       // Pinterest v5 API requires specific structure
@@ -64,6 +64,10 @@ export class PinterestService {
 
       if (link) {
         pinData.link = link;
+      }
+
+      if (altText) {
+        pinData.alt_text = altText;
       }
 
       // Remove undefined values
@@ -124,7 +128,8 @@ export class PinterestService {
     title: string,
     description: string,
     mediaUrls: string[],
-    link?: string
+    link?: string,
+    altText?: string
   ) {
     if (!mediaUrls || mediaUrls.length === 0) {
       throw new Error('At least one media URL is required');
@@ -143,7 +148,7 @@ export class PinterestService {
       return await this.createCarouselPin(boardId, title, description, mediaUrls, link);
     } else {
       // Create standard image pin
-      return await this.createPin(boardId, title, description, mediaUrls[0], link);
+      return await this.createPin(boardId, title, description, mediaUrls[0], link, altText);
     }
   }
 }

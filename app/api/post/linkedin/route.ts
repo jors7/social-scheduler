@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { content, mediaUrl, mediaType } = body;
+    const { content, mediaUrl, mediaType, visibility = 'PUBLIC' } = body;
 
     console.log('LinkedIn post request:', { 
       hasContent: !!content, 
@@ -121,20 +121,20 @@ export async function POST(request: NextRequest) {
         console.log('Image MIME type:', mimeType);
 
         // Post with image
-        result = await linkedinService.postWithImage(content, buffer, mimeType);
+        result = await linkedinService.postWithImage(content, buffer, mimeType, visibility);
       } catch (fetchError) {
         console.error('Failed to fetch image from URL:', fetchError);
         console.error('Media URL was:', mediaUrl);
         // Post without media if fetch fails
         result = await linkedinService.shareContent({
           text: LinkedInService.formatContent(content)
-        });
+        }, visibility);
       }
     } else {
       // Post text only
       result = await linkedinService.shareContent({
         text: LinkedInService.formatContent(content)
-      });
+      }, visibility);
     }
 
     // Log successful post

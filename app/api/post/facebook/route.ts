@@ -5,11 +5,19 @@ import { createClient } from '@supabase/supabase-js';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { pageId, accessToken, text, mediaUrls, isStory, isReel, userId } = body;
+    const { pageId, accessToken, text, mediaUrls, isStory, isReel, userId, publishAsDraft } = body;
 
     if (!pageId || !accessToken) {
       return NextResponse.json(
         { error: 'Missing required fields: pageId and accessToken are required' },
+        { status: 400 }
+      );
+    }
+
+    // Stories and Reels cannot be saved as drafts
+    if (publishAsDraft && (isStory || isReel)) {
+      return NextResponse.json(
+        { error: 'Facebook Stories and Reels cannot be saved as drafts' },
         { status: 400 }
       );
     }
@@ -36,6 +44,7 @@ export async function POST(request: NextRequest) {
     console.log('Page ID:', pageId);
     console.log('Is Story:', isStory);
     console.log('Is Reel:', isReel);
+    console.log('Publish as Draft:', publishAsDraft || false);
     console.log('Has media:', !!mediaUrls && mediaUrls.length > 0);
     console.log('Media count:', mediaUrls?.length || 0);
 
@@ -81,7 +90,7 @@ export async function POST(request: NextRequest) {
     else if (!mediaUrls || mediaUrls.length === 0) {
       // Text-only post
       console.log('Creating text-only Facebook post');
-      result = await facebookService.createPost(pageId, accessToken, text);
+      result = await facebookService.createPost(pageId, accessToken, text, publishAsDraft);
     } else if (mediaUrls.length === 1) {
       // Single media post (photo or video)
       const mediaUrl = mediaUrls[0];
@@ -90,10 +99,10 @@ export async function POST(request: NextRequest) {
 
       if (isVideo) {
         console.log('Creating Facebook video post');
-        result = await facebookService.createVideoPost(pageId, accessToken, text, mediaUrl);
+        result = await facebookService.createVideoPost(pageId, accessToken, text, mediaUrl, publishAsDraft);
       } else {
         console.log('Creating Facebook photo post');
-        result = await facebookService.createPhotoPost(pageId, accessToken, text, mediaUrl);
+        result = await facebookService.createPhotoPost(pageId, accessToken, text, mediaUrl, publishAsDraft);
       }
     } else {
       // Multiple photos (carousel post)
@@ -111,7 +120,7 @@ export async function POST(request: NextRequest) {
       }
 
       console.log(`Creating Facebook carousel post with ${imageUrls.length} images`);
-      result = await facebookService.createCarouselPost(pageId, accessToken, text, imageUrls);
+      result = await facebookService.createCarouselPost(pageId, accessToken, text, imageUrls, publishAsDraft);
     }
 
     console.log('Facebook post successful:', result);

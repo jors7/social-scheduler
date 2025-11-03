@@ -269,10 +269,13 @@ export class InstagramClient {
   }
 
   async createPost(
-    mediaUrl: string, 
-    caption: string, 
+    mediaUrl: string,
+    caption: string,
     isVideo: boolean = false,
-    onProgress?: (status: string, progress?: number) => void
+    onProgress?: (status: string, progress?: number) => void,
+    altText?: string,
+    locationId?: string,
+    disableComments?: boolean
   ) {
     try {
       console.log('Creating Instagram post with:', {
@@ -289,6 +292,18 @@ export class InstagramClient {
         caption: caption,
         access_token: this.accessToken,
       });
+
+      // Add alt text for accessibility if provided
+      if (altText) {
+        containerParams.append('custom_accessibility_caption', altText);
+        console.log('Adding alt text for accessibility');
+      }
+
+      // Add location tag if provided
+      if (locationId) {
+        containerParams.append('location_id', locationId);
+        console.log('Adding location tag with ID:', locationId);
+      }
 
       if (isVideo) {
         // For videos/reels
@@ -457,6 +472,40 @@ export class InstagramClient {
         return publishResponse.json();
       });
       console.log('Instagram post published successfully:', result);
+
+      // Step 3: Disable comments if requested (must be done after publish)
+      if (disableComments && result.id) {
+        try {
+          console.log('Disabling comments for post:', result.id);
+          const commentParams = new URLSearchParams({
+            comment_enabled: 'false',
+            access_token: this.accessToken,
+          });
+
+          const commentResponse = await fetch(
+            `${this.baseURL}/${result.id}`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: commentParams.toString(),
+            }
+          );
+
+          if (!commentResponse.ok) {
+            const error = await commentResponse.json();
+            console.warn('Failed to disable comments (post still published):', error);
+            // Don't throw error - post was published successfully
+          } else {
+            console.log('Comments disabled successfully');
+          }
+        } catch (error: any) {
+          console.warn('Error disabling comments (post still published):', error.message);
+          // Don't throw error - post was published successfully
+        }
+      }
+
       return result;
     } catch (error: any) {
       console.error('Error creating Instagram post:', error);

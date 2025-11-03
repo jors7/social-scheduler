@@ -47,7 +47,7 @@ export class LinkedInService {
    * Share content on LinkedIn
    * https://docs.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/share-on-linkedin
    */
-  async shareContent(content: LinkedInShareContent): Promise<LinkedInShareResponse> {
+  async shareContent(content: LinkedInShareContent, visibility: 'PUBLIC' | 'CONNECTIONS' | 'LOGGED_IN' = 'PUBLIC'): Promise<LinkedInShareResponse> {
     try {
       // Get the authenticated user's profile ID
       const profile = await this.getProfile();
@@ -70,7 +70,7 @@ export class LinkedInService {
           }
         },
         visibility: {
-          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
+          'com.linkedin.ugc.MemberNetworkVisibility': visibility
         }
       };
 
@@ -454,7 +454,7 @@ export class LinkedInService {
   /**
    * Post with image support
    */
-  async postWithImage(text: string, imageBuffer: Buffer, mimeType: string): Promise<LinkedInShareResponse> {
+  async postWithImage(text: string, imageBuffer: Buffer, mimeType: string, visibility: 'PUBLIC' | 'CONNECTIONS' | 'LOGGED_IN' = 'PUBLIC'): Promise<LinkedInShareResponse> {
     try {
       // First upload the image
       const imageAssetUrn = await this.uploadImage(imageBuffer, mimeType);
@@ -490,7 +490,7 @@ export class LinkedInService {
           }
         },
         visibility: {
-          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
+          'com.linkedin.ugc.MemberNetworkVisibility': visibility
         }
       };
 
@@ -527,7 +527,7 @@ export class LinkedInService {
   /**
    * Post with video support
    */
-  async postWithVideo(text: string, videoBuffer: Buffer, mimeType: string): Promise<LinkedInShareResponse> {
+  async postWithVideo(text: string, videoBuffer: Buffer, mimeType: string, visibility: 'PUBLIC' | 'CONNECTIONS' | 'LOGGED_IN' = 'PUBLIC'): Promise<LinkedInShareResponse> {
     try {
       // First upload the video
       const videoUrn = await this.uploadVideo(videoBuffer, mimeType);
@@ -546,7 +546,7 @@ export class LinkedInService {
       const shareBody = {
         author: `urn:li:person:${profile.id}`,
         commentary: LinkedInService.formatContent(text),
-        visibility: 'PUBLIC',
+        visibility: visibility,
         distribution: {
           feedDistribution: 'MAIN_FEED',
           targetEntities: [],

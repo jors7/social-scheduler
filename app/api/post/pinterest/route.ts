@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     console.log('Pinterest POST request body:', body);
-    const { accessToken, boardId, title, description, imageUrl, mediaUrls, pinType, link } = body;
+    const { accessToken, boardId, title, description, imageUrl, mediaUrls, pinType, link, altText } = body;
 
     if (!accessToken) {
       return NextResponse.json(
@@ -85,7 +85,8 @@ export async function POST(request: NextRequest) {
           formattedContent.title,
           formattedContent.description,
           media[0],
-          link
+          link,
+          altText
         );
       }
 

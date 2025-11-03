@@ -13,6 +13,9 @@ export interface VideoUploadOptions {
   privacyStatus?: 'private' | 'public' | 'unlisted';
   notifySubscribers?: boolean;
   publishAt?: string; // ISO 8601 datetime for scheduled publishing
+  madeForKids?: boolean; // COPPA compliance
+  embeddable?: boolean; // Allow embedding
+  license?: 'youtube' | 'creativeCommon'; // Video license
 }
 
 export interface VideoMetadata extends VideoUploadOptions {
@@ -63,8 +66,9 @@ export function createVideoResource(metadata: VideoUploadOptions): youtube_v3.Sc
     },
     status: {
       privacyStatus: metadata.privacyStatus || 'private',
-      selfDeclaredMadeForKids: false,
-      embeddable: true,
+      selfDeclaredMadeForKids: metadata.madeForKids ?? false,
+      embeddable: metadata.embeddable ?? true,
+      license: metadata.license || 'youtube',
     },
   };
 

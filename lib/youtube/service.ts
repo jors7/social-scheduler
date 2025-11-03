@@ -161,6 +161,9 @@ export class YouTubeService {
     thumbnailPath?: string;
     thumbnailBuffer?: Buffer;
     onProgress?: (progress: number) => void;
+    madeForKids?: boolean;
+    embeddable?: boolean;
+    license?: 'youtube' | 'creativeCommon';
   }) {
     try {
       const requestBody = createVideoResource({
@@ -170,6 +173,9 @@ export class YouTubeService {
         categoryId: params.categoryId,
         privacyStatus: params.privacyStatus,
         publishAt: params.publishAt,
+        madeForKids: params.madeForKids,
+        embeddable: params.embeddable,
+        license: params.license,
       });
 
       let videoStream: Readable;
@@ -272,6 +278,9 @@ export class YouTubeService {
     privacyStatus?: 'private' | 'public' | 'unlisted';
     publishAt?: string; // ISO 8601 datetime for scheduled publishing
     thumbnailUrl?: string;
+    madeForKids?: boolean;
+    embeddable?: boolean;
+    license?: 'youtube' | 'creativeCommon';
   }) {
     try {
       // Fetch video from URL
@@ -321,6 +330,9 @@ export class YouTubeService {
     thumbnailPath?: string;
     thumbnailBuffer?: Buffer;
     onProgress?: (progress: number) => void;
+    madeForKids?: boolean;
+    embeddable?: boolean;
+    license?: 'youtube' | 'creativeCommon';
   }) {
     try {
       // Add #Shorts tag if not already present
@@ -356,6 +368,9 @@ export class YouTubeService {
         thumbnailPath: params.thumbnailPath,
         thumbnailBuffer: params.thumbnailBuffer,
         onProgress: params.onProgress,
+        madeForKids: params.madeForKids,
+        embeddable: params.embeddable,
+        license: params.license,
       });
 
       console.log('YouTube Short uploaded successfully:', result.id);
@@ -381,6 +396,9 @@ export class YouTubeService {
     privacyStatus?: 'private' | 'public' | 'unlisted';
     publishAt?: string;
     thumbnailUrl?: string;
+    madeForKids?: boolean;
+    embeddable?: boolean;
+    license?: 'youtube' | 'creativeCommon';
   }) {
     try {
       // Fetch video from URL

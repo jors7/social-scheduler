@@ -45,6 +45,17 @@ const VideoMetadata = dynamic(() => import('@/components/youtube/video-metadata'
 const VideoUpload = dynamic(() => import('@/components/youtube/video-upload'), { ssr: false })
 const TikTokVideoSettings = dynamic(() => import('@/components/tiktok/video-settings').then(mod => ({ default: mod.TikTokVideoSettings })), { ssr: false })
 const ThreadComposer = dynamic(() => import('@/components/threads/thread-composer').then(mod => ({ default: mod.ThreadComposer })), { ssr: false })
+// Phase 1 Quick Wins - New platform-specific components
+const LinkedInVisibilitySelector = dynamic(() => import('@/components/linkedin/visibility-selector').then(mod => ({ default: mod.LinkedInVisibilitySelector })), { ssr: false })
+const YouTubeComplianceSettings = dynamic(() => import('@/components/youtube/compliance-settings').then(mod => ({ default: mod.YouTubeComplianceSettings })), { ssr: false })
+const ThreadsReplyControls = dynamic(() => import('@/components/threads/reply-controls').then(mod => ({ default: mod.ThreadsReplyControls })), { ssr: false })
+const AltTextInput = dynamic(() => import('@/components/shared/alt-text-input').then(mod => ({ default: mod.AltTextInput })), { ssr: false })
+// Phase 2A Instagram Quick Wins - New Instagram components
+const InstagramCommentControls = dynamic(() => import('@/components/instagram/comment-controls').then(mod => ({ default: mod.InstagramCommentControls })), { ssr: false })
+const InstagramLocationPicker = dynamic(() => import('@/components/instagram/location-picker').then(mod => ({ default: mod.InstagramLocationPicker })), { ssr: false })
+// Phase 3 Community Controls - Bluesky and Facebook
+const BlueskyReplyControls = dynamic(() => import('@/components/bluesky/reply-controls').then(mod => ({ default: mod.BlueskyReplyControls })), { ssr: false })
+const FacebookPublishControls = dynamic(() => import('@/components/facebook/publish-controls').then(mod => ({ default: mod.FacebookPublishControls })), { ssr: false })
 import {
   Calendar,
   Clock,
@@ -474,6 +485,32 @@ function CreateNewPostPageContent() {
   const [tiktokPromotionalContent, setTiktokPromotionalContent] = useState(false)
   const [tiktokBrandedContent, setTiktokBrandedContent] = useState(false)
   const [tiktokPhotoCoverIndex, setTiktokPhotoCoverIndex] = useState(0) // Photo cover index for photo posts
+
+  // LinkedIn states - Phase 1 Quick Wins
+  const [linkedinVisibility, setLinkedinVisibility] = useState<'PUBLIC' | 'CONNECTIONS' | 'LOGGED_IN'>('PUBLIC')
+
+  // YouTube compliance states - Phase 1 Quick Wins (COPPA compliance)
+  const [youtubeMadeForKids, setYoutubeMadeForKids] = useState<boolean | null>(null) // null = not selected yet
+  const [youtubeEmbeddable, setYoutubeEmbeddable] = useState(true)
+  const [youtubeLicense, setYoutubeLicense] = useState<'youtube' | 'creativeCommon'>('youtube')
+
+  // Threads states - Phase 1 Quick Wins
+  const [threadsReplyControl, setThreadsReplyControl] = useState<'everyone' | 'accounts_you_follow' | 'mentioned_only'>('everyone')
+
+  // Alt text states - Phase 1 Quick Wins (Accessibility)
+  const [instagramAltText, setInstagramAltText] = useState('')
+  const [pinterestAltText, setPinterestAltText] = useState('')
+  const [blueskyAltText, setBlueskyAltText] = useState('')
+
+  // Instagram states - Phase 2A Quick Wins
+  const [instagramLocation, setInstagramLocation] = useState<{ id: string; name: string } | null>(null)
+  const [instagramDisableComments, setInstagramDisableComments] = useState(false)
+
+  // Bluesky reply controls state - Phase 3 Community Controls
+  const [blueskyReplyControl, setBlueskyReplyControl] = useState<'everyone' | 'nobody' | 'following' | 'mentioned'>('everyone')
+
+  // Facebook publish controls state - Phase 3 Community Controls
+  const [facebookPublishAsDraft, setFacebookPublishAsDraft] = useState(false)
 
   // Auto-save hook - automatically saves draft every 30 seconds
   const { lastSaved, isSaving, error: autoSaveError, timeAgo, currentDraftId: autoSaveDraftId } = useAutoSave(
@@ -1770,8 +1807,23 @@ function CreateNewPostPageContent() {
         facebookAsStory: selectedPlatforms.includes('facebook') ? facebookAsStory : undefined,
         facebookAsReel: selectedPlatforms.includes('facebook') ? facebookAsReel : undefined,
         youtubeAsShort: selectedPlatforms.includes('youtube') ? youtubeAsShort : undefined,
+        // Phase 1 Quick Wins - New platform-specific settings
+        linkedinVisibility: selectedPlatforms.includes('linkedin') ? linkedinVisibility : undefined,
+        youtubeMadeForKids: selectedPlatforms.includes('youtube') ? (youtubeMadeForKids ?? undefined) : undefined,
+        youtubeEmbeddable: selectedPlatforms.includes('youtube') ? youtubeEmbeddable : undefined,
+        youtubeLicense: selectedPlatforms.includes('youtube') ? youtubeLicense : undefined,
+        threadsReplyControl: selectedPlatforms.includes('threads') ? threadsReplyControl : undefined,
+        instagramAltText: selectedPlatforms.includes('instagram') ? instagramAltText : undefined,
+        pinterestAltText: selectedPlatforms.includes('pinterest') ? pinterestAltText : undefined,
+        blueskyAltText: selectedPlatforms.includes('bluesky') ? blueskyAltText : undefined,
+        // Phase 2A Instagram Quick Wins
+        instagramLocation: selectedPlatforms.includes('instagram') ? (instagramLocation ?? undefined) : undefined,
+        instagramDisableComments: selectedPlatforms.includes('instagram') ? instagramDisableComments : undefined,
+        // Phase 3 Community Controls
+        blueskyReplyControl: selectedPlatforms.includes('bluesky') ? blueskyReplyControl : undefined,
+        facebookPublishAsDraft: selectedPlatforms.includes('facebook') ? facebookPublishAsDraft : undefined,
       }
-      
+
       console.log('Posting with data:', {
         platforms: postData.platforms,
         hasContent: !!postData.content,
@@ -4235,6 +4287,109 @@ function CreateNewPostPageContent() {
                   brandedContent={tiktokBrandedContent}
                   setBrandedContent={setTiktokBrandedContent}
                   isPhotoPost={uploadedMediaTypes.some(type => type.startsWith('image/')) && !uploadedMediaTypes.some(type => type.startsWith('video/'))}
+                />
+              </div>
+            )}
+
+            {/* LinkedIn Visibility Settings - Phase 1 Quick Wins */}
+            {selectedPlatforms.includes('linkedin') && (
+              <div className="mt-6">
+                <LinkedInVisibilitySelector
+                  visibility={linkedinVisibility}
+                  setVisibility={setLinkedinVisibility}
+                />
+              </div>
+            )}
+
+            {/* YouTube Compliance Settings - Phase 1 Quick Wins */}
+            {selectedPlatforms.includes('youtube') && (
+              <div className="mt-6">
+                <YouTubeComplianceSettings
+                  madeForKids={youtubeMadeForKids}
+                  setMadeForKids={setYoutubeMadeForKids}
+                  embeddable={youtubeEmbeddable}
+                  setEmbeddable={setYoutubeEmbeddable}
+                  license={youtubeLicense}
+                  setLicense={setYoutubeLicense}
+                />
+              </div>
+            )}
+
+            {/* Threads Reply Controls - Phase 1 Quick Wins */}
+            {selectedPlatforms.includes('threads') && (
+              <div className="mt-6">
+                <ThreadsReplyControls
+                  replyControl={threadsReplyControl}
+                  setReplyControl={setThreadsReplyControl}
+                />
+              </div>
+            )}
+
+            {/* Alt Text for Accessibility - Phase 1 Quick Wins */}
+            {selectedPlatforms.includes('instagram') && uploadedMediaUrls.length > 0 && (
+              <div className="mt-6">
+                <AltTextInput
+                  platform="Instagram"
+                  value={instagramAltText}
+                  onChange={setInstagramAltText}
+                />
+              </div>
+            )}
+
+            {/* Instagram Location & Comment Controls - Phase 2A Quick Wins */}
+            {selectedPlatforms.includes('instagram') && (
+              <>
+                <div className="mt-6">
+                  <InstagramLocationPicker
+                    location={instagramLocation}
+                    setLocation={setInstagramLocation}
+                  />
+                </div>
+                <div className="mt-6">
+                  <InstagramCommentControls
+                    disableComments={instagramDisableComments}
+                    setDisableComments={setInstagramDisableComments}
+                  />
+                </div>
+              </>
+            )}
+
+            {selectedPlatforms.includes('pinterest') && uploadedMediaUrls.length > 0 && (
+              <div className="mt-6">
+                <AltTextInput
+                  platform="Pinterest"
+                  value={pinterestAltText}
+                  onChange={setPinterestAltText}
+                />
+              </div>
+            )}
+
+            {selectedPlatforms.includes('bluesky') && uploadedMediaUrls.length > 0 && (
+              <div className="mt-6">
+                <AltTextInput
+                  platform="Bluesky"
+                  value={blueskyAltText}
+                  onChange={setBlueskyAltText}
+                />
+              </div>
+            )}
+
+            {/* Bluesky Reply Controls - Phase 3 Community Controls */}
+            {selectedPlatforms.includes('bluesky') && (
+              <div className="mt-6">
+                <BlueskyReplyControls
+                  replyControl={blueskyReplyControl}
+                  setReplyControl={setBlueskyReplyControl}
+                />
+              </div>
+            )}
+
+            {/* Facebook Publish Controls - Phase 3 Community Controls */}
+            {selectedPlatforms.includes('facebook') && (
+              <div className="mt-6">
+                <FacebookPublishControls
+                  publishAsDraft={facebookPublishAsDraft}
+                  setPublishAsDraft={setFacebookPublishAsDraft}
                 />
               </div>
             )}
