@@ -43,10 +43,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get Instagram account with access token
+    // Get Instagram account with access tokens (both Instagram and Facebook Page)
     const { data: account, error } = await supabase
       .from('social_accounts')
-      .select('access_token')
+      .select('access_token, access_secret')
       .eq('user_id', user.id)
       .eq('platform', 'instagram')
       .eq('is_active', true)
@@ -59,18 +59,31 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!account.access_token) {
+    // Use Facebook Page token (access_secret) for Facebook Graph API calls
+    // Fall back to Instagram token if Page token not available (for backwards compatibility)
+    const facebookToken = account.access_secret || account.access_token;
+
+    if (!facebookToken) {
       return NextResponse.json(
-        { error: 'Invalid Instagram access token. Please reconnect your account in Settings.' },
+        { error: 'Invalid access token. Please reconnect your Instagram account in Settings.' },
         { status: 401 }
       );
     }
 
-    // Search for locations using Facebook Pages API
+    // If using Instagram token (no Page token), provide helpful error
+    if (!account.access_secret) {
+      console.warn(`User ${user.id} attempting location search without Facebook Page token. Reconnection required.`);
+      return NextResponse.json(
+        { error: 'Location search requires reconnecting your Instagram account. Please disconnect and reconnect in Settings.' },
+        { status: 401 }
+      );
+    }
+
+    // Search for locations using Facebook Pages API with Facebook Page token
     console.log(`Location search request from user ${user.id}: "${query}"`);
     const locations = await searchFacebookPlaces(
       query,
-      account.access_token,
+      facebookToken,
       25 // limit
     );
 

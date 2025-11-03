@@ -181,26 +181,34 @@ export async function GET(request: NextRequest) {
     // The user_id from OAuth might be different from the IG Business Account ID
     let profileData = null;
     let igBusinessAccountId = user_id; // Default to OAuth user_id
-    
+    let facebookPageAccessToken = null; // Store FB Page token for location search
+
     // If we have a long-lived token, try to get IG Business Account ID
     if (token_type === 'long_lived') {
       // Try to get pages and their connected Instagram accounts
-      const pagesUrl = `https://graph.facebook.com/v20.0/me/accounts?fields=instagram_business_account,name&access_token=${access_token}`;
+      // IMPORTANT: Request access_token field to enable Facebook Graph API calls (e.g., location search)
+      const pagesUrl = `https://graph.facebook.com/v20.0/me/accounts?fields=instagram_business_account,name,access_token&access_token=${access_token}`;
       console.log('Fetching Facebook Pages with Instagram Business Accounts...');
-      
+
       const pagesResponse = await fetch(pagesUrl);
       console.log('Pages response status:', pagesResponse.status);
-      
+
       if (pagesResponse.ok) {
         const pagesData = await pagesResponse.json();
         console.log('Pages data:', JSON.stringify(pagesData, null, 2));
-        
+
         // Find the first page with an Instagram Business Account
         const pageWithInstagram = pagesData.data?.find((page: any) => page.instagram_business_account);
-        
+
         if (pageWithInstagram?.instagram_business_account?.id) {
           igBusinessAccountId = pageWithInstagram.instagram_business_account.id;
           console.log('Found Instagram Business Account ID:', igBusinessAccountId);
+
+          // Store Facebook Page access token for Facebook Graph API calls (location search, etc.)
+          if (pageWithInstagram.access_token) {
+            facebookPageAccessToken = pageWithInstagram.access_token;
+            console.log('Stored Facebook Page access token for Graph API calls');
+          }
         }
       }
     }
@@ -347,7 +355,8 @@ export async function GET(request: NextRequest) {
         .update({
           platform_user_id: platformUserId,
           username: username,
-          access_token: access_token, // Long-lived token
+          access_token: access_token, // Long-lived Instagram token
+          access_secret: facebookPageAccessToken, // Facebook Page token for Graph API calls
           is_active: true,
           updated_at: new Date().toISOString()
         })
@@ -385,7 +394,8 @@ export async function GET(request: NextRequest) {
           platform: 'instagram',
           platform_user_id: platformUserId,
           username: username,
-          access_token: access_token, // Long-lived token
+          access_token: access_token, // Long-lived Instagram token
+          access_secret: facebookPageAccessToken, // Facebook Page token for Graph API calls
           is_active: true
         });
 
