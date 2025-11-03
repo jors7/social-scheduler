@@ -26,7 +26,6 @@ export interface PostData {
   tiktokPhotoCoverIndex?: number; // TikTok specific - photo cover index for photo posts (0-based, default: 0)
   instagramAsStory?: boolean; // Instagram specific - post as story instead of feed post
   instagramAsReel?: boolean; // Instagram specific - post as reel instead of feed post
-  instagramLocation?: { id: string; name: string }; // Instagram specific - location tagging
   instagramDisableComments?: boolean; // Instagram specific - disable comments on post
   facebookAsStory?: boolean; // Facebook specific - post as story instead of feed post
   facebookAsReel?: boolean; // Facebook specific - post as reel instead of feed post
@@ -271,7 +270,6 @@ export class PostingService {
           postData?.instagramAsStory,
           postData?.instagramAsReel,
           postData?.instagramAltText,
-          postData?.instagramLocation?.id,
           postData?.instagramDisableComments
         );
 
@@ -396,7 +394,6 @@ export class PostingService {
     isStory?: boolean,
     isReel?: boolean,
     altText?: string,
-    locationId?: string,
     disableComments?: boolean
   ): Promise<PostResult> {
     try {
@@ -431,7 +428,6 @@ export class PostingService {
             isStory: isStory,
             isReel: isReel,
             altText: altText,
-            locationId: locationId,
             disableComments: disableComments,
             currentUserId: user?.id, // Pass current user ID for thumbnail upload
           }),
@@ -512,7 +508,6 @@ export class PostingService {
             isStory: isStory,
             isReel: isReel,
             altText: altText,
-            locationId: locationId,
             disableComments: disableComments,
             currentUserId: user?.id, // Pass current user ID for thumbnail upload
           }),

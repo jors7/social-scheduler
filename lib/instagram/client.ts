@@ -274,7 +274,6 @@ export class InstagramClient {
     isVideo: boolean = false,
     onProgress?: (status: string, progress?: number) => void,
     altText?: string,
-    locationId?: string,
     disableComments?: boolean
   ) {
     try {
@@ -297,12 +296,6 @@ export class InstagramClient {
       if (altText) {
         containerParams.append('custom_accessibility_caption', altText);
         console.log('Adding alt text for accessibility');
-      }
-
-      // Add location tag if provided
-      if (locationId) {
-        containerParams.append('location_id', locationId);
-        console.log('Adding location tag with ID:', locationId);
       }
 
       if (isVideo) {
