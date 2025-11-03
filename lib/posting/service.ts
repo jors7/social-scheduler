@@ -223,20 +223,33 @@ export class PostingService {
   }
 
   private async postToPlatform(
-    platform: string, 
-    content: string, 
-    account: any, 
-    mediaUrls?: string[],
+    platform: string,
+    content: string,
+    account: any,
+    mediaUrls?: any[],  // Changed from string[] to any[] to handle both formats
     onProgress?: (platform: string, status: string) => void,
     postData?: PostData
   ): Promise<PostResult> {
     // Clean content for text-only platforms
     const textContent = this.cleanHtmlContent(content);
-    
+
+    // Normalize mediaUrls - extract URL strings from objects if needed
+    const normalizedMediaUrls: string[] | undefined = mediaUrls?.map(item => {
+      if (typeof item === 'string') {
+        return item;  // Already a string
+      } else if (item && typeof item === 'object' && item.url) {
+        return item.url;  // Extract URL from object
+      } else {
+        console.error(`[PostingService] Invalid media URL format:`, item);
+        return '';  // Return empty string for invalid items
+      }
+    }).filter(url => url !== '');  // Remove any empty strings
+
     console.log(`Posting to ${platform}:`, {
       originalContent: content,
       cleanedContent: textContent,
-      mediaUrls: mediaUrls
+      mediaUrls: normalizedMediaUrls,
+      originalMediaUrlsFormat: mediaUrls?.map(item => typeof item)
     });
 
     switch (platform) {
@@ -244,7 +257,7 @@ export class PostingService {
         return await this.postToFacebook(
           textContent,
           account,
-          mediaUrls,
+          normalizedMediaUrls,
           postData?.facebookAsStory,
           postData?.facebookAsReel
         );
@@ -253,7 +266,7 @@ export class PostingService {
         return await this.postToInstagram(
           textContent,
           account,
-          mediaUrls,
+          normalizedMediaUrls,
           onProgress ? (status) => onProgress('instagram', status) : undefined,
           postData?.instagramAsStory,
           postData?.instagramAsReel,
@@ -261,30 +274,30 @@ export class PostingService {
           postData?.instagramLocation?.id,
           postData?.instagramDisableComments
         );
-      
+
       case 'bluesky':
-        return await this.postToBluesky(textContent, account, mediaUrls);
-      
+        return await this.postToBluesky(textContent, account, normalizedMediaUrls);
+
       case 'pinterest':
-        return await this.postToPinterest(textContent, account, mediaUrls);
+        return await this.postToPinterest(textContent, account, normalizedMediaUrls);
       
       case 'tiktok':
-        return await this.postToTikTok(textContent, account, mediaUrls);
-      
+        return await this.postToTikTok(textContent, account, normalizedMediaUrls);
+
       case 'linkedin':
-        return await this.postToLinkedIn(textContent, account, mediaUrls);
-      
+        return await this.postToLinkedIn(textContent, account, normalizedMediaUrls);
+
       case 'threads':
-        return await this.postToThreads(textContent, account, mediaUrls);
-      
+        return await this.postToThreads(textContent, account, normalizedMediaUrls);
+
       case 'twitter':
-        return await this.postToTwitter(textContent, account, mediaUrls);
+        return await this.postToTwitter(textContent, account, normalizedMediaUrls);
 
       case 'youtube':
         return await this.postToYouTube(
           textContent,
           account,
-          mediaUrls,
+          normalizedMediaUrls,
           postData?.youtubeAsShort
         );
 
