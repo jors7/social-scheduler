@@ -1173,10 +1173,10 @@ function CreateNewPostPageContent() {
     progressTracker.start();
 
     // Check if we're posting a video to Instagram (needs longer timeout)
-    const hasInstagramVideoPost = selectedPlatforms.includes('instagram') && 
-      selectedFiles.some(file => 
-        file.type.startsWith('video/') || 
-        ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'].some(ext => file.name.toLowerCase().endsWith(ext))
+    const hasInstagramVideoPost = selectedPlatforms.includes('instagram') &&
+      selectedFiles.some(file =>
+        file.type.startsWith('video/') ||
+        (file.name && ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'].some(ext => file.name.toLowerCase().endsWith(ext)))
       );
     
     // Safety timeout to prevent button getting stuck
@@ -1213,9 +1213,9 @@ function CreateNewPostPageContent() {
       
       // Check if we're posting a video to Instagram
       let instagramProgressToast: any = null;
-      const hasInstagramVideo = supportedPlatforms.includes('instagram') && 
-        mediaUrls.length > 0 && 
-        mediaUrls.some(url => ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'].some(ext => url.toLowerCase().includes(ext)));
+      const hasInstagramVideo = supportedPlatforms.includes('instagram') &&
+        mediaUrls.length > 0 &&
+        mediaUrls.some(url => typeof url === 'string' && ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'].some(ext => url.toLowerCase().includes(ext)));
       
       if (hasInstagramVideo) {
         instagramProgressToast = toast.loading('Preparing Instagram video post...');
@@ -3543,7 +3543,7 @@ function CreateNewPostPageContent() {
                           const url = getMediaUrl(media)
                           // Detect if URL is a video based on file extension
                           const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v']
-                          const isVideo = videoExtensions.some(ext => url.toLowerCase().includes(ext))
+                          const isVideo = typeof url === 'string' && videoExtensions.some(ext => url.toLowerCase().includes(ext))
 
                           return (
                             <SortableMediaItem
