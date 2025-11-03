@@ -494,31 +494,31 @@ export default function PostedPostsPage() {
                   const postWithFlags = post as any
 
                   // Check for Facebook Story
-                  if (post.platforms?.includes('facebook') && postWithFlags.facebook_as_story) {
+                  if (Array.isArray(post.platforms) && post.platforms.includes('facebook') && postWithFlags.facebook_as_story) {
                     const content = stripHtml(post.content)
                     return content && content.trim() ? content : 'Facebook Story'
                   }
 
                   // Check for Facebook Reel
-                  if (post.platforms?.includes('facebook') && postWithFlags.facebook_as_reel) {
+                  if (Array.isArray(post.platforms) && post.platforms.includes('facebook') && postWithFlags.facebook_as_reel) {
                     const content = stripHtml(post.content)
                     return content && content.trim() ? content : 'Facebook Reel'
                   }
 
                   // Check for Instagram Story
-                  if (post.platforms?.includes('instagram') && postWithFlags.instagram_as_story) {
+                  if (Array.isArray(post.platforms) && post.platforms.includes('instagram') && postWithFlags.instagram_as_story) {
                     const content = stripHtml(post.content)
                     return content && content.trim() ? content : 'Instagram Story'
                   }
 
                   // Check for Instagram Reel
-                  if (post.platforms?.includes('instagram') && postWithFlags.instagram_as_reel) {
+                  if (Array.isArray(post.platforms) && post.platforms.includes('instagram') && postWithFlags.instagram_as_reel) {
                     const content = stripHtml(post.content)
                     return content && content.trim() ? content : 'Instagram Reel'
                   }
 
                   // Check for YouTube Short
-                  if (post.platforms?.includes('youtube') && postWithFlags.youtube_as_short) {
+                  if (Array.isArray(post.platforms) && post.platforms.includes('youtube') && postWithFlags.youtube_as_short) {
                     const content = stripHtml(post.content)
                     return content && content.trim() ? content : 'YouTube Short'
                   }
@@ -526,17 +526,17 @@ export default function PostedPostsPage() {
                   // Fallback: Check if it's a story post via post_results (for old posts)
                   if (isStoryPost()) {
                     // Determine which platform the story is from
-                    if (post.platforms.includes('instagram')) {
+                    if (Array.isArray(post.platforms) && post.platforms.includes('instagram')) {
                       return 'Instagram Story'
                     }
-                    if (post.platforms.includes('facebook')) {
+                    if (Array.isArray(post.platforms) && post.platforms.includes('facebook')) {
                       return 'Facebook Story'
                     }
                     return 'Story'
                   }
 
                   // For Pinterest posts, use title if available
-                  if (post.platforms.includes('pinterest')) {
+                  if (Array.isArray(post.platforms) && post.platforms.includes('pinterest')) {
                     if (post.pinterest_title) {
                       return post.pinterest_title
                     }
@@ -569,7 +569,7 @@ export default function PostedPostsPage() {
                 const displayContent = getDisplayContent()
 
                 // Debug logging for Reel posts
-                if (post.platforms.includes('facebook') && post.media_urls?.some(media => isVideoUrl(extractMediaUrl(media)))) {
+                if (Array.isArray(post.platforms) && post.platforms.includes('facebook') && post.media_urls?.some(media => isVideoUrl(extractMediaUrl(media)))) {
                   console.log('🎬 Facebook Reel detected:', {
                     postId: post.id,
                     platform_media_url: post.platform_media_url,
@@ -590,7 +590,7 @@ export default function PostedPostsPage() {
                 // Use video tag only if it's actually a video file (not an image thumbnail)
                 // Note: Pinterest video pins have image thumbnails, not video files
                 const isVideo = !hasImageThumbnail &&
-                  !post.platforms?.includes('pinterest') && // Don't treat Pinterest thumbnails as videos
+                  !(Array.isArray(post.platforms) && post.platforms.includes('pinterest')) && // Don't treat Pinterest thumbnails as videos
                   firstMediaUrl && (
                     firstMediaUrl.includes('.mp4') ||
                     firstMediaUrl.includes('.mov') ||
@@ -629,7 +629,7 @@ export default function PostedPostsPage() {
                           </div>
                           
                           <div className="flex gap-1 mt-2 flex-wrap">
-                            {post.platforms.map(platform => (
+                            {(Array.isArray(post.platforms) ? post.platforms : []).map(platform => (
                               <span
                                 key={platform}
                                 className={cn(
