@@ -57,7 +57,7 @@ export class InstagramService {
 
     // Detect if it's a video based on file extension or explicit flag
     const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
-    const isVideo = content.isVideo || videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
+    const isVideo = content.isVideo || (typeof mediaUrl === 'string' && videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext)));
     
     console.log('InstagramService: Creating single post with:', {
       mediaUrl: mediaUrl.substring(0, 50) + '...',
@@ -85,7 +85,7 @@ export class InstagramService {
     // Prepare media items with type detection
     const mediaItems = content.mediaUrls.map(url => ({
       url,
-      isVideo: videoExtensions.some(ext => url.toLowerCase().includes(ext))
+      isVideo: typeof url === 'string' && videoExtensions.some(ext => url.toLowerCase().includes(ext))
     }));
 
     console.log('InstagramService: Creating carousel with:', {
@@ -126,7 +126,7 @@ export class InstagramService {
 
     // Detect if it's a video
     const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
-    const isVideo = content.isVideo || videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
+    const isVideo = content.isVideo || (typeof mediaUrl === 'string' && videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext)));
 
     console.log('InstagramService: Creating story with:', {
       mediaUrl: mediaUrl.substring(0, 50) + '...',
@@ -157,7 +157,7 @@ export class InstagramService {
 
     // Reels must be videos
     const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
-    const isVideo = content.isVideo || videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
+    const isVideo = content.isVideo || (typeof mediaUrl === 'string' && videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext)));
 
     if (!isVideo) {
       throw new Error('Instagram reels require a video file');
