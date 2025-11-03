@@ -21,12 +21,12 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
       <div className="max-w-[1700px] mx-auto px-6 relative pt-0 mt-0">
         <div className="flex flex-col lg:flex-row gap-0 items-center justify-center lg:ml-40">
           {/* Left Column - Text Content */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-            className="max-w-[600px] pt-0 mt-0 lg:-mt-8"
-          >
+          <div className="max-w-[600px] pt-0 mt-0 lg:-mt-8">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+            >
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-5 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-full mb-3 shadow-md">
               <span className="text-yellow-500 text-lg">✨</span>
@@ -64,15 +64,16 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
                 Start Free Trial
               </Button>
             </div>
-          </motion.div>
+            </motion.div>
+          </div>
 
           {/* Right Column - Hero Image */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="w-[132%] md:w-full overflow-hidden flex items-center justify-center md:block md:max-w-[1035px] md:overflow-visible lg:-ml-64 -ml-[16%] md:ml-0"
-          >
+          <div className="w-[132%] md:w-full overflow-hidden flex items-center justify-center md:block md:max-w-[1035px] md:overflow-visible lg:-ml-64 -ml-[16%] md:ml-0">
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+            >
             <Image
               src="https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard-v7.webp"
               alt="SocialCal Dashboard"
@@ -83,7 +84,8 @@ export function HeroSection({ isAuthenticated, onSignInClick }: HeroSectionProps
               blurDataURL={heroBlurData?.base64}
               className="w-full h-auto origin-center md:origin-left"
             />
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </div>
     </section>

@@ -869,13 +869,13 @@ export function SimpleDragCalendar({
                               </div>
                               {/* Post content */}
                               <div className="text-xs sm:text-sm opacity-90 mb-2">
-                                {post.platforms?.includes('pinterest') && post.pinterest_title
+                                {Array.isArray(post.platforms) && post.platforms.includes('pinterest') && post.pinterest_title
                                   ? post.pinterest_title
                                   : stripHtml(post.content).slice(0, 150) + '...'}
                               </div>
                               {/* Platform badges */}
                               <div className="flex flex-wrap gap-1">
-                                {post.platforms.map(platform => (
+                                {(Array.isArray(post.platforms) ? post.platforms : []).map(platform => (
                                   <span
                                     key={platform}
                                     className="text-xs bg-white/20 px-2 py-1 rounded"

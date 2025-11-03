@@ -1394,17 +1394,17 @@ function DashboardContent() {
                     // Fallback: Check if it's a story post via post_results (for old posts)
                     if (isStoryPost()) {
                       // Determine which platform the story is from
-                      if (post.platforms.includes('instagram')) {
+                      if (Array.isArray(post.platforms) && post.platforms.includes('instagram')) {
                         return 'Instagram Story'
                       }
-                      if (post.platforms.includes('facebook')) {
+                      if (Array.isArray(post.platforms) && post.platforms.includes('facebook')) {
                         return 'Facebook Story'
                       }
                       return 'Story'
                     }
 
                     // Check if this is a Pinterest post with specific content
-                    if (post.platforms.includes('pinterest')) {
+                    if (Array.isArray(post.platforms) && post.platforms.includes('pinterest')) {
                       // Type assertion to access Pinterest fields
                       const pinterestPost = post as any
 
@@ -1430,7 +1430,7 @@ function DashboardContent() {
 
                     // Check if there's platform-specific content for the first platform
                     const postWithPlatformContent = post as any
-                    if (postWithPlatformContent.platform_content && post.platforms.length > 0) {
+                    if (postWithPlatformContent.platform_content && Array.isArray(post.platforms) && post.platforms.length > 0) {
                       const firstPlatform = post.platforms[0]
                       if (postWithPlatformContent.platform_content[firstPlatform]) {
                         return postWithPlatformContent.platform_content[firstPlatform]
@@ -1457,7 +1457,7 @@ function DashboardContent() {
                       <div className="flex-1">
                         <p className="font-medium line-clamp-1">{truncatedContent}{truncatedContent.length >= 60 ? '...' : ''}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          {post.platforms.map((platform) => (
+                          {(Array.isArray(post.platforms) ? post.platforms : []).map((platform) => (
                             <span
                               key={platform}
                               className={cn(

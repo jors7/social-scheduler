@@ -178,37 +178,37 @@ export function PostCard({
     const postWithFlags = post as any
 
     // Check for Facebook Story
-    if (post.platforms?.includes('facebook') && postWithFlags.facebook_as_story) {
+    if (Array.isArray(post.platforms) && post.platforms.includes('facebook') && postWithFlags.facebook_as_story) {
       const content = stripHtml(post.content)
       return content && content.trim() ? content : 'Facebook Story'
     }
 
     // Check for Facebook Reel
-    if (post.platforms?.includes('facebook') && postWithFlags.facebook_as_reel) {
+    if (Array.isArray(post.platforms) && post.platforms.includes('facebook') && postWithFlags.facebook_as_reel) {
       const content = stripHtml(post.content)
       return content && content.trim() ? content : 'Facebook Reel'
     }
 
     // Check for Instagram Story
-    if (post.platforms?.includes('instagram') && postWithFlags.instagram_as_story) {
+    if (Array.isArray(post.platforms) && post.platforms.includes('instagram') && postWithFlags.instagram_as_story) {
       const content = stripHtml(post.content)
       return content && content.trim() ? content : 'Instagram Story'
     }
 
     // Check for Instagram Reel
-    if (post.platforms?.includes('instagram') && postWithFlags.instagram_as_reel) {
+    if (Array.isArray(post.platforms) && post.platforms.includes('instagram') && postWithFlags.instagram_as_reel) {
       const content = stripHtml(post.content)
       return content && content.trim() ? content : 'Instagram Reel'
     }
 
     // Check for YouTube Short
-    if (post.platforms?.includes('youtube') && postWithFlags.youtube_as_short) {
+    if (Array.isArray(post.platforms) && post.platforms.includes('youtube') && postWithFlags.youtube_as_short) {
       const content = stripHtml(post.content)
       return content && content.trim() ? content : 'YouTube Short'
     }
 
     // Check for Pinterest title (works for all variants)
-    if (post.platforms?.includes('pinterest') && 'pinterest_title' in post) {
+    if (Array.isArray(post.platforms) && post.platforms.includes('pinterest') && 'pinterest_title' in post) {
       const pinterestPost = post as any
       if (pinterestPost.pinterest_title) {
         return pinterestPost.pinterest_title
@@ -224,7 +224,7 @@ export function PostCard({
     }
 
     // For Pinterest posts, try to show something meaningful
-    if (post.platforms?.includes('pinterest')) {
+    if (Array.isArray(post.platforms) && post.platforms.includes('pinterest')) {
       // Try pinterest_description if available
       const pinterestPost = post as any
       if (pinterestPost.pinterest_description) {
@@ -262,7 +262,7 @@ export function PostCard({
   // Check if the media URL is a video
   // Note: Pinterest video pins have image thumbnails, not video files
   const isVideo = imageUrl &&
-    !post.platforms?.includes('pinterest') && // Don't treat Pinterest thumbnails as videos
+    !(Array.isArray(post.platforms) && post.platforms.includes('pinterest')) && // Don't treat Pinterest thumbnails as videos
     isVideoUrl(imageUrl)
 
   return (
@@ -348,7 +348,7 @@ export function PostCard({
 
         {/* Platform badges */}
         <div className="flex flex-wrap gap-1 mb-3">
-          {post.platforms.map(platform => (
+          {(Array.isArray(post.platforms) ? post.platforms : []).map(platform => (
             <span
               key={platform}
               className={cn(
