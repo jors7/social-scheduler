@@ -65,7 +65,7 @@ export function BlueskyReplyControls({
             <div className="group relative">
               <Info className="h-4 w-4 text-gray-400 cursor-help" />
               <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-10">
-                Control who can reply to your post using Bluesky's threadgate feature. This helps manage conversations and reduce unwanted interactions.
+                Control who can reply to your post using Bluesky&apos;s threadgate feature. This helps manage conversations and reduce unwanted interactions.
               </div>
             </div>
           </div>
