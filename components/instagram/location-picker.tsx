@@ -293,7 +293,7 @@ export function InstagramLocationPicker({
             <div className="text-xs text-blue-800">
               <p className="font-medium mb-1">How location tagging works:</p>
               <ul className="space-y-0.5">
-                <li>• Search uses Facebook Pages with real addresses</li>
+                <li>• Search powered by Google Places</li>
                 <li>• Selected location will appear on your Instagram post</li>
                 <li>• Helps people discover your content by location</li>
               </ul>

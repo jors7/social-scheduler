@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchFacebookPlaces } from '@/lib/instagram/location-search';
+import { searchGooglePlaces } from '@/lib/google/places-service';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 /**
  * Instagram Location Search API
  *
- * Searches for Instagram-compatible locations using Facebook Pages Search API.
- * Returns locations (Facebook Pages) that have geographic coordinates and can
- * be used as location_id when creating Instagram posts.
+ * Searches for Instagram-compatible locations using Google Places API.
+ * Returns locations that can be used as location_id when creating Instagram posts.
+ *
+ * Note: Switched from Facebook Pages Search to Google Places API to avoid
+ * Facebook OAuth token requirements. Google Place IDs work as Instagram location_id.
  *
  * Endpoint: GET /api/instagram/locations/search?q={query}
  */
@@ -24,7 +26,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get current user
+    // Check if Google Places API key is configured
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+    if (!apiKey) {
+      console.error('[Location Search] GOOGLE_PLACES_API_KEY not configured');
+      return NextResponse.json(
+        { error: 'Location search is not configured. Please contact support.' },
+        { status: 500 }
+      );
+    }
+
+    // Get current user (still require authentication for rate limiting and logging)
     const cookieStore = cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,67 +55,32 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get Instagram account with access tokens (both Instagram and Facebook Page)
-    const { data: account, error } = await supabase
-      .from('social_accounts')
-      .select('access_token, access_secret')
-      .eq('user_id', user.id)
-      .eq('platform', 'instagram')
-      .eq('is_active', true)
-      .single();
-
-    if (error || !account) {
-      return NextResponse.json(
-        { error: 'Instagram account not connected. Please connect your Instagram account in Settings.' },
-        { status: 400 }
-      );
-    }
-
-    // Use Facebook Page token (access_secret) for Facebook Graph API calls
-    // Fall back to Instagram token if Page token not available (for backwards compatibility)
-    const facebookToken = account.access_secret || account.access_token;
-
-    if (!facebookToken) {
-      return NextResponse.json(
-        { error: 'Invalid access token. Please reconnect your Instagram account in Settings.' },
-        { status: 401 }
-      );
-    }
-
-    // If using Instagram token (no Page token), provide helpful error
-    if (!account.access_secret) {
-      console.warn(`User ${user.id} attempting location search without Facebook Page token. Reconnection required.`);
-      return NextResponse.json(
-        { error: 'Location search requires reconnecting your Instagram account. Please disconnect and reconnect in Settings.' },
-        { status: 401 }
-      );
-    }
-
-    // Search for locations using Facebook Pages API with Facebook Page token
-    console.log(`Location search request from user ${user.id}: "${query}"`);
-    const locations = await searchFacebookPlaces(
+    // Search for locations using Google Places API
+    console.log(`[Location Search] Request from user ${user.id}: "${query}"`);
+    const locations = await searchGooglePlaces(
       query,
-      facebookToken,
+      apiKey,
       25 // limit
     );
 
-    console.log(`Returning ${locations.length} locations for query "${query}"`);
+    console.log(`[Location Search] Returning ${locations.length} locations for query "${query}"`);
 
     return NextResponse.json({
       success: true,
       query: query,
       count: locations.length,
-      locations: locations
+      locations: locations,
+      source: 'google_places' // Indicate data source
     });
 
   } catch (error: any) {
-    console.error('Location search error:', error);
+    console.error('[Location Search] Error:', error);
 
-    // Check for authentication errors
-    if (error?.message?.includes('authentication') || error?.message?.includes('token')) {
+    // Check for Google API errors
+    if (error?.message?.includes('API')) {
       return NextResponse.json(
-        { error: 'Instagram authentication expired. Please reconnect your account in Settings.' },
-        { status: 401 }
+        { error: 'Location search service temporarily unavailable. Please try again.' },
+        { status: 503 }
       );
     }
 
