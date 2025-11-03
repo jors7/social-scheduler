@@ -93,34 +93,33 @@ export default function PostedPostsPage() {
       const data = await response.json()
       const posts = data.posts || []
 
-      // Normalize posts to ensure platforms is always an array
-      const normalizedPosts = posts.map((post: PostedPost) => {
-        let normalizedPlatforms: string[] = []
-        try {
-          // Log the raw type and value for debugging
-          console.log('Raw platforms for post', post.id, ':', typeof post.platforms, post.platforms)
+      // Normalize posts to ensure all fields are the correct type
+      const normalizedPosts = posts.map((post: any) => {
+        // Normalize platforms array
+        const safePlatforms = Array.isArray(post.platforms)
+          ? post.platforms.map((p: any) => String(p)).filter((p: string) => p && p !== 'null' && p !== 'undefined')
+          : []
 
-          if (Array.isArray(post.platforms)) {
-            // Log each element's type
-            post.platforms.forEach((p, i) => {
-              console.log(`Platform[${i}] type:`, typeof p, 'value:', p, 'is string?:', typeof p === 'string', 'constructor:', p?.constructor?.name)
-            })
-            // Ensure all elements in the array are strings - force convert to strings
-            normalizedPlatforms = post.platforms.map(p => String(p)).filter(p => p && p !== 'null' && p !== 'undefined')
-            if (normalizedPlatforms.length !== post.platforms.length) {
-              console.warn('Filtered non-string platforms for post', post.id, 'original:', post.platforms, 'filtered:', normalizedPlatforms)
-            }
-          } else if (typeof post.platforms === 'string') {
-            const parsed = JSON.parse(post.platforms)
-            normalizedPlatforms = Array.isArray(parsed) ? parsed.filter(p => typeof p === 'string') : []
-          }
-        } catch (e) {
-          console.error('Failed to parse platforms for post:', post.id, e)
-          normalizedPlatforms = []
-        }
+        // Normalize media_urls array
+        const safeMediaUrls = Array.isArray(post.media_urls)
+          ? post.media_urls.map((url: any) => String(url)).filter((url: string) => url && url !== 'null' && url !== 'undefined')
+          : []
+
+        // Normalize media URL strings (ensure they're strings or null, not arrays/objects)
+        const safePlatformMediaUrl = post.platform_media_url
+          ? (typeof post.platform_media_url === 'string' ? post.platform_media_url : String(post.platform_media_url))
+          : null
+
+        const safePinterestMediaUrl = post.pinterest_media_url
+          ? (typeof post.pinterest_media_url === 'string' ? post.pinterest_media_url : String(post.pinterest_media_url))
+          : null
+
         return {
           ...post,
-          platforms: normalizedPlatforms
+          platforms: safePlatforms,
+          media_urls: safeMediaUrls,
+          platform_media_url: safePlatformMediaUrl,
+          pinterest_media_url: safePinterestMediaUrl
         }
       })
 
