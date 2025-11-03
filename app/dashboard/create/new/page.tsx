@@ -620,7 +620,7 @@ function CreateNewPostPageContent() {
   }
 
   // Upload files immediately when selected (for autosave functionality)
-  const uploadFilesImmediately = async (files: File[]): Promise<any[]> => {
+  const uploadFilesImmediately = async (files: File[]): Promise<string[]> => {
     if (files.length === 0) return []
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -648,7 +648,7 @@ function CreateNewPostPageContent() {
       }
     }
 
-    const uploadedUrls: any[] = []
+    const uploadedUrls: string[] = []
     const hasVideos = files.some(file => file.type.startsWith('video/'))
 
     toast.info(`Uploading ${files.length} file(s)...`, { duration: 2000 })
@@ -702,20 +702,11 @@ function CreateNewPostPageContent() {
             // Continue without thumbnail
           }
 
-          // Store as object with thumbnail
-          uploadedUrls.push({
-            url: publicUrl,
-            thumbnailUrl: thumbnailUrl,
-            type: 'video',
-            mimeType: file.type
-          })
+          // Store just the URL string (thumbnail is stored separately in database)
+          uploadedUrls.push(publicUrl)
         } else {
-          // Store as object for images
-          uploadedUrls.push({
-            url: publicUrl,
-            type: 'image',
-            mimeType: file.type
-          })
+          // Store just the URL string
+          uploadedUrls.push(publicUrl)
         }
       } catch (error) {
         console.error('Upload error for file:', file.name, error)
