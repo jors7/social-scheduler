@@ -26,7 +26,6 @@ export interface PostData {
   tiktokPhotoCoverIndex?: number; // TikTok specific - photo cover index for photo posts (0-based, default: 0)
   instagramAsStory?: boolean; // Instagram specific - post as story instead of feed post
   instagramAsReel?: boolean; // Instagram specific - post as reel instead of feed post
-  instagramDisableComments?: boolean; // Instagram specific - disable comments on post
   facebookAsStory?: boolean; // Facebook specific - post as story instead of feed post
   facebookAsReel?: boolean; // Facebook specific - post as reel instead of feed post
   youtubeAsShort?: boolean; // YouTube specific - post as Short instead of regular video
@@ -43,7 +42,6 @@ export interface PostData {
   // Facebook publish controls
   facebookPublishAsDraft?: boolean; // Facebook specific - save as draft instead of publishing immediately
   // Alt text for accessibility
-  instagramAltText?: string; // Instagram specific - alt text for images (accessibility)
   pinterestAltText?: string; // Pinterest specific - alt text for pins (accessibility)
   blueskyAltText?: string; // Bluesky specific - alt text for images (accessibility)
 }
@@ -268,9 +266,7 @@ export class PostingService {
           normalizedMediaUrls,
           onProgress ? (status) => onProgress('instagram', status) : undefined,
           postData?.instagramAsStory,
-          postData?.instagramAsReel,
-          postData?.instagramAltText,
-          postData?.instagramDisableComments
+          postData?.instagramAsReel
         );
 
       case 'bluesky':
@@ -392,9 +388,7 @@ export class PostingService {
     mediaUrls?: string[],
     onProgress?: (status: string) => void,
     isStory?: boolean,
-    isReel?: boolean,
-    altText?: string,
-    disableComments?: boolean
+    isReel?: boolean
   ): Promise<PostResult> {
     try {
       // Instagram requires media
@@ -427,8 +421,6 @@ export class PostingService {
             mediaUrls: mediaUrls,
             isStory: isStory,
             isReel: isReel,
-            altText: altText,
-            disableComments: disableComments,
             currentUserId: user?.id, // Pass current user ID for thumbnail upload
           }),
         });
@@ -507,8 +499,6 @@ export class PostingService {
             mediaUrls: mediaUrls, // Pass all media URLs for carousel support
             isStory: isStory,
             isReel: isReel,
-            altText: altText,
-            disableComments: disableComments,
             currentUserId: user?.id, // Pass current user ID for thumbnail upload
           }),
         });

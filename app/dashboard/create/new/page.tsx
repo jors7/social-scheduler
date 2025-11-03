@@ -50,8 +50,6 @@ const LinkedInVisibilitySelector = dynamic(() => import('@/components/linkedin/v
 const YouTubeComplianceSettings = dynamic(() => import('@/components/youtube/compliance-settings').then(mod => ({ default: mod.YouTubeComplianceSettings })), { ssr: false })
 const ThreadsReplyControls = dynamic(() => import('@/components/threads/reply-controls').then(mod => ({ default: mod.ThreadsReplyControls })), { ssr: false })
 const AltTextInput = dynamic(() => import('@/components/shared/alt-text-input').then(mod => ({ default: mod.AltTextInput })), { ssr: false })
-// Phase 2A Instagram Quick Wins - New Instagram components
-const InstagramCommentControls = dynamic(() => import('@/components/instagram/comment-controls').then(mod => ({ default: mod.InstagramCommentControls })), { ssr: false })
 // Phase 3 Community Controls - Bluesky and Facebook
 const BlueskyReplyControls = dynamic(() => import('@/components/bluesky/reply-controls').then(mod => ({ default: mod.BlueskyReplyControls })), { ssr: false })
 const FacebookPublishControls = dynamic(() => import('@/components/facebook/publish-controls').then(mod => ({ default: mod.FacebookPublishControls })), { ssr: false })
@@ -497,12 +495,8 @@ function CreateNewPostPageContent() {
   const [threadsReplyControl, setThreadsReplyControl] = useState<'everyone' | 'accounts_you_follow' | 'mentioned_only'>('everyone')
 
   // Alt text states - Phase 1 Quick Wins (Accessibility)
-  const [instagramAltText, setInstagramAltText] = useState('')
   const [pinterestAltText, setPinterestAltText] = useState('')
   const [blueskyAltText, setBlueskyAltText] = useState('')
-
-  // Instagram states - Phase 2A Quick Wins
-  const [instagramDisableComments, setInstagramDisableComments] = useState(false)
 
   // Bluesky reply controls state - Phase 3 Community Controls
   const [blueskyReplyControl, setBlueskyReplyControl] = useState<'everyone' | 'nobody' | 'following' | 'mentioned'>('everyone')
@@ -1802,11 +1796,8 @@ function CreateNewPostPageContent() {
         youtubeEmbeddable: selectedPlatforms.includes('youtube') ? youtubeEmbeddable : undefined,
         youtubeLicense: selectedPlatforms.includes('youtube') ? youtubeLicense : undefined,
         threadsReplyControl: selectedPlatforms.includes('threads') ? threadsReplyControl : undefined,
-        instagramAltText: selectedPlatforms.includes('instagram') ? instagramAltText : undefined,
         pinterestAltText: selectedPlatforms.includes('pinterest') ? pinterestAltText : undefined,
         blueskyAltText: selectedPlatforms.includes('bluesky') ? blueskyAltText : undefined,
-        // Phase 2A Instagram Quick Wins
-        instagramDisableComments: selectedPlatforms.includes('instagram') ? instagramDisableComments : undefined,
         // Phase 3 Community Controls
         blueskyReplyControl: selectedPlatforms.includes('bluesky') ? blueskyReplyControl : undefined,
         facebookPublishAsDraft: selectedPlatforms.includes('facebook') ? facebookPublishAsDraft : undefined,
@@ -4314,28 +4305,6 @@ function CreateNewPostPageContent() {
             )}
 
             {/* Alt Text for Accessibility - Phase 1 Quick Wins */}
-            {selectedPlatforms.includes('instagram') && uploadedMediaUrls.length > 0 && (
-              <div className="mt-6">
-                <AltTextInput
-                  platform="Instagram"
-                  value={instagramAltText}
-                  onChange={setInstagramAltText}
-                />
-              </div>
-            )}
-
-            {/* Instagram Comment Controls - Phase 2A Quick Wins */}
-            {selectedPlatforms.includes('instagram') && (
-              <>
-                <div className="mt-6">
-                  <InstagramCommentControls
-                    disableComments={instagramDisableComments}
-                    setDisableComments={setInstagramDisableComments}
-                  />
-                </div>
-              </>
-            )}
-
             {selectedPlatforms.includes('pinterest') && uploadedMediaUrls.length > 0 && (
               <div className="mt-6">
                 <AltTextInput

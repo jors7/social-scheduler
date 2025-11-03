@@ -28,8 +28,6 @@ export class InstagramService {
     isVideo?: boolean;
     isStory?: boolean; // New parameter for story posts
     isReel?: boolean; // New parameter for reel posts
-    altText?: string; // Alt text for accessibility
-    disableComments?: boolean; // Disable comments on post
     onProgress?: (status: string, progress?: number) => void;
   }) {
     // Check if this is a story post
@@ -68,7 +66,7 @@ export class InstagramService {
       isVideo: isVideo
     });
 
-    return this.client.createPost(mediaUrl, content.caption, isVideo, content.onProgress, content.altText, content.disableComments);
+    return this.client.createPost(mediaUrl, content.caption, isVideo, content.onProgress);
   }
 
   private async createCarouselPost(content: {

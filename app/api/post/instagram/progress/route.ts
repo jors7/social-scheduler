@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
   // Process the request
   (async () => {
     try {
-      const { userId, accessToken, text, mediaUrl, mediaUrls, isStory, isReel, altText, disableComments, currentUserId } = await request.json();
+      const { userId, accessToken, text, mediaUrl, mediaUrls, isStory, isReel, currentUserId } = await request.json();
 
       if (!userId || !accessToken) {
         await writer.write(encoder.encode(`data: ${JSON.stringify({ error: 'Missing required fields' })}\n\n`));
@@ -51,8 +51,6 @@ export async function POST(request: NextRequest) {
         caption: text,
         isStory: isStory,
         isReel: isReel,
-        altText: altText,
-        disableComments: disableComments,
         onProgress: (status: string, progress?: number) => {
           // Send progress update
           writer.write(encoder.encode(`data: ${JSON.stringify({
