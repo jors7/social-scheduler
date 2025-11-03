@@ -101,8 +101,12 @@ export default function PostedPostsPage() {
           console.log('Raw platforms for post', post.id, ':', typeof post.platforms, post.platforms)
 
           if (Array.isArray(post.platforms)) {
-            // Ensure all elements in the array are strings
-            normalizedPlatforms = post.platforms.filter(p => typeof p === 'string')
+            // Log each element's type
+            post.platforms.forEach((p, i) => {
+              console.log(`Platform[${i}] type:`, typeof p, 'value:', p, 'is string?:', typeof p === 'string', 'constructor:', p?.constructor?.name)
+            })
+            // Ensure all elements in the array are strings - force convert to strings
+            normalizedPlatforms = post.platforms.map(p => String(p)).filter(p => p && p !== 'null' && p !== 'undefined')
             if (normalizedPlatforms.length !== post.platforms.length) {
               console.warn('Filtered non-string platforms for post', post.id, 'original:', post.platforms, 'filtered:', normalizedPlatforms)
             }
