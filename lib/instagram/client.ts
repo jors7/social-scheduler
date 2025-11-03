@@ -342,6 +342,10 @@ export class InstagramClient {
         onProgress(isVideo ? 'Processing video... This may take a moment.' : 'Processing image...');
       }
 
+      // Add a small delay before checking status (Instagram needs time to register the media)
+      // This matches the createStory pattern and prevents race conditions in multi-platform posting
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       // Wait for media to be processed (check status)
       let attempts = 0;
       const maxAttempts = isVideo ? 120 : 30; // 4 minutes for video, 1 minute for images
@@ -365,6 +369,9 @@ export class InstagramClient {
             if (onProgress) {
               onProgress(isVideo ? 'Video processed! Publishing...' : 'Image processed! Publishing...');
             }
+            // Add a delay after FINISHED to ensure Instagram's backend systems are fully synchronized
+            // This prevents "Media ID is not available" errors in multi-platform posting
+            await new Promise(resolve => setTimeout(resolve, 2000));
           } else if (statusData.status_code === 'ERROR') {
             throw new Error(`Media processing failed: ${JSON.stringify(statusData)}`);
           } else {
