@@ -50,7 +50,9 @@ export async function searchGooglePlaces(
 
     if (autocompleteData.status !== 'OK' && autocompleteData.status !== 'ZERO_RESULTS') {
       console.error('[Google Places] API returned error status:', autocompleteData.status)
-      throw new Error(`Google Places API error: ${autocompleteData.status}`)
+      console.error('[Google Places] Full error response:', JSON.stringify(autocompleteData, null, 2))
+      console.error('[Google Places] Error message:', autocompleteData.error_message || 'No error message provided')
+      throw new Error(`Google Places API error: ${autocompleteData.status} - ${autocompleteData.error_message || 'Check logs for details'}`)
     }
 
     if (!autocompleteData.predictions || autocompleteData.predictions.length === 0) {
