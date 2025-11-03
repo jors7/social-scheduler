@@ -87,14 +87,33 @@ export default function PostedPostsPage() {
     try {
       // Fetch posts with media URLs from server-side API
       const response = await fetch('/api/posts/posted-with-media?status=posted,failed')
-      
+
       if (!response.ok) throw new Error('Failed to fetch posts')
-      
+
       const data = await response.json()
       const posts = data.posts || []
-      
+
+      // Normalize posts to ensure platforms is always an array
+      const normalizedPosts = posts.map((post: PostedPost) => {
+        let normalizedPlatforms = []
+        try {
+          if (Array.isArray(post.platforms)) {
+            normalizedPlatforms = post.platforms
+          } else if (typeof post.platforms === 'string') {
+            normalizedPlatforms = JSON.parse(post.platforms)
+          }
+        } catch (e) {
+          console.error('Failed to parse platforms for post:', post.id, e)
+          normalizedPlatforms = []
+        }
+        return {
+          ...post,
+          platforms: normalizedPlatforms
+        }
+      })
+
       // Posts are already sorted by the API, just set them
-      setPostedPosts(posts)
+      setPostedPosts(normalizedPosts)
     } catch (error) {
       console.error('Error fetching posted posts:', error)
       toast.error('Failed to load posted posts')
