@@ -95,12 +95,20 @@ export default function PostedPostsPage() {
 
       // Normalize posts to ensure platforms is always an array
       const normalizedPosts = posts.map((post: PostedPost) => {
-        let normalizedPlatforms = []
+        let normalizedPlatforms: string[] = []
         try {
+          // Log the raw type and value for debugging
+          console.log('Raw platforms for post', post.id, ':', typeof post.platforms, post.platforms)
+
           if (Array.isArray(post.platforms)) {
-            normalizedPlatforms = post.platforms
+            // Ensure all elements in the array are strings
+            normalizedPlatforms = post.platforms.filter(p => typeof p === 'string')
+            if (normalizedPlatforms.length !== post.platforms.length) {
+              console.warn('Filtered non-string platforms for post', post.id, 'original:', post.platforms, 'filtered:', normalizedPlatforms)
+            }
           } else if (typeof post.platforms === 'string') {
-            normalizedPlatforms = JSON.parse(post.platforms)
+            const parsed = JSON.parse(post.platforms)
+            normalizedPlatforms = Array.isArray(parsed) ? parsed.filter(p => typeof p === 'string') : []
           }
         } catch (e) {
           console.error('Failed to parse platforms for post:', post.id, e)
