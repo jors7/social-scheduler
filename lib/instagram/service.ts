@@ -56,6 +56,11 @@ export class InstagramService {
     }
 
     // Detect if it's a video based on file extension or explicit flag
+    console.log('[Instagram Service] mediaUrl type check:', {
+      mediaUrl,
+      type: typeof mediaUrl,
+      isString: typeof mediaUrl === 'string'
+    });
     const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
     const isVideo = content.isVideo || (typeof mediaUrl === 'string' && videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext)));
     
@@ -81,7 +86,12 @@ export class InstagramService {
     }
 
     const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
-    
+
+    console.log('[Instagram Service] Carousel mediaUrls check:', {
+      mediaUrls: content.mediaUrls,
+      types: content.mediaUrls.map(url => ({ url, type: typeof url }))
+    });
+
     // Prepare media items with type detection
     const mediaItems = content.mediaUrls.map(url => ({
       url,
