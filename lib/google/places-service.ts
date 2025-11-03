@@ -33,7 +33,11 @@ export async function searchGooglePlaces(
     // Step 1: Get autocomplete predictions
     const autocompleteUrl = new URL('https://maps.googleapis.com/maps/api/place/autocomplete/json')
     autocompleteUrl.searchParams.append('input', query)
-    autocompleteUrl.searchParams.append('types', 'establishment') // Only businesses and places
+    // No types filter - returns all location types for flexibility:
+    // - Cities/Regions (Barcelona, Spain; Paris, France)
+    // - Businesses (Barcelona Wine Bar; Starbucks Times Square)
+    // - Landmarks (Sagrada Familia; Eiffel Tower)
+    // Instagram accepts all place_id types as location_id
     autocompleteUrl.searchParams.append('key', apiKey)
 
     console.log(`[Google Places] Searching for: "${query}"`)
