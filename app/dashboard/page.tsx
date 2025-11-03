@@ -424,10 +424,12 @@ function DashboardContent() {
 
         const existing = scheduleMap.get(dateKey) || { count: 0, platforms: new Set<string>(), dateObj: postDate, media_urls: [], postGroups: [] }
         existing.count += 1
-        post.platforms.forEach(platform => existing.platforms.add(platform))
+        if (Array.isArray(post.platforms)) {
+          post.platforms.forEach(platform => existing.platforms.add(platform))
+        }
 
         // Add this post's platforms as a group
-        existing.postGroups.push(post.platforms)
+        existing.postGroups.push(Array.isArray(post.platforms) ? post.platforms : [])
 
         // Collect media (up to 3 per day) - preserve full objects with thumbnails
         if (existing.media_urls.length < 3 && post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {

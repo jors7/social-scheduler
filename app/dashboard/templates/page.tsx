@@ -276,7 +276,7 @@ export default function TemplatesPage() {
 
                 {/* Platforms */}
                 <div className="flex flex-wrap gap-1">
-                  {template.platforms.map(platform => (
+                  {(Array.isArray(template.platforms) ? template.platforms : []).map(platform => (
                     <Badge key={platform} variant="secondary" className="text-xs">
                       {platform}
                     </Badge>

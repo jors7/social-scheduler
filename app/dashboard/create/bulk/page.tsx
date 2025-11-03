@@ -419,7 +419,7 @@ function BulkUploadContent() {
                       </div>
 
                       <div className="flex flex-wrap gap-1">
-                        {post.platforms.map(platformId => {
+                        {(Array.isArray(post.platforms) ? post.platforms : []).map(platformId => {
                           const platform = platforms.find(p => p.id === platformId)
                           return platform ? (
                             <span

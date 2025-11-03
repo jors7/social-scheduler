@@ -303,7 +303,7 @@ export default function PostedPostsPage() {
     // For now, show a message about viewing original posts
     // In a real app, this would open the original social media posts
     const selectedPostsData = postedPosts.filter(p => selectedPosts.includes(p.id))
-    const platformsSet = new Set(selectedPostsData.flatMap(p => p.platforms))
+    const platformsSet = new Set(selectedPostsData.flatMap(p => Array.isArray(p.platforms) ? p.platforms : []))
     const platforms = Array.from(platformsSet)
 
     toast.info(`Selected posts were published on: ${platforms.join(', ')}. Original post viewing will be implemented when platform APIs provide post URLs.`)

@@ -162,7 +162,7 @@ export default function CalendarPage() {
 
     // Platform filter
     if (platformFilter.length > 0) {
-      const hasMatchingPlatform = post.platforms.some(p => platformFilter.includes(p))
+      const hasMatchingPlatform = Array.isArray(post.platforms) && post.platforms.some(p => platformFilter.includes(p))
       if (!hasMatchingPlatform) return false
     }
 
@@ -182,7 +182,7 @@ export default function CalendarPage() {
     setStatusFilter('all')
   }
 
-  const availablePlatforms = Array.from(new Set(scheduledPosts.flatMap(p => p.platforms)))
+  const availablePlatforms = Array.from(new Set(scheduledPosts.flatMap(p => Array.isArray(p.platforms) ? p.platforms : [])))
 
   if (loading) {
     return (
