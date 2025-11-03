@@ -52,7 +52,6 @@ const ThreadsReplyControls = dynamic(() => import('@/components/threads/reply-co
 const AltTextInput = dynamic(() => import('@/components/shared/alt-text-input').then(mod => ({ default: mod.AltTextInput })), { ssr: false })
 // Phase 2A Instagram Quick Wins - New Instagram components
 const InstagramCommentControls = dynamic(() => import('@/components/instagram/comment-controls').then(mod => ({ default: mod.InstagramCommentControls })), { ssr: false })
-const InstagramLocationPicker = dynamic(() => import('@/components/instagram/location-picker').then(mod => ({ default: mod.InstagramLocationPicker })), { ssr: false })
 // Phase 3 Community Controls - Bluesky and Facebook
 const BlueskyReplyControls = dynamic(() => import('@/components/bluesky/reply-controls').then(mod => ({ default: mod.BlueskyReplyControls })), { ssr: false })
 const FacebookPublishControls = dynamic(() => import('@/components/facebook/publish-controls').then(mod => ({ default: mod.FacebookPublishControls })), { ssr: false })
@@ -503,7 +502,6 @@ function CreateNewPostPageContent() {
   const [blueskyAltText, setBlueskyAltText] = useState('')
 
   // Instagram states - Phase 2A Quick Wins
-  const [instagramLocation, setInstagramLocation] = useState<{ id: string; name: string } | null>(null)
   const [instagramDisableComments, setInstagramDisableComments] = useState(false)
 
   // Bluesky reply controls state - Phase 3 Community Controls
@@ -1817,7 +1815,6 @@ function CreateNewPostPageContent() {
         pinterestAltText: selectedPlatforms.includes('pinterest') ? pinterestAltText : undefined,
         blueskyAltText: selectedPlatforms.includes('bluesky') ? blueskyAltText : undefined,
         // Phase 2A Instagram Quick Wins
-        instagramLocation: selectedPlatforms.includes('instagram') ? (instagramLocation ?? undefined) : undefined,
         instagramDisableComments: selectedPlatforms.includes('instagram') ? instagramDisableComments : undefined,
         // Phase 3 Community Controls
         blueskyReplyControl: selectedPlatforms.includes('bluesky') ? blueskyReplyControl : undefined,
@@ -4336,15 +4333,9 @@ function CreateNewPostPageContent() {
               </div>
             )}
 
-            {/* Instagram Location & Comment Controls - Phase 2A Quick Wins */}
+            {/* Instagram Comment Controls - Phase 2A Quick Wins */}
             {selectedPlatforms.includes('instagram') && (
               <>
-                <div className="mt-6">
-                  <InstagramLocationPicker
-                    location={instagramLocation}
-                    setLocation={setInstagramLocation}
-                  />
-                </div>
                 <div className="mt-6">
                   <InstagramCommentControls
                     disableComments={instagramDisableComments}
