@@ -183,34 +183,50 @@ export async function GET(request: NextRequest) {
     let igBusinessAccountId = user_id; // Default to OAuth user_id
     let facebookPageAccessToken = null; // Store FB Page token for location search
 
-    // If we have a long-lived token, try to get IG Business Account ID
-    if (token_type === 'long_lived') {
-      // Try to get pages and their connected Instagram accounts
-      // IMPORTANT: Request access_token field to enable Facebook Graph API calls (e.g., location search)
-      const pagesUrl = `https://graph.facebook.com/v20.0/me/accounts?fields=instagram_business_account,name,access_token&access_token=${access_token}`;
-      console.log('Fetching Facebook Pages with Instagram Business Accounts...');
+    // ALWAYS fetch Facebook Pages to get Page access token (required for location search)
+    // This must happen regardless of whether Instagram token is short-lived or long-lived
+    console.log('[Instagram Callback] Fetching Facebook Pages with Instagram Business Accounts...');
+    console.log('[Instagram Callback] Token type:', token_type);
+    console.log('[Instagram Callback] Access token available:', !!access_token);
 
-      const pagesResponse = await fetch(pagesUrl);
-      console.log('Pages response status:', pagesResponse.status);
+    const pagesUrl = `https://graph.facebook.com/v20.0/me/accounts?fields=instagram_business_account,name,access_token&access_token=${access_token}`;
+    const pagesResponse = await fetch(pagesUrl);
+    console.log('[Instagram Callback] Pages response status:', pagesResponse.status);
 
-      if (pagesResponse.ok) {
-        const pagesData = await pagesResponse.json();
-        console.log('Pages data:', JSON.stringify(pagesData, null, 2));
+    if (pagesResponse.ok) {
+      const pagesData = await pagesResponse.json();
+      console.log('[Instagram Callback] Pages fetched:', pagesData.data?.length || 0, 'pages');
 
-        // Find the first page with an Instagram Business Account
-        const pageWithInstagram = pagesData.data?.find((page: any) => page.instagram_business_account);
+      // Find the first page with an Instagram Business Account
+      const pageWithInstagram = pagesData.data?.find((page: any) => page.instagram_business_account);
 
-        if (pageWithInstagram?.instagram_business_account?.id) {
-          igBusinessAccountId = pageWithInstagram.instagram_business_account.id;
-          console.log('Found Instagram Business Account ID:', igBusinessAccountId);
+      if (pageWithInstagram) {
+        console.log('[Instagram Callback] Found page with Instagram account:', pageWithInstagram.name);
 
-          // Store Facebook Page access token for Facebook Graph API calls (location search, etc.)
-          if (pageWithInstagram.access_token) {
-            facebookPageAccessToken = pageWithInstagram.access_token;
-            console.log('Stored Facebook Page access token for Graph API calls');
-          }
+        // ALWAYS capture Facebook Page access token (needed for location search)
+        if (pageWithInstagram.access_token) {
+          facebookPageAccessToken = pageWithInstagram.access_token;
+          console.log('[Instagram Callback] ✓ Facebook Page token captured successfully');
+        } else {
+          console.error('[Instagram Callback] ✗ Page found but no access_token in response');
         }
+
+        // Only update igBusinessAccountId if we have a long-lived token
+        if (token_type === 'long_lived' && pageWithInstagram.instagram_business_account?.id) {
+          igBusinessAccountId = pageWithInstagram.instagram_business_account.id;
+          console.log('[Instagram Callback] Found Instagram Business Account ID:', igBusinessAccountId);
+        }
+      } else {
+        console.error('[Instagram Callback] ✗ No page with Instagram Business Account found');
       }
+    } else {
+      const errorText = await pagesResponse.text();
+      console.error('[Instagram Callback] ✗ Failed to fetch Facebook Pages:', errorText);
+    }
+
+    if (!facebookPageAccessToken) {
+      console.error('[Instagram Callback] ✗ Facebook Page token NOT captured - location search will fail');
+      console.error('[Instagram Callback] This usually means: missing OAuth scopes, no admin access to page, or API error');
     }
     
     // Try 1: Instagram Graph API with the Business Account ID
