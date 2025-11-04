@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { BarChart, ChevronDown } from 'lucide-react'
+import { BarChart, ChevronDown, Share2, Calendar, Sparkles, FolderOpen, FileText, Eye, Zap, CalendarDays } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useRef } from 'react'
 
@@ -115,6 +115,63 @@ const platforms = [
   }
 ]
 
+const features = [
+  {
+    name: 'Multi-Platform',
+    description: 'Post to 9+ platforms with one click',
+    icon: Share2,
+    iconColor: 'text-purple-600'
+  },
+  {
+    name: 'Smart Scheduling',
+    description: 'Schedule posts for optimal engagement',
+    icon: Calendar,
+    iconColor: 'text-blue-600'
+  },
+  {
+    name: 'AI Caption Writer',
+    description: 'Generate captions in multiple tones',
+    icon: Sparkles,
+    iconColor: 'text-amber-500'
+  },
+  {
+    name: 'Analytics Dashboard',
+    description: 'Track performance across all platforms',
+    icon: BarChart,
+    iconColor: 'text-green-600'
+  },
+  {
+    name: 'Content Library',
+    description: 'Organize media assets and templates',
+    icon: FolderOpen,
+    iconColor: 'text-orange-600'
+  },
+  {
+    name: 'Draft Management',
+    description: 'Save and perfect ideas over time',
+    icon: FileText,
+    iconColor: 'text-slate-600'
+  },
+  {
+    name: 'Preview',
+    description: 'Preview content before publishing',
+    icon: Eye,
+    iconColor: 'text-indigo-600'
+  },
+  {
+    name: 'Automated Posting',
+    description: 'Reliable background post processing',
+    icon: Zap,
+    iconColor: 'text-yellow-600'
+  },
+  {
+    name: 'Drag & Drop Calendar',
+    description: 'Visual calendar with drag & drop scheduling',
+    icon: CalendarDays,
+    iconColor: 'text-pink-600'
+  }
+]
+
 export function Navbar({
   isAuthenticated,
   userEmail,
@@ -126,7 +183,9 @@ export function Navbar({
   const pathname = usePathname()
   const isHomepage = pathname === '/'
   const [showPlatformsDropdown, setShowPlatformsDropdown] = useState(false)
+  const [showFeaturesDropdown, setShowFeaturesDropdown] = useState(false)
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const featuresCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const handleNavClick = (sectionId: string) => {
     if (isHomepage) {
@@ -148,11 +207,17 @@ export function Navbar({
   }
 
   const handlePlatformsMouseEnter = () => {
-    // Clear any pending close timeout
+    // Clear any pending close timeout for platforms
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current)
       closeTimeoutRef.current = null
     }
+    // Immediately close features dropdown and clear its timeout
+    if (featuresCloseTimeoutRef.current) {
+      clearTimeout(featuresCloseTimeoutRef.current)
+      featuresCloseTimeoutRef.current = null
+    }
+    setShowFeaturesDropdown(false)
     setShowPlatformsDropdown(true)
   }
 
@@ -160,6 +225,28 @@ export function Navbar({
     // Set a delay before closing
     closeTimeoutRef.current = setTimeout(() => {
       setShowPlatformsDropdown(false)
+    }, 250) // 250ms delay
+  }
+
+  const handleFeaturesMouseEnter = () => {
+    // Clear any pending close timeout for features
+    if (featuresCloseTimeoutRef.current) {
+      clearTimeout(featuresCloseTimeoutRef.current)
+      featuresCloseTimeoutRef.current = null
+    }
+    // Immediately close platforms dropdown and clear its timeout
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current)
+      closeTimeoutRef.current = null
+    }
+    setShowPlatformsDropdown(false)
+    setShowFeaturesDropdown(true)
+  }
+
+  const handleFeaturesMouseLeave = () => {
+    // Set a delay before closing
+    featuresCloseTimeoutRef.current = setTimeout(() => {
+      setShowFeaturesDropdown(false)
     }, 250) // 250ms delay
   }
 
@@ -187,15 +274,57 @@ export function Navbar({
           </Link>
           <div className="flex items-center space-x-8">
             <div className="hidden md:flex items-center space-x-8">
-              <button 
-                onClick={() => handleNavClick('features')}
-                className="text-base font-medium text-gray-700 hover:text-purple-600 transition-all duration-200"
-                style={{ 
-                  fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
-                }}
+              <div
+                className="relative"
+                onMouseEnter={handleFeaturesMouseEnter}
+                onMouseLeave={handleFeaturesMouseLeave}
               >
-                Features
-              </button>
+                <button
+                  onClick={() => handleNavClick('features')}
+                  className="text-base font-medium text-gray-700 hover:text-purple-600 transition-all duration-200 flex items-center gap-1"
+                  style={{
+                    fontFamily: '"Vanquish W00 Bold", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
+                  }}
+                >
+                  Features
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-200 ${showFeaturesDropdown ? 'rotate-180' : ''}`}
+                  />
+                </button>
+
+                {/* Features Dropdown Menu */}
+                {showFeaturesDropdown && (
+                  <div
+                    className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-[750px] bg-white rounded-lg shadow-xl border border-gray-200 p-6 z-50"
+                    onMouseEnter={handleFeaturesMouseEnter}
+                    onMouseLeave={handleFeaturesMouseLeave}
+                  >
+                    <div className="grid grid-cols-3 gap-4">
+                      {features.map((feature) => {
+                        const IconComponent = feature.icon
+                        return (
+                          <div
+                            key={feature.name}
+                            className="flex items-start gap-3 p-3 rounded-lg hover:bg-purple-50 transition-colors duration-200 cursor-pointer"
+                          >
+                            <div className={`flex-shrink-0 ${feature.iconColor}`}>
+                              <IconComponent className="w-6 h-6" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-gray-900 mb-0.5">
+                                {feature.name}
+                              </p>
+                              <p className="text-[13px] text-gray-600 leading-tight">
+                                {feature.description}
+                              </p>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
               <div
                 className="relative"
                 onMouseEnter={handlePlatformsMouseEnter}
@@ -234,7 +363,7 @@ export function Navbar({
                             <p className="text-sm font-semibold text-gray-900 mb-0.5">
                               {platform.name}
                             </p>
-                            <p className="text-xs text-gray-600 leading-tight">
+                            <p className="text-[13px] text-gray-600 leading-tight">
                               {platform.description}
                             </p>
                           </div>
