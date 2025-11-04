@@ -28,8 +28,8 @@ const capabilities = [
     longDescription: 'Save hours every week. Create once, publish everywhere. No need to log into multiple apps or copy-paste the same content over and over.',
     color: 'from-purple-500 to-pink-500',
     iconColor: 'text-purple-500',
-    image: '/Multi-Platform.webp',
-    video: `${R2_PUBLIC_URL}/Multi-Platform.mp4`
+    image: '/Clean UX.webp',
+    video: `${R2_PUBLIC_URL}/Clean UX.mp4`
   },
   {
     id: 'ai-captions',
@@ -40,8 +40,8 @@ const capabilities = [
     longDescription: 'Never stare at a blank screen again. Our AI suggests platform-optimized captions instantly, so you can focus on creating great content instead of writing copy.',
     color: 'from-amber-500 to-yellow-500',
     iconColor: 'text-amber-500',
-    image: '/AI-Captions.webp',
-    video: `${R2_PUBLIC_URL}/AI-Captions.mp4`
+    image: '/Cross-Platform.webp',
+    video: `${R2_PUBLIC_URL}/Cross-platform.mp4`
   },
   {
     id: 'calendar',
@@ -76,8 +76,8 @@ const capabilities = [
     longDescription: 'No more posting mistakes or formatting surprises. Preview your content exactly as your audience will see it across every platform before you hit publish.',
     color: 'from-red-500 to-rose-500',
     iconColor: 'text-red-500',
-    image: '/Preview.webp',
-    video: `${R2_PUBLIC_URL}/Preview.mp4`
+    image: '/Customization.webp',
+    video: `${R2_PUBLIC_URL}/Customization.mp4`
   }
 ]
 
