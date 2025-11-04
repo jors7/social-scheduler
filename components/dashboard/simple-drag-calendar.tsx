@@ -515,12 +515,9 @@ export function SimpleDragCalendar({
                           onTouchMove={handleTouchMove}
                           onTouchEnd={handleTouchEnd}
                           onClick={(e) => {
-                            // On mobile, clicking the post card opens modal. On desktop, edits directly.
-                            const isMobile = window.matchMedia('(max-width: 640px)').matches
-                            if (isMobile) {
-                              e.stopPropagation()
-                              setSelectedDate(date)
-                            }
+                            // Clicking the post card opens modal on both desktop and mobile
+                            e.stopPropagation()
+                            setSelectedDate(date)
                           }}
                           className={cn(
                             "group text-xs px-1 sm:px-1.5 py-0.5 sm:py-1 rounded text-white cursor-move transition-all hover:shadow-md",
@@ -604,7 +601,7 @@ export function SimpleDragCalendar({
       {/* Selected Date Modal */}
       {selectedDate && getPostsForDate(selectedDate).length > 0 && !isDragging && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-start justify-center p-4 animate-in fade-in duration-300"
           onTouchStart={(e) => {
             // Track touch start for scroll detection (mobile only)
             const touch = e.touches[0]
@@ -627,7 +624,7 @@ export function SimpleDragCalendar({
             // Check if user touched the backdrop element
             const backdropElement = e.currentTarget.querySelector('.absolute.inset-0')
             const touchedBackdrop = modalTouchStart.target === backdropElement ||
-                                    (modalTouchStart.target as HTMLElement).classList?.contains('bg-black/50')
+                                    (modalTouchStart.target as HTMLElement).classList?.contains('backdrop-blur-sm')
 
             // Consider it a tap (should close) if:
             // - User touched the backdrop (not modal content)
@@ -643,11 +640,11 @@ export function SimpleDragCalendar({
           }}
         >
           <div
-            className="absolute inset-0 bg-black/50"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setSelectedDate(null)}
           />
           <Card
-            className="relative z-10 w-full max-w-2xl max-h-[85vh] sm:max-h-[80vh] overflow-hidden"
+            className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col rounded-2xl border-gray-200 shadow-xl animate-in fade-in zoom-in-95 duration-300 mt-16"
             onClick={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
             onTouchEnd={(e) => e.stopPropagation()}
@@ -698,8 +695,8 @@ export function SimpleDragCalendar({
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-0 flex flex-col">
-              <div className="overflow-y-auto p-4 sm:p-6 max-h-[calc(85vh-12rem)] sm:max-h-[calc(80vh-10rem)]">
+            <CardContent className="p-0 flex flex-col flex-1 min-h-0">
+              <div className="overflow-y-auto p-4 sm:p-6 flex-1 min-h-0">
                 <div className="space-y-4 px-1">
                   {getPostsForDate(selectedDate).map((post) => {
                   const mediaUrl = getMediaUrl(post)
