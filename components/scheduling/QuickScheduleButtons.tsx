@@ -1,6 +1,6 @@
 'use client'
 
-import { Clock, Coffee, Sun, CalendarDays, LucideIcon } from 'lucide-react'
+import { Clock, Zap, Sunrise, Sun, CalendarCheck, LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface QuickScheduleOption {
@@ -31,7 +31,7 @@ export function QuickScheduleButtons({
     const in1Hour = new Date(now.getTime() + 60 * 60 * 1000)
     options.push({
       label: 'In 1 Hour',
-      icon: Clock,
+      icon: Zap,
       date: formatDate(in1Hour),
       time: formatTime(in1Hour),
       description: 'Quick post'
@@ -43,7 +43,7 @@ export function QuickScheduleButtons({
     tomorrow9AM.setHours(9, 0, 0, 0)
     options.push({
       label: 'Tomorrow 9 AM',
-      icon: Coffee,
+      icon: Sunrise,
       date: formatDate(tomorrow9AM),
       time: formatTime(tomorrow9AM),
       description: 'Morning post'
@@ -68,7 +68,7 @@ export function QuickScheduleButtons({
     thisWeekend.setHours(10, 0, 0, 0)
     options.push({
       label: 'This Weekend',
-      icon: CalendarDays,
+      icon: CalendarCheck,
       date: formatDate(thisWeekend),
       time: formatTime(thisWeekend),
       description: 'Saturday morning'
@@ -114,15 +114,15 @@ export function QuickScheduleButtons({
               type="button"
               onClick={() => onSelect(option.date, option.time)}
               className={cn(
-                "relative p-3 rounded-lg border-2 transition-all text-center group bg-white",
+                "relative p-3 rounded-lg border-2 transition-all text-left group bg-white",
                 selected
                   ? "border-blue-500 shadow-md"
                   : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
               )}
             >
-              <div className="flex flex-col items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <IconComponent className={cn(
-                  "h-5 w-5 transition-colors",
+                  "h-4 w-4 flex-shrink-0 transition-colors",
                   selected ? "text-blue-600" : "text-gray-500 group-hover:text-gray-700"
                 )} />
                 <span className={cn(

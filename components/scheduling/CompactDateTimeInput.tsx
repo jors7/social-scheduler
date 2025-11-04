@@ -1,5 +1,6 @@
 'use client'
 
+import { useRef } from 'react'
 import { Calendar, Clock } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -21,6 +22,7 @@ export function CompactDateTimeInput({
   onExpandClick,
   className
 }: CompactDateTimeInputProps) {
+  const timeInputRef = useRef<HTMLInputElement>(null)
   const formatDisplayDate = (dateStr: string): string => {
     if (!dateStr) return 'Select date'
     const d = new Date(dateStr)
@@ -61,9 +63,16 @@ export function CompactDateTimeInput({
       {/* Time Input */}
       <div className="relative">
         <Input
+          ref={timeInputRef}
           type="time"
           value={time}
-          onChange={(e) => onTimeChange(e.target.value)}
+          onChange={(e) => {
+            onTimeChange(e.target.value)
+            // Close the time picker dropdown after selection
+            setTimeout(() => {
+              timeInputRef.current?.blur()
+            }, 100)
+          }}
           onClick={onExpandClick}
           className={cn(
             "pl-10 cursor-pointer",

@@ -66,7 +66,8 @@ import {
   Loader2,
   Eye,
   GripVertical,
-  Info
+  Info,
+  Lightbulb
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { extractVideoThumbnail, isVideoFile } from '@/lib/utils/video-thumbnail'
@@ -3545,8 +3546,16 @@ function CreateNewPostPageContent() {
           {/* Scheduling */}
           <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Schedule</CardTitle>
-              <CardDescription className="text-sm sm:text-base text-gray-600">When to publish</CardDescription>
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div>
+                  <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Schedule</CardTitle>
+                  <CardDescription className="text-sm sm:text-base text-gray-600">When to publish</CardDescription>
+                </div>
+                <div className="hidden sm:flex items-center gap-2 text-xs text-gray-700 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                  <Lightbulb className="h-3.5 w-3.5 text-blue-600 flex-shrink-0" />
+                  <span className="whitespace-nowrap">Best times: 9-11 AM, 1-3 PM weekdays</span>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Quick Schedule Buttons */}
