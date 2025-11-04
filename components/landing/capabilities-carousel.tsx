@@ -29,7 +29,7 @@ const capabilities = [
     color: 'from-purple-500 to-pink-500',
     iconColor: 'text-purple-500',
     image: '/Clean UX.webp',
-    video: `${R2_PUBLIC_URL}/Clean UX.mp4`
+    video: `${R2_PUBLIC_URL}/Multi-Platform.mp4`
   },
   {
     id: 'ai-captions',
@@ -41,7 +41,7 @@ const capabilities = [
     color: 'from-amber-500 to-yellow-500',
     iconColor: 'text-amber-500',
     image: '/Cross-Platform.webp',
-    video: `${R2_PUBLIC_URL}/Cross-platform.mp4`
+    video: `${R2_PUBLIC_URL}/AI-Captions.mp4`
   },
   {
     id: 'calendar',
@@ -77,7 +77,7 @@ const capabilities = [
     color: 'from-red-500 to-rose-500',
     iconColor: 'text-red-500',
     image: '/Customization.webp',
-    video: `${R2_PUBLIC_URL}/Customization.mp4`
+    video: `${R2_PUBLIC_URL}/Preview.mp4`
   }
 ]
 
