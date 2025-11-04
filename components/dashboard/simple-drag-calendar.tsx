@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight, Edit, Trash2, X, Clock, Image, FileText } from 'lucide-react'
@@ -93,6 +93,16 @@ export function SimpleDragCalendar({
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null)
   const [touchedPost, setTouchedPost] = useState<ScheduledPost | null>(null)
   const [modalTouchStart, setModalTouchStart] = useState<{ x: number; y: number; time: number; target: EventTarget } | null>(null)
+
+  // Smooth scroll to top when modal opens
+  useEffect(() => {
+    if (selectedDate) {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
+    }
+  }, [selectedDate])
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const months = [
@@ -751,7 +761,10 @@ export function SimpleDragCalendar({
             </CardHeader>
             <CardContent className="p-0 flex flex-col flex-1 min-h-0">
               <div className="overflow-y-auto flex-1 min-h-0">
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-6 p-3 sm:p-6">
+                <div className={cn(
+                  "grid grid-cols-1 gap-3 sm:gap-6 p-3 sm:p-6",
+                  getPostsForDate(selectedDate).length > 1 ? "xl:grid-cols-2" : ""
+                )}>
                   {getPostsForDate(selectedDate).map((post) => {
                   const mediaUrl = getMediaUrl(post)
                   const primaryPlatform = post.platforms[0]
