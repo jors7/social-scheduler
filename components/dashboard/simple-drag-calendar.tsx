@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, Edit, Trash2, X, Clock, Image, FileText } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Edit, Trash2, X, Clock, Image, FileText, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -413,14 +413,54 @@ export function SimpleDragCalendar({
   return (
     <div className="space-y-6">
       {/* Calendar Header */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center space-x-2 sm:space-x-4">
-          <h2 className="text-lg sm:text-2xl font-bold">
-            <span className="hidden sm:inline">{months[currentDate.getMonth()]} {currentDate.getFullYear()}</span>
-            <span className="sm:hidden">{months[currentDate.getMonth()].substring(0, 3)} {currentDate.getFullYear()}</span>
-          </h2>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+        <div className="flex items-center justify-between md:justify-start gap-2">
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            <h2 className="text-lg sm:text-2xl font-bold">
+              <span className="hidden sm:inline">{months[currentDate.getMonth()]} {currentDate.getFullYear()}</span>
+              <span className="sm:hidden">{months[currentDate.getMonth()].substring(0, 3)} {currentDate.getFullYear()}</span>
+            </h2>
+          </div>
+
+          {/* Navigation buttons - visible on mobile, hidden on desktop */}
+          <div className="flex md:hidden items-center space-x-1 sm:space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigateMonth('prev')}
+              className="h-8 w-8 sm:h-9 sm:w-9 p-0"
+            >
+              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentDate(new Date())}
+              className="h-8 px-2 sm:px-3 text-xs sm:text-sm"
+            >
+              Today
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigateMonth('next')}
+              className="h-8 w-8 sm:h-9 sm:w-9 p-0"
+            >
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center space-x-1 sm:space-x-2">
+
+        {/* Calendar Click Hint - inline on desktop, full width on mobile */}
+        <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200 md:flex-1 md:mx-4 md:max-w-lg">
+          <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-600" />
+          <div className="text-xs text-blue-800">
+            <p className="font-medium">Click calendar items to view, edit, or manage your posts</p>
+          </div>
+        </div>
+
+        {/* Navigation buttons - hidden on mobile, visible on desktop */}
+        <div className="hidden md:flex items-center space-x-1 sm:space-x-2">
           <Button
             variant="outline"
             size="sm"
