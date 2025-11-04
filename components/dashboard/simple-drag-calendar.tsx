@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, Edit, Trash2, X, Clock, Image, FileText, Info } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Edit, Trash2, X, Clock, Image, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -452,11 +452,8 @@ export function SimpleDragCalendar({
         </div>
 
         {/* Calendar Click Hint - inline on desktop, full width on mobile */}
-        <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200 md:flex-1 md:mx-4 md:max-w-lg">
-          <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-600" />
-          <div className="text-xs text-blue-800">
-            <p className="font-medium">Click calendar items to view, edit, or manage your posts</p>
-          </div>
+        <div className="text-center text-sm text-gray-500 bg-gray-50 p-4 rounded-lg md:flex-1 md:mx-4 md:max-w-lg">
+          💡 <strong>Tip:</strong> Click calendar items to view, edit, or manage your posts
         </div>
 
         {/* Navigation buttons - hidden on mobile, visible on desktop */}
