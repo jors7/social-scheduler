@@ -681,7 +681,7 @@ export function SimpleDragCalendar({
             onClick={() => setSelectedDate(null)}
           />
           <Card
-            className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col rounded-2xl border-gray-200 shadow-xl animate-in fade-in zoom-in-95 duration-300 mt-16"
+            className="relative z-10 w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col rounded-2xl border-gray-200 shadow-xl animate-in fade-in zoom-in-95 duration-300 mt-16"
             onClick={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
             onTouchEnd={(e) => e.stopPropagation()}
@@ -733,8 +733,8 @@ export function SimpleDragCalendar({
               </div>
             </CardHeader>
             <CardContent className="p-0 flex flex-col flex-1 min-h-0">
-              <div className="overflow-y-auto p-4 sm:p-6 flex-1 min-h-0">
-                <div className="space-y-4 px-1">
+              <div className="overflow-y-auto flex-1 min-h-0">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 p-4 sm:p-6">
                   {getPostsForDate(selectedDate).map((post) => {
                   const mediaUrl = getMediaUrl(post)
                   const primaryPlatform = post.platforms[0]
@@ -752,13 +752,13 @@ export function SimpleDragCalendar({
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
                       className={cn(
-                        "group p-2 sm:p-4 rounded-lg text-white cursor-move transition-all hover:shadow-lg",
+                        "group p-3 sm:p-5 lg:p-6 rounded-lg text-white cursor-move transition-all hover:shadow-xl hover:scale-[1.02]",
                         getPostColor(post),
                         draggedPostId === post.id ? "opacity-50" : "",
                         isPostSelected(post.id) ? "ring-2 ring-blue-400 ring-offset-2" : ""
                       )}
                     >
-                      <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+                      <div className="flex flex-col md:flex-row items-start gap-4 lg:gap-6">
                         {/* Mobile: Checkbox and Media row */}
                         <div className="flex sm:hidden items-center gap-3 w-full">
                           {/* Checkbox */}
@@ -783,7 +783,7 @@ export function SimpleDragCalendar({
                               <img
                                 src={mediaUrl}
                                 alt="Post media"
-                                className="w-16 h-16 object-cover rounded-lg border-2 border-white/20"
+                                className="w-30 h-30 object-cover rounded-lg border-2 border-white/30"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement
                                   target.style.display = 'none'
@@ -797,7 +797,7 @@ export function SimpleDragCalendar({
                             {mediaUrl && isVideo && (
                               <video
                                 src={mediaUrl}
-                                className="w-16 h-16 object-cover rounded-lg border-2 border-white/20"
+                                className="w-30 h-30 object-cover rounded-lg border-2 border-white/30"
                                 muted
                                 playsInline
                                 onError={(e) => {
@@ -812,7 +812,7 @@ export function SimpleDragCalendar({
                             )}
                             <div
                               className={cn(
-                                "w-16 h-16 rounded-lg flex items-center justify-center text-2xl bg-white/10 border-2 border-white/20",
+                                "w-30 h-30 rounded-lg flex items-center justify-center text-2xl bg-white/10 border-2 border-white/30",
                                 mediaUrl ? "hidden" : ""
                               )}
                             >
@@ -831,29 +831,13 @@ export function SimpleDragCalendar({
                           </div>
                         </div>
 
-                        {/* Desktop: Checkbox */}
-                        {onPostSelect && (
-                          <div className="hidden sm:block flex-shrink-0 pt-1">
-                            <input
-                              type="checkbox"
-                              checked={isPostSelected(post.id)}
-                              onChange={(e) => {
-                                e.stopPropagation()
-                                togglePostSelection(post.id)
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              className="h-4 w-4 rounded border-white/50 cursor-pointer"
-                            />
-                          </div>
-                        )}
-
                         {/* Desktop: Media thumbnail or platform icon */}
                         <div className="hidden sm:block flex-shrink-0">
                           {mediaUrl && !isVideo && (
                             <img
                               src={mediaUrl}
                               alt="Post media"
-                              className="w-16 h-16 object-cover rounded-lg border-2 border-white/20"
+                              className="w-32 h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 xl:w-44 xl:h-44 object-cover rounded-lg border-2 border-white/30"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement
                                 target.style.display = 'none'
@@ -867,7 +851,7 @@ export function SimpleDragCalendar({
                           {mediaUrl && isVideo && (
                             <video
                               src={mediaUrl}
-                              className="w-16 h-16 object-cover rounded-lg border-2 border-white/20"
+                              className="w-32 h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 xl:w-44 xl:h-44 object-cover rounded-lg border-2 border-white/30"
                               muted
                               playsInline
                               onError={(e) => {
@@ -882,7 +866,7 @@ export function SimpleDragCalendar({
                           )}
                           <div
                             className={cn(
-                              "w-16 h-16 rounded-lg flex items-center justify-center text-2xl bg-white/10 border-2 border-white/20",
+                              "w-32 h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 xl:w-44 xl:h-44 rounded-lg flex items-center justify-center text-3xl md:text-4xl bg-white/10 border-2 border-white/30",
                               mediaUrl ? "hidden" : ""
                             )}
                           >
@@ -919,8 +903,27 @@ export function SimpleDragCalendar({
                                 ))}
                               </div>
                             </div>
-                            {/* Action buttons - stack vertically on mobile, side by side on desktop */}
-                            <div className="flex sm:flex-col gap-2 w-full sm:w-auto sm:ml-4">
+                            {/* Checkbox and Action buttons - separated vertically on desktop */}
+                            <div className="flex sm:flex-col sm:justify-between gap-2 w-full sm:w-auto sm:ml-4 sm:h-full sm:min-h-[160px]">
+                              {/* Checkbox at top */}
+                              {onPostSelect && (
+                                <div className="hidden sm:flex items-start justify-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={isPostSelected(post.id)}
+                                    onChange={(e) => {
+                                      e.stopPropagation()
+                                      togglePostSelection(post.id)
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="h-5 w-5 rounded border-white/50 cursor-pointer"
+                                  />
+                                </div>
+                              )}
+                              {/* Spacer to push buttons to bottom */}
+                              <div className="hidden sm:block sm:flex-1"></div>
+                              {/* Action buttons at bottom */}
+                              <div className="flex sm:flex-col gap-2 w-full sm:w-auto">
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -952,6 +955,7 @@ export function SimpleDragCalendar({
                                 <Trash2 className="h-4 w-4 sm:mr-0 mr-2" />
                                 <span className="sm:hidden">Delete</span>
                               </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
