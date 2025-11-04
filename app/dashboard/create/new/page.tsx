@@ -52,7 +52,6 @@ const ThreadsReplyControls = dynamic(() => import('@/components/threads/reply-co
 const AltTextInput = dynamic(() => import('@/components/shared/alt-text-input').then(mod => ({ default: mod.AltTextInput })), { ssr: false })
 // Phase 3 Community Controls - Bluesky and Facebook
 const BlueskyReplyControls = dynamic(() => import('@/components/bluesky/reply-controls').then(mod => ({ default: mod.BlueskyReplyControls })), { ssr: false })
-const FacebookPublishControls = dynamic(() => import('@/components/facebook/publish-controls').then(mod => ({ default: mod.FacebookPublishControls })), { ssr: false })
 import {
   Calendar,
   Clock,
@@ -66,7 +65,8 @@ import {
   Brain,
   Loader2,
   Eye,
-  GripVertical
+  GripVertical,
+  Info
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { extractVideoThumbnail, isVideoFile } from '@/lib/utils/video-thumbnail'
@@ -500,9 +500,6 @@ function CreateNewPostPageContent() {
 
   // Bluesky reply controls state - Phase 3 Community Controls
   const [blueskyReplyControl, setBlueskyReplyControl] = useState<'everyone' | 'nobody' | 'following' | 'mentioned'>('everyone')
-
-  // Facebook publish controls state - Phase 3 Community Controls
-  const [facebookPublishAsDraft, setFacebookPublishAsDraft] = useState(false)
 
   // Auto-save hook - automatically saves draft every 30 seconds
   const { lastSaved, isSaving, error: autoSaveError, timeAgo, currentDraftId: autoSaveDraftId } = useAutoSave(
@@ -1800,7 +1797,6 @@ function CreateNewPostPageContent() {
         blueskyAltText: selectedPlatforms.includes('bluesky') ? blueskyAltText : undefined,
         // Phase 3 Community Controls
         blueskyReplyControl: selectedPlatforms.includes('bluesky') ? blueskyReplyControl : undefined,
-        facebookPublishAsDraft: selectedPlatforms.includes('facebook') ? facebookPublishAsDraft : undefined,
       }
 
       console.log('Posting with data:', {
@@ -3794,6 +3790,14 @@ function CreateNewPostPageContent() {
                 <CardDescription className="text-sm sm:text-base text-gray-600">Choose where to publish</CardDescription>
               </CardHeader>
               <CardContent>
+                {/* Multi-Platform Posting Info Box */}
+                <div className="mb-4 flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-600" />
+                  <div className="text-xs text-blue-800">
+                    <p className="font-medium">Select multiple platforms to post everywhere at once.</p>
+                  </div>
+                </div>
+
                 {/* Platform Selection Buttons - 2 Column Grid */}
                 <div className="grid grid-cols-2 gap-3">
                   {platforms.map((platform) => {
@@ -4331,16 +4335,6 @@ function CreateNewPostPageContent() {
                 <BlueskyReplyControls
                   replyControl={blueskyReplyControl}
                   setReplyControl={setBlueskyReplyControl}
-                />
-              </div>
-            )}
-
-            {/* Facebook Publish Controls - Phase 3 Community Controls */}
-            {selectedPlatforms.includes('facebook') && (
-              <div className="mt-6">
-                <FacebookPublishControls
-                  publishAsDraft={facebookPublishAsDraft}
-                  setPublishAsDraft={setFacebookPublishAsDraft}
                 />
               </div>
             )}
