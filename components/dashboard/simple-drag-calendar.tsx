@@ -94,13 +94,16 @@ export function SimpleDragCalendar({
   const [touchedPost, setTouchedPost] = useState<ScheduledPost | null>(null)
   const [modalTouchStart, setModalTouchStart] = useState<{ x: number; y: number; time: number; target: EventTarget } | null>(null)
 
-  // Smooth scroll to top when modal opens
+  // Smooth scroll to top when modal opens (desktop only)
   useEffect(() => {
     if (selectedDate) {
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      })
+      // Only scroll on desktop/tablet (not on mobile)
+      if (window.innerWidth >= 768) {
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        })
+      }
     }
   }, [selectedDate])
 
