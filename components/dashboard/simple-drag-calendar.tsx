@@ -483,7 +483,9 @@ export function SimpleDragCalendar({
 
         {/* Calendar Click Hint - inline on desktop, full width on mobile */}
         <div className="text-center text-sm text-gray-500 bg-gray-50 p-4 rounded-lg md:flex-1 md:mx-4 md:max-w-lg">
-          💡 <strong>Tip:</strong> Click calendar items to view, edit, or manage your posts
+          💡 <strong>Tip:</strong>{' '}
+          <span className="md:hidden">Tap calendar items twice to view and manage your posts</span>
+          <span className="hidden md:inline">Click calendar items to view, edit, or manage your posts</span>
         </div>
 
         {/* Navigation buttons - hidden on mobile, visible on desktop */}
@@ -717,16 +719,19 @@ export function SimpleDragCalendar({
             onTouchEnd={(e) => e.stopPropagation()}
           >
             <CardHeader className="border-b">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CardTitle className="text-lg">
-                    Posts for {selectedDate.toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                {/* Title - full width on mobile, left side on desktop */}
+                <CardTitle className="text-lg">
+                  Posts for {selectedDate.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </CardTitle>
+
+                {/* Controls row - Select All and X button */}
+                <div className="flex items-center justify-between sm:justify-end gap-3">
                   {onPostSelect && getPostsForDate(selectedDate).length > 0 && (
                     <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
                       <input
@@ -752,14 +757,14 @@ export function SimpleDragCalendar({
                       Select All
                     </label>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedDate(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedDate(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
               </div>
             </CardHeader>
             <CardContent className="p-0 flex flex-col flex-1 min-h-0">

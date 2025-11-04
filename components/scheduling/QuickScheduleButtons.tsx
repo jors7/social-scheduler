@@ -103,7 +103,7 @@ export function QuickScheduleButtons({
         <span className="text-xs font-medium text-gray-700">Quick Schedule</span>
       </div>
 
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {options.map((option) => {
           const selected = isSelected(option)
           const IconComponent = option.icon
