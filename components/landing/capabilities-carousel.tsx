@@ -3,14 +3,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { 
-  ChevronLeft, 
+import {
+  ChevronLeft,
   ChevronRight,
   Calendar,
   TrendingUp,
-  Globe,
-  Target,
-  Palette,
+  Share2,
+  Sparkles,
+  Eye,
   PlayCircle
 } from 'lucide-react'
 import Image from 'next/image'
@@ -20,28 +20,28 @@ const R2_PUBLIC_URL = 'https://pub-28b072a941304b078ab14462b82dc973.r2.dev'
 
 const capabilities = [
   {
-    id: 'ux',
-    icon: Target,
-    title: 'Clean, Creator-First UX',
-    shortTitle: 'Clean UX',
-    description: 'Built for speed and clarity — no overwhelming menus, no agency jargon. Just smooth workflows and tools that make sense.',
-    longDescription: 'You\'ll never feel lost or buried under features you don\'t need. Just log in, get things done, and get back to creating.',
-    color: 'from-pink-500 to-rose-500',
-    iconColor: 'text-rose-500',
-    image: '/Clean UX.webp',
-    video: `${R2_PUBLIC_URL}/Clean UX.mp4`
-  },
-  {
-    id: 'cross-platform',
-    icon: Globe,
-    title: 'Cross-Platform Scheduling',
-    shortTitle: 'Cross-Platform',
-    description: 'Plan and schedule once — post across Instagram, LinkedIn, TikTok, Threads, YouTube, and more.',
-    longDescription: 'All in one simple dashboard. No need to jump between tabs or tools — just create, schedule, and let your content go live everywhere from one place.',
-    color: 'from-blue-500 to-cyan-500',
-    iconColor: 'text-blue-500',
+    id: 'multi-platform',
+    icon: Share2,
+    title: 'Multi-Platform Publishing',
+    shortTitle: 'Multi-Platform',
+    description: 'Post to 9+ platforms with one click — Instagram, LinkedIn, TikTok, YouTube, and more.',
+    longDescription: 'Save hours every week. Create once, publish everywhere. No need to log into multiple apps or copy-paste the same content over and over.',
+    color: 'from-purple-500 to-pink-500',
+    iconColor: 'text-purple-500',
     image: '/Cross-Platform.webp',
     video: `${R2_PUBLIC_URL}/Cross-platform.mp4`
+  },
+  {
+    id: 'ai-captions',
+    icon: Sparkles,
+    title: 'AI Caption Writer',
+    shortTitle: 'AI Captions',
+    description: 'Generate engaging captions in seconds with AI — choose from Professional, Casual, Funny, or Inspirational tones.',
+    longDescription: 'Never stare at a blank screen again. Our AI suggests platform-optimized captions instantly, so you can focus on creating great content instead of writing copy.',
+    color: 'from-amber-500 to-yellow-500',
+    iconColor: 'text-amber-500',
+    image: '/Customization.webp',
+    video: `${R2_PUBLIC_URL}/Customization.mp4`
   },
   {
     id: 'calendar',
@@ -68,16 +68,16 @@ const capabilities = [
     video: `${R2_PUBLIC_URL}/Analytics.mp4`
   },
   {
-    id: 'customization',
-    icon: Palette,
-    title: 'Flexible Post Customization',
-    shortTitle: 'Customization',
-    description: 'Tweak your content per platform so everything sounds native — not copied and pasted.',
-    longDescription: 'Adjust captions, hashtags, visuals, and tone for each channel to make sure your content feels tailored, not generic.',
-    color: 'from-purple-500 to-pink-500',
-    iconColor: 'text-purple-500',
-    image: '/Customization.webp',
-    video: `${R2_PUBLIC_URL}/Customization.mp4`
+    id: 'preview',
+    icon: Eye,
+    title: 'Content Preview',
+    shortTitle: 'Preview',
+    description: 'See exactly how your posts look before publishing — preview for each platform to ensure perfection.',
+    longDescription: 'No more posting mistakes or formatting surprises. Preview your content exactly as your audience will see it across every platform before you hit publish.',
+    color: 'from-red-500 to-rose-500',
+    iconColor: 'text-red-500',
+    image: '/Clean UX.webp',
+    video: `${R2_PUBLIC_URL}/Clean UX.mp4`
   }
 ]
 
