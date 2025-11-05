@@ -210,11 +210,17 @@ export function TikTokVideoSettings({
             <SelectContent>
               {creatorInfo?.privacy_level_options.map((level) => {
                 const info = PRIVACY_LEVEL_LABELS[level]
+                const isPrivateDisabled = level === 'SELF_ONLY' && brandedContent
                 return (
-                  <SelectItem key={level} value={level}>
+                  <SelectItem key={level} value={level} disabled={isPrivateDisabled}>
                     <div>
                       <div className="font-medium">{info.label}</div>
-                      <div className="text-xs text-gray-600">{info.description}</div>
+                      <div className="text-xs text-gray-600">
+                        {isPrivateDisabled
+                          ? 'Branded content cannot be set to private'
+                          : info.description
+                        }
+                      </div>
                     </div>
                   </SelectItem>
                 )

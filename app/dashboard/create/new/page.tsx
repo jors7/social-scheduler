@@ -3692,12 +3692,13 @@ function CreateNewPostPageContent() {
             <CardContent className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               {scheduledDate && scheduledTime ? (
                 <>
-                  <Button 
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg" 
+                  <Button
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
                     disabled={
                       selectedPlatforms.length === 0 ||
                       isPosting ||
                       loadingDraft ||
+                      (selectedPlatforms.includes('tiktok') && tiktokContentDisclosure && !tiktokPromotionalContent && !tiktokBrandedContent) ||
                       (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) &&
                         !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()) &&
                         !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
@@ -3735,6 +3736,7 @@ function CreateNewPostPageContent() {
                     selectedPlatforms.length === 0 ||
                     isPosting ||
                     loadingDraft ||
+                    (selectedPlatforms.includes('tiktok') && tiktokContentDisclosure && !tiktokPromotionalContent && !tiktokBrandedContent) ||
                     (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) &&
                       !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()) &&
                       !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
