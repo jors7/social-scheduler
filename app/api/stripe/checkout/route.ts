@@ -26,10 +26,11 @@ export async function POST(request: NextRequest) {
     // Check if user is authenticated (optional for new trial signups)
     const { data: { user } } = await supabase.auth.getUser()
 
-    const { planId, billingCycle, email } = await request.json() as {
+    const { planId, billingCycle, email, endorsely_referral } = await request.json() as {
       planId: PlanId
       billingCycle: BillingCycle
       email?: string
+      endorsely_referral?: string
     }
 
     // For non-authenticated users, Stripe will collect email during checkout
@@ -150,6 +151,7 @@ export async function POST(request: NextRequest) {
           plan_id: planId,
           billing_cycle: billingCycle,
           is_new_signup: !user ? 'true' : 'false',
+          ...(endorsely_referral && { endorsely_referral }),
         },
         subscription_data: {
           trial_period_days: plan.features.trial_days,
@@ -158,6 +160,7 @@ export async function POST(request: NextRequest) {
             user_email: customerEmail || 'pending',
             plan_id: planId,
             billing_cycle: billingCycle,
+            ...(endorsely_referral && { endorsely_referral }),
           },
         },
       })
@@ -188,6 +191,7 @@ export async function POST(request: NextRequest) {
         plan_id: planId,
         billing_cycle: billingCycle,
         is_new_signup: !user ? 'true' : 'false',
+        ...(endorsely_referral && { endorsely_referral }),
       },
       subscription_data: {
         trial_period_days: plan.features.trial_days,
@@ -196,6 +200,7 @@ export async function POST(request: NextRequest) {
           user_email: customerEmail || 'pending',
           plan_id: planId,
           billing_cycle: billingCycle,
+          ...(endorsely_referral && { endorsely_referral }),
         },
       },
     })

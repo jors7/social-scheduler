@@ -213,12 +213,16 @@ function PricingPageContent() {
     setLoading(planId)
 
     try {
+      // Capture Endorsely referral ID from window object
+      const endorselyReferral = (window as any).endorsely_referral || null
+
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           planId,
           billingCycle,
+          endorsely_referral: endorselyReferral,
           // For non-authenticated users, Stripe will collect email
           // For authenticated users, email will be filled automatically
         }),

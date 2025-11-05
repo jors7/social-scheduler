@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'sonner'
+import Script from 'next/script'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -111,6 +112,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <Script
+          src="https://assets.endorsely.com/endorsely.js"
+          data-endorsely="98e926be-27f4-4498-875e-d1e75f8f3427"
+          strategy="afterInteractive"
+          async
+        />
+      </head>
       <body className={inter.className}>
         {children}
         <Toaster position="bottom-right" />
