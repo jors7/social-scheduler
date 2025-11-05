@@ -280,7 +280,7 @@ export default function TermsOfServiceClient() {
                 <li><Link href="/affiliate/terms" className="hover:text-white">Affiliate Terms</Link></li>
               </ul>
             </div>
-            <div className="col-span-2 md:col-span-1">
+            <div className="md:col-span-1">
               <h4 className="font-semibold mb-4">Legal</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="/terms" className="hover:text-white">Terms of Service</Link></li>
