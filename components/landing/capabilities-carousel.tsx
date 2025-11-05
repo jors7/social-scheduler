@@ -412,7 +412,7 @@ export function CapabilitiesCarousel() {
           <button
             type="button"
             onClick={handlePrevious}
-            className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 z-30 bg-white rounded-full p-3 shadow-lg hover:shadow-xl transition-shadow hover:scale-110 active:scale-95"
+            className="hidden md:block absolute -left-16 lg:-left-20 top-1/2 -translate-y-1/2 z-30 bg-white rounded-full p-3 shadow-lg hover:shadow-xl transition-shadow hover:scale-110 active:scale-95"
             aria-label="Previous capability"
           >
             <ChevronLeft className="h-6 w-6 text-gray-700" />
@@ -420,7 +420,7 @@ export function CapabilitiesCarousel() {
           <button
             type="button"
             onClick={handleNext}
-            className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 z-30 bg-white rounded-full p-3 shadow-lg hover:shadow-xl transition-shadow hover:scale-110 active:scale-95"
+            className="hidden md:block absolute -right-16 lg:-right-20 top-1/2 -translate-y-1/2 z-30 bg-white rounded-full p-3 shadow-lg hover:shadow-xl transition-shadow hover:scale-110 active:scale-95"
             aria-label="Next capability"
           >
             <ChevronRight className="h-6 w-6 text-gray-700" />
