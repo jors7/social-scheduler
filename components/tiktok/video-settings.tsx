@@ -198,9 +198,11 @@ export function TikTokVideoSettings({
             onValueChange={(value) => {
               setPrivacyLevel(value as PrivacyLevel)
 
-              // Auto-adjust if branded content + private is selected
-              if (brandedContent && value === 'SELF_ONLY') {
-                setBrandedContent(false)
+              // Auto-uncheck commercial content if private is selected
+              // (Commercial content is not allowed for private posts)
+              if (value === 'SELF_ONLY') {
+                if (brandedContent) setBrandedContent(false)
+                if (promotionalContent) setPromotionalContent(false)
               }
             }}
           >
@@ -210,17 +212,11 @@ export function TikTokVideoSettings({
             <SelectContent>
               {creatorInfo?.privacy_level_options.map((level) => {
                 const info = PRIVACY_LEVEL_LABELS[level]
-                const isPrivateDisabled = level === 'SELF_ONLY' && brandedContent
                 return (
-                  <SelectItem key={level} value={level} disabled={isPrivateDisabled}>
+                  <SelectItem key={level} value={level}>
                     <div>
                       <div className="font-medium">{info.label}</div>
-                      <div className="text-xs text-gray-600">
-                        {isPrivateDisabled
-                          ? 'Branded content cannot be set to private'
-                          : info.description
-                        }
-                      </div>
+                      <div className="text-xs text-gray-600">{info.description}</div>
                     </div>
                   </SelectItem>
                 )

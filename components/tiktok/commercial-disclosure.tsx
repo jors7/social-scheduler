@@ -48,6 +48,7 @@ export function CommercialDisclosure({
 }: CommercialDisclosureProps) {
   const hasValidSelection = promotionalContent || brandedContent
   const showPrivacyWarning = brandedContent && privacyLevel === 'SELF_ONLY'
+  const isPrivacyPrivate = privacyLevel === 'SELF_ONLY'
 
   return (
     <div className="space-y-4">
@@ -96,37 +97,45 @@ export function CommercialDisclosure({
           </div>
 
           {/* Promotional Content (Your Brand) Checkbox */}
-          <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+          <div className={`flex items-start gap-3 p-3 rounded-lg ${isPrivacyPrivate ? 'bg-gray-100 opacity-60' : 'bg-gray-50'}`}>
             <Checkbox
               id="promotional-content"
               checked={promotionalContent}
               onCheckedChange={(checked) => onPromotionalChange(checked as boolean)}
+              disabled={isPrivacyPrivate}
               className="mt-0.5"
             />
             <div className="flex-1 space-y-1">
-              <Label htmlFor="promotional-content" className="text-sm font-medium cursor-pointer">
+              <Label htmlFor="promotional-content" className={`text-sm font-medium ${isPrivacyPrivate ? 'cursor-not-allowed text-gray-500' : 'cursor-pointer'}`}>
                 Promotional content
               </Label>
               <p className="text-xs text-gray-600">
-                Your Brand - Content promoting your own business, products, or services
+                {isPrivacyPrivate
+                  ? 'Not available for private posts - change privacy to Public or Friends first'
+                  : 'Your Brand - Content promoting your own business, products, or services'
+                }
               </p>
             </div>
           </div>
 
           {/* Branded Content (Paid Partnership) Checkbox */}
-          <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+          <div className={`flex items-start gap-3 p-3 rounded-lg ${isPrivacyPrivate ? 'bg-gray-100 opacity-60' : 'bg-gray-50'}`}>
             <Checkbox
               id="branded-content"
               checked={brandedContent}
               onCheckedChange={(checked) => onBrandedChange(checked as boolean)}
+              disabled={isPrivacyPrivate}
               className="mt-0.5"
             />
             <div className="flex-1 space-y-1">
-              <Label htmlFor="branded-content" className="text-sm font-medium cursor-pointer">
+              <Label htmlFor="branded-content" className={`text-sm font-medium ${isPrivacyPrivate ? 'cursor-not-allowed text-gray-500' : 'cursor-pointer'}`}>
                 Paid partnership
               </Label>
               <p className="text-xs text-gray-600">
-                Branded Content - Content promoting a third-party brand or sponsor
+                {isPrivacyPrivate
+                  ? 'Not available for private posts - change privacy to Public or Friends first'
+                  : 'Branded Content - Content promoting a third-party brand or sponsor'
+                }
               </p>
             </div>
           </div>
