@@ -490,7 +490,7 @@ function PricingPageContent() {
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12 px-4">
         <div className="container mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
             <div className="col-span-2 md:col-span-1">
               <h3 className="text-2xl font-bold mb-4 text-white">SocialCal</h3>
               <p className="text-gray-400">
@@ -509,6 +509,13 @@ function PricingPageContent() {
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="/about" className="hover:text-white">About</Link></li>
                 <li><Link href="/blog" className="hover:text-white">Blog</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Partners</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link href="/affiliate" className="hover:text-white">Affiliate Program</Link></li>
+                <li><Link href="/affiliate/terms" className="hover:text-white">Affiliate Terms</Link></li>
               </ul>
             </div>
             <div className="col-span-2 md:col-span-1">
