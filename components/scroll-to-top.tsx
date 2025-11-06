@@ -10,6 +10,11 @@ import { usePathname } from 'next/navigation'
  * This fixes Next.js App Router's scroll restoration behavior that can
  * cause pages to load at incorrect scroll positions.
  *
+ * Key Implementation:
+ * - Temporarily disables CSS scroll-behavior: smooth during route changes
+ * - Scrolls instantly to prevent erratic behavior during content loading
+ * - Restores smooth scrolling after scroll completes for in-page navigation
+ *
  * Usage: Add to root layout or any layout that needs scroll-to-top behavior
  */
 export function ScrollToTop() {
@@ -22,10 +27,26 @@ export function ScrollToTop() {
       window.history.scrollRestoration = 'manual'
     }
 
-    // Force instant scroll to top on route change
-    // Uses 'instant' behavior to override CSS scroll-behavior: smooth
-    // This prevents erratic scrolling during content loading/layout shifts
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    // CRITICAL FIX: Temporarily disable CSS scroll-behavior
+    // The CSS scroll-behavior: smooth overrides JS behavior parameter
+    // We must disable it at the CSS level for instant scrolling
+    const html = document.documentElement
+    const originalScrollBehavior = html.style.scrollBehavior
+
+    // Force instant scrolling by setting CSS to 'auto'
+    html.style.scrollBehavior = 'auto'
+
+    // Scroll immediately (now instant because CSS is 'auto')
+    window.scrollTo(0, 0)
+
+    // Restore CSS scroll-behavior after scroll completes
+    // This ensures in-page hash links still scroll smoothly
+    const timeoutId = setTimeout(() => {
+      html.style.scrollBehavior = originalScrollBehavior || 'smooth'
+    }, 50)
+
+    // Cleanup timeout on unmount
+    return () => clearTimeout(timeoutId)
   }, [pathname]) // Re-run whenever the route changes
 
   // This component doesn't render anything
