@@ -179,7 +179,7 @@ export default async function BlogPage() {
     <BlogLayoutServer>
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
         {/* Hero Section with Breadcrumbs and Featured Post */}
-        <section className="relative bg-gradient-to-b from-gray-900 to-gray-800 text-white overflow-hidden min-h-[600px]">
+        <section className="relative bg-gradient-to-b from-gray-900 to-gray-800 text-white overflow-hidden">
           {/* Background Pattern */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute inset-0" style={{
@@ -201,7 +201,7 @@ export default async function BlogPage() {
 
             {/* Featured Post Content */}
             {featuredPost ? (
-              <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[500px]">
+              <div className="grid lg:grid-cols-2 gap-12 items-center">
                 {/* Text Content */}
                 <div className="space-y-6">
                   <h1 className="blog-heading text-4xl md:text-5xl lg:text-6xl font-bold">
