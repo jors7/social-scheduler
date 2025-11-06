@@ -21,7 +21,6 @@ export default function AffiliatePage() {
   const supabase = createClient()
 
   useEffect(() => {
-    window.scrollTo(0, 0)
     checkAuth()
   }, [])
 
