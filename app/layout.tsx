@@ -112,14 +112,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <Script
-          src="https://assets.endorsely.com/endorsely.js"
-          data-endorsely="98e926be-27f4-4498-875e-d1e75f8f3427"
-          strategy="afterInteractive"
-          async
-        />
-      </head>
       <body className={inter.className}>
         {children}
         <Toaster position="bottom-right" />

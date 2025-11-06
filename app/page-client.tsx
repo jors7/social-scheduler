@@ -5,7 +5,6 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { BarChart } from 'lucide-react'
 import { useEffect, useState, Suspense, lazy } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { AuthModals } from '@/components/auth/auth-modals'
@@ -170,21 +169,18 @@ const faqData = {
 }
 
 
-function LandingPageContent() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+interface LandingPageContentProps {
+  isAuthenticated: boolean
+  userEmail: string | null
+}
+
+function LandingPageContent({ isAuthenticated, userEmail }: LandingPageContentProps) {
   const [signInOpen, setSignInOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [userEmail, setUserEmail] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClient()
 
   useEffect(() => {
-    checkAuth()
-  }, [])
-
-  useEffect(() => {
-
     // Check URL parameters for modal triggers and scrolling
     const shouldOpenSignIn = searchParams.get('signin') === 'true'
     const errorMessage = searchParams.get('error')
@@ -198,12 +194,12 @@ function LandingPageContent() {
       }
       router.replace('/', { scroll: false })
     }
-    
+
     // Handle scroll parameter (like pricing page does for FAQ)
     if (scrollTo) {
       // First scroll to top
       window.scrollTo(0, 0)
-      
+
       // Then smoothly scroll to the target section
       setTimeout(() => {
         const element = document.getElementById(scrollTo)
@@ -211,25 +207,18 @@ function LandingPageContent() {
           const headerOffset = 80
           const elementPosition = element.getBoundingClientRect().top
           const offsetPosition = elementPosition + window.pageYOffset - headerOffset
-          
+
           window.scrollTo({
             top: offsetPosition,
             behavior: 'smooth'
           })
         }
-        
+
         // Clean up URL after scrolling
         router.replace('/', { scroll: false })
       }, 500) // Delay to ensure lazy-loaded components are rendered
     }
   }, [searchParams, router])
-
-
-  const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    setIsAuthenticated(!!user)
-    setUserEmail(user?.email || null)
-  }
 
 
 
@@ -254,7 +243,15 @@ function LandingPageContent() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqData) }}
       />
-      
+
+      {/* Third-party scripts - only loaded on homepage */}
+      <Script
+        src="https://assets.endorsely.com/endorsely.js"
+        data-endorsely="98e926be-27f4-4498-875e-d1e75f8f3427"
+        strategy="lazyOnload"
+        async
+      />
+
       {/* Shared Navbar Component */}
       <Navbar 
         isAuthenticated={isAuthenticated}
@@ -377,10 +374,15 @@ function LandingPageContent() {
   )
 }
 
-export default function LandingPage() {
+interface LandingPageProps {
+  isAuthenticated: boolean
+  userEmail: string | null
+}
+
+export default function LandingPage({ isAuthenticated, userEmail }: LandingPageProps) {
   return (
     <Suspense fallback={null}>
-      <LandingPageContent />
+      <LandingPageContent isAuthenticated={isAuthenticated} userEmail={userEmail} />
     </Suspense>
   )
 }
