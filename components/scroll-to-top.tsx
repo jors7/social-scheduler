@@ -23,8 +23,9 @@ export function ScrollToTop() {
     }
 
     // Force instant scroll to top on route change
-    // This happens immediately when pathname changes (on every navigation)
-    window.scrollTo(0, 0)
+    // Uses 'instant' behavior to override CSS scroll-behavior: smooth
+    // This prevents erratic scrolling during content loading/layout shifts
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
   }, [pathname]) // Re-run whenever the route changes
 
   // This component doesn't render anything
