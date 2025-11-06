@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import styles from './blog-post-content.module.css'
 
 interface Heading {
@@ -57,10 +57,6 @@ export function BlogPostContent({ content, headings = [] }: BlogPostContentProps
     
     return contentWithIds
   }, [content, headings])
-
-  useEffect(() => {
-    // Add syntax highlighting or other content enhancements here if needed
-  }, [content])
 
   return (
     <article className="max-w-none">

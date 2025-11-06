@@ -1,5 +1,3 @@
-'use client'
-
 import { BlogCard } from './blog-card'
 import { BlogPagination } from './blog-pagination'
 

@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
-import { BlogLayout } from '@/components/blog/blog-layout'
+import { BlogLayoutServer } from '@/components/blog/blog-layout-server'
 import { BlogPostHeader } from '@/components/blog/blog-post-header'
 import { BlogPostContent } from '@/components/blog/blog-post-content'
 import { RelatedPosts } from '@/components/blog/related-posts'
@@ -37,7 +37,14 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   const supabase = getSupabaseClient()
   const { data: post } = await supabase
     .from('blog_posts')
-    .select('title, excerpt, featured_image')
+    .select(`
+      title,
+      excerpt,
+      featured_image,
+      published_at,
+      updated_at,
+      author:blog_authors(display_name)
+    `)
     .eq('slug', params.slug)
     .eq('status', 'published')
     .single()
@@ -45,6 +52,35 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   if (!post) {
     return {
       title: 'Post Not Found | SocialCal Blog',
+    }
+  }
+
+  const author = Array.isArray(post.author) ? post.author[0] : post.author
+
+  // JSON-LD structured data for better SEO
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.excerpt,
+    image: post.featured_image,
+    datePublished: post.published_at,
+    dateModified: post.updated_at || post.published_at,
+    author: {
+      '@type': 'Person',
+      name: author?.display_name || 'SocialCal Team'
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'SocialCal',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://www.socialcal.app/icon.png'
+      }
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `https://www.socialcal.app/blog/${params.slug}`
     }
   }
 
@@ -56,6 +92,9 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       description: post.excerpt,
       images: post.featured_image ? [post.featured_image] : undefined,
       type: 'article',
+      publishedTime: post.published_at,
+      modifiedTime: post.updated_at || post.published_at,
+      authors: author?.display_name ? [author.display_name] : undefined,
     },
     twitter: {
       card: 'summary_large_image',
@@ -63,6 +102,9 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       description: post.excerpt,
       images: post.featured_image ? [post.featured_image] : undefined,
     },
+    other: {
+      'script:ld+json': JSON.stringify(jsonLd)
+    }
   }
 }
 
@@ -100,38 +142,41 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       .select('new_slug')
       .eq('old_slug', params.slug)
       .single()
-    
+
     if (redirectData) {
       // Redirect to the new slug
       redirect(`/blog/${redirectData.new_slug}`)
     }
-    
+
     // No post and no redirect found
     notFound()
   }
 
-  // Increment view count
-  await supabase.rpc('increment_post_view_count', { post_id: post.id })
+  // OPTIMIZED: Run view count increment and related posts fetch in parallel
+  // View count doesn't need to block rendering
+  const [, relatedPostsResult] = await Promise.all([
+    supabase.rpc('increment_post_view_count', { post_id: post.id }),
+    supabase
+      .from('blog_posts')
+      .select(`
+        id,
+        slug,
+        title,
+        excerpt,
+        featured_image,
+        featured_image_blur,
+        published_at,
+        reading_time,
+        author:blog_authors(display_name, avatar_url)
+      `)
+      .eq('status', 'published')
+      .eq('category', post.category)
+      .neq('id', post.id)
+      .order('published_at', { ascending: false })
+      .limit(3)
+  ])
 
-  // Fetch related posts
-  const { data: relatedPostsData } = await supabase
-    .from('blog_posts')
-    .select(`
-      id,
-      slug,
-      title,
-      excerpt,
-      featured_image,
-      featured_image_blur,
-      published_at,
-      reading_time,
-      author:blog_authors(display_name, avatar_url)
-    `)
-    .eq('status', 'published')
-    .eq('category', post.category)
-    .neq('id', post.id)
-    .order('published_at', { ascending: false })
-    .limit(3)
+  const relatedPostsData = relatedPostsResult.data
 
   // Transform the data to match the expected type
   const relatedPosts = relatedPostsData?.map(post => ({
@@ -143,7 +188,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const headings = extractHeadings(post.content)
 
   return (
-    <BlogLayout>
+    <BlogLayoutServer>
       <article className="min-h-screen bg-white">
         {/* Content Container */}
         <div className="container mx-auto px-4">
@@ -182,7 +227,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           </div>
         </div>
       </article>
-    </BlogLayout>
+    </BlogLayoutServer>
   )
 }
 

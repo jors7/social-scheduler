@@ -291,3 +291,15 @@ header.sticky {
   background-size: 200% auto;
   animation: gradient-shift 3s ease infinite;
 }
+
+/* Blog Typography Utilities */
+.blog-heading {
+  font-family: var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.blog-text {
+  font-family: var(--font-figtree), Figtree, -apple-system, BlinkMacSystemFont, sans-serif;
+}

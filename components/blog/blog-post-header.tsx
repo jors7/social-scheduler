@@ -1,5 +1,3 @@
-'use client'
-
 import Image from 'next/image'
 import { format } from 'date-fns'
 
@@ -47,25 +45,12 @@ export function BlogPostHeader({ post }: BlogPostHeaderProps) {
         {/* Left Column - Text Content */}
         <div className="space-y-6">
           {/* Title */}
-          <h1 
-            className="text-3xl md:text-4xl lg:text-5xl text-gray-900"
-            style={{ 
-              fontFamily: 'Stolzl Medium, Stolzl, -apple-system, BlinkMacSystemFont, sans-serif',
-              fontWeight: '500',
-              lineHeight: '1.1',
-              letterSpacing: '-0.02em'
-            }}
-          >
+          <h1 className="blog-heading text-3xl md:text-4xl lg:text-5xl text-gray-900">
             {post.title}
           </h1>
 
           {/* Excerpt/Subheadline */}
-          <p 
-            className="text-lg md:text-xl text-gray-600 leading-relaxed"
-            style={{ 
-              fontFamily: 'var(--font-figtree), Figtree, -apple-system, BlinkMacSystemFont, sans-serif'
-            }}
-          >
+          <p className="blog-text text-lg md:text-xl text-gray-600 leading-relaxed">
             {post.excerpt}
           </p>
 
