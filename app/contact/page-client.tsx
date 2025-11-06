@@ -21,6 +21,7 @@ export default function ContactPage() {
   const supabase = createClient()
 
   useEffect(() => {
+    window.scrollTo(0, 0)
     checkAuth()
   }, [])
 

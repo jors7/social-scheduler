@@ -20,6 +20,7 @@ export default function AboutPage() {
   const supabase = createClient()
 
   useEffect(() => {
+    window.scrollTo(0, 0)
     checkAuth()
   }, [])
 
