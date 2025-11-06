@@ -71,6 +71,26 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  other: {
+    'script:ld+json': JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Home',
+          item: 'https://www.socialcal.app'
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Blog',
+          item: 'https://www.socialcal.app/blog'
+        }
+      ]
+    })
+  }
 }
 
 // Create Supabase client at build time

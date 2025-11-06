@@ -43,6 +43,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       featured_image,
       published_at,
       updated_at,
+      category,
       author:blog_authors(display_name)
     `)
     .eq('slug', params.slug)
@@ -56,9 +57,10 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   }
 
   const author = Array.isArray(post.author) ? post.author[0] : post.author
+  const categoryName = post.category?.replace(/-/g, ' ') || 'Blog'
 
   // JSON-LD structured data for better SEO
-  const jsonLd = {
+  const blogPostingSchema = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
     headline: post.title,
@@ -84,6 +86,32 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
     }
   }
 
+  // Breadcrumb schema for better SEO
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://www.socialcal.app'
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Blog',
+        item: 'https://www.socialcal.app/blog'
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: categoryName,
+        item: `https://www.socialcal.app/blog/${params.slug}`
+      }
+    ]
+  }
+
   return {
     title: `${post.title} | SocialCal Blog`,
     description: post.excerpt,
@@ -103,7 +131,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       images: post.featured_image ? [post.featured_image] : undefined,
     },
     other: {
-      'script:ld+json': JSON.stringify(jsonLd)
+      'script:ld+json': JSON.stringify([blogPostingSchema, breadcrumbSchema])
     }
   }
 }
