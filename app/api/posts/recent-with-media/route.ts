@@ -88,7 +88,30 @@ export async function GET(request: NextRequest) {
               const platform = result.platform;
               const account = accountMap.get(platform);
 
-              if (account) {
+              // Handle TikTok first (doesn't require account - reads from database)
+              if (platform === 'tiktok') {
+                try {
+                  if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
+                    const firstMedia = post.media_urls[0];
+
+                    // Check if media is in new object format with thumbnail
+                    if (typeof firstMedia === 'object' && firstMedia.thumbnailUrl) {
+                      platformMediaUrl = firstMedia.thumbnailUrl;
+                      console.log('TikTok thumbnail URL from media_urls for', result.postId, ':', platformMediaUrl);
+                    } else if (typeof firstMedia === 'object' && firstMedia.url) {
+                      // Object format but no thumbnail, use video URL
+                      platformMediaUrl = firstMedia.url;
+                      console.log('TikTok video URL (no thumbnail) for', result.postId, ':', platformMediaUrl);
+                    } else if (typeof firstMedia === 'string' && firstMedia.trim() !== '') {
+                      // Old string format, use as-is
+                      platformMediaUrl = firstMedia;
+                      console.log('TikTok video URL (legacy format) for', result.postId, ':', platformMediaUrl);
+                    }
+                  }
+                } catch (tiktokError) {
+                  console.error('Error handling TikTok video:', tiktokError);
+                }
+              } else if (account) {
                 try {
                   if (platform === 'facebook') {
                     // For Facebook, we need to check if it's a photo post specifically
@@ -210,32 +233,8 @@ export async function GET(request: NextRequest) {
                     } catch (blueskyError) {
                       console.error('Error fetching Bluesky post:', blueskyError);
                     }
-                  } else if (platform === 'tiktok') {
-                    // TikTok handling
-                    // Try to extract thumbnail URL from media_urls (new object format)
-                    // Fall back to video URL for old posts without thumbnails
-                    try {
-                      if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
-                        const firstMedia = post.media_urls[0];
-
-                        // Check if media is in new object format with thumbnail
-                        if (typeof firstMedia === 'object' && firstMedia.thumbnailUrl) {
-                          platformMediaUrl = firstMedia.thumbnailUrl;
-                          console.log('TikTok thumbnail URL from media_urls for', result.postId, ':', platformMediaUrl);
-                        } else if (typeof firstMedia === 'object' && firstMedia.url) {
-                          // Object format but no thumbnail, use video URL
-                          platformMediaUrl = firstMedia.url;
-                          console.log('TikTok video URL (no thumbnail) for', result.postId, ':', platformMediaUrl);
-                        } else if (typeof firstMedia === 'string' && firstMedia.trim() !== '') {
-                          // Old string format, use as-is
-                          platformMediaUrl = firstMedia;
-                          console.log('TikTok video URL (legacy format) for', result.postId, ':', platformMediaUrl);
-                        }
-                      }
-                    } catch (tiktokError) {
-                      console.error('Error handling TikTok video:', tiktokError);
-                    }
                   }
+                  // TikTok is handled above (outside the if (account) block)
                 } catch (error) {
                   console.error(`Error fetching media for ${platform} post ${result.postId}:`, error);
                 }

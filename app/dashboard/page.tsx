@@ -398,10 +398,11 @@ function DashboardContent() {
       
       // Calculate upcoming schedule with platforms
       const now = new Date()
-      const upcomingPosts = scheduled.filter((p: PostData) => 
-        ['pending', 'posting'].includes(p.status) && 
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000) // 1 hour ago
+      const upcomingPosts = scheduled.filter((p: PostData) =>
+        ['pending', 'posting'].includes(p.status) &&
         p.scheduled_for &&
-        new Date(p.scheduled_for) > now  // Only show future posts
+        new Date(p.scheduled_for) > oneHourAgo  // Show posts scheduled within last hour or in future
       )
       
       const scheduleMap = new Map<string, { count: number, platforms: Set<string>, dateObj: Date, media_urls: any[], postGroups: string[][] }>()
@@ -413,8 +414,8 @@ function DashboardContent() {
         const postDate = new Date(post.scheduled_for!)
         let dateKey: string
 
-        // Only show as "Today" if the scheduled time hasn't passed yet
-        if (postDate.toDateString() === today.toDateString() && postDate > now) {
+        // Show as "Today" for all posts scheduled today (past or future)
+        if (postDate.toDateString() === today.toDateString()) {
           dateKey = 'Today'
         } else if (postDate.toDateString() === tomorrow.toDateString()) {
           dateKey = 'Tomorrow'
