@@ -8,7 +8,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     console.log('TikTok POST request received');
-    const { accessToken, content, videoUrl, privacyLevel, options } = body;
+    const { accessToken, content, videoUrl, thumbnailUrl, privacyLevel, options } = body;
+
+    // Log thumbnail if provided (for debugging)
+    if (thumbnailUrl) {
+      console.log('TikTok post includes thumbnail:', thumbnailUrl);
+    }
 
     if (!accessToken) {
       return NextResponse.json(

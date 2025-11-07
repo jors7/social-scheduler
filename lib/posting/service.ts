@@ -9,7 +9,7 @@ export interface PostData {
   platforms: string[];
   platformContent?: Record<string, string>;
   scheduledFor?: Date;
-  mediaUrls?: string[];
+  mediaUrls?: (string | { url: string; thumbnailUrl?: string; type?: string })[];
   selectedAccounts?: Record<string, string[]>; // platform -> array of account IDs
   pinterestBoardId?: string; // Pinterest specific - board to post to
   pinterestTitle?: string; // Pinterest specific - pin title
@@ -161,9 +161,10 @@ export class PostingService {
           }
           
           // Update progress tracker - processing
-          const isVideo = postData.mediaUrls?.some(url =>
-            ['.mp4', '.mov', '.avi', '.webm'].some(ext => url.toLowerCase().includes(ext))
-          );
+          const isVideo = postData.mediaUrls?.some(media => {
+            const url = typeof media === 'string' ? media : media.url;
+            return ['.mp4', '.mov', '.avi', '.webm'].some(ext => url.toLowerCase().includes(ext));
+          });
           if (platform === 'instagram' && postData.instagramAsStory) {
             progressTracker?.updatePlatform(platform, 'processing', 'story');
           } else if (platform === 'instagram' && postData.instagramAsReel) {
@@ -274,9 +275,10 @@ export class PostingService {
 
       case 'pinterest':
         return await this.postToPinterest(textContent, account, normalizedMediaUrls);
-      
+
       case 'tiktok':
-        return await this.postToTikTok(textContent, account, normalizedMediaUrls);
+        // Pass original mediaUrls to preserve thumbnail information
+        return await this.postToTikTok(textContent, account, mediaUrls);
 
       case 'linkedin':
         return await this.postToLinkedIn(textContent, account, normalizedMediaUrls);
@@ -657,12 +659,24 @@ export class PostingService {
     }
   }
 
-  private async postToTikTok(content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
+  private async postToTikTok(content: string, account: any, mediaUrls?: any[]): Promise<PostResult> {
     try {
       // TikTok requires a video or photo
       if (!mediaUrls || mediaUrls.length === 0) {
         throw new Error('TikTok requires a video or photo to post');
       }
+
+      // Normalize mediaUrls - extract URL strings and preserve thumbnail info
+      const normalizedMedia = mediaUrls.map(item => {
+        if (typeof item === 'string') {
+          return { url: item };
+        } else if (item && typeof item === 'object' && item.url) {
+          return item;  // Keep thumbnail info
+        }
+        return { url: '' };
+      }).filter(media => media.url !== '');
+
+      const normalizedMediaStrings = normalizedMedia.map(m => m.url);
 
       // Extract TikTok settings from postData - Updated for audit compliance
       const {
@@ -687,8 +701,8 @@ export class PostingService {
       const imageExtensions = /\.(jpg|jpeg|png|gif|webp)$/i;
       const videoExtensions = /\.(mp4|mov|avi|wmv|flv|mkv)$/i;
 
-      const photoUrls = mediaUrls.filter(url => imageExtensions.test(url));
-      const videoUrls = mediaUrls.filter(url => videoExtensions.test(url));
+      const photoUrls = normalizedMediaStrings.filter(url => imageExtensions.test(url));
+      const videoUrls = normalizedMediaStrings.filter(url => videoExtensions.test(url));
 
       const isPhotoPost = photoUrls.length > 0 && videoUrls.length === 0;
 
@@ -742,9 +756,11 @@ export class PostingService {
         };
       } else {
         // Video post - use existing video endpoint
-        const videoUrl = videoUrls[0] || mediaUrls[0];
+        const videoMedia = normalizedMedia.find(m => videoExtensions.test(m.url));
+        const videoUrl = videoMedia?.url || videoUrls[0] || normalizedMediaStrings[0];
+        const thumbnailUrl = videoMedia?.thumbnailUrl;
 
-        console.log('Sending video URL to TikTok API:', videoUrl);
+        console.log('Sending video URL to TikTok API:', { videoUrl, thumbnailUrl });
 
         const response = await fetch('/api/post/tiktok', {
           method: 'POST',
@@ -755,6 +771,7 @@ export class PostingService {
             accessToken: account.access_token,
             content: postTitle, // Use title or content
             videoUrl: videoUrl,
+            thumbnailUrl: thumbnailUrl, // Include thumbnail URL
             privacyLevel: privacyLevel,
             options: {
               // Interaction settings - Use values from postData (all default to false)
@@ -783,7 +800,8 @@ export class PostingService {
             data: {
               id: data.publishId,
               isDraft: true,
-              message: 'Video saved as draft in your TikTok app'
+              message: 'Video saved as draft in your TikTok app',
+              thumbnailUrl: thumbnailUrl // Include thumbnail URL
             }
           };
         }
@@ -792,6 +810,10 @@ export class PostingService {
           platform: 'tiktok',
           success: true,
           postId: data.publishId,
+          data: {
+            id: data.publishId,
+            thumbnailUrl: thumbnailUrl // Include thumbnail URL
+          }
         };
       }
     } catch (error) {

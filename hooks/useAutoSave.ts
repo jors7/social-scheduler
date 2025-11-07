@@ -9,7 +9,7 @@ interface AutoSaveData {
   content: string
   platforms: string[]
   platformContent: Record<string, string>
-  mediaUrls: string[]
+  mediaUrls: (string | { url: string; thumbnailUrl?: string; type?: string })[]
 }
 
 // Helper function to strip HTML tags for clean titles

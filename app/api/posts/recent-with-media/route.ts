@@ -212,16 +212,24 @@ export async function GET(request: NextRequest) {
                     }
                   } else if (platform === 'tiktok') {
                     // TikTok handling
-                    // Note: TikTok's sandbox API doesn't provide video listing or media URLs
-                    // We'll fallback to using the original media_urls from the post
-                    // The video URL itself can be used - browsers will display it as video
+                    // Try to extract thumbnail URL from media_urls (new object format)
+                    // Fall back to video URL for old posts without thumbnails
                     try {
                       if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
-                        // Use the first media URL (the video that was uploaded)
-                        const videoUrl = post.media_urls[0];
-                        if (typeof videoUrl === 'string' && videoUrl.trim() !== '') {
-                          platformMediaUrl = videoUrl;
-                          console.log('TikTok video URL from database for', result.postId, ':', platformMediaUrl);
+                        const firstMedia = post.media_urls[0];
+
+                        // Check if media is in new object format with thumbnail
+                        if (typeof firstMedia === 'object' && firstMedia.thumbnailUrl) {
+                          platformMediaUrl = firstMedia.thumbnailUrl;
+                          console.log('TikTok thumbnail URL from media_urls for', result.postId, ':', platformMediaUrl);
+                        } else if (typeof firstMedia === 'object' && firstMedia.url) {
+                          // Object format but no thumbnail, use video URL
+                          platformMediaUrl = firstMedia.url;
+                          console.log('TikTok video URL (no thumbnail) for', result.postId, ':', platformMediaUrl);
+                        } else if (typeof firstMedia === 'string' && firstMedia.trim() !== '') {
+                          // Old string format, use as-is
+                          platformMediaUrl = firstMedia;
+                          console.log('TikTok video URL (legacy format) for', result.postId, ':', platformMediaUrl);
                         }
                       }
                     } catch (tiktokError) {

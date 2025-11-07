@@ -18,7 +18,7 @@ interface PreviewPanelProps {
   selectedPlatforms: string[]
   content: string
   platformContent: Record<string, string>
-  mediaUrls: string[]
+  mediaUrls: (string | { url: string; thumbnailUrl?: string; type?: string })[]
   instagramFormat?: 'feed-square' | 'feed-portrait' | 'feed-landscape' | 'story' | 'reel'
   facebookFormat?: 'feed' | 'story' | 'reel'
   youtubeFormat?: 'video' | 'short'
@@ -47,7 +47,7 @@ export function PreviewPanel({
   selectedPlatforms,
   content,
   platformContent,
-  mediaUrls,
+  mediaUrls: rawMediaUrls,
   instagramFormat = 'feed-portrait',
   facebookFormat = 'feed',
   youtubeFormat = 'video',
@@ -59,6 +59,11 @@ export function PreviewPanel({
   pinterestBoard,
   onClose
 }: PreviewPanelProps) {
+  // Normalize mediaUrls to string format for preview components
+  const mediaUrls = rawMediaUrls.map(item =>
+    typeof item === 'string' ? item : item.url
+  )
+
   const [activePlatform, setActivePlatform] = useState(
     selectedPlatforms[0] || 'twitter'
   )

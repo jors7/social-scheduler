@@ -219,7 +219,7 @@ function CreateNewPostPageContent() {
   const [showPreview, setShowPreview] = useState(false)
   const [isPosting, setIsPosting] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
-  const [uploadedMediaUrls, setUploadedMediaUrls] = useState<string[]>([])
+  const [uploadedMediaUrls, setUploadedMediaUrls] = useState<(string | { url: string; thumbnailUrl?: string; type?: string })[]>([])
   const [uploadedMediaTypes, setUploadedMediaTypes] = useState<string[]>([])
   const [loadingDraft, setLoadingDraft] = useState(false)
   const [editingScheduledPost, setEditingScheduledPost] = useState(false)
@@ -610,7 +610,7 @@ function CreateNewPostPageContent() {
   }
 
   // Upload files immediately when selected (for autosave functionality)
-  const uploadFilesImmediately = async (files: File[]): Promise<string[]> => {
+  const uploadFilesImmediately = async (files: File[]): Promise<(string | { url: string; thumbnailUrl?: string; type?: string })[]> => {
     if (files.length === 0) return []
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -711,7 +711,7 @@ function CreateNewPostPageContent() {
     return uploadedUrls
   }
 
-  const uploadFiles = async (): Promise<string[]> => {
+  const uploadFiles = async (): Promise<(string | { url: string; thumbnailUrl?: string; type?: string })[]> => {
     // If files are already uploaded, return those URLs
     if (uploadedMediaUrls.length > 0) {
       return uploadedMediaUrls
@@ -749,7 +749,9 @@ function CreateNewPostPageContent() {
         return []
       }
 
-      const uploadedUrls: string[] = []
+      const uploadedUrls: (string | { url: string; thumbnailUrl?: string; type?: string })[] = []
+      const shouldGenerateThumbnails = selectedPlatforms.includes('tiktok')
+
       toast.info(`Uploading ${selectedFiles.length} file(s)...`)
 
       for (let i = 0; i < selectedFiles.length; i++) {
@@ -776,7 +778,66 @@ function CreateNewPostPageContent() {
             .from('post-media')
             .getPublicUrl(fileName)
 
-          uploadedUrls.push(publicUrl)
+          // If TikTok is selected and this is a video, generate and upload thumbnail
+          if (shouldGenerateThumbnails && isVideoFile(file)) {
+            try {
+              toast.info(`Generating thumbnail for ${file.name}...`)
+
+              // Extract thumbnail from video
+              const thumbnailFile = await extractVideoThumbnail(file)
+
+              if (thumbnailFile) {
+                // Upload thumbnail to Supabase Storage
+                const thumbnailFileName = `${user.id}/thumbnails/${timestamp}-${randomString}.jpg`
+                const { error: thumbError } = await supabase.storage
+                  .from('post-media')
+                  .upload(thumbnailFileName, thumbnailFile, {
+                    cacheControl: '3600',
+                    upsert: false,
+                    contentType: 'image/jpeg'
+                  })
+
+                if (thumbError) {
+                  console.error('Thumbnail upload error:', thumbError)
+                  // Continue without thumbnail if upload fails
+                  uploadedUrls.push({
+                    url: publicUrl,
+                    type: 'video'
+                  })
+                } else {
+                  // Get public URL for thumbnail
+                  const { data: { publicUrl: thumbnailUrl } } = supabase.storage
+                    .from('post-media')
+                    .getPublicUrl(thumbnailFileName)
+
+                  // Store in object format with thumbnail
+                  uploadedUrls.push({
+                    url: publicUrl,
+                    thumbnailUrl: thumbnailUrl,
+                    type: 'video'
+                  })
+                  console.log('Thumbnail uploaded successfully:', thumbnailUrl)
+                }
+              } else {
+                // Thumbnail generation failed, store without thumbnail
+                uploadedUrls.push({
+                  url: publicUrl,
+                  type: 'video'
+                })
+              }
+            } catch (thumbError) {
+              console.error('Error generating thumbnail:', thumbError)
+              // Continue without thumbnail if generation fails
+              uploadedUrls.push({
+                url: publicUrl,
+                type: 'video'
+              })
+            }
+          } else {
+            // Not a video or TikTok not selected, store as string for backward compatibility
+            uploadedUrls.push(publicUrl)
+          }
+
           toast.success(`Uploaded ${i + 1} of ${selectedFiles.length}`)
         } catch (error) {
           console.error('Upload error for file:', file.name, error)
@@ -1178,7 +1239,7 @@ function CreateNewPostPageContent() {
 
     try {
       // Upload files first if any, and include already uploaded media
-      let mediaUrls: string[] = [...uploadedMediaUrls]  // Start with already uploaded URLs
+      let mediaUrls: (string | { url: string; thumbnailUrl?: string; type?: string })[] = [...uploadedMediaUrls]  // Start with already uploaded URLs
       if (selectedFiles.length > 0) {
         const newMediaUrls = await uploadFiles()
         if (newMediaUrls.length === 0 && selectedFiles.length > 0) {
@@ -2317,7 +2378,7 @@ function CreateNewPostPageContent() {
 
     try {
       // Upload files first if any
-      let mediaUrls: string[] = [...uploadedMediaUrls]  // Start with already uploaded URLs
+      let mediaUrls: (string | { url: string; thumbnailUrl?: string; type?: string })[] = [...uploadedMediaUrls]  // Start with already uploaded URLs
       if (selectedFiles.length > 0) {
         toast.info('Uploading media...')
         const newMediaUrls = await uploadFiles()
@@ -2329,7 +2390,7 @@ function CreateNewPostPageContent() {
       }
 
       // Upload thread media if in thread mode
-      let threadsThreadMediaUrls: string[][] = []
+      let threadsThreadMediaUrls: (string | { url: string; thumbnailUrl?: string; type?: string })[][] = []
       if (isThreadsThreadMode && threadsThreadMedia.length > 0) {
         const hasAnyMedia = threadsThreadMedia.some(files => files && files.length > 0)
         if (hasAnyMedia) {
@@ -2642,7 +2703,7 @@ function CreateNewPostPageContent() {
 
     try {
       // Upload files first if any
-      let mediaUrls: string[] = [...uploadedMediaUrls] // Include existing URLs
+      let mediaUrls: (string | { url: string; thumbnailUrl?: string; type?: string })[] = [...uploadedMediaUrls] // Include existing URLs
       if (selectedFiles.length > 0) {
         toast.info('Uploading media...')
         const newUrls = await uploadFiles()

@@ -615,7 +615,7 @@ export async function postToPinterestDirect(content: string, account: any, media
   }
 }
 
-export async function postToTikTokDirect(content: string, account: any, mediaUrls?: string[]) {
+export async function postToTikTokDirect(content: string, account: any, mediaUrls?: any[]) {
   console.log('=== DIRECT TIKTOK POST ===');
   console.log('Content:', content);
   console.log('Has media:', !!mediaUrls && mediaUrls.length > 0);
@@ -625,8 +625,14 @@ export async function postToTikTokDirect(content: string, account: any, mediaUrl
       throw new Error('TikTok posts require a video');
     }
 
-    // TikTok only supports videos
-    const videoUrl = mediaUrls[0];
+    // Normalize mediaUrls - extract URL strings from objects if needed
+    const firstMedia = mediaUrls[0];
+    const videoUrl = typeof firstMedia === 'string' ? firstMedia : firstMedia?.url;
+
+    if (!videoUrl) {
+      throw new Error('Invalid media URL format');
+    }
+
     const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
     const isVideo = videoExtensions.some(ext => videoUrl.toLowerCase().includes(ext));
 
