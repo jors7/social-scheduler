@@ -638,8 +638,9 @@ function CreateNewPostPageContent() {
       }
     }
 
-    const uploadedUrls: string[] = []
+    const uploadedUrls: (string | { url: string; thumbnailUrl?: string; type?: string })[] = []
     const hasVideos = files.some(file => file.type.startsWith('video/'))
+    const shouldGenerateThumbnails = selectedPlatforms.includes('tiktok') || hasVideos
 
     toast.info(`Uploading ${files.length} file(s)...`, { duration: 2000 })
 
@@ -668,34 +669,62 @@ function CreateNewPostPageContent() {
           .getPublicUrl(fileName)
 
         // Check if this is a video file and extract thumbnail
-        if (isVideoFile(file)) {
-          let thumbnailUrl: string | null = null
-
+        if (isVideoFile(file) && shouldGenerateThumbnails) {
           try {
             const thumbnailFile = await extractVideoThumbnail(file)
             if (thumbnailFile) {
               // Upload thumbnail
-              const thumbFileName = `${user.id}/${timestamp}-${randomString}_thumb.jpg`
+              const thumbFileName = `${user.id}/thumbnails/${timestamp}-${randomString}_thumb.jpg`
               const { error: thumbError } = await supabase.storage
                 .from('post-media')
-                .upload(thumbFileName, thumbnailFile)
+                .upload(thumbFileName, thumbnailFile, {
+                  cacheControl: '3600',
+                  upsert: false,
+                  contentType: 'image/jpeg'
+                })
 
               if (!thumbError) {
                 const { data: { publicUrl: thumbUrl } } = supabase.storage
                   .from('post-media')
                   .getPublicUrl(thumbFileName)
-                thumbnailUrl = thumbUrl
+
+                // Store as object with thumbnail URL
+                uploadedUrls.push({
+                  url: publicUrl,
+                  thumbnailUrl: thumbUrl,
+                  type: 'video'
+                })
+                console.log('Video uploaded with thumbnail:', { url: publicUrl, thumbnailUrl: thumbUrl })
+              } else {
+                // Thumbnail upload failed, store video without thumbnail
+                uploadedUrls.push({
+                  url: publicUrl,
+                  type: 'video'
+                })
               }
+            } else {
+              // Thumbnail extraction failed, store video without thumbnail
+              uploadedUrls.push({
+                url: publicUrl,
+                type: 'video'
+              })
             }
           } catch (thumbError) {
             console.error('Failed to extract video thumbnail:', thumbError)
-            // Continue without thumbnail
+            // Store video without thumbnail
+            uploadedUrls.push({
+              url: publicUrl,
+              type: 'video'
+            })
           }
-
-          // Store just the URL string (thumbnail is stored separately in database)
-          uploadedUrls.push(publicUrl)
+        } else if (isVideoFile(file)) {
+          // Video but no thumbnail generation requested
+          uploadedUrls.push({
+            url: publicUrl,
+            type: 'video'
+          })
         } else {
-          // Store just the URL string
+          // Image file - store as string for backward compatibility
           uploadedUrls.push(publicUrl)
         }
       } catch (error) {
