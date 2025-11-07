@@ -1310,6 +1310,9 @@ function DashboardContent() {
 
                         // If it's an object with a url property
                         if (firstMedia && typeof firstMedia === 'object') {
+                          // For video objects (TikTok, YouTube), prioritize thumbnailUrl for display
+                          if (firstMedia.thumbnailUrl && typeof firstMedia.thumbnailUrl === 'string') return firstMedia.thumbnailUrl.trim()
+
                           // Check for various possible property names
                           if (firstMedia.url && typeof firstMedia.url === 'string') return firstMedia.url.trim()
                           if (firstMedia.media_url && typeof firstMedia.media_url === 'string') return firstMedia.media_url.trim()
