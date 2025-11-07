@@ -1351,12 +1351,31 @@ function DashboardContent() {
                   )
 
                   // Determine if this should be rendered as a video
-                  // Use video tag only if it's actually a video file (not an image thumbnail)
-                  const isVideo = !hasImageThumbnail && firstMediaUrl && (
-                    firstMediaUrl.includes('.mp4') ||
-                    firstMediaUrl.includes('.mov') ||
-                    firstMediaUrl.includes('.webm')
-                  )
+                  // Check if we have video content (either from media_urls object structure or video file URL)
+                  const hasVideoContent = () => {
+                    // Check if media_urls contains video object with thumbnail (TikTok, YouTube, etc.)
+                    if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
+                      const firstMedia = post.media_urls[0]
+                      if (typeof firstMedia === 'object' && firstMedia.thumbnailUrl) {
+                        // Has thumbnail in object = video content
+                        return true
+                      }
+                    }
+
+                    // Check if firstMediaUrl is a video file
+                    if (!hasImageThumbnail && firstMediaUrl && (
+                      firstMediaUrl.includes('.mp4') ||
+                      firstMediaUrl.includes('.mov') ||
+                      firstMediaUrl.includes('.webm') ||
+                      firstMediaUrl.includes('.avi')
+                    )) {
+                      return true
+                    }
+
+                    return false
+                  }
+
+                  const isVideo = hasVideoContent()
 
 
                   // Get display content - use Pinterest-specific fields if available
@@ -1492,10 +1511,11 @@ function DashboardContent() {
                       <div className="ml-3 flex-shrink-0">
                         {firstMediaUrl ? (
                           isVideo ? (
-                            videoThumbnail ? (
+                            // For videos, use videoThumbnail if available, otherwise use firstMediaUrl (which is thumbnail for TikTok)
+                            (videoThumbnail || firstMediaUrl) ? (
                               <div className="relative w-16 h-16">
                                 <img
-                                  src={videoThumbnail}
+                                  src={videoThumbnail || firstMediaUrl}
                                   alt="Video thumbnail"
                                   className="w-16 h-16 object-cover rounded-lg border border-gray-200"
                                   onError={(e) => {
@@ -1612,8 +1632,8 @@ function DashboardContent() {
                               const url = typeof media === 'string' ? media : media.url
                               const thumbnailUrl = typeof media === 'object' && media.thumbnailUrl ? media.thumbnailUrl : null
 
-                              // Check if this is a video URL
-                              const isVideo = url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') || url.includes('.avi'))
+                              // Check if this is video content (has thumbnail OR is video file)
+                              const isVideo = thumbnailUrl || (url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') || url.includes('.avi')))
                               // Hide thumbnails 3 and 4 on desktop (index 2 and 3)
                               const isHiddenOnDesktop = hasMany && index >= desktopLimit
 
