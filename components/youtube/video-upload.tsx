@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Video, Upload, X, AlertCircle, FileVideo } from 'lucide-react'
+import { Video, Upload, X, AlertCircle, FileVideo, Image } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface VideoUploadProps {
@@ -109,13 +109,13 @@ export default function VideoUpload({
   }
 
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-6", className)}>
       {/* Video Upload */}
       <div className="space-y-2">
         <Label>Video File *</Label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-gray-400 transition-colors">
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-gray-400 transition-colors min-h-[240px] flex items-center justify-center">
           {!videoFile ? (
-            <div className="text-center">
+            <div className="text-center w-full">
               <Video className="mx-auto h-12 w-12 text-gray-400" />
               <div className="mt-4">
                 <Button
@@ -177,14 +177,14 @@ export default function VideoUpload({
       {/* Thumbnail Upload */}
       <div className="space-y-2">
         <Label>Thumbnail (Optional)</Label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-gray-400 transition-colors">
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-gray-400 transition-colors min-h-[240px] flex items-center justify-center">
           {!thumbnailFile ? (
-            <div className="text-center">
-              <div className="flex justify-center gap-2">
+            <div className="text-center w-full">
+              <Image className="mx-auto h-12 w-12 text-gray-400" />
+              <div className="mt-4">
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
                   onClick={() => thumbnailInputRef.current?.click()}
                 >
                   <Upload className="mr-2 h-4 w-4" />
@@ -234,7 +234,7 @@ export default function VideoUpload({
 
       {/* Upload Progress */}
       {isUploading && (
-        <div className="space-y-2">
+        <div className="space-y-2 md:col-span-2">
           <div className="flex justify-between text-sm">
             <span>Uploading...</span>
             <span>{uploadProgress}%</span>
@@ -244,11 +244,11 @@ export default function VideoUpload({
       )}
 
       {/* Info Alert */}
-      <Alert>
+      <Alert className="md:col-span-2">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          <strong>Note:</strong> Video upload to YouTube requires the video file to be processed. 
-          Large files may take several minutes to upload and process. 
+          <strong>Note:</strong> Video upload to YouTube requires the video file to be processed.
+          Large files may take several minutes to upload and process.
           YouTube will notify you when your video is ready.
         </AlertDescription>
       </Alert>

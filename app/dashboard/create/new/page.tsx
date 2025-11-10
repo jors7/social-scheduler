@@ -3622,32 +3622,26 @@ function CreateNewPostPageContent() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Video Upload Section */}
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-3">Video File</h3>
-                  <VideoUpload
-                    videoFile={youtubeVideoFile}
-                    thumbnailFile={youtubeThumbnailFile}
-                    onVideoChange={setYoutubeVideoFile}
-                    onThumbnailChange={setYoutubeThumbnailFile}
-                  />
-                </div>
+                <VideoUpload
+                  videoFile={youtubeVideoFile}
+                  thumbnailFile={youtubeThumbnailFile}
+                  onVideoChange={setYoutubeVideoFile}
+                  onThumbnailChange={setYoutubeThumbnailFile}
+                />
 
                 {/* Video Metadata Section */}
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-3">Video Details</h3>
-                  <VideoMetadata
-                    title={youtubeTitle}
-                    description={youtubeDescription || postContent.replace(/<[^>]*>/g, '')}
-                    tags={youtubeTags}
-                    categoryId={youtubeCategoryId}
-                    privacyStatus={youtubePrivacyStatus}
-                    onTitleChange={setYoutubeTitle}
-                    onDescriptionChange={setYoutubeDescription}
-                    onTagsChange={setYoutubeTags}
-                    onCategoryChange={setYoutubeCategoryId}
-                    onPrivacyChange={setYoutubePrivacyStatus}
-                  />
-                </div>
+                <VideoMetadata
+                  title={youtubeTitle}
+                  description={youtubeDescription || postContent.replace(/<[^>]*>/g, '')}
+                  tags={youtubeTags}
+                  categoryId={youtubeCategoryId}
+                  privacyStatus={youtubePrivacyStatus}
+                  onTitleChange={setYoutubeTitle}
+                  onDescriptionChange={setYoutubeDescription}
+                  onTagsChange={setYoutubeTags}
+                  onCategoryChange={setYoutubeCategoryId}
+                  onPrivacyChange={setYoutubePrivacyStatus}
+                />
 
                 {/* Compliance Settings Section */}
                 <div>
