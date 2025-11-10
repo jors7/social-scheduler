@@ -583,16 +583,23 @@ function CreateNewPostPageContent() {
 
   const togglePlatform = (platformId: string) => {
     setSelectedPlatforms(prev => {
-      const newPlatforms = prev.includes(platformId)
-        ? prev.filter(id => id !== platformId)
-        : [...prev, platformId]
-      
+      // YouTube is exclusive - deselect all others when selecting YouTube
+      if (platformId === 'youtube') {
+        return prev.includes('youtube') ? [] : ['youtube'];
+      }
+
+      // Deselect YouTube when selecting any other platform
+      const withoutYoutube = prev.filter(p => p !== 'youtube');
+      const newPlatforms = withoutYoutube.includes(platformId)
+        ? withoutYoutube.filter(p => p !== platformId)
+        : [...withoutYoutube, platformId];
+
       // If Twitter is being deselected, reset Twitter mode
       if (platformId === 'twitter' && prev.includes('twitter') && !newPlatforms.includes('twitter')) {
         setTwitterMode('single')
         setTwitterThreadPosts([''])
       }
-      
+
       return newPlatforms
     })
   }
@@ -3235,7 +3242,7 @@ function CreateNewPostPageContent() {
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         {/* Left Column - Main Content */}
         <div className="col-span-1 lg:col-span-2 space-y-4 sm:space-y-6 order-2 lg:order-1">
-          {/* Post Content & Media - Combined Card - Shown by default, hidden when only YouTube and/or Threads are selected */}
+          {/* Post Content & Media - Combined Card - Shown by default, hidden when only YouTube (exclusive) or only Threads are selected */}
           {(selectedPlatforms.length === 0 || selectedPlatforms.some(p => p !== 'youtube' && p !== 'threads')) && (
           <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
             <CardHeader className="pb-4">
@@ -3602,6 +3609,63 @@ function CreateNewPostPageContent() {
             </Card>
           )}
 
+          {/* YouTube Video Upload - Full width when YouTube is selected */}
+          {selectedPlatforms.includes('youtube') && (
+            <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 border-red-200 dark:border-red-800">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
+                  <span className="text-2xl text-red-600">▶</span>
+                  YouTube Video Upload
+                </CardTitle>
+                <CardDescription className="text-sm sm:text-base text-gray-600">
+                  Upload and configure your video for YouTube
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Video Upload Section */}
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">Video File</h3>
+                  <VideoUpload
+                    videoFile={youtubeVideoFile}
+                    thumbnailFile={youtubeThumbnailFile}
+                    onVideoChange={setYoutubeVideoFile}
+                    onThumbnailChange={setYoutubeThumbnailFile}
+                  />
+                </div>
+
+                {/* Video Metadata Section */}
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">Video Details</h3>
+                  <VideoMetadata
+                    title={youtubeTitle}
+                    description={youtubeDescription || postContent.replace(/<[^>]*>/g, '')}
+                    tags={youtubeTags}
+                    categoryId={youtubeCategoryId}
+                    privacyStatus={youtubePrivacyStatus}
+                    onTitleChange={setYoutubeTitle}
+                    onDescriptionChange={setYoutubeDescription}
+                    onTagsChange={setYoutubeTags}
+                    onCategoryChange={setYoutubeCategoryId}
+                    onPrivacyChange={setYoutubePrivacyStatus}
+                  />
+                </div>
+
+                {/* Compliance Settings Section */}
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">Compliance & Settings</h3>
+                  <YouTubeComplianceSettings
+                    madeForKids={youtubeMadeForKids}
+                    setMadeForKids={setYoutubeMadeForKids}
+                    embeddable={youtubeEmbeddable}
+                    setEmbeddable={setYoutubeEmbeddable}
+                    license={youtubeLicense}
+                    setLicense={setYoutubeLicense}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Twitter/X Thread Mode - Only show when threads are enabled */}
           {selectedPlatforms.length === 1 && selectedPlatforms[0] === 'twitter' && enableTwitterThreads && (
             <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 border-gray-200 dark:border-gray-800">
@@ -3942,12 +4006,22 @@ function CreateNewPostPageContent() {
               </CardHeader>
               <CardContent>
                 {/* Multi-Platform Posting Info Box */}
-                <div className="mb-4 flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-600" />
-                  <div className="text-xs text-blue-800">
-                    <p className="font-medium">Select multiple platforms to post everywhere at once.</p>
+                {selectedPlatforms.includes('youtube') ? (
+                  <div className="mb-4 flex items-start gap-2 p-3 bg-red-50 rounded-lg border border-red-200">
+                    <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-red-600" />
+                    <div className="text-xs text-red-800">
+                      <p className="font-medium">📹 YouTube videos require dedicated upload</p>
+                      <p className="mt-1">Other platforms are disabled for video uploads. Deselect YouTube to post to multiple platforms.</p>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="mb-4 flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-600" />
+                    <div className="text-xs text-blue-800">
+                      <p className="font-medium">Select multiple platforms to post everywhere at once.</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Platform Settings - Appears Above Grid for Better Visibility */}
                 <div className="space-y-4 mb-4">
@@ -4353,53 +4427,6 @@ function CreateNewPostPageContent() {
               </Card>
             )}
 
-            {/* YouTube Video Metadata */}
-            {selectedPlatforms.includes('youtube') && (
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="text-red-600">▶</span>
-                    YouTube Video Settings
-                  </CardTitle>
-                  <CardDescription>
-                    Configure your YouTube video details
-                  </CardDescription>
-                  {/* Preview button - only show when YouTube is the only platform */}
-                  {selectedPlatforms.length === 1 && selectedPlatforms[0] === 'youtube' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowPreview(!showPreview)}
-                      className="mt-4 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border-blue-200 hover:border-blue-300 w-full sm:w-auto"
-                    >
-                      <Eye className="mr-2 h-4 w-4 text-blue-600" />
-                      Preview
-                    </Button>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <VideoUpload
-                    videoFile={youtubeVideoFile}
-                    thumbnailFile={youtubeThumbnailFile}
-                    onVideoChange={setYoutubeVideoFile}
-                    onThumbnailChange={setYoutubeThumbnailFile}
-                  />
-                  <VideoMetadata
-                    title={youtubeTitle}
-                    description={youtubeDescription || postContent.replace(/<[^>]*>/g, '')}
-                    tags={youtubeTags}
-                    categoryId={youtubeCategoryId}
-                    privacyStatus={youtubePrivacyStatus}
-                    onTitleChange={setYoutubeTitle}
-                    onDescriptionChange={setYoutubeDescription}
-                    onTagsChange={setYoutubeTags}
-                    onCategoryChange={setYoutubeCategoryId}
-                    onPrivacyChange={setYoutubePrivacyStatus}
-                  />
-                </CardContent>
-              </Card>
-            )}
-
             {/* TikTok Video Settings */}
             {selectedPlatforms.includes('tiktok') && (
               <div className="mt-6">
@@ -4431,20 +4458,6 @@ function CreateNewPostPageContent() {
                 <LinkedInVisibilitySelector
                   visibility={linkedinVisibility}
                   setVisibility={setLinkedinVisibility}
-                />
-              </div>
-            )}
-
-            {/* YouTube Compliance Settings - Phase 1 Quick Wins */}
-            {selectedPlatforms.includes('youtube') && (
-              <div className="mt-6">
-                <YouTubeComplianceSettings
-                  madeForKids={youtubeMadeForKids}
-                  setMadeForKids={setYoutubeMadeForKids}
-                  embeddable={youtubeEmbeddable}
-                  setEmbeddable={setYoutubeEmbeddable}
-                  license={youtubeLicense}
-                  setLicense={setYoutubeLicense}
                 />
               </div>
             )}
