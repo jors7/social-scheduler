@@ -545,6 +545,42 @@ function CreateNewPostPageContent() {
     }
   }, [postContent, selectedPlatforms, uploadedMediaUrls, isSaving])
 
+  // Helper to strip HTML tags and convert to plain text (preserving line breaks)
+  const stripHtmlTags = (html: string): string => {
+    if (!html) return '';
+
+    // Replace HTML line breaks with newlines BEFORE stripping tags
+    let text = html
+      .replace(/<br\s*\/?>/gi, '\n')        // <br> → newline
+      .replace(/<\/p>\s*<p>/gi, '\n\n')     // </p><p> → double newline
+      .replace(/<p>/gi, '')                  // Remove opening <p>
+      .replace(/<\/p>/gi, '\n')             // </p> → newline
+      .replace(/<\/div>\s*<div>/gi, '\n')   // </div><div> → newline
+      .replace(/<div>/gi, '')                // Remove opening <div>
+      .replace(/<\/div>/gi, '\n');          // </div> → newline
+
+    // Create temporary div to parse remaining HTML
+    const tmp = document.createElement('div');
+    tmp.innerHTML = text;
+
+    // Extract text content
+    return (tmp.textContent || tmp.innerText || '').trim();
+  };
+
+  // Auto-sync main content to ThreadComposer when Threads is selected
+  useEffect(() => {
+    if (selectedPlatforms.includes('threads')) {
+      // Strip HTML tags before syncing to plain text ThreadComposer
+      // This ensures content written once posts to all platforms
+      // Users can still add posts 2, 3, 4+ to create threads
+      const plainText = stripHtmlTags(postContent);
+      setThreadPosts(prev => {
+        const otherPosts = prev.slice(1)
+        return [plainText, ...otherPosts]
+      })
+    }
+  }, [postContent, selectedPlatforms])
+
   const togglePlatform = (platformId: string) => {
     setSelectedPlatforms(prev => {
       const newPlatforms = prev.includes(platformId)
@@ -603,6 +639,23 @@ function CreateNewPostPageContent() {
     return {
       current: textContent.length,
       limit: platform?.charLimit || 0
+    }
+  }
+
+  // Get character limit range for multiple platforms
+  const getCharacterLimitRange = () => {
+    if (selectedPlatforms.length === 0) return null
+    if (selectedPlatforms.length === 1) return null
+
+    const limits = selectedPlatforms
+      .map(id => platforms.find(p => p.id === id)?.charLimit)
+      .filter((limit): limit is number => limit !== undefined && limit > 0)
+
+    if (limits.length === 0) return null
+
+    return {
+      min: Math.min(...limits),
+      max: Math.max(...limits)
     }
   }
 
@@ -3182,8 +3235,8 @@ function CreateNewPostPageContent() {
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         {/* Left Column - Main Content */}
         <div className="col-span-1 lg:col-span-2 space-y-4 sm:space-y-6 order-2 lg:order-1">
-          {/* Post Content & Media - Combined Card - Hidden when only YouTube is selected, or Threads in thread mode */}
-          {!(selectedPlatforms.length === 1 && (selectedPlatforms[0] === 'youtube' || (selectedPlatforms[0] === 'threads' && threadsMode === 'thread'))) && (
+          {/* Post Content & Media - Combined Card - Shown by default, hidden when only YouTube and/or Threads are selected */}
+          {(selectedPlatforms.length === 0 || selectedPlatforms.some(p => p !== 'youtube' && p !== 'threads')) && (
           <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
             <CardHeader className="pb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -3246,7 +3299,12 @@ function CreateNewPostPageContent() {
                     content={postContent}
                     onChange={handleContentChange}
                     placeholder="What's on your mind?"
-                    maxLength={selectedPlatforms.length === 1 ? platforms.find(p => p.id === selectedPlatforms[0])?.charLimit : 2200}
+                    maxLength={
+                      selectedPlatforms.length === 1
+                        ? platforms.find(p => p.id === selectedPlatforms[0])?.charLimit || 2200
+                        : getCharacterLimitRange()?.max || 2200
+                    }
+                    limitRange={getCharacterLimitRange()}
                   />
                 </div>
 
@@ -3517,65 +3575,29 @@ function CreateNewPostPageContent() {
           </Card>
           )}
 
-          {/* Threads Thread Mode */}
-          {selectedPlatforms.length === 1 && selectedPlatforms[0] === 'threads' && (
+          {/* Threads Composer - Always show when Threads is selected */}
+          {selectedPlatforms.includes('threads') && (
             <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 border-purple-200 dark:border-purple-800">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
                   <span className="text-2xl">🧵</span>
-                  Threads Options
+                  Create Thread Posts
                 </CardTitle>
                 <CardDescription className="text-sm sm:text-base text-gray-600">
-                  Choose how to post to Threads
+                  Fill one post for a single post, or add multiple to create a thread
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <Button
-                    type="button"
-                    variant={threadsMode === 'single' ? 'default' : 'outline'}
-                    onClick={() => setThreadsMode('single')}
-                    size="sm"
-                  >
-                    Single Post
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={threadsMode === 'thread' ? 'default' : 'outline'}
-                    onClick={() => setThreadsMode('thread')}
-                    size="sm"
-                  >
-                    Thread (Multiple Posts)
-                  </Button>
-                </div>
-                
-                {threadsMode === 'thread' && (
-                  <div className="space-y-4">
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                      <p className="text-sm text-blue-800 dark:text-blue-200">
-                        <strong>Multi-Post Thread:</strong> Creates multiple connected posts.
-                        {connectedAccounts.some((acc: any) => acc.platform === 'threads' && acc.username === 'thejanorsula') ? (
-                          <span className="block mt-1 text-xs">
-                            ✅ Test account detected - will create connected thread replies
-                          </span>
-                        ) : (
-                          <span className="block mt-1 text-xs">
-                            ⚡ Will attempt connected threads, fallback to numbered [1/n] format if needed
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                    <ThreadComposer
-                      onPost={(posts) => setThreadPosts(posts)}
-                      onMediaChange={(media) => setThreadsThreadMedia(media)}
-                      maxPosts={10}
-                      maxCharsPerPost={500}
-                      maxMediaPerPost={1}
-                      autoUpdate={true}
-                      platform="threads"
-                    />
-                  </div>
-                )}
+              <CardContent>
+                <ThreadComposer
+                  onPost={(posts) => setThreadPosts(posts)}
+                  onMediaChange={(media) => setThreadsThreadMedia(media)}
+                  maxPosts={10}
+                  maxCharsPerPost={500}
+                  maxMediaPerPost={1}
+                  autoUpdate={true}
+                  currentPosts={threadPosts}
+                  platform="threads"
+                />
               </CardContent>
             </Card>
           )}
@@ -3827,7 +3849,8 @@ function CreateNewPostPageContent() {
                         !(selectedPlatforms.includes('facebook') && facebookAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
                         !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && facebookAsReel && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
                         !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && !facebookAsStory && !facebookAsReel && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
-                        !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'threads' && threadsMode === 'thread' && threadPosts.some(p => p.trim().length > 0)))
+                        !(selectedPlatforms.includes('threads') && threadPosts.some(p => p.trim())))
+
                     }
                     onClick={handleSchedulePost}
                   >
@@ -3865,7 +3888,7 @@ function CreateNewPostPageContent() {
                       !(selectedPlatforms.includes('facebook') && facebookAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
                       !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && facebookAsReel && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
                       !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && !facebookAsStory && !facebookAsReel && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
-                      !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'threads' && threadsMode === 'thread' && threadPosts.some(p => p.trim())) &&
+                      !(selectedPlatforms.includes('threads') && threadPosts.some(p => p.trim())) &&
                       !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'twitter' && twitterMode === 'thread' && twitterThreadPosts.some(p => p.trim())))
                   }
                   onClick={handlePostNow}
@@ -3926,63 +3949,8 @@ function CreateNewPostPageContent() {
                   </div>
                 </div>
 
-                {/* Platform Selection Buttons - 2 Column Grid */}
-                <div className="grid grid-cols-2 gap-3">
-                  {platforms.map((platform) => {
-                    // Special handling for "Request Platform" card
-                    if ((platform as any).isSpecial && platform.id === 'request') {
-                      return (
-                        <button
-                          key={platform.id}
-                          onClick={() => setShowRequestPlatformModal(true)}
-                          className={cn(
-                            "w-full flex items-center gap-2.5 p-3.5 rounded-lg border-2 transition-all text-left min-h-[60px]",
-                            "border-dashed border-green-300 hover:border-green-400 bg-gradient-to-br from-green-50/50 to-emerald-50/50 hover:from-green-100/50 hover:to-emerald-100/50"
-                          )}
-                        >
-                          <span className="text-base">{platform.icon}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm text-green-700 truncate">{platform.name}</p>
-                            <p className="text-xs text-green-600">Vote here</p>
-                          </div>
-                        </button>
-                      )
-                    }
-
-                    const platformAccounts = connectedAccounts.filter(acc => acc.platform === platform.id)
-                    const hasAccounts = platformAccounts.length > 0
-
-                    return (
-                      <button
-                        key={platform.id}
-                        onClick={() => togglePlatform(platform.id)}
-                        className={cn(
-                          "w-full flex items-center gap-2.5 p-3.5 rounded-lg border-2 transition-all text-left min-h-[60px]",
-                          selectedPlatforms.includes(platform.id)
-                            ? "border-primary bg-primary/10 text-primary"
-                            : hasAccounts
-                              ? "border-gray-200 hover:border-gray-300"
-                              : "border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed"
-                        )}
-                        disabled={!hasAccounts}
-                      >
-                        <span className="text-base">{platform.icon}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{platform.name}</p>
-                          <p className="text-xs text-gray-500">
-                            {hasAccounts ? 'Connected' : 'Not connected'}
-                          </p>
-                        </div>
-                        {selectedPlatforms.includes(platform.id) && (
-                          <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-
-                {/* Full-Width Platform Settings - Appears Below Grid */}
-                <div className="space-y-4 mt-4">
+                {/* Platform Settings - Appears Above Grid for Better Visibility */}
+                <div className="space-y-4 mb-4">
                   {selectedPlatforms.map((platformId) => {
                     const platform = platforms.find(p => p.id === platformId)
                     const platformAccounts = connectedAccounts.filter(acc => acc.platform === platformId)
@@ -4252,6 +4220,61 @@ function CreateNewPostPageContent() {
                           )}
                         </div>
                       </div>
+                    )
+                  })}
+                </div>
+
+                {/* Platform Selection Buttons - 2 Column Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  {platforms.map((platform) => {
+                    // Special handling for "Request Platform" card
+                    if ((platform as any).isSpecial && platform.id === 'request') {
+                      return (
+                        <button
+                          key={platform.id}
+                          onClick={() => setShowRequestPlatformModal(true)}
+                          className={cn(
+                            "w-full flex items-center gap-2.5 p-3.5 rounded-lg border-2 transition-all text-left min-h-[60px]",
+                            "border-dashed border-green-300 hover:border-green-400 bg-gradient-to-br from-green-50/50 to-emerald-50/50 hover:from-green-100/50 hover:to-emerald-100/50"
+                          )}
+                        >
+                          <span className="text-base">{platform.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm text-green-700 truncate">{platform.name}</p>
+                            <p className="text-xs text-green-600">Vote here</p>
+                          </div>
+                        </button>
+                      )
+                    }
+
+                    const platformAccounts = connectedAccounts.filter(acc => acc.platform === platform.id)
+                    const hasAccounts = platformAccounts.length > 0
+
+                    return (
+                      <button
+                        key={platform.id}
+                        onClick={() => togglePlatform(platform.id)}
+                        className={cn(
+                          "w-full flex items-center gap-2.5 p-3.5 rounded-lg border-2 transition-all text-left min-h-[60px]",
+                          selectedPlatforms.includes(platform.id)
+                            ? "border-primary bg-primary/10 text-primary"
+                            : hasAccounts
+                              ? "border-gray-200 hover:border-gray-300"
+                              : "border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed"
+                        )}
+                        disabled={!hasAccounts}
+                      >
+                        <span className="text-base">{platform.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{platform.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {hasAccounts ? 'Connected' : 'Not connected'}
+                          </p>
+                        </div>
+                        {selectedPlatforms.includes(platform.id) && (
+                          <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
+                        )}
+                      </button>
                     )
                   })}
                 </div>

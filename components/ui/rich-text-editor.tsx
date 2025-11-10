@@ -27,14 +27,16 @@ interface RichTextEditorProps {
   placeholder?: string
   maxLength?: number
   className?: string
+  limitRange?: { min: number, max: number } | null
 }
 
-export function RichTextEditor({ 
-  content = '', 
-  onChange, 
+export function RichTextEditor({
+  content = '',
+  onChange,
   placeholder = 'What\'s on your mind?',
   maxLength = 2200,
-  className = '' 
+  className = '',
+  limitRange = null
 }: RichTextEditorProps) {
   const [linkUrl, setLinkUrl] = useState('')
   const [showLinkInput, setShowLinkInput] = useState(false)
@@ -121,7 +123,10 @@ export function RichTextEditor({
 
   const characterCount = editor.storage.characterCount.characters()
   const wordCount = editor.storage.characterCount.words()
-  const isOverLimit = characterCount > maxLength
+  // When showing range, check against minimum limit (most restrictive)
+  const isOverLimit = limitRange
+    ? characterCount > limitRange.min
+    : characterCount > maxLength
 
   return (
     <div className={`border border-input rounded-md ${className}`}>
@@ -257,7 +262,9 @@ export function RichTextEditor({
         <div className="flex items-center gap-4">
           <span>{wordCount} words</span>
           <span className={isOverLimit ? 'text-red-500' : ''}>
-            {characterCount}/{maxLength} characters
+            {limitRange
+              ? `${characterCount} characters (${limitRange.min}-${limitRange.max} limit)`
+              : `${characterCount}/${maxLength} characters`}
           </span>
         </div>
         <div className="flex items-center gap-2">

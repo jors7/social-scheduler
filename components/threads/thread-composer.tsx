@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -44,7 +44,18 @@ export function ThreadComposer({
   
   // Set platform-specific limits
   const mediaLimit = platform === 'threads' ? 1 : maxMediaPerPost;
-  
+
+  // Ref to track textareas for auto-resize
+  const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
+
+  // Function to adjust textarea height based on content
+  const adjustTextareaHeight = (textarea: HTMLTextAreaElement | null) => {
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = textarea.scrollHeight + 'px';
+    }
+  };
+
   // Initialize parent on mount if autoUpdate is enabled
   useEffect(() => {
     if (autoUpdate && onPost) {
@@ -52,6 +63,24 @@ export function ThreadComposer({
       onPost(postTexts);
     }
   }, []); // Only run once on mount
+
+  // Sync currentPosts from parent to local state
+  useEffect(() => {
+    if (currentPosts && currentPosts.length > 0) {
+      const newPosts = currentPosts.map((text, index) => ({
+        id: (index + 1).toString(),
+        text: text,
+        mediaFiles: [],
+        mediaUrls: []
+      }));
+      // Only update if the content is actually different
+      const currentTexts = posts.map(p => p.text).join('|');
+      const newTexts = newPosts.map(p => p.text).join('|');
+      if (currentTexts !== newTexts) {
+        setPosts(newPosts);
+      }
+    }
+  }, [currentPosts])
 
   const addPost = () => {
     if (posts.length >= maxPosts) {
@@ -225,10 +254,18 @@ export function ThreadComposer({
               
               <div className="flex-1">
                 <Textarea
+                  ref={(el) => {
+                    textareaRefs.current[post.id] = el;
+                    adjustTextareaHeight(el);
+                  }}
                   value={post.text}
-                  onChange={(e) => updatePost(post.id, e.target.value)}
+                  onChange={(e) => {
+                    updatePost(post.id, e.target.value);
+                    adjustTextareaHeight(e.target as HTMLTextAreaElement);
+                  }}
                   placeholder={index === 0 ? "Start your thread..." : "Continue thread..."}
-                  className="min-h-[100px] resize-none"
+                  className="min-h-[100px]"
+                  style={{ resize: 'none', overflow: 'hidden' }}
                   maxLength={maxCharsPerPost}
                 />
                 
