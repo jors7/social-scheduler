@@ -67,7 +67,8 @@ import {
   Eye,
   GripVertical,
   Info,
-  Lightbulb
+  Lightbulb,
+  Plus
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { extractVideoThumbnail, isVideoFile } from '@/lib/utils/video-thumbnail'
@@ -87,7 +88,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
@@ -106,13 +107,14 @@ const platforms = [
 
 // Sortable media item component for drag-and-drop reordering
 interface SortableMediaItemProps {
+  id: string
   url: string
   index: number
   isVideo: boolean
   onRemove: () => void
 }
 
-function SortableMediaItem({ url, index, isVideo, onRemove }: SortableMediaItemProps) {
+function SortableMediaItem({ id, url, index, isVideo, onRemove }: SortableMediaItemProps) {
   const {
     attributes,
     listeners,
@@ -120,7 +122,7 @@ function SortableMediaItem({ url, index, isVideo, onRemove }: SortableMediaItemP
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: url })
+  } = useSortable({ id })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -3180,14 +3182,14 @@ function CreateNewPostPageContent() {
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         {/* Left Column - Main Content */}
         <div className="col-span-1 lg:col-span-2 space-y-4 sm:space-y-6 order-2 lg:order-1">
-          {/* Post Content - Hidden when only YouTube or Pinterest is selected, or Threads in thread mode */}
-          {!(selectedPlatforms.length === 1 && (selectedPlatforms[0] === 'youtube' || selectedPlatforms[0] === 'pinterest' || (selectedPlatforms[0] === 'threads' && threadsMode === 'thread'))) && (
+          {/* Post Content & Media - Combined Card - Hidden when only YouTube is selected, or Threads in thread mode */}
+          {!(selectedPlatforms.length === 1 && (selectedPlatforms[0] === 'youtube' || (selectedPlatforms[0] === 'threads' && threadsMode === 'thread'))) && (
           <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
             <CardHeader className="pb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Post Content</CardTitle>
-                  <CardDescription className="text-sm sm:text-base text-gray-600">Write your message</CardDescription>
+                  <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Post Content & Media</CardTitle>
+                  <CardDescription className="text-sm sm:text-base text-gray-600">Create your post with text and media</CardDescription>
                   {/* Autosave indicator - below description on mobile, with buttons on desktop */}
                   {!editingScheduledPost && (isSaving || (lastSaved && timeAgo)) && (
                     <span className={cn(
@@ -3234,61 +3236,283 @@ function CreateNewPostPageContent() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <RichTextEditor
-                  content={postContent}
-                  onChange={handleContentChange}
-                  placeholder="What's on your mind?"
-                  maxLength={selectedPlatforms.length === 1 ? platforms.find(p => p.id === selectedPlatforms[0])?.charLimit : 2200}
-                />
-              </div>
-
-              {/* Platform Customization Toggle */}
-              {selectedPlatforms.length > 1 && (
-                <button
-                  onClick={() => setShowPlatformCustomization(!showPlatformCustomization)}
-                  className="flex items-center text-sm text-primary hover:underline"
-                >
-                  Customize per platform
-                  <ChevronDown className={cn(
-                    "ml-1 h-4 w-4 transition-transform",
-                    showPlatformCustomization ? "rotate-180" : ""
-                  )} />
-                </button>
-              )}
-
-              {/* Platform-specific content */}
-              {showPlatformCustomization && selectedPlatforms.length > 1 && (
-                <div className="space-y-4 pt-4 border-t">
-                  {selectedPlatforms.map(platformId => {
-                    const platform = platforms.find(p => p.id === platformId)
-                    const chars = getCharCount(platformId)
-                    
-                    return (
-                      <div key={platformId}>
-                        <Label className="flex items-center gap-2 mb-2">
-                          <span className="text-lg">{platform?.icon}</span>
-                          {platform?.name}
-                        </Label>
-                        <RichTextEditor
-                          content={platformContent[platformId] || postContent}
-                          onChange={(content) => handlePlatformContentChange(platformId, content)}
-                          placeholder={`Customize for ${platform?.name}...`}
-                          maxLength={platform?.charLimit}
-                          className="min-h-[150px]"
-                        />
-                        <div className={cn(
-                          "mt-1 text-sm",
-                          chars.current > chars.limit ? "text-red-500" : "text-gray-500"
-                        )}>
-                          {chars.current} / {chars.limit} characters
-                        </div>
-                      </div>
-                    )
-                  })}
+            <CardContent className="space-y-6">
+              {/* Post Content Section */}
+              {!(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'pinterest') && (
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">Write your message</Label>
+                  <RichTextEditor
+                    content={postContent}
+                    onChange={handleContentChange}
+                    placeholder="What's on your mind?"
+                    maxLength={selectedPlatforms.length === 1 ? platforms.find(p => p.id === selectedPlatforms[0])?.charLimit : 2200}
+                  />
                 </div>
+
+                {/* Platform Customization Toggle */}
+                {selectedPlatforms.length > 1 && (
+                  <button
+                    onClick={() => setShowPlatformCustomization(!showPlatformCustomization)}
+                    className="flex items-center text-sm text-primary hover:underline"
+                  >
+                    Customize per platform
+                    <ChevronDown className={cn(
+                      "ml-1 h-4 w-4 transition-transform",
+                      showPlatformCustomization ? "rotate-180" : ""
+                    )} />
+                  </button>
+                )}
+
+                {/* Platform-specific content */}
+                {showPlatformCustomization && selectedPlatforms.length > 1 && (
+                  <div className="space-y-4 pt-4 border-t">
+                    {selectedPlatforms.map(platformId => {
+                      const platform = platforms.find(p => p.id === platformId)
+                      const chars = getCharCount(platformId)
+
+                      return (
+                        <div key={platformId}>
+                          <Label className="flex items-center gap-2 mb-2">
+                            <span className="text-lg">{platform?.icon}</span>
+                            {platform?.name}
+                          </Label>
+                          <RichTextEditor
+                            content={platformContent[platformId] || postContent}
+                            onChange={(content) => handlePlatformContentChange(platformId, content)}
+                            placeholder={`Customize for ${platform?.name}...`}
+                            maxLength={platform?.charLimit}
+                            className="min-h-[150px]"
+                          />
+                          <div className={cn(
+                            "mt-1 text-sm",
+                            chars.current > chars.limit ? "text-red-500" : "text-gray-500"
+                          )}>
+                            {chars.current} / {chars.limit} characters
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
               )}
+
+              {/* Media Upload Section */}
+              <div className="space-y-4">
+                {/* Hidden file input - always present */}
+                <input
+                  id="file-upload"
+                  type="file"
+                  multiple
+                  accept="image/*,video/*"
+                  className="hidden"
+                  onChange={(e) => handleFileSelect(e.target.files)}
+                />
+
+                {/* Large upload box - only show when no media exists */}
+                {selectedFiles.length === 0 && uploadedMediaUrls.length === 0 && (
+                  <div
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
+                    onClick={() => document.getElementById('file-upload')?.click()}
+                    onDrop={handleDrop}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDragEnter={(e) => e.preventDefault()}
+                  >
+                    <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
+                    <p className="mt-2 text-sm text-gray-600">
+                      Click to upload or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Images: PNG, JPG, GIF up to 50MB
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Videos: MP4, MOV, AVI up to 500MB
+                    </p>
+                    {selectedPlatforms.includes('instagram') && (
+                      <p className="text-xs text-blue-600 font-medium mt-2">
+                        💡 Instagram: {instagramAsStory
+                          ? 'Stories require 9:16 aspect ratio (vertical) media'
+                          : 'Select 2-10 files to create a carousel post'}
+                      </p>
+                    )}
+                    {selectedPlatforms.includes('facebook') && facebookAsStory && (
+                      <p className="text-xs text-blue-600 font-medium mt-2">
+                        💡 Facebook Stories: Vertical format (9:16) recommended. Videos up to 120s.
+                      </p>
+                    )}
+                    {selectedPlatforms.includes('pinterest') && (
+                      <p className="text-xs text-red-600 font-medium mt-2">
+                        📌 Pinterest: 1 image/video = Pin | 2-5 images = Carousel | Video = Auto cover
+                      </p>
+                    )}
+                    {selectedPlatforms.includes('bluesky') && (
+                      <p className="text-xs text-blue-600 font-medium mt-2">
+                        ⚠️ Bluesky: Videos must be under 1MB (900KB recommended)
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Selected Files Display */}
+                {selectedFiles.length > 0 && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-sm font-medium">
+                        Selected Files ({selectedFiles.length})
+                      </Label>
+                      <div className="flex gap-2">
+                        {selectedPlatforms.includes('instagram') && selectedFiles.length > 1 && (
+                          <span className="text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-1 rounded-full font-medium">
+                            Instagram Carousel: {selectedFiles.length} items
+                          </span>
+                        )}
+                        {selectedPlatforms.includes('pinterest') && selectedFiles.length > 0 && (
+                          <span className="text-xs bg-gradient-to-r from-red-600 to-pink-600 text-white px-2 py-1 rounded-full font-medium">
+                            {selectedFiles.some(f => f.type.includes('video'))
+                              ? `📌 Pinterest Video Pin${selectedFiles.length > 1 ? ' (with cover)' : ''}`
+                              : selectedFiles.length >= 2 && selectedFiles.length <= 5
+                              ? `📌 Pinterest Carousel: ${selectedFiles.length} pins`
+                              : '📌 Pinterest Image Pin'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Pinterest Carousel Aspect Ratio Warning */}
+                    {selectedPlatforms.includes('pinterest') && selectedFiles.length >= 2 && selectedFiles.length <= 5 && !selectedFiles.some(f => f.type.includes('video')) && (
+                      <p className="text-xs text-amber-600 font-medium mt-2 bg-amber-50 px-3 py-2 rounded-md border border-amber-200">
+                        ⚠️ Pinterest Carousel: All images must have the same aspect ratio (e.g., all square, all portrait, or all landscape)
+                      </p>
+                    )}
+
+                    <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {filePreviewUrls.map(({ file, url }, index) => (
+                        <div key={`${file.name}-${file.size}-${index}`} className="relative group">
+                          <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
+                            {/* Carousel order indicator */}
+                            {selectedPlatforms.includes('instagram') && selectedFiles.length > 1 && (
+                              <div className="absolute top-2 left-2 z-10 bg-black/60 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                                {index + 1}
+                              </div>
+                            )}
+                            {file.type.startsWith('image/') ? (
+                              <img
+                                src={url}
+                                alt={file.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : file.type.startsWith('video/') ? (
+                              <div className="relative w-full h-full bg-black">
+                                <video
+                                  src={url}
+                                  className="w-full h-full object-cover"
+                                  muted
+                                  preload="metadata"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                  <div className="bg-white/90 rounded-full p-3 shadow-lg">
+                                    <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <div className="text-center">
+                                  <ImageIcon className="mx-auto h-8 w-8 text-gray-400" />
+                                  <p className="text-xs text-gray-500 mt-1">File</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => removeFile(index)}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                          <p className="text-xs text-gray-600 mt-1 truncate" title={file.name}>
+                            {file.name}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {(file.size / 1024 / 1024).toFixed(1)} MB
+                          </p>
+                        </div>
+                      ))}
+
+                      {/* Add More Button */}
+                      <div
+                        onClick={() => document.getElementById('file-upload')?.click()}
+                        className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                      >
+                        <Plus className="h-8 w-8 text-gray-400 mb-2" />
+                        <p className="text-xs text-gray-500 font-medium">Add more</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Show existing media from draft with drag-and-drop reordering */}
+                {uploadedMediaUrls.length > 0 && selectedFiles.length === 0 && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-sm font-medium">Previously Uploaded Media</Label>
+                      {uploadedMediaUrls.length > 1 && (
+                        <span className="text-xs text-blue-600 font-medium">
+                          💡 Drag to reorder
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={uploadedMediaUrls.map((media, idx) => getMediaUrl(media) + idx)}
+                          strategy={rectSortingStrategy}
+                        >
+                          {uploadedMediaUrls.map((media, index) => {
+                            // Extract URL from either string or object format
+                            const url = getMediaUrl(media)
+                            // Create matching ID for sortable
+                            const id = url + index
+                            // Detect if URL is a video based on file extension
+                            const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v']
+                            const isVideo = typeof url === 'string' && videoExtensions.some(ext => url.toLowerCase().includes(ext))
+
+                            return (
+                              <SortableMediaItem
+                                key={id}
+                                id={id}
+                                url={url}
+                                index={index}
+                                isVideo={isVideo}
+                                onRemove={() => {
+                                  setUploadedMediaUrls(prev => prev.filter((_, i) => i !== index))
+                                  toast.info('Media removed from post')
+                                }}
+                              />
+                            )
+                          })}
+                        </SortableContext>
+                      </DndContext>
+
+                      {/* Add More Button - outside SortableContext */}
+                      <div
+                        onClick={() => document.getElementById('file-upload')?.click()}
+                        className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                      >
+                        <Plus className="h-8 w-8 text-gray-400 mb-2" />
+                        <p className="text-xs text-gray-500 font-medium">Add more</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
           )}
@@ -3435,203 +3659,6 @@ function CreateNewPostPageContent() {
             </Card>
           )}
 
-          {/* Media Upload - Hidden when only YouTube is selected, or Threads in thread mode */}
-          {!(selectedPlatforms.length === 1 && (selectedPlatforms[0] === 'youtube' || (selectedPlatforms[0] === 'threads' && threadsMode === 'thread'))) && (
-          <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Media</CardTitle>
-              <CardDescription className="text-sm sm:text-base text-gray-600">Add images and videos to your post</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div 
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
-                onClick={() => document.getElementById('file-upload')?.click()}
-                onDrop={handleDrop}
-                onDragOver={(e) => e.preventDefault()}
-                onDragEnter={(e) => e.preventDefault()}
-              >
-                <input
-                  id="file-upload"
-                  type="file"
-                  multiple
-                  accept="image/*,video/*"
-                  className="hidden"
-                  onChange={(e) => handleFileSelect(e.target.files)}
-                />
-                <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
-                <p className="mt-2 text-sm text-gray-600">
-                  Click to upload or drag and drop
-                </p>
-                <p className="text-xs text-gray-500">
-                  Images: PNG, JPG, GIF up to 50MB
-                </p>
-                <p className="text-xs text-gray-500">
-                  Videos: MP4, MOV, AVI up to 500MB
-                </p>
-                {selectedPlatforms.includes('instagram') && (
-                  <p className="text-xs text-blue-600 font-medium mt-2">
-                    💡 Instagram: {instagramAsStory
-                      ? 'Stories require 9:16 aspect ratio (vertical) media'
-                      : 'Select 2-10 files to create a carousel post'}
-                  </p>
-                )}
-                {selectedPlatforms.includes('facebook') && facebookAsStory && (
-                  <p className="text-xs text-blue-600 font-medium mt-2">
-                    💡 Facebook Stories: Vertical format (9:16) recommended. Videos up to 120s.
-                  </p>
-                )}
-                {selectedPlatforms.includes('pinterest') && (
-                  <p className="text-xs text-red-600 font-medium mt-2">
-                    📌 Pinterest: 1 image/video = Pin | 2-5 images = Carousel | Video = Auto cover
-                  </p>
-                )}
-                {selectedPlatforms.includes('bluesky') && (
-                  <p className="text-xs text-blue-600 font-medium mt-2">
-                    ⚠️ Bluesky: Videos must be under 1MB (900KB recommended)
-                  </p>
-                )}
-              </div>
-              
-              {/* Selected Files Display */}
-              {selectedFiles.length > 0 && (
-                <div className="mt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-sm font-medium">
-                      Selected Files ({selectedFiles.length})
-                    </Label>
-                    <div className="flex gap-2">
-                      {selectedPlatforms.includes('instagram') && selectedFiles.length > 1 && (
-                        <span className="text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-1 rounded-full font-medium">
-                          Instagram Carousel: {selectedFiles.length} items
-                        </span>
-                      )}
-                      {selectedPlatforms.includes('pinterest') && selectedFiles.length > 0 && (
-                        <span className="text-xs bg-gradient-to-r from-red-600 to-pink-600 text-white px-2 py-1 rounded-full font-medium">
-                          {selectedFiles.some(f => f.type.includes('video'))
-                            ? `📌 Pinterest Video Pin${selectedFiles.length > 1 ? ' (with cover)' : ''}`
-                            : selectedFiles.length >= 2 && selectedFiles.length <= 5
-                            ? `📌 Pinterest Carousel: ${selectedFiles.length} pins`
-                            : '📌 Pinterest Image Pin'}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Pinterest Carousel Aspect Ratio Warning */}
-                  {selectedPlatforms.includes('pinterest') && selectedFiles.length >= 2 && selectedFiles.length <= 5 && !selectedFiles.some(f => f.type.includes('video')) && (
-                    <p className="text-xs text-amber-600 font-medium mt-2 bg-amber-50 px-3 py-2 rounded-md border border-amber-200">
-                      ⚠️ Pinterest Carousel: All images must have the same aspect ratio (e.g., all square, all portrait, or all landscape)
-                    </p>
-                  )}
-
-                  <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {filePreviewUrls.map(({ file, url }, index) => (
-                      <div key={`${file.name}-${file.size}-${index}`} className="relative group">
-                        <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
-                          {/* Carousel order indicator */}
-                          {selectedPlatforms.includes('instagram') && selectedFiles.length > 1 && (
-                            <div className="absolute top-2 left-2 z-10 bg-black/60 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                              {index + 1}
-                            </div>
-                          )}
-                          {file.type.startsWith('image/') ? (
-                            <img
-                              src={url}
-                              alt={file.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : file.type.startsWith('video/') ? (
-                            <div className="relative w-full h-full bg-black">
-                              <video
-                                src={url}
-                                className="w-full h-full object-cover"
-                                muted
-                                preload="metadata"
-                              />
-                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <div className="bg-white/90 rounded-full p-3 shadow-lg">
-                                  <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                                  </svg>
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <div className="text-center">
-                                <ImageIcon className="mx-auto h-8 w-8 text-gray-400" />
-                                <p className="text-xs text-gray-500 mt-1">File</p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => removeFile(index)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                        <p className="text-xs text-gray-600 mt-1 truncate" title={file.name}>
-                          {file.name}
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {(file.size / 1024 / 1024).toFixed(1)} MB
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Show existing media from draft with drag-and-drop reordering */}
-              {uploadedMediaUrls.length > 0 && selectedFiles.length === 0 && (
-                <div className="mt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-sm font-medium">Previously Uploaded Media</Label>
-                    {uploadedMediaUrls.length > 1 && (
-                      <span className="text-xs text-blue-600 font-medium">
-                        💡 Drag to reorder
-                      </span>
-                    )}
-                  </div>
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <SortableContext
-                      items={uploadedMediaUrls.map((media, idx) => getMediaUrl(media) + idx)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        {uploadedMediaUrls.map((media, index) => {
-                          // Extract URL from either string or object format
-                          const url = getMediaUrl(media)
-                          // Detect if URL is a video based on file extension
-                          const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v']
-                          const isVideo = typeof url === 'string' && videoExtensions.some(ext => url.toLowerCase().includes(ext))
-
-                          return (
-                            <SortableMediaItem
-                              key={url + index}
-                              url={url}
-                              index={index}
-                              isVideo={isVideo}
-                              onRemove={() => {
-                                setUploadedMediaUrls(prev => prev.filter((_, i) => i !== index))
-                                toast.info('Media removed from post')
-                              }}
-                            />
-                          )
-                        })}
-                      </div>
-                    </SortableContext>
-                  </DndContext>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          )}
 
           {/* Scheduling */}
           <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
