@@ -81,6 +81,47 @@ async function processScheduledPosts(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
+    // Proactively refresh TikTok tokens that are expiring soon
+    console.log('=== Proactive TikTok Token Refresh ===');
+    try {
+      const twoHoursFromNow = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+
+      // Get all active TikTok accounts with tokens expiring within 2 hours
+      const { data: expiringAccounts, error: tokenError } = await supabase
+        .from('social_accounts')
+        .select('id, user_id, username, expires_at')
+        .eq('platform', 'tiktok')
+        .eq('is_active', true)
+        .not('refresh_token', 'is', null)
+        .lte('expires_at', twoHoursFromNow);
+
+      if (!tokenError && expiringAccounts && expiringAccounts.length > 0) {
+        console.log(`Found ${expiringAccounts.length} TikTok accounts with tokens expiring soon`);
+
+        const { checkTikTokTokenExpiry, refreshTikTokToken } = await import('@/lib/tiktok/token-manager');
+
+        for (const account of expiringAccounts) {
+          const { needsRefresh, account: fullAccount } = await checkTikTokTokenExpiry(account.id);
+
+          if (needsRefresh && fullAccount) {
+            console.log(`Refreshing token for TikTok account: ${account.username || account.id}`);
+            const { success, error } = await refreshTikTokToken(fullAccount);
+
+            if (success) {
+              console.log(`✅ Successfully refreshed token for ${account.username || account.id}`);
+            } else {
+              console.error(`❌ Failed to refresh token for ${account.username || account.id}:`, error);
+            }
+          }
+        }
+      } else {
+        console.log('No TikTok tokens need refresh at this time');
+      }
+    } catch (refreshError) {
+      console.error('Error during proactive token refresh:', refreshError);
+      // Continue with post processing even if refresh fails
+    }
+
     // Find posts that are due to be posted
     const now = new Date().toISOString();
     console.log('Querying for posts due before:', now);

@@ -721,7 +721,6 @@ export class PostingService {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            accessToken: account.access_token,
             title: postTitle,
             description: content, // Full content as description
             photoUrls: photoUrls,
@@ -768,7 +767,6 @@ export class PostingService {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            accessToken: account.access_token,
             content: postTitle, // Use title or content
             videoUrl: videoUrl,
             thumbnailUrl: thumbnailUrl, // Include thumbnail URL

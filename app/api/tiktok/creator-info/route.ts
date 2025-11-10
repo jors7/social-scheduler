@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { fetchCreatorInfo } from '@/lib/tiktok/creator-info';
+import { ensureTikTokTokenValid } from '@/lib/tiktok/token-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
     // Get TikTok account for this user
     const { data: account, error: accountError } = await supabase
       .from('social_accounts')
-      .select('access_token, username, platform_user_id')
+      .select('id, access_token, username, platform_user_id')
       .eq('user_id', user.id)
       .eq('platform', 'tiktok')
       .eq('is_active', true)
@@ -71,8 +72,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch creator info from TikTok API
-    const creatorInfo = await fetchCreatorInfo(account.access_token);
+    // Ensure token is valid and refresh if needed
+    const { valid, token, error: tokenError } = await ensureTikTokTokenValid(account.id);
+
+    if (!valid || !token) {
+      console.error('[TikTok Creator Info] Token validation failed:', tokenError);
+      return NextResponse.json(
+        { error: tokenError || 'TikTok token is invalid. Please reconnect your account.' },
+        { status: 401 }
+      );
+    }
+
+    // Fetch creator info from TikTok API using the validated/refreshed token
+    const creatorInfo = await fetchCreatorInfo(token);
 
     return NextResponse.json({
       success: true,

@@ -640,7 +640,16 @@ export async function postToTikTokDirect(content: string, account: any, mediaUrl
       throw new Error('TikTok only supports video content');
     }
 
-    const tiktokService = new TikTokService(account.access_token);
+    // Ensure token is valid and refresh if needed
+    const { ensureTikTokTokenValid } = await import('@/lib/tiktok/token-manager');
+    const { valid, token, error: tokenError } = await ensureTikTokTokenValid(account.id);
+
+    if (!valid || !token) {
+      throw new Error(tokenError || 'TikTok token is invalid. Please reconnect your TikTok account.');
+    }
+
+    console.log('[TikTok Posting] Using validated token');
+    const tiktokService = new TikTokService(token);
 
     // Format content for TikTok
     const formattedContent = TikTokService.formatContent(content);

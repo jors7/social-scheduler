@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TikTokService } from '@/lib/tiktok/service';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { ensureTikTokTokenValid } from '@/lib/tiktok/token-manager';
 
 export const maxDuration = 60; // 60 seconds for photo posting
 export const dynamic = 'force-dynamic';
@@ -8,9 +11,9 @@ export const dynamic = 'force-dynamic';
  * POST /api/post/tiktok-photo
  *
  * Handles TikTok photo posting (1-35 photos per post)
+ * Automatically retrieves and validates/refreshes user's TikTok access token
  *
  * Request body:
- * - accessToken: TikTok user access token
  * - title: Photo post title (max 150 characters)
  * - description: Photo post description (max 4000 characters)
  * - photoUrls: Array of publicly accessible photo URLs (1-35)
@@ -24,7 +27,6 @@ export async function POST(request: NextRequest) {
     console.log('TikTok photo POST request received');
 
     const {
-      accessToken,
       title,
       description,
       photoUrls,
@@ -34,13 +36,6 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validation
-    if (!accessToken) {
-      return NextResponse.json(
-        { error: 'TikTok access token required' },
-        { status: 400 }
-      );
-    }
-
     if (!photoUrls || !Array.isArray(photoUrls) || photoUrls.length === 0) {
       return NextResponse.json(
         { error: 'At least one photo URL is required' },
@@ -62,12 +57,62 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get authenticated user and their TikTok account
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+        },
+      }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Get TikTok account for this user
+    const { data: account, error: accountError } = await supabase
+      .from('social_accounts')
+      .select('id, access_token')
+      .eq('user_id', user.id)
+      .eq('platform', 'tiktok')
+      .eq('is_active', true)
+      .single();
+
+    if (accountError || !account) {
+      return NextResponse.json(
+        { error: 'TikTok account not connected. Please connect your TikTok account first.' },
+        { status: 404 }
+      );
+    }
+
+    // Ensure token is valid and refresh if needed
+    const { valid, token, error: tokenError } = await ensureTikTokTokenValid(account.id);
+
+    if (!valid || !token) {
+      console.error('[TikTok Photo Post] Token validation failed:', tokenError);
+      return NextResponse.json(
+        { error: tokenError || 'TikTok token is invalid. Please reconnect your account.' },
+        { status: 401 }
+      );
+    }
+
     // Format title and description for TikTok's requirements
     const formattedTitle = title ? TikTokService.formatContent(title) : '';
     const formattedDescription = description ? TikTokService.formatContent(description) : '';
 
-    // Create TikTok service
-    const tiktokService = new TikTokService(accessToken);
+    // Create TikTok service with validated token
+    const tiktokService = new TikTokService(token);
 
     try {
       console.log('Creating TikTok photo post:', {
