@@ -3334,22 +3334,36 @@ function CreateNewPostPageContent() {
   return (
     <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
       {/* Header with gradient title */}
-      <div className="space-y-3">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-2 sm:gap-3">
-          <div className="p-1.5 sm:p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl text-white">
-            <Send className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8" />
-          </div>
-          <span className="break-words">Create New Post</span>
-        </h1>
-        <p className="text-gray-600 text-sm sm:text-base lg:text-lg">
-          Share your content across multiple platforms
-        </p>
-        {loadingDraft && (
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full">
-            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-blue-700 text-sm font-medium">Loading draft...</span>
-          </div>
-        )}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="space-y-3 flex-1">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl text-white">
+              <Send className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8" />
+            </div>
+            <span className="break-words">Create New Post</span>
+          </h1>
+          <p className="text-gray-600 text-sm sm:text-base lg:text-lg">
+            Share your content across multiple platforms
+          </p>
+          {loadingDraft && (
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full">
+              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-blue-700 text-sm font-medium">Loading draft...</span>
+            </div>
+          )}
+        </div>
+
+        {/* Request Platform Button - Top Right */}
+        <button
+          onClick={() => setShowRequestPlatformModal(true)}
+          className={cn(
+            "hidden sm:flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all shrink-0",
+            "border-dashed border-green-300 hover:border-green-400 bg-gradient-to-br from-green-50/50 to-emerald-50/50 hover:from-green-100/50 hover:to-emerald-100/50 text-green-600 font-medium whitespace-nowrap"
+          )}
+        >
+          <Plus className="w-5 h-5" />
+          <span>Request Platform</span>
+        </button>
       </div>
 
       <SubscriptionGate feature="post scheduling">
@@ -4434,18 +4448,6 @@ function CreateNewPostPageContent() {
                     )
                   })}
                 </div>
-
-                {/* Request Platform Button - Full Width */}
-                <button
-                  onClick={() => setShowRequestPlatformModal(true)}
-                  className={cn(
-                    "w-full flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all min-h-[60px] mt-4",
-                    "border-dashed border-green-300 hover:border-green-400 bg-gradient-to-br from-green-50/50 to-emerald-50/50 hover:from-green-100/50 hover:to-emerald-100/50 text-green-600 font-medium"
-                  )}
-                >
-                  <Plus className="w-5 h-5" />
-                  <span>Request Platform</span>
-                </button>
 
                 {selectedPlatforms.length > 0 && (
                   <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
