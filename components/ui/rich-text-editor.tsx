@@ -130,6 +130,15 @@ export function RichTextEditor({
 
   return (
     <div className={`border border-input rounded-md ${className}`}>
+      <style jsx global>{`
+        .ProseMirror p.is-editor-empty:first-child::before {
+          color: #9ca3af;
+          content: attr(data-placeholder);
+          float: left;
+          height: 0;
+          pointer-events: none;
+        }
+      `}</style>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 p-2 border-b border-border bg-muted/10 overflow-x-auto scrollbar-thin">
         <div className="flex items-center gap-0.5 flex-shrink-0">

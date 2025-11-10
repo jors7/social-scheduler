@@ -3242,14 +3242,14 @@ function CreateNewPostPageContent() {
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         {/* Left Column - Main Content */}
         <div className="col-span-1 lg:col-span-2 space-y-4 sm:space-y-6 order-2 lg:order-1">
-          {/* Post Content & Media - Combined Card - Shown by default, hidden when only YouTube (exclusive) or only Threads are selected */}
+          {/* Post Caption & Media - Combined Card - Shown by default, hidden when only YouTube (exclusive) or only Threads are selected */}
           {(selectedPlatforms.length === 0 || selectedPlatforms.some(p => p !== 'youtube' && p !== 'threads')) && (
           <Card variant="elevated" className="hover:shadow-xl transition-all duration-300">
             <CardHeader className="pb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Post Content & Media</CardTitle>
-                  <CardDescription className="text-sm sm:text-base text-gray-600">Create your post with text and media</CardDescription>
+                  <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Post Caption & Media</CardTitle>
+                  <CardDescription className="text-sm sm:text-base text-gray-600">Write your caption and add media</CardDescription>
                   {/* Autosave indicator - below description on mobile, with buttons on desktop */}
                   {!editingScheduledPost && (isSaving || (lastSaved && timeAgo)) && (
                     <span className={cn(
@@ -3301,11 +3301,10 @@ function CreateNewPostPageContent() {
               {!(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'pinterest') && (
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 mb-2 block">Write your message</Label>
                   <RichTextEditor
                     content={postContent}
                     onChange={handleContentChange}
-                    placeholder="What's on your mind?"
+                    placeholder="Write your message..."
                     maxLength={
                       selectedPlatforms.length === 1
                         ? platforms.find(p => p.id === selectedPlatforms[0])?.charLimit || 2200
