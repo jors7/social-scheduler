@@ -909,7 +909,7 @@ function DashboardContent() {
         <div className="space-y-6">
 
       {/* Quick Actions - Redesigned with descriptions */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
         <Link href="/dashboard/create/new" className="group">
           <Card className="h-full hover:shadow-lg hover:-translate-y-1 transition-all duration-200 border-gray-200 hover:border-purple-300">
             <CardContent className="p-4">
@@ -926,7 +926,7 @@ function DashboardContent() {
           </Card>
         </Link>
 
-        <Link href="/dashboard/posts/scheduled" className="group">
+        <Link href="/dashboard/posts/scheduled" className="group hidden lg:block">
           <Card className="h-full hover:shadow-lg hover:-translate-y-1 transition-all duration-200 border-gray-200 hover:border-blue-300">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
@@ -1014,11 +1014,11 @@ function DashboardContent() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-6 sm:grid-cols-3">
+            <div className="grid grid-cols-3 gap-3 sm:gap-6">
               {/* Posts Usage */}
               <div className="text-center relative">
-                <div className="relative inline-flex items-center justify-center mb-3">
-                  <svg className="w-20 h-20 transform -rotate-90">
+                <div className="relative inline-flex items-center justify-center mb-2 sm:mb-3">
+                  <svg className="w-14 h-14 sm:w-20 sm:h-20 transform -rotate-90" viewBox="0 0 80 80">
                     <circle
                       cx="40"
                       cy="40"
@@ -1046,16 +1046,16 @@ function DashboardContent() {
                     />
                   </svg>
                   <div className="absolute">
-                    <FileText className="h-6 w-6 text-gray-600" />
+                    <FileText className="h-4 w-4 sm:h-6 sm:w-6 text-gray-600" />
                   </div>
                 </div>
                 <p className="font-semibold text-sm text-gray-900">Posts</p>
                 <p className="text-xs text-gray-500 mt-1">
                   {usage.posts_used} / {usage.posts_limit === -1 ? '∞' : usage.posts_limit} this month
                 </p>
-                <button 
+                <button
                   onClick={() => setShowPostsTooltip(!showPostsTooltip)}
-                  className="mt-2 text-xs text-blue-600 hover:text-blue-700 inline-flex items-center gap-1 mx-auto relative"
+                  className="mt-2 text-xs text-blue-600 hover:text-blue-700 inline-flex items-center gap-1 mx-auto relative hidden sm:inline-flex"
                 >
                   <HelpCircle className="h-3 w-3" />
                   View plan limits
@@ -1098,8 +1098,8 @@ function DashboardContent() {
 
               {/* Accounts Usage */}
               <div className="text-center">
-                <div className="relative inline-flex items-center justify-center mb-3">
-                  <svg className="w-20 h-20 transform -rotate-90">
+                <div className="relative inline-flex items-center justify-center mb-2 sm:mb-3">
+                  <svg className="w-14 h-14 sm:w-20 sm:h-20 transform -rotate-90" viewBox="0 0 80 80">
                     <circle
                       cx="40"
                       cy="40"
@@ -1127,14 +1127,14 @@ function DashboardContent() {
                     />
                   </svg>
                   <div className="absolute">
-                    <Users className="h-6 w-6 text-gray-600" />
+                    <Users className="h-4 w-4 sm:h-6 sm:w-6 text-gray-600" />
                   </div>
                 </div>
                 <p className="font-semibold text-sm text-gray-900">Connected Accounts</p>
                 <p className="text-xs text-gray-500 mt-1">
                   {usage.connected_accounts_used} / {usage.connected_accounts_limit === -1 ? '∞' : usage.connected_accounts_limit} active
                 </p>
-                <Link href="/dashboard/settings" className="mt-2 text-xs text-blue-600 hover:text-blue-700 inline-flex justify-center items-center gap-1">
+                <Link href="/dashboard/settings" className="mt-2 text-xs text-blue-600 hover:text-blue-700 inline-flex justify-center items-center gap-1 hidden sm:inline-flex">
                   <ChevronRight className="h-3 w-3" />
                   Manage accounts
                 </Link>
@@ -1142,8 +1142,8 @@ function DashboardContent() {
 
               {/* AI Usage */}
               <div className="text-center relative">
-                <div className="relative inline-flex items-center justify-center mb-3">
-                  <svg className="w-20 h-20 transform -rotate-90">
+                <div className="relative inline-flex items-center justify-center mb-2 sm:mb-3">
+                  <svg className="w-14 h-14 sm:w-20 sm:h-20 transform -rotate-90" viewBox="0 0 80 80">
                     <circle
                       cx="40"
                       cy="40"
@@ -1171,16 +1171,16 @@ function DashboardContent() {
                     />
                   </svg>
                   <div className="absolute">
-                    <SparklesIcon className="h-6 w-6 text-gray-600" />
+                    <SparklesIcon className="h-4 w-4 sm:h-6 sm:w-6 text-gray-600" />
                   </div>
                 </div>
                 <p className="font-semibold text-sm text-gray-900">AI Suggestions</p>
                 <p className="text-xs text-gray-500 mt-1">
                   {usage.ai_suggestions_used} / {usage.ai_suggestions_limit === -1 ? '∞' : usage.ai_suggestions_limit} this month
                 </p>
-                <button 
+                <button
                   onClick={() => setShowAITooltip(!showAITooltip)}
-                  className="mt-2 text-xs text-blue-600 hover:text-blue-700 inline-flex items-center gap-1 mx-auto relative"
+                  className="mt-2 text-xs text-blue-600 hover:text-blue-700 inline-flex items-center gap-1 mx-auto relative hidden sm:inline-flex"
                 >
                   <Info className="h-3 w-3" />
                   Learn about AI usage
@@ -1873,7 +1873,7 @@ function DashboardContent() {
                 `}</style>
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 {statsData.map((stat, index) => {
                 const colors = [
                   { bg: 'bg-purple-100', text: 'text-purple-600', border: 'border-purple-200' },
