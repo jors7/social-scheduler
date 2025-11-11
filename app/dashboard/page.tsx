@@ -926,7 +926,7 @@ function DashboardContent() {
           </Card>
         </Link>
 
-        <Link href="/dashboard/posts" className="group">
+        <Link href="/dashboard/posts/scheduled" className="group">
           <Card className="h-full hover:shadow-lg hover:-translate-y-1 transition-all duration-200 border-gray-200 hover:border-blue-300">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
