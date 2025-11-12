@@ -311,6 +311,12 @@ function SortableMediaItem({ id, url, index, isVideo, onRemove }: SortableMediaI
   )
 }
 
+// Feature flags - Set to true to enable features
+const ENABLE_PINTEREST_ALT_TEXT = false
+const ENABLE_THREADS_REPLY_CONTROLS = false
+const ENABLE_BLUESKY_REPLY_CONTROLS = false
+const ENABLE_LINKEDIN_VISIBILITY_CONTROLS = false
+
 function CreateNewPostPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -4552,7 +4558,7 @@ function CreateNewPostPageContent() {
             )}
 
             {/* LinkedIn Visibility Settings - Phase 1 Quick Wins */}
-            {selectedPlatforms.includes('linkedin') && (
+            {ENABLE_LINKEDIN_VISIBILITY_CONTROLS && selectedPlatforms.includes('linkedin') && (
               <div className="mt-6">
                 <LinkedInVisibilitySelector
                   visibility={linkedinVisibility}
@@ -4562,7 +4568,7 @@ function CreateNewPostPageContent() {
             )}
 
             {/* Threads Reply Controls - Phase 1 Quick Wins */}
-            {selectedPlatforms.includes('threads') && (
+            {ENABLE_THREADS_REPLY_CONTROLS && selectedPlatforms.includes('threads') && (
               <div className="mt-6">
                 <ThreadsReplyControls
                   replyControl={threadsReplyControl}
@@ -4572,7 +4578,7 @@ function CreateNewPostPageContent() {
             )}
 
             {/* Alt Text for Accessibility - Phase 1 Quick Wins */}
-            {selectedPlatforms.includes('pinterest') && uploadedMediaUrls.length > 0 && (
+            {ENABLE_PINTEREST_ALT_TEXT && selectedPlatforms.includes('pinterest') && uploadedMediaUrls.length > 0 && (
               <div className="mt-6">
                 <AltTextInput
                   platform="Pinterest"
@@ -4593,7 +4599,7 @@ function CreateNewPostPageContent() {
             )}
 
             {/* Bluesky Reply Controls - Phase 3 Community Controls */}
-            {selectedPlatforms.includes('bluesky') && (
+            {ENABLE_BLUESKY_REPLY_CONTROLS && selectedPlatforms.includes('bluesky') && (
               <div className="mt-6">
                 <BlueskyReplyControls
                   replyControl={blueskyReplyControl}

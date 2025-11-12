@@ -4,10 +4,10 @@ import { createClient } from '@supabase/supabase-js'
 import { PlanId, BillingCycle } from '@/lib/subscription/plans'
 import { syncStripeSubscriptionToDatabase } from '@/lib/subscription/sync'
 import {
-  sendPaymentReceiptEmail,
-  sendSubscriptionCancelledEmail,
-  sendPlanUpgradedEmail,
-  sendPlanDowngradedEmail,
+  queuePaymentReceiptEmail,
+  queueSubscriptionCancelledEmail,
+  queuePlanUpgradedEmail,
+  queuePlanDowngradedEmail,
 } from '@/lib/email/send'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -57,6 +57,26 @@ export async function POST(request: NextRequest) {
     const error = err as Error
     console.error('❌ Webhook signature verification failed:', error.message)
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+  }
+
+  // Log webhook event to database for monitoring
+  let webhookEventId: string | null = null
+  try {
+    const { data: webhookLog } = await supabaseAdmin
+      .from('webhook_events')
+      .insert({
+        stripe_event_id: event.id,
+        event_type: event.type,
+        status: 'processing',
+        event_data: event as any,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    webhookEventId = webhookLog?.id || null
+  } catch (logError) {
+    console.error('⚠️ Failed to log webhook event (non-blocking):', logError)
   }
 
   try {
@@ -243,18 +263,20 @@ export async function POST(request: NextRequest) {
             } else if (userId) {
               const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
               if (user?.user?.email) {
-                console.log('📧 Sending cancellation email to:', user.user.email)
+                console.log('📧 Queueing cancellation email to:', user.user.email)
                 const userName = user.user.user_metadata?.full_name || user.user.email?.split('@')[0] || 'there'
                 const planName = subscription.metadata?.plan_id?.charAt(0).toUpperCase() + subscription.metadata?.plan_id?.slice(1) || 'Premium'
                 const endDate = subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : new Date()
 
-                await sendSubscriptionCancelledEmail(
+                await queueSubscriptionCancelledEmail(
+                  userId,
                   user.user.email,
                   userName,
                   planName,
-                  endDate
+                  endDate,
+                  subscription.id
                 ).catch(err => {
-                  console.error('❌ Error sending cancellation email:', err)
+                  console.error('❌ Error queueing cancellation email:', err)
                   console.error('Full error details:', JSON.stringify(err, null, 2))
                 })
               }
@@ -272,18 +294,20 @@ export async function POST(request: NextRequest) {
             } else {
               const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
               if (user?.user?.email) {
-                console.log('📧 Sending cancellation email to:', user.user.email)
+                console.log('📧 Queueing cancellation email to:', user.user.email)
                 const userName = user.user.user_metadata?.full_name || user.user.email?.split('@')[0] || 'there'
                 const planName = subscription.metadata?.plan_id?.charAt(0).toUpperCase() + subscription.metadata?.plan_id?.slice(1) || 'Premium'
                 const endDate = subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : new Date()
 
-                await sendSubscriptionCancelledEmail(
+                await queueSubscriptionCancelledEmail(
+                  userId,
                   user.user.email,
                   userName,
                   planName,
-                  endDate
+                  endDate,
+                  subscription.id
                 ).catch(err => {
-                  console.error('❌ Error sending cancellation email:', err)
+                  console.error('❌ Error queueing cancellation email:', err)
                   console.error('Full error details:', JSON.stringify(err, null, 2))
                 })
               }
@@ -331,11 +355,13 @@ export async function POST(request: NextRequest) {
                   console.log('Skipping upgrade email in subscription.updated - invoice.payment_succeeded will handle it with correct proration amount')
                 } else {
                   console.log('Detected upgrade in subscription.updated, sending upgrade email to:', user.user.email)
-                  await sendPlanUpgradedEmail(
+                  await queuePlanUpgradedEmail(
+                    userId,
                     user.user.email,
                     userName,
                     oldPlanName,
                     newPlanName,
+                    subscription.id,
                     0 // No prorated amount available in this event
                   ).catch(err => console.error('Error sending plan upgrade email:', err))
                 }
@@ -388,20 +414,22 @@ export async function POST(request: NextRequest) {
 
         console.log('✅ User downgraded to free tier successfully')
 
-        // Send cancellation email
+        // Queue cancellation email
         if (user_id) {
           const { data: user } = await supabaseAdmin.auth.admin.getUserById(user_id)
           if (user?.user?.email) {
-            console.log('Sending subscription cancelled email to:', user.user.email)
+            console.log('Queueing subscription cancelled email to:', user.user.email)
             const userName = user.user.user_metadata?.full_name || user.user.email?.split('@')[0] || 'there'
             const planName = subscription.metadata?.plan_id?.charAt(0).toUpperCase() + subscription.metadata?.plan_id?.slice(1) || 'Premium'
             const endDate = subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : new Date()
-            await sendSubscriptionCancelledEmail(
+            await queueSubscriptionCancelledEmail(
+              user_id,
               user.user.email,
               userName,
               planName,
-              endDate
-            ).catch(err => console.error('Error sending cancellation email:', err))
+              endDate,
+              subscription.id
+            ).catch(err => console.error('Error queueing cancellation email:', err))
           }
         }
         break
@@ -570,40 +598,47 @@ export async function POST(request: NextRequest) {
 
                 // Decide which email to send based on change type
                 if (recentChange && recentChange.change_type === 'upgrade') {
-                  console.log('Sending plan upgrade email to:', user.user.email)
+                  console.log('Queueing plan upgrade email to:', user.user.email)
                   const oldPlanName = recentChange.old_plan_id.charAt(0).toUpperCase() + recentChange.old_plan_id.slice(1)
                   const newPlanName = recentChange.new_plan_id.charAt(0).toUpperCase() + recentChange.new_plan_id.slice(1)
-                  await sendPlanUpgradedEmail(
+                  await queuePlanUpgradedEmail(
+                    userId,
                     user.user.email,
                     userName,
                     oldPlanName,
                     newPlanName,
-                    invoice.amount_paid // This is the prorated amount
-                  ).catch(err => console.error('Error sending plan upgrade email:', err))
+                    subscription.id,
+                    invoice.amount_paid, // This is the prorated amount
+                    invoice.currency
+                  ).catch(err => console.error('Error queueing plan upgrade email:', err))
                 } else if (recentChange && recentChange.change_type === 'downgrade') {
-                  console.log('Sending plan downgrade email to:', user.user.email)
+                  console.log('Queueing plan downgrade email to:', user.user.email)
                   const oldPlanName = recentChange.old_plan_id.charAt(0).toUpperCase() + recentChange.old_plan_id.slice(1)
                   const newPlanName = recentChange.new_plan_id.charAt(0).toUpperCase() + recentChange.new_plan_id.slice(1)
                   // For downgrades, the change takes effect at period end
                   const effectiveDate = subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : new Date()
-                  await sendPlanDowngradedEmail(
+                  await queuePlanDowngradedEmail(
+                    userId,
                     user.user.email,
                     userName,
                     oldPlanName,
                     newPlanName,
-                    effectiveDate
-                  ).catch(err => console.error('Error sending plan downgrade email:', err))
+                    effectiveDate,
+                    subscription.id
+                  ).catch(err => console.error('Error queueing plan downgrade email:', err))
                 } else {
                   // No recent change detected, send standard payment receipt
-                  console.log('Sending payment receipt email to:', user.user.email)
-                  await sendPaymentReceiptEmail(
+                  console.log('Queueing payment receipt email to:', user.user.email)
+                  await queuePaymentReceiptEmail(
+                    userId,
                     user.user.email,
                     userName,
                     planName,
                     invoice.amount_paid,
                     invoice.currency,
+                    invoice.id,
                     invoice.hosted_invoice_url || undefined
-                  ).catch(err => console.error('Error sending payment receipt email:', err))
+                  ).catch(err => console.error('Error queueing payment receipt email:', err))
                 }
               }
             }
@@ -611,9 +646,130 @@ export async function POST(request: NextRequest) {
         }
         break
       }
+
+      case 'invoice.payment_failed': {
+        const invoice = event!.data.object as any
+        console.log('📨 invoice.payment_failed received:', {
+          invoice_id: invoice.id,
+          subscription_id: invoice.subscription,
+          amount_due: invoice.amount_due,
+          attempt_count: invoice.attempt_count
+        })
+
+        if (!invoice.subscription) {
+          console.warn('⚠️ Invoice has no subscription, skipping')
+          break
+        }
+
+        // Get subscription and user info
+        const subscriptionResponse = await stripe.subscriptions.retrieve(invoice.subscription as string)
+        const subscription = subscriptionResponse as any
+
+        // Get user_id with fallback strategies
+        let userId = subscription.metadata?.user_id
+
+        if (!userId) {
+          const { data: existingSub } = await supabaseAdmin
+            .from('user_subscriptions')
+            .select('user_id')
+            .eq('stripe_subscription_id', subscription.id)
+            .single()
+
+          userId = existingSub?.user_id
+
+          if (!userId && subscription.customer) {
+            const customer = await stripe.customers.retrieve(subscription.customer as string)
+            userId = (customer as any).metadata?.supabase_user_id
+          }
+        }
+
+        if (!userId) {
+          console.error('❌ Could not determine user_id for failed payment')
+          break
+        }
+
+        // Get user details for email
+        const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
+
+        if (!user?.user?.email) {
+          console.error('❌ Could not find user email for failed payment notification')
+          break
+        }
+
+        const userName = user.user.user_metadata?.full_name || user.user.email?.split('@')[0] || 'there'
+
+        // Get payment update URL from Stripe (customer portal or invoice URL)
+        const updatePaymentUrl = invoice.hosted_invoice_url || `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing`
+
+        // Queue payment failed email
+        console.log('📧 Queueing payment failed email to:', user.user.email)
+        const { queueEmail } = await import('@/lib/email/queue')
+        await queueEmail({
+          userId,
+          emailTo: user.user.email,
+          emailType: 'payment_failed',
+          subject: 'Payment Failed - Action Required',
+          templateData: {
+            userName,
+            amount: invoice.amount_due,
+            currency: invoice.currency,
+            updatePaymentUrl
+          },
+          uniqueIdentifier: invoice.id,
+          metadata: {
+            invoice_id: invoice.id,
+            subscription_id: subscription.id,
+            attempt_count: invoice.attempt_count
+          }
+        })
+
+        // Record failed payment in payment_history
+        const { data: userSub } = await supabaseAdmin
+          .from('user_subscriptions')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('is_active', true)
+          .single()
+
+        await supabaseAdmin
+          .from('payment_history')
+          .insert({
+            user_id: userId,
+            subscription_id: userSub?.id,
+            amount: invoice.amount_due,
+            currency: invoice.currency,
+            status: 'failed',
+            stripe_payment_intent_id: invoice.payment_intent as string,
+            stripe_invoice_id: invoice.id,
+            description: `Payment failed (attempt ${invoice.attempt_count})`,
+            metadata: {
+              invoice_number: invoice.number,
+              attempt_count: invoice.attempt_count,
+              failure_code: invoice.last_finalization_error?.code,
+              failure_message: invoice.last_finalization_error?.message
+            },
+            created_at: new Date().toISOString()
+          })
+
+        console.log('✅ Payment failure recorded and email queued')
+        break
+      }
     }
 
     const duration = Date.now() - startTime
+
+    // Update webhook event status to completed
+    if (webhookEventId) {
+      await supabaseAdmin
+        .from('webhook_events')
+        .update({
+          status: 'completed',
+          processing_time_ms: duration,
+          processed_at: new Date().toISOString()
+        })
+        .eq('id', webhookEventId)
+    }
+
     console.log(`✅ Webhook processed successfully in ${duration}ms`, {
       type: event.type,
       id: event.id
@@ -622,6 +778,20 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const duration = Date.now() - startTime
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+
+    // Update webhook event status to failed
+    if (webhookEventId) {
+      await supabaseAdmin
+        .from('webhook_events')
+        .update({
+          status: 'failed',
+          error_message: errorMessage,
+          processing_time_ms: duration,
+          processed_at: new Date().toISOString()
+        })
+        .eq('id', webhookEventId)
+    }
+
     console.error(`❌ Webhook handler error after ${duration}ms:`, {
       error: errorMessage,
       type: event?.type,
