@@ -1,5 +1,6 @@
 import { Text, Heading, Button, Section, Hr } from '@react-email/components';
 import { EmailLayout } from './components/email-layout';
+import { formatCurrencyForEmail } from '@/lib/utils/currency';
 
 interface PaymentReceiptEmailProps {
   userName: string;
@@ -17,7 +18,7 @@ export default function PaymentReceiptEmail({
   invoiceUrl
 }: PaymentReceiptEmailProps) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.socialcal.app';
-  const formattedAmount = (amount / 100).toFixed(2);
+  const { formatted: formattedAmount, currencyCode } = formatCurrencyForEmail(amount, currency);
   const formattedDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -51,7 +52,7 @@ export default function PaymentReceiptEmail({
               </tr>
               <tr>
                 <td style={label}>Amount:</td>
-                <td style={amountValue}>${formattedAmount} {currency.toUpperCase()}</td>
+                <td style={amountValue}>{formattedAmount}</td>
               </tr>
             </table>
           </td>

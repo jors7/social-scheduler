@@ -1,20 +1,24 @@
 import { Text, Heading, Button } from '@react-email/components';
 import { EmailLayout } from './components/email-layout';
+import { formatCurrencyForEmail } from '@/lib/utils/currency';
 
 interface PlanUpgradedEmailProps {
   userName: string;
   oldPlan: string;
   newPlan: string;
   proratedAmount?: number;
+  currency?: string;
 }
 
 export default function PlanUpgradedEmail({
   userName,
   oldPlan,
   newPlan,
-  proratedAmount
+  proratedAmount,
+  currency = 'usd'
 }: PlanUpgradedEmailProps) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.socialcal.app';
+  const proratedFormatted = proratedAmount ? formatCurrencyForEmail(proratedAmount, currency).formatted : null;
 
   return (
     <EmailLayout preview={`You've upgraded to ${newPlan}!`}>
@@ -38,12 +42,12 @@ export default function PlanUpgradedEmail({
         </tr>
       </table>
 
-      {proratedAmount && proratedAmount > 0 && (
+      {proratedAmount && proratedAmount > 0 && proratedFormatted && (
         <table width="100%" cellPadding="0" cellSpacing="0" style={prorationBox}>
           <tr>
             <td style={prorationBoxInner}>
               <Text style={prorationText}>
-                📊 <strong>Proration Notice:</strong> You were charged ${(proratedAmount / 100).toFixed(2)} for the remainder of your current billing period. Your next full billing cycle will start on your renewal date.
+                📊 <strong>Proration Notice:</strong> You were charged {proratedFormatted} for the remainder of your current billing period. Your next full billing cycle will start on your renewal date.
               </Text>
             </td>
           </tr>

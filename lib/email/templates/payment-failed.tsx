@@ -1,18 +1,21 @@
 import { Text, Heading, Button, Section } from '@react-email/components';
 import { EmailLayout } from './components/email-layout';
+import { formatCurrencyForEmail } from '@/lib/utils/currency';
 
 interface PaymentFailedEmailProps {
   userName: string;
   amount: number;
+  currency?: string;
   updatePaymentUrl: string;
 }
 
 export default function PaymentFailedEmail({
   userName,
   amount,
+  currency = 'usd',
   updatePaymentUrl
 }: PaymentFailedEmailProps) {
-  const formattedAmount = (amount / 100).toFixed(2);
+  const { formatted: formattedAmount } = formatCurrencyForEmail(amount, currency);
 
   return (
     <EmailLayout preview="Payment Failed - Action Required">
@@ -23,7 +26,7 @@ export default function PaymentFailedEmail({
       </Text>
 
       <Text style={text}>
-        We weren&apos;t able to process your payment of <strong>${formattedAmount}</strong> for your SocialCal subscription.
+        We weren&apos;t able to process your payment of <strong>{formattedAmount}</strong> for your SocialCal subscription.
       </Text>
 
       <Section style={warningBox}>

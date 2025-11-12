@@ -5,7 +5,7 @@ import { cookies } from 'next/headers'
 import Stripe from 'stripe'
 import { SUBSCRIPTION_PLANS, PlanId, BillingCycle } from '@/lib/subscription/plans'
 import { syncStripeSubscriptionToDatabase } from '@/lib/subscription/sync'
-import { sendPlanDowngradedEmail } from '@/lib/email/send'
+import { queuePlanDowngradedEmail } from '@/lib/email/send'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-11-20.acacia' as any,
@@ -458,27 +458,29 @@ export async function POST(request: NextRequest) {
       console.log('Downgrade scheduled - user keeps current plan until:', subscription.current_period_end)
       console.log('Stripe schedule ID:', scheduledChange.schedule_id)
 
-      // Send downgrade email immediately since no webhook will fire for downgrades
-      console.log('Sending downgrade email...')
+      // Queue downgrade email immediately since no webhook will fire for downgrades
+      console.log('Queueing downgrade email...')
       try {
         const { data: userData } = await supabaseAdmin.auth.admin.getUserById(user.id)
         if (userData?.user?.email) {
           const userName = userData.user.user_metadata?.full_name || userData.user.email?.split('@')[0] || 'there'
           const effectiveDate = new Date(subscription.current_period_end)
 
-          await sendPlanDowngradedEmail(
+          await queuePlanDowngradedEmail(
+            user.id,
             userData.user.email,
             userName,
             currentPlan.name,
             newPlan.name,
-            effectiveDate
+            effectiveDate,
+            subscription.stripe_subscription_id
           )
-          console.log('Downgrade email sent successfully to:', userData.user.email)
+          console.log('Downgrade email queued successfully to:', userData.user.email)
         } else {
           console.error('Could not find user email for downgrade notification')
         }
       } catch (emailError) {
-        console.error('Error sending downgrade email:', emailError)
+        console.error('Error queueing downgrade email:', emailError)
         // Don't fail the entire request if email fails
       }
 

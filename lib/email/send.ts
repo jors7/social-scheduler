@@ -182,3 +182,127 @@ export async function sendPaymentFailedEmail(
     react: PaymentFailedEmail({ userName, amount, updatePaymentUrl }),
   });
 }
+
+export async function sendPaymentRequiredEmail(
+  to: string,
+  userName: string,
+  planName: string,
+  amount: number,
+  currency: string,
+  paymentUrl: string,
+  reason?: string
+) {
+  const { default: PaymentRequiredEmail } = await import('./templates/payment-required');
+
+  return sendEmail({
+    to,
+    subject: 'Payment Required to Complete Upgrade',
+    react: PaymentRequiredEmail({ userName, planName, amount, currency, paymentUrl, reason }),
+  });
+}
+
+// =====================================================
+// QUEUED EMAIL FUNCTIONS (recommended for webhooks)
+// =====================================================
+
+/**
+ * Queue a payment receipt email instead of sending immediately
+ * Provides reliability with retry logic and idempotency
+ */
+export async function queuePaymentReceiptEmail(
+  userId: string,
+  to: string,
+  userName: string,
+  planName: string,
+  amount: number,
+  currency: string,
+  invoiceId: string,
+  invoiceUrl?: string
+) {
+  const { queueEmail } = await import('./queue');
+
+  return queueEmail({
+    userId,
+    emailTo: to,
+    emailType: 'payment_receipt',
+    subject: 'Payment Received - SocialCal',
+    templateData: { userName, planName, amount, currency, invoiceUrl },
+    uniqueIdentifier: invoiceId,
+    metadata: { invoice_id: invoiceId }
+  });
+}
+
+/**
+ * Queue a plan upgraded email
+ */
+export async function queuePlanUpgradedEmail(
+  userId: string,
+  to: string,
+  userName: string,
+  oldPlan: string,
+  newPlan: string,
+  subscriptionId: string,
+  proratedAmount?: number,
+  currency?: string
+) {
+  const { queueEmail } = await import('./queue');
+
+  return queueEmail({
+    userId,
+    emailTo: to,
+    emailType: 'plan_upgraded',
+    subject: `Your plan has been upgraded to ${newPlan}! 🎉`,
+    templateData: { userName, oldPlan, newPlan, proratedAmount, currency },
+    uniqueIdentifier: `${subscriptionId}_upgrade_${Date.now()}`,
+    metadata: { subscription_id: subscriptionId, old_plan: oldPlan, new_plan: newPlan }
+  });
+}
+
+/**
+ * Queue a plan downgraded email
+ */
+export async function queuePlanDowngradedEmail(
+  userId: string,
+  to: string,
+  userName: string,
+  oldPlan: string,
+  newPlan: string,
+  effectiveDate: Date,
+  subscriptionId: string
+) {
+  const { queueEmail } = await import('./queue');
+
+  return queueEmail({
+    userId,
+    emailTo: to,
+    emailType: 'plan_downgraded',
+    subject: 'Your subscription plan has changed',
+    templateData: { userName, oldPlan, newPlan, effectiveDate },
+    uniqueIdentifier: `${subscriptionId}_downgrade_${effectiveDate.toISOString()}`,
+    metadata: { subscription_id: subscriptionId, effective_date: effectiveDate.toISOString() }
+  });
+}
+
+/**
+ * Queue a subscription cancelled email
+ */
+export async function queueSubscriptionCancelledEmail(
+  userId: string,
+  to: string,
+  userName: string,
+  planName: string,
+  endDate: Date,
+  subscriptionId: string
+) {
+  const { queueEmail } = await import('./queue');
+
+  return queueEmail({
+    userId,
+    emailTo: to,
+    emailType: 'subscription_cancelled',
+    subject: 'Your subscription has been cancelled',
+    templateData: { userName, planName, endDate },
+    uniqueIdentifier: `${subscriptionId}_cancelled_${endDate.toISOString()}`,
+    metadata: { subscription_id: subscriptionId, end_date: endDate.toISOString() }
+  });
+}
