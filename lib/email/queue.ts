@@ -154,14 +154,15 @@ export async function processEmailQueue(): Promise<{
 
   try {
     // Fetch emails ready to send with exponential backoff
-    const { data: pendingEmails, error: fetchError } = await supabaseAdmin
+    // Note: We fetch all pending/failed emails and filter by attempts < max_attempts in JS
+    // because PostgREST doesn't support column-to-column comparison directly
+    const { data: allPendingEmails, error: fetchError } = await supabaseAdmin
       .from('pending_emails')
       .select('*')
       .in('status', ['pending', 'failed'])
       .lte('scheduled_for', new Date().toISOString())
-      .lt('attempts', supabaseAdmin.rpc('max_attempts')) // Use column reference
       .order('created_at', { ascending: true })
-      .limit(50); // Process in batches
+      .limit(100); // Fetch more, filter in JS
 
     if (fetchError) {
       console.error('❌ Error fetching pending emails:', fetchError);
@@ -169,8 +170,16 @@ export async function processEmailQueue(): Promise<{
       return stats;
     }
 
-    if (!pendingEmails || pendingEmails.length === 0) {
+    if (!allPendingEmails || allPendingEmails.length === 0) {
       console.log('📭 No pending emails to process');
+      return stats;
+    }
+
+    // Filter emails where attempts < max_attempts (column-to-column comparison)
+    const pendingEmails = allPendingEmails.filter(email => email.attempts < email.max_attempts).slice(0, 50);
+
+    if (pendingEmails.length === 0) {
+      console.log('📭 No pending emails to process (all have exceeded max attempts)');
       return stats;
     }
 
