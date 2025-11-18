@@ -296,25 +296,27 @@ function ProfileContent() {
               <span className="text-sm font-medium">Status</span>
               <Badge className={cn(
                 "px-4 py-2 rounded-xl shadow-lg font-semibold text-sm min-w-[80px] justify-center border-0",
-                getStatusBadgeColor(subscription?.status || 'active')
+                subscription?.cancelAt ? getStatusBadgeColor('canceled') : getStatusBadgeColor(subscription?.status || 'active')
               )}>
-                {subscription?.status || 'Active'}
+                {subscription?.cancelAt ? 'Cancelled' : (subscription?.status || 'Active')}
               </Badge>
             </div>
             {subscription?.isTrialing && subscription?.trialEndsAt && (
               <>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Trial Ends</span>
+                  <span className="text-sm font-medium">{subscription?.cancelAt ? 'Subscription Ends' : 'Trial Ends'}</span>
                   <span className="text-sm text-gray-600">
-                    {format(new Date(subscription.trialEndsAt), 'MMM d, yyyy')}
+                    {format(new Date(subscription.cancelAt || subscription.trialEndsAt), 'MMM d, yyyy')}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">First Payment</span>
-                  <span className="text-sm text-gray-600">
-                    {format(new Date(subscription.trialEndsAt), 'MMM d, yyyy')}
-                  </span>
-                </div>
+                {!subscription?.cancelAt && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">First Payment</span>
+                    <span className="text-sm text-gray-600">
+                      {format(new Date(subscription.trialEndsAt), 'MMM d, yyyy')}
+                    </span>
+                  </div>
+                )}
               </>
             )}
             {subscription?.hasSubscription && !subscription?.isTrialing && subscription?.currentPeriodEnd && (

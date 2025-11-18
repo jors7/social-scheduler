@@ -319,18 +319,66 @@ export default function BillingPage() {
 
               {/* Trial Status Alert */}
               {subscription?.isTrialing && subscription?.trialEndsAt && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className={cn(
+                  "p-4 border rounded-lg",
+                  subscription?.cancelAt
+                    ? "bg-orange-50 border-orange-200"
+                    : "bg-blue-50 border-blue-200"
+                )}>
                   <div className="flex items-start gap-3">
-                    <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
+                    {subscription?.cancelAt ? (
+                      <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5" />
+                    ) : (
+                      <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
+                    )}
                     <div className="flex-1">
-                      <h4 className="font-semibold text-blue-900">Free Trial Active</h4>
-                      <p className="text-sm text-blue-700 mt-1">
-                        Your trial ends on <strong>{formatDate(subscription.trialEndsAt)}</strong>
-                        {(() => {
-                          const daysLeft = Math.ceil((new Date(subscription.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-                          return daysLeft > 0 ? ` (${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining)` : ''
-                        })()}
+                      <h4 className={cn(
+                        "font-semibold",
+                        subscription?.cancelAt ? "text-orange-900" : "text-blue-900"
+                      )}>
+                        {subscription?.cancelAt ? 'Trial Cancelled' : 'Free Trial Active'}
+                      </h4>
+                      <p className={cn(
+                        "text-sm mt-1",
+                        subscription?.cancelAt ? "text-orange-700" : "text-blue-700"
+                      )}>
+                        {subscription?.cancelAt ? (
+                          <>Your trial will end on <strong>{formatDate(subscription.cancelAt)}</strong>. Your subscription has been cancelled and won&apos;t renew.</>
+                        ) : (
+                          <>
+                            Your trial ends on <strong>{formatDate(subscription.trialEndsAt)}</strong>
+                            {(() => {
+                              const daysLeft = Math.ceil((new Date(subscription.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                              return daysLeft > 0 ? ` (${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining)` : ''
+                            })()}
+                          </>
+                        )}
                       </p>
+                      {subscription?.cancelAt && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-3 text-orange-700 border-orange-300 hover:bg-orange-100"
+                          onClick={async () => {
+                            try {
+                              const response = await fetch('/api/stripe/portal', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' }
+                              })
+                              const data = await response.json()
+                              if (data.url) {
+                                window.location.href = data.url
+                              } else {
+                                toast.error('Failed to open billing portal')
+                              }
+                            } catch (error) {
+                              toast.error('Failed to open billing portal')
+                            }
+                          }}
+                        >
+                          Reactivate Subscription
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
