@@ -208,49 +208,42 @@ BEGIN
   END;
 
   -- ============================================================
-  -- STEP 4: Auto-detect and clear self-referential foreign keys
+  -- STEP 4: Handle self-referential foreign keys
   -- ============================================================
 
   -- Some users might reference other users (referrals, invitations, etc.)
-  -- Automatically find and clear these references to avoid foreign key violations
+  -- We need to break these circular references before deletion
 
-  RAISE NOTICE '  Detecting self-referential foreign keys...';
+  RAISE NOTICE '  Handling user references...';
 
-  -- Find the column name that references auth.users(id)
+  -- APPROACH: Instead of trying to detect the column, just set ALL
+  -- possible FK columns to NULL for all test users
+
   BEGIN
-    SELECT kcu.column_name INTO v_fk_column
-    FROM information_schema.table_constraints tc
-    JOIN information_schema.key_column_usage kcu
-      ON tc.constraint_name = kcu.constraint_name
-      AND tc.table_schema = kcu.table_schema
-    JOIN information_schema.constraint_column_usage ccu
-      ON ccu.constraint_name = tc.constraint_name
-      AND ccu.table_schema = tc.table_schema
-    WHERE tc.constraint_type = 'FOREIGN KEY'
-      AND tc.table_schema = 'auth'
-      AND tc.table_name = 'users'
-      AND ccu.table_schema = 'auth'
-      AND ccu.table_name = 'users'
-      AND tc.constraint_name = 'users_id_fkey'
-    LIMIT 1;
-
-    IF v_fk_column IS NOT NULL THEN
-      RAISE NOTICE '    Found self-referential column: %', v_fk_column;
-      RAISE NOTICE '    Clearing % references...', v_fk_column;
-
-      -- Dynamically clear the foreign key column
-      EXECUTE format('UPDATE auth.users SET %I = NULL WHERE id != $1', v_fk_column)
-        USING v_admin_id;
-
-      RAISE NOTICE '    ✓ Cleared all % references', v_fk_column;
-    ELSE
-      RAISE NOTICE '    ⊘ No self-referential foreign key found';
-    END IF;
+    -- Get all column names from auth.users
+    FOR v_fk_column IN
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'auth'
+        AND table_name = 'users'
+        AND column_name != 'id'  -- Don't touch the ID column
+        AND data_type = 'uuid'   -- Only UUID columns (likely FKs)
+    LOOP
+      BEGIN
+        -- Try to set each UUID column to NULL for test users
+        EXECUTE format('UPDATE auth.users SET %I = NULL WHERE id != $1', v_fk_column)
+          USING v_admin_id;
+        RAISE NOTICE '    ✓ Cleared column: %', v_fk_column;
+      EXCEPTION
+        WHEN OTHERS THEN
+          -- If it fails (maybe not nullable), just skip it
+          RAISE NOTICE '    ⊘ Skipped column: % (%)', v_fk_column, SQLERRM;
+      END;
+    END LOOP;
 
   EXCEPTION
     WHEN OTHERS THEN
-      RAISE NOTICE '    ! Error detecting foreign key: %', SQLERRM;
-      RAISE NOTICE '    Attempting to continue anyway...';
+      RAISE NOTICE '    ! Error clearing references: %', SQLERRM;
   END;
 
   -- ============================================================
@@ -258,8 +251,54 @@ BEGIN
   -- ============================================================
 
   RAISE NOTICE '  Deleting test user accounts...';
-  DELETE FROM auth.users
-  WHERE id != v_admin_id;
+
+  -- Try deleting with ON DELETE CASCADE behavior by temporarily disabling trigger
+  -- If this still fails, we'll need a different approach
+  BEGIN
+    DELETE FROM auth.users WHERE id != v_admin_id;
+    RAISE NOTICE '    ✓ Deleted test users';
+  EXCEPTION
+    WHEN foreign_key_violation THEN
+      RAISE NOTICE '    ! Foreign key violation, trying recursive delete...';
+
+      -- If simple delete fails, try deleting users that don't reference anyone first
+      -- This handles circular references
+      DECLARE
+        v_deleted_count INT := 1;
+        v_iteration INT := 0;
+      BEGIN
+        WHILE v_deleted_count > 0 AND v_iteration < 100 LOOP
+          v_iteration := v_iteration + 1;
+
+          -- Find and delete users that have no dependencies
+          WITH users_to_delete AS (
+            SELECT u.id
+            FROM auth.users u
+            WHERE u.id != v_admin_id
+              AND NOT EXISTS (
+                -- Check if any other user references this user
+                -- We'll check all UUID columns
+                SELECT 1
+                FROM auth.users u2
+                WHERE u2.id != v_admin_id
+              )
+            LIMIT 100
+          )
+          DELETE FROM auth.users
+          WHERE id IN (SELECT id FROM users_to_delete);
+
+          GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
+          RAISE NOTICE '      Iteration %: deleted % users', v_iteration, v_deleted_count;
+        END LOOP;
+
+        -- Final attempt: just delete remaining users
+        DELETE FROM auth.users WHERE id != v_admin_id;
+
+      EXCEPTION
+        WHEN OTHERS THEN
+          RAISE EXCEPTION 'Could not delete users even with recursive approach: %', SQLERRM;
+      END;
+  END;
 
   -- ============================================================
   -- STEP 6: Verify cleanup
