@@ -99,83 +99,111 @@ BEGIN
   -- ============================================================
 
   -- Delete analytics snapshots for test users
-  RAISE NOTICE '  Deleting analytics snapshots...';
-  DELETE FROM analytics_snapshots
-  WHERE user_id != v_admin_id;
+  BEGIN
+    DELETE FROM analytics_snapshots WHERE user_id != v_admin_id;
+    RAISE NOTICE '  ✓ Deleted analytics snapshots';
+  EXCEPTION
+    WHEN undefined_table THEN
+      RAISE NOTICE '  ⊘ Skipped analytics_snapshots (table does not exist)';
+  END;
 
   -- Delete subscription change log for test users
-  RAISE NOTICE '  Deleting subscription change log...';
-  DELETE FROM subscription_change_log
-  WHERE user_id != v_admin_id;
+  BEGIN
+    DELETE FROM subscription_change_log WHERE user_id != v_admin_id;
+    RAISE NOTICE '  ✓ Deleted subscription change log';
+  EXCEPTION
+    WHEN undefined_table THEN
+      RAISE NOTICE '  ⊘ Skipped subscription_change_log (table does not exist)';
+  END;
 
   -- Delete payment history for test users
-  RAISE NOTICE '  Deleting payment history...';
-  DELETE FROM payment_history
-  WHERE user_id != v_admin_id;
+  BEGIN
+    DELETE FROM payment_history WHERE user_id != v_admin_id;
+    RAISE NOTICE '  ✓ Deleted payment history';
+  EXCEPTION
+    WHEN undefined_table THEN
+      RAISE NOTICE '  ⊘ Skipped payment_history (table does not exist)';
+  END;
 
   -- Delete social accounts for test users
-  RAISE NOTICE '  Deleting social account connections...';
-  DELETE FROM social_accounts
-  WHERE user_id != v_admin_id;
+  BEGIN
+    DELETE FROM social_accounts WHERE user_id != v_admin_id;
+    RAISE NOTICE '  ✓ Deleted social account connections';
+  EXCEPTION
+    WHEN undefined_table THEN
+      RAISE NOTICE '  ⊘ Skipped social_accounts (table does not exist)';
+  END;
 
   -- Delete drafts for test users
-  RAISE NOTICE '  Deleting drafts...';
-  DELETE FROM drafts
-  WHERE user_id != v_admin_id;
+  BEGIN
+    DELETE FROM drafts WHERE user_id != v_admin_id;
+    RAISE NOTICE '  ✓ Deleted drafts';
+  EXCEPTION
+    WHEN undefined_table THEN
+      RAISE NOTICE '  ⊘ Skipped drafts (table does not exist)';
+  END;
 
   -- Delete scheduled posts for test users
-  RAISE NOTICE '  Deleting scheduled posts...';
-  DELETE FROM scheduled_posts
-  WHERE user_id != v_admin_id;
+  BEGIN
+    DELETE FROM scheduled_posts WHERE user_id != v_admin_id;
+    RAISE NOTICE '  ✓ Deleted scheduled posts';
+  EXCEPTION
+    WHEN undefined_table THEN
+      RAISE NOTICE '  ⊘ Skipped scheduled_posts (table does not exist)';
+  END;
 
   -- Delete posted posts for test users
-  RAISE NOTICE '  Deleting posted posts...';
-  DELETE FROM posted_posts
-  WHERE user_id != v_admin_id;
+  BEGIN
+    DELETE FROM posted_posts WHERE user_id != v_admin_id;
+    RAISE NOTICE '  ✓ Deleted posted posts';
+  EXCEPTION
+    WHEN undefined_table THEN
+      RAISE NOTICE '  ⊘ Skipped posted_posts (table does not exist)';
+  END;
 
   -- Delete user subscriptions for test users
-  RAISE NOTICE '  Deleting user subscriptions...';
-  DELETE FROM user_subscriptions
-  WHERE user_id != v_admin_id;
+  BEGIN
+    DELETE FROM user_subscriptions WHERE user_id != v_admin_id;
+    RAISE NOTICE '  ✓ Deleted user subscriptions';
+  EXCEPTION
+    WHEN undefined_table THEN
+      RAISE NOTICE '  ⊘ Skipped user_subscriptions (table does not exist)';
+  END;
 
   -- Delete user metadata/settings if exists
   BEGIN
     DELETE FROM user_settings WHERE user_id != v_admin_id;
-    RAISE NOTICE '  Deleting user settings...';
+    RAISE NOTICE '  ✓ Deleted user settings';
   EXCEPTION
     WHEN undefined_table THEN
-      -- Table doesn't exist, skip
-      NULL;
+      RAISE NOTICE '  ⊘ Skipped user_settings (table does not exist)';
   END;
 
   -- Delete media files metadata for test users
   BEGIN
     DELETE FROM user_media WHERE user_id != v_admin_id;
-    RAISE NOTICE '  Deleting media metadata...';
+    RAISE NOTICE '  ✓ Deleted media metadata';
   EXCEPTION
     WHEN undefined_table THEN
-      -- Table doesn't exist, skip
-      NULL;
+      RAISE NOTICE '  ⊘ Skipped user_media (table does not exist)';
   END;
 
   -- Delete blog posts if exists
   BEGIN
     DELETE FROM blog_posts WHERE author_id != v_admin_id;
-    RAISE NOTICE '  Deleting blog posts...';
+    RAISE NOTICE '  ✓ Deleted blog posts';
   EXCEPTION
     WHEN undefined_table THEN
-      -- Table doesn't exist, skip
-      NULL;
+      RAISE NOTICE '  ⊘ Skipped blog_posts (table does not exist)';
   END;
 
   -- Delete audit logs for test users (keep admin logs)
   BEGIN
     DELETE FROM audit_logs WHERE user_id != v_admin_id;
-    RAISE NOTICE '  Deleting audit logs...';
+    RAISE NOTICE '  ✓ Deleted audit logs';
   EXCEPTION
     WHEN undefined_table THEN
-      -- Table doesn't exist, skip
-      NULL;
+      RAISE NOTICE '  ⊘ Skipped audit_logs (table does not exist)';
   END;
 
   -- ============================================================
