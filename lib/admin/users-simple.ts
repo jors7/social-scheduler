@@ -106,28 +106,35 @@ export async function getUsersSimple(
 
     // Combine the data
     const users: UserListItem[] = []
-    
+
+    // Fix N+1 query: Get ALL post counts in ONE query instead of looping
+    const userIds = (subscriptions || []).map(s => s.user_id)
+    const { data: allPosts } = await supabase
+      .from('scheduled_posts')
+      .select('user_id')
+      .in('user_id', userIds)
+
+    // Count posts per user in memory
+    const postCountMap = (allPosts || []).reduce((acc, post) => {
+      acc[post.user_id] = (acc[post.user_id] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+
     for (const sub of subscriptions || []) {
       // Find matching auth user
       const authUser = authUsers?.find(u => u.id === sub.user_id)
-      
-      if (authUser) {
-        // Get post count
-        const { count: postCount } = await supabase
-          .from('scheduled_posts')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', sub.user_id)
 
+      if (authUser) {
         users.push({
           id: sub.user_id,
           email: authUser.email || 'Unknown',
           created_at: authUser.created_at,
           last_sign_in_at: authUser.last_sign_in_at || authUser.created_at,
           plan_id: sub.plan_id || 'free',
-          subscription_status: sub.is_suspended ? 'suspended' : (sub.subscription_status || 'inactive'),
+          subscription_status: sub.is_suspended ? 'suspended' : (sub.status || 'inactive'),
           billing_cycle: sub.billing_cycle || 'monthly',
           role: sub.role || 'user',
-          posts_count: postCount || 0
+          posts_count: postCountMap[sub.user_id] || 0
         })
       } else {
         // User exists in subscriptions but not in auth (shouldn't happen, but handle it)
@@ -137,7 +144,7 @@ export async function getUsersSimple(
           created_at: sub.created_at,
           last_sign_in_at: sub.updated_at || sub.created_at,
           plan_id: sub.plan_id || 'free',
-          subscription_status: sub.is_suspended ? 'suspended' : (sub.subscription_status || 'inactive'),
+          subscription_status: sub.is_suspended ? 'suspended' : (sub.status || 'inactive'),
           billing_cycle: sub.billing_cycle || 'monthly',
           role: sub.role || 'user',
           posts_count: 0

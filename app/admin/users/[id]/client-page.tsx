@@ -36,6 +36,8 @@ interface UserDetails {
   connected_accounts: number
   stripe_customer_id?: string
   trial_ends_at?: string
+  cancel_at?: string
+  canceled_at?: string
 }
 
 export default function UserDetailsClient({ userId }: { userId: string }) {
@@ -328,6 +330,20 @@ export default function UserDetailsClient({ userId }: { userId: string }) {
               <div>
                 <p className="text-sm text-gray-500">Trial Ends</p>
                 <p className="text-sm">{formatDate(user.trial_ends_at)}</p>
+              </div>
+            )}
+            {user.cancel_at && (
+              <div className="border-t pt-4">
+                <p className="text-sm text-gray-500">Subscription Cancels On</p>
+                <p className="text-sm font-medium text-red-600">{formatDate(user.cancel_at)}</p>
+                <p className="text-xs text-gray-500 mt-1">User will retain access until this date</p>
+              </div>
+            )}
+            {user.canceled_at && !user.cancel_at && (
+              <div className="border-t pt-4">
+                <p className="text-sm text-gray-500">Subscription Cancelled</p>
+                <p className="text-sm font-medium text-red-600">{formatDate(user.canceled_at)}</p>
+                <p className="text-xs text-gray-500 mt-1">Subscription ended immediately</p>
               </div>
             )}
           </CardContent>
