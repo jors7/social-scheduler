@@ -207,7 +207,60 @@ BEGIN
   END;
 
   -- ============================================================
-  -- STEP 4: Delete test user accounts from auth.users
+  -- STEP 4: Clear self-referential foreign keys in auth.users
+  -- ============================================================
+
+  -- Some users might reference other users (referrals, invitations, etc.)
+  -- Clear these references before deletion to avoid foreign key violations
+
+  RAISE NOTICE '  Clearing user references...';
+
+  -- Try to clear common self-referential columns
+  -- We'll try multiple column names and ignore errors if column doesn't exist
+
+  BEGIN
+    EXECUTE 'UPDATE auth.users SET invited_by = NULL WHERE id != $1' USING v_admin_id;
+    RAISE NOTICE '    ✓ Cleared invited_by references';
+  EXCEPTION
+    WHEN undefined_column THEN
+      RAISE NOTICE '    ⊘ Column invited_by does not exist';
+    WHEN OTHERS THEN
+      -- Continue even if there's another error
+      RAISE NOTICE '    ! Could not clear invited_by: %', SQLERRM;
+  END;
+
+  BEGIN
+    EXECUTE 'UPDATE auth.users SET referred_by = NULL WHERE id != $1' USING v_admin_id;
+    RAISE NOTICE '    ✓ Cleared referred_by references';
+  EXCEPTION
+    WHEN undefined_column THEN
+      RAISE NOTICE '    ⊘ Column referred_by does not exist';
+    WHEN OTHERS THEN
+      RAISE NOTICE '    ! Could not clear referred_by: %', SQLERRM;
+  END;
+
+  BEGIN
+    EXECUTE 'UPDATE auth.users SET parent_user_id = NULL WHERE id != $1' USING v_admin_id;
+    RAISE NOTICE '    ✓ Cleared parent_user_id references';
+  EXCEPTION
+    WHEN undefined_column THEN
+      RAISE NOTICE '    ⊘ Column parent_user_id does not exist';
+    WHEN OTHERS THEN
+      RAISE NOTICE '    ! Could not clear parent_user_id: %', SQLERRM;
+  END;
+
+  BEGIN
+    EXECUTE 'UPDATE auth.users SET referrer_id = NULL WHERE id != $1' USING v_admin_id;
+    RAISE NOTICE '    ✓ Cleared referrer_id references';
+  EXCEPTION
+    WHEN undefined_column THEN
+      RAISE NOTICE '    ⊘ Column referrer_id does not exist';
+    WHEN OTHERS THEN
+      RAISE NOTICE '    ! Could not clear referrer_id: %', SQLERRM;
+  END;
+
+  -- ============================================================
+  -- STEP 5: Delete test user accounts from auth.users
   -- ============================================================
 
   RAISE NOTICE '  Deleting test user accounts...';
@@ -215,7 +268,7 @@ BEGIN
   WHERE id != v_admin_id;
 
   -- ============================================================
-  -- STEP 5: Verify cleanup
+  -- STEP 6: Verify cleanup
   -- ============================================================
 
   RAISE NOTICE '';
