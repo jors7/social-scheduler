@@ -352,11 +352,21 @@ async function sendEmailFromQueue(email: any): Promise<{
         break;
       case 'plan_downgraded':
         const { default: PlanDowngradedEmail } = await import('./templates/plan-downgraded');
-        emailTemplate = PlanDowngradedEmail(email.template_data);
+        // Convert effectiveDate string back to Date object (JSON serialization converts Date to string)
+        const downgradedData = {
+          ...email.template_data,
+          effectiveDate: new Date(email.template_data.effectiveDate)
+        };
+        emailTemplate = PlanDowngradedEmail(downgradedData);
         break;
       case 'subscription_cancelled':
         const { default: SubscriptionCancelledEmail } = await import('./templates/subscription-cancelled');
-        emailTemplate = SubscriptionCancelledEmail(email.template_data);
+        // Convert endDate string back to Date object (JSON serialization converts Date to string)
+        const cancelledData = {
+          ...email.template_data,
+          endDate: new Date(email.template_data.endDate)
+        };
+        emailTemplate = SubscriptionCancelledEmail(cancelledData);
         break;
       case 'magic_link':
         const { default: MagicLinkEmail } = await import('./templates/magic-link');
