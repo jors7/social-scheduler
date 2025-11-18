@@ -94,6 +94,7 @@ export async function GET(
       trial_ends_at: subscription?.trial_end || subscription?.trial_ends_at,
       cancel_at: subscription?.cancel_at,
       canceled_at: subscription?.canceled_at,
+      cancel_at_period_end: subscription?.cancel_at_period_end || false,
       is_suspended: subscription?.is_suspended || false
     }
     

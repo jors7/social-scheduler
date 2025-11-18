@@ -38,6 +38,7 @@ interface UserDetails {
   trial_ends_at?: string
   cancel_at?: string
   canceled_at?: string
+  cancel_at_period_end?: boolean
 }
 
 export default function UserDetailsClient({ userId }: { userId: string }) {
@@ -328,8 +329,23 @@ export default function UserDetailsClient({ userId }: { userId: string }) {
             )}
             {user.trial_ends_at && (
               <div>
-                <p className="text-sm text-gray-500">Trial Ends</p>
-                <p className="text-sm">{formatDate(user.trial_ends_at)}</p>
+                <p className="text-sm text-gray-500">
+                  {user.cancel_at_period_end
+                    ? 'Trial Ends (Cancelled - Won\'t Renew)'
+                    : 'Trial Ends (Will Convert to Paid)'}
+                </p>
+                <p className={`text-sm font-medium ${user.cancel_at_period_end ? 'text-red-600' : 'text-green-600'}`}>
+                  {formatDate(user.trial_ends_at)}
+                </p>
+                {user.cancel_at_period_end ? (
+                  <p className="text-xs text-red-600 mt-1">
+                    ⚠️ Trial cancelled. User will NOT be charged on this date.
+                  </p>
+                ) : (
+                  <p className="text-xs text-green-600 mt-1">
+                    ✓ Trial active. User will be charged and converted to paid subscription.
+                  </p>
+                )}
               </div>
             )}
             {user.cancel_at && (

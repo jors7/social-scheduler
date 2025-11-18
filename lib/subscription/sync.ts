@@ -111,6 +111,7 @@ export async function syncStripeSubscriptionToDatabase(
       trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
       cancel_at: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null,
       canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
+      cancel_at_period_end: subscription.cancel_at_period_end || false,
       updated_at: new Date().toISOString()
     }
     
