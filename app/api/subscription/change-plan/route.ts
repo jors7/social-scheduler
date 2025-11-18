@@ -6,6 +6,10 @@ import Stripe from 'stripe'
 import { SUBSCRIPTION_PLANS, PlanId, BillingCycle } from '@/lib/subscription/plans'
 import { syncStripeSubscriptionToDatabase } from '@/lib/subscription/sync'
 import { queuePlanDowngradedEmail } from '@/lib/email/send'
+import { validateStripeKeys } from '@/lib/stripe/validation'
+
+// Validate Stripe keys on module load
+validateStripeKeys()
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-11-20.acacia' as any,
@@ -91,27 +95,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine the new price ID
-    let newPriceId = billingCycle === 'yearly' 
-      ? newPlan.stripe_price_id_yearly 
+    const newPriceId = billingCycle === 'yearly'
+      ? newPlan.stripe_price_id_yearly
       : newPlan.stripe_price_id_monthly
 
-    // If price ID is not configured, create one on the fly (for development)
     if (!newPriceId) {
-      const price = await stripe.prices.create({
-        currency: 'usd',
-        unit_amount: billingCycle === 'yearly' ? newPlan.price_yearly : newPlan.price_monthly,
-        recurring: {
-          interval: billingCycle === 'yearly' ? 'year' : 'month',
+      console.error('Missing Stripe price ID for plan:', newPlanId, 'billing cycle:', billingCycle)
+      return NextResponse.json(
+        {
+          error: 'Configuration error: Stripe price ID not configured for this plan',
+          details: 'Please contact support or check your environment variables'
         },
-        product_data: {
-          name: `${newPlan.name} Plan`,
-          metadata: {
-            plan_id: newPlan.id,
-            description: newPlan.description,
-          },
-        },
-      })
-      newPriceId = price.id
+        { status: 500 }
+      )
     }
 
     // Get the current subscription item

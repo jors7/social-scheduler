@@ -72,8 +72,8 @@ export const SUBSCRIPTION_PLANS: Record<PlanId, SubscriptionPlan> = {
       ai_suggestions_per_month: 50,
       storage_mb: 0,
     },
-    stripe_price_id_monthly: process.env.STRIPE_STARTER_MONTHLY_PRICE_ID || 'price_1RtUNnA6BBN8qFjBGLuo3qFM',
-    stripe_price_id_yearly: process.env.STRIPE_STARTER_YEARLY_PRICE_ID || 'price_1RtUNSA6BBN8qFjBoeFyL3NS',
+    stripe_price_id_monthly: process.env.STRIPE_STARTER_MONTHLY_PRICE_ID || 'price_1SLQMoPLQW61h4VJvsZIMO2Y',
+    stripe_price_id_yearly: process.env.STRIPE_STARTER_YEARLY_PRICE_ID || 'price_1SLQMoPLQW61h4VJRli4O7di',
   },
   professional: {
     id: 'professional',
@@ -94,8 +94,8 @@ export const SUBSCRIPTION_PLANS: Record<PlanId, SubscriptionPlan> = {
       ai_suggestions_per_month: 150,
       storage_mb: 250,
     },
-    stripe_price_id_monthly: process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID || 'price_1RtUOEA6BBN8qFjB0HtMVjLr',
-    stripe_price_id_yearly: process.env.STRIPE_PROFESSIONAL_YEARLY_PRICE_ID || 'price_1RtUOTA6BBN8qFjBrXkY1ExC',
+    stripe_price_id_monthly: process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID || 'price_1SLQMkPLQW61h4VJw17m4L77',
+    stripe_price_id_yearly: process.env.STRIPE_PROFESSIONAL_YEARLY_PRICE_ID || 'price_1SLQMkPLQW61h4VJipryKVw3',
   },
   enterprise: {
     id: 'enterprise',
@@ -119,8 +119,8 @@ export const SUBSCRIPTION_PLANS: Record<PlanId, SubscriptionPlan> = {
       ai_suggestions_per_month: 300,
       storage_mb: 500,
     },
-    stripe_price_id_monthly: process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID || 'price_1RtUP4A6BBN8qFjBI2hBmwcT',
-    stripe_price_id_yearly: process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID || 'price_1RtUPFA6BBN8qFjByzefry7H',
+    stripe_price_id_monthly: process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID || 'price_1SLQMfPLQW61h4VJzUlqCdLA',
+    stripe_price_id_yearly: process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID || 'price_1SLQMfPLQW61h4VJRrQMbYKn',
   },
 };
 

@@ -3,6 +3,10 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import Stripe from 'stripe'
 import { SUBSCRIPTION_PLANS, PlanId, BillingCycle } from '@/lib/subscription/plans'
+import { validateStripeKeys } from '@/lib/stripe/validation'
+
+// Validate Stripe keys on module load
+validateStripeKeys()
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-11-20.acacia' as any,
@@ -107,65 +111,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the correct price ID
-    const priceId = billingCycle === 'yearly' 
-      ? plan.stripe_price_id_yearly 
+    const priceId = billingCycle === 'yearly'
+      ? plan.stripe_price_id_yearly
       : plan.stripe_price_id_monthly
 
     if (!priceId) {
-      // Create price on the fly if not configured (for development)
-      const price = await stripe.prices.create({
-        currency: 'usd',
-        unit_amount: billingCycle === 'yearly' ? plan.price_yearly : plan.price_monthly,
-        recurring: {
-          interval: billingCycle === 'yearly' ? 'year' : 'month',
+      console.error('Missing Stripe price ID for plan:', planId, 'billing cycle:', billingCycle)
+      return NextResponse.json(
+        {
+          error: 'Configuration error: Stripe price ID not configured for this plan',
+          details: 'Please contact support or check your environment variables'
         },
-        product_data: {
-          name: `${plan.name} Plan`,
-          metadata: {
-            plan_id: plan.id,
-            description: plan.description,
-          },
-        },
-      })
-      
-      // Use the newly created price
-      const session = await stripe.checkout.sessions.create({
-        customer: customerId,
-        customer_email: !user ? customerEmail : undefined, // Only set if no existing customer
-        payment_method_types: ['card'],
-        line_items: [
-          {
-            price: price.id,
-            quantity: 1,
-          },
-        ],
-        mode: 'subscription',
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/stripe?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/#pricing`,
-        // Collect only minimal data (name is always collected by Stripe)
-        allow_promotion_codes: true,
-        billing_address_collection: 'auto',
-        metadata: {
-          user_id: userId || 'new_signup',
-          user_email: customerEmail || 'pending',
-          plan_id: planId,
-          billing_cycle: billingCycle,
-          is_new_signup: !user ? 'true' : 'false',
-          ...(endorsely_referral && { endorsely_referral }),
-        },
-        subscription_data: {
-          trial_period_days: plan.features.trial_days,
-          metadata: {
-            user_id: userId || 'pending',
-            user_email: customerEmail || 'pending',
-            plan_id: planId,
-            billing_cycle: billingCycle,
-            ...(endorsely_referral && { endorsely_referral }),
-          },
-        },
-      })
-
-      return NextResponse.json({ url: session.url })
+        { status: 500 }
+      )
     }
 
     // Create Stripe checkout session
