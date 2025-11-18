@@ -42,6 +42,7 @@ DECLARE
   v_total_drafts INT;
   v_total_payments INT;
   v_total_social_accounts INT;
+  v_fk_column TEXT;
 BEGIN
 
   -- ============================================================
@@ -207,56 +208,49 @@ BEGIN
   END;
 
   -- ============================================================
-  -- STEP 4: Clear self-referential foreign keys in auth.users
+  -- STEP 4: Auto-detect and clear self-referential foreign keys
   -- ============================================================
 
   -- Some users might reference other users (referrals, invitations, etc.)
-  -- Clear these references before deletion to avoid foreign key violations
+  -- Automatically find and clear these references to avoid foreign key violations
 
-  RAISE NOTICE '  Clearing user references...';
+  RAISE NOTICE '  Detecting self-referential foreign keys...';
 
-  -- Try to clear common self-referential columns
-  -- We'll try multiple column names and ignore errors if column doesn't exist
-
+  -- Find the column name that references auth.users(id)
   BEGIN
-    EXECUTE 'UPDATE auth.users SET invited_by = NULL WHERE id != $1' USING v_admin_id;
-    RAISE NOTICE '    ✓ Cleared invited_by references';
-  EXCEPTION
-    WHEN undefined_column THEN
-      RAISE NOTICE '    ⊘ Column invited_by does not exist';
-    WHEN OTHERS THEN
-      -- Continue even if there's another error
-      RAISE NOTICE '    ! Could not clear invited_by: %', SQLERRM;
-  END;
+    SELECT kcu.column_name INTO v_fk_column
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.key_column_usage kcu
+      ON tc.constraint_name = kcu.constraint_name
+      AND tc.table_schema = kcu.table_schema
+    JOIN information_schema.constraint_column_usage ccu
+      ON ccu.constraint_name = tc.constraint_name
+      AND ccu.table_schema = tc.table_schema
+    WHERE tc.constraint_type = 'FOREIGN KEY'
+      AND tc.table_schema = 'auth'
+      AND tc.table_name = 'users'
+      AND ccu.table_schema = 'auth'
+      AND ccu.table_name = 'users'
+      AND tc.constraint_name = 'users_id_fkey'
+    LIMIT 1;
 
-  BEGIN
-    EXECUTE 'UPDATE auth.users SET referred_by = NULL WHERE id != $1' USING v_admin_id;
-    RAISE NOTICE '    ✓ Cleared referred_by references';
-  EXCEPTION
-    WHEN undefined_column THEN
-      RAISE NOTICE '    ⊘ Column referred_by does not exist';
-    WHEN OTHERS THEN
-      RAISE NOTICE '    ! Could not clear referred_by: %', SQLERRM;
-  END;
+    IF v_fk_column IS NOT NULL THEN
+      RAISE NOTICE '    Found self-referential column: %', v_fk_column;
+      RAISE NOTICE '    Clearing % references...', v_fk_column;
 
-  BEGIN
-    EXECUTE 'UPDATE auth.users SET parent_user_id = NULL WHERE id != $1' USING v_admin_id;
-    RAISE NOTICE '    ✓ Cleared parent_user_id references';
-  EXCEPTION
-    WHEN undefined_column THEN
-      RAISE NOTICE '    ⊘ Column parent_user_id does not exist';
-    WHEN OTHERS THEN
-      RAISE NOTICE '    ! Could not clear parent_user_id: %', SQLERRM;
-  END;
+      -- Dynamically clear the foreign key column
+      EXECUTE format('UPDATE auth.users SET %I = NULL WHERE id != $1', v_fk_column)
+        USING v_admin_id;
 
-  BEGIN
-    EXECUTE 'UPDATE auth.users SET referrer_id = NULL WHERE id != $1' USING v_admin_id;
-    RAISE NOTICE '    ✓ Cleared referrer_id references';
+      RAISE NOTICE '    ✓ Cleared all % references', v_fk_column;
+    ELSE
+      RAISE NOTICE '    ⊘ No self-referential foreign key found';
+    END IF;
+
   EXCEPTION
-    WHEN undefined_column THEN
-      RAISE NOTICE '    ⊘ Column referrer_id does not exist';
     WHEN OTHERS THEN
-      RAISE NOTICE '    ! Could not clear referrer_id: %', SQLERRM;
+      RAISE NOTICE '    ! Error detecting foreign key: %', SQLERRM;
+      RAISE NOTICE '    Attempting to continue anyway...';
   END;
 
   -- ============================================================
