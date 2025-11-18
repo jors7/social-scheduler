@@ -264,9 +264,15 @@ export async function POST(request: NextRequest) {
               const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
               if (user?.user?.email) {
                 console.log('📧 Queueing cancellation email to:', user.user.email)
-                const userName = user.user.user_metadata?.full_name || user.user.email?.split('@')[0] || 'there'
+                const userName = user.user.user_metadata?.full_name || 'there'
                 const planName = subscription.metadata?.plan_id?.charAt(0).toUpperCase() + subscription.metadata?.plan_id?.slice(1) || 'Premium'
-                const endDate = subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : new Date()
+                const endDate = subscription.status === 'trialing' && subscription.trial_end
+                  ? new Date(subscription.trial_end * 1000)
+                  : (subscription.cancel_at
+                      ? new Date(subscription.cancel_at * 1000)
+                      : (subscription.current_period_end
+                          ? new Date(subscription.current_period_end * 1000)
+                          : new Date()))
 
                 await queueSubscriptionCancelledEmail(
                   userId,
@@ -295,9 +301,15 @@ export async function POST(request: NextRequest) {
               const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
               if (user?.user?.email) {
                 console.log('📧 Queueing cancellation email to:', user.user.email)
-                const userName = user.user.user_metadata?.full_name || user.user.email?.split('@')[0] || 'there'
+                const userName = user.user.user_metadata?.full_name || 'there'
                 const planName = subscription.metadata?.plan_id?.charAt(0).toUpperCase() + subscription.metadata?.plan_id?.slice(1) || 'Premium'
-                const endDate = subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : new Date()
+                const endDate = subscription.status === 'trialing' && subscription.trial_end
+                  ? new Date(subscription.trial_end * 1000)
+                  : (subscription.cancel_at
+                      ? new Date(subscription.cancel_at * 1000)
+                      : (subscription.current_period_end
+                          ? new Date(subscription.current_period_end * 1000)
+                          : new Date()))
 
                 await queueSubscriptionCancelledEmail(
                   userId,
@@ -419,9 +431,15 @@ export async function POST(request: NextRequest) {
           const { data: user } = await supabaseAdmin.auth.admin.getUserById(user_id)
           if (user?.user?.email) {
             console.log('Queueing subscription cancelled email to:', user.user.email)
-            const userName = user.user.user_metadata?.full_name || user.user.email?.split('@')[0] || 'there'
+            const userName = user.user.user_metadata?.full_name || 'there'
             const planName = subscription.metadata?.plan_id?.charAt(0).toUpperCase() + subscription.metadata?.plan_id?.slice(1) || 'Premium'
-            const endDate = subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : new Date()
+            const endDate = subscription.status === 'trialing' && subscription.trial_end
+              ? new Date(subscription.trial_end * 1000)
+              : (subscription.cancel_at
+                  ? new Date(subscription.cancel_at * 1000)
+                  : (subscription.current_period_end
+                      ? new Date(subscription.current_period_end * 1000)
+                      : new Date()))
             await queueSubscriptionCancelledEmail(
               user_id,
               user.user.email,
@@ -593,7 +611,7 @@ export async function POST(request: NextRequest) {
             if (invoice.billing_reason !== 'subscription_create' || invoice.amount_paid > 0) {
               const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
               if (user?.user?.email) {
-                const userName = user.user.user_metadata?.full_name || user.user.email?.split('@')[0] || 'there'
+                const userName = user.user.user_metadata?.full_name || 'there'
                 const planName = planId.charAt(0).toUpperCase() + planId.slice(1)
 
                 // Decide which email to send based on change type
@@ -696,7 +714,7 @@ export async function POST(request: NextRequest) {
           break
         }
 
-        const userName = user.user.user_metadata?.full_name || user.user.email?.split('@')[0] || 'there'
+        const userName = user.user.user_metadata?.full_name || 'there'
 
         // Get payment update URL from Stripe (customer portal or invoice URL)
         const updatePaymentUrl = invoice.hosted_invoice_url || `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing`
