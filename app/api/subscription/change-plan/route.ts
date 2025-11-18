@@ -8,14 +8,14 @@ import { syncStripeSubscriptionToDatabase } from '@/lib/subscription/sync'
 import { queuePlanDowngradedEmail } from '@/lib/email/send'
 import { validateStripeKeys } from '@/lib/stripe/validation'
 
-// Validate Stripe keys on module load
-validateStripeKeys()
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-11-20.acacia' as any,
 })
 
 export async function POST(request: NextRequest) {
+  // Validate Stripe keys at runtime
+  validateStripeKeys()
+
   console.log('=== Change Plan API Called ===')
   
   try {

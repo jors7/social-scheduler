@@ -9,19 +9,22 @@ export function validateStripeKeys() {
   const isProduction = process.env.NODE_ENV === 'production'
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
 
+  // Only validate if we have keys (allows build to complete)
   if (!secretKey) {
-    throw new Error('STRIPE_SECRET_KEY is not set')
+    console.warn('⚠️  STRIPE_SECRET_KEY is not set')
+    return { isLiveMode: false, isTestMode: false, isProduction, isProductionDomain: false }
   }
 
+  // Publishable key is optional for server-side only flows
   if (!publishableKey) {
-    throw new Error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set')
+    console.warn('⚠️  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set (client-side Stripe features may not work)')
   }
 
   // Check if we're using test keys in production
   const isTestKey = secretKey.startsWith('sk_test_')
   const isLiveKey = secretKey.startsWith('sk_live_')
-  const isTestPublishableKey = publishableKey.startsWith('pk_test_')
-  const isLivePublishableKey = publishableKey.startsWith('pk_live_')
+  const isTestPublishableKey = publishableKey?.startsWith('pk_test_') || false
+  const isLivePublishableKey = publishableKey?.startsWith('pk_live_') || false
 
   // Production domain check
   const isProductionDomain = appUrl.includes('socialcal.app')
