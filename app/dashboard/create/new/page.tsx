@@ -1110,7 +1110,8 @@ function CreateNewPostPageContent() {
       }
 
       const uploadedUrls: (string | { url: string; thumbnailUrl?: string; type?: string })[] = []
-      const shouldGenerateThumbnails = selectedPlatforms.includes('tiktok')
+      // Always generate thumbnails for videos - useful for all platforms in the dashboard
+      const shouldGenerateThumbnails = true
 
       toast.info(`Uploading ${selectedFiles.length} file(s)...`)
 
@@ -1138,7 +1139,7 @@ function CreateNewPostPageContent() {
             .from('post-media')
             .getPublicUrl(fileName)
 
-          // If TikTok is selected and this is a video, generate and upload thumbnail
+          // Generate and upload thumbnail for video files
           if (shouldGenerateThumbnails && isVideoFile(file)) {
             try {
               toast.info(`Generating thumbnail for ${file.name}...`)
