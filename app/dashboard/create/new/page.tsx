@@ -344,6 +344,7 @@ function CreateNewPostPageContent() {
   const [uploadedMediaUrls, setUploadedMediaUrls] = useState<(string | { url: string; thumbnailUrl?: string; type?: string })[]>([])
   const [uploadedMediaTypes, setUploadedMediaTypes] = useState<string[]>([])
   const [isUploadingMedia, setIsUploadingMedia] = useState(false)
+  const [hasUploadFailed, setHasUploadFailed] = useState(false)
   const [loadingDraft, setLoadingDraft] = useState(false)
   const [editingScheduledPost, setEditingScheduledPost] = useState(false)
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
@@ -845,15 +846,36 @@ function CreateNewPostPageContent() {
           const fileExt = file.name.split('.').pop()
           const fileName = `${user.id}/${timestamp}-${randomString}.${fileExt}`
 
-          // Upload to Supabase Storage
-          const { error } = await supabase.storage
-            .from('post-media')
-            .upload(fileName, file, {
-              cacheControl: '3600',
-              upsert: false
-            })
+          // Use signed upload URL for large files (>50MB) for better reliability
+          const LARGE_FILE_THRESHOLD = 50 * 1024 * 1024 // 50MB
 
-          if (error) throw error
+          if (file.size > LARGE_FILE_THRESHOLD) {
+            // Create signed upload URL for resumable upload
+            const { data: signedData, error: signError } = await supabase.storage
+              .from('post-media')
+              .createSignedUploadUrl(fileName)
+
+            if (signError) throw signError
+
+            // Upload using signed URL (handles large files better)
+            const { error } = await supabase.storage
+              .from('post-media')
+              .uploadToSignedUrl(fileName, signedData.token, file, {
+                upsert: false
+              })
+
+            if (error) throw error
+          } else {
+            // Standard upload for smaller files
+            const { error } = await supabase.storage
+              .from('post-media')
+              .upload(fileName, file, {
+                cacheControl: '3600',
+                upsert: false
+              })
+
+            if (error) throw error
+          }
 
           // Get public URL
           const { data: { publicUrl } } = supabase.storage
@@ -3061,9 +3083,11 @@ function CreateNewPostPageContent() {
     if (failedIndices.length > 0) {
       const failedFiles = validFiles.filter((_, i) => failedIndices.includes(i))
       setSelectedFiles(failedFiles)
+      setHasUploadFailed(true)
     } else {
       // All uploads succeeded, clear selectedFiles
       setSelectedFiles([])
+      setHasUploadFailed(false)
     }
 
     // Reset file input so same file can be selected again
@@ -3080,7 +3104,14 @@ function CreateNewPostPageContent() {
       setUploadedMediaTypes(prev => prev.filter((_, i) => i !== index))
       toast.info('Media removed from post')
     } else {
-      setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+      setSelectedFiles(prev => {
+        const newFiles = prev.filter((_, i) => i !== index)
+        // Clear failed state if no more files
+        if (newFiles.length === 0) {
+          setHasUploadFailed(false)
+        }
+        return newFiles
+      })
     }
 
     // Reset file input so same file can be selected again
@@ -3618,16 +3649,16 @@ function CreateNewPostPageContent() {
 
                 {/* Selected Files Display (also used for failed uploads pending retry) */}
                 {selectedFiles.length > 0 && (
-                  <div className="mt-4">
+                  <div className={`mt-4 ${hasUploadFailed ? 'p-3 bg-red-50 border border-red-200 rounded-lg' : ''}`}>
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <Label className="text-sm font-medium">
-                          {uploadedMediaUrls.length > 0
-                            ? `Failed Uploads - Retry (${selectedFiles.length})`
+                        <Label className={`text-sm font-medium ${hasUploadFailed ? 'text-red-700' : ''}`}>
+                          {hasUploadFailed
+                            ? `⚠️ Failed Uploads (${selectedFiles.length})`
                             : `Selected Files (${selectedFiles.length})`
                           }
                         </Label>
-                        {uploadedMediaUrls.length > 0 && !isUploadingMedia && (
+                        {hasUploadFailed && !isUploadingMedia && (
                           <Button
                             type="button"
                             variant="outline"
@@ -3644,11 +3675,13 @@ function CreateNewPostPageContent() {
                               if (failedIndices.length > 0) {
                                 const failedFiles = selectedFiles.filter((_, i) => failedIndices.includes(i))
                                 setSelectedFiles(failedFiles)
+                                setHasUploadFailed(true)
                               } else {
                                 setSelectedFiles([])
+                                setHasUploadFailed(false)
                               }
                             }}
-                            className="h-6 px-2 text-xs"
+                            className="h-6 px-2 text-xs border-red-300 text-red-700 hover:bg-red-100"
                           >
                             Retry All
                           </Button>
