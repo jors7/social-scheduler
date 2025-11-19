@@ -178,6 +178,18 @@ async function processScheduledPosts(request: NextRequest) {
 
         if (updateError) {
           console.error(`Failed to update YouTube post ${post.id}:`, updateError);
+          // Try to mark as failed so user can see something went wrong
+          const { error: failedError } = await supabase
+            .from('scheduled_posts')
+            .update({
+              status: 'failed',
+              error_message: `YouTube video was scheduled but status update failed: ${updateError.message}`
+            })
+            .eq('id', post.id);
+
+          if (failedError) {
+            console.error(`CRITICAL: Could not mark YouTube post ${post.id} as failed either:`, failedError);
+          }
         } else {
           console.log(`✅ Marked YouTube post ${post.id} as posted`);
         }
@@ -229,10 +241,21 @@ async function processScheduledPosts(request: NextRequest) {
       
       try {
         // Mark as posting to prevent duplicate processing
-        await supabase
+        const { error: postingError } = await supabase
           .from('scheduled_posts')
           .update({ status: 'posting' })
           .eq('id', post.id);
+
+        if (postingError) {
+          console.error(`Failed to mark post ${post.id} as posting:`, postingError);
+          // Skip this post if we can't update its status
+          results.push({
+            postId: post.id,
+            success: false,
+            error: `Database error: ${postingError.message}`
+          });
+          continue;
+        }
 
         console.log(`Processing post ${post.id}:`, post.content.slice(0, 50) + '...');
 
@@ -405,10 +428,16 @@ async function processScheduledPosts(request: NextRequest) {
             }
           }
 
-          await supabase
+          const { error: postedError } = await supabase
             .from('scheduled_posts')
             .update(updateData)
             .eq('id', post.id);
+
+          if (postedError) {
+            console.error(`Failed to mark post ${post.id} as posted:`, postedError);
+            // Post succeeded on platforms but database update failed - log but continue
+            // This is important to track so user can see something went wrong
+          }
 
           // Increment posts usage counter
           try {
@@ -448,7 +477,7 @@ async function processScheduledPosts(request: NextRequest) {
         } else {
           // Some or all failed - mark as failed
           const errorMessage = failed.map(f => `${f.platform}: ${f.error}`).join('; ');
-          await supabase
+          const { error: failedError } = await supabase
             .from('scheduled_posts')
             .update({
               status: 'failed',
@@ -456,6 +485,12 @@ async function processScheduledPosts(request: NextRequest) {
               post_results: postResults
             })
             .eq('id', post.id);
+
+          if (failedError) {
+            console.error(`CRITICAL: Failed to mark post ${post.id} as failed in database:`, failedError);
+            console.error(`Original error was: ${errorMessage}`);
+            // This is critical - the post failed but we can't record it
+          }
         }
 
         results.push({
@@ -467,20 +502,26 @@ async function processScheduledPosts(request: NextRequest) {
 
       } catch (error) {
         console.error(`Error processing post ${post.id}:`, error);
-        
+
         // Mark as failed
-        await supabase
+        const errorMsg = error instanceof Error ? error.message : 'Processing error';
+        const { error: failedError } = await supabase
           .from('scheduled_posts')
           .update({
             status: 'failed',
-            error_message: error instanceof Error ? error.message : 'Processing error'
+            error_message: errorMsg
           })
           .eq('id', post.id);
+
+        if (failedError) {
+          console.error(`CRITICAL: Failed to mark post ${post.id} as failed in database:`, failedError);
+          console.error(`Original error was: ${errorMsg}`);
+        }
 
         results.push({
           postId: post.id,
           success: false,
-          error: error instanceof Error ? error.message : 'Processing error'
+          error: errorMsg
         });
       }
     }
