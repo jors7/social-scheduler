@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Force rebuild - ensure cancel_at_period_end field is returned
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
