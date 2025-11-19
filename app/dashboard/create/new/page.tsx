@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, Suspense, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { toast } from 'sonner'
-import * as tus from 'tus-js-client'
+import { r2Storage } from '@/lib/r2/storage'
 import { PostingService, PostData } from '@/lib/posting/service'
 import { PostingProgressTracker } from '@/lib/posting/progress-tracker'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -843,102 +843,25 @@ function CreateNewPostPageContent() {
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-          // Generate unique filename
-          const timestamp = Date.now()
-          const randomString = Math.random().toString(36).substring(2, 8)
-          const fileExt = file.name.split('.').pop()
-          const fileName = `${user.id}/${timestamp}-${randomString}.${fileExt}`
+          // Generate unique key for R2
+          const key = r2Storage.generateKey(user.id, file.name)
 
-          // Use TUS protocol for large files (>50MB) for resumable uploads
-          const LARGE_FILE_THRESHOLD = 50 * 1024 * 1024 // 50MB
-
-          if (file.size > LARGE_FILE_THRESHOLD) {
-            // Get session for auth token
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) throw new Error('No session for TUS upload')
-
-            // Use TUS protocol for large file upload
-            const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0]
-            if (!projectRef) throw new Error('Could not determine Supabase project ref')
-
-            await new Promise<void>((resolve, reject) => {
-              const upload = new tus.Upload(file, {
-                endpoint: `https://${projectRef}.supabase.co/storage/v1/upload/resumable`,
-                retryDelays: [0, 1000, 3000, 5000],
-                headers: {
-                  authorization: `Bearer ${session.access_token}`,
-                  'x-upsert': 'false',
-                },
-                uploadDataDuringCreation: true,
-                removeFingerprintOnSuccess: true,
-                metadata: {
-                  bucketName: 'post-media',
-                  objectName: fileName,
-                  contentType: file.type,
-                  cacheControl: '3600',
-                },
-                chunkSize: 6 * 1024 * 1024, // 6MB chunks
-                onError: (error) => {
-                  console.error('TUS upload error:', error)
-                  // Show detailed error to help diagnose
-                  const errorMessage = error instanceof Error ? error.message : String(error)
-                  console.error('TUS error details:', {
-                    message: errorMessage,
-                    file: file.name,
-                    size: file.size,
-                    endpoint: `https://${projectRef}.supabase.co/storage/v1/upload/resumable`
-                  })
-                  reject(new Error(`TUS upload failed: ${errorMessage}`))
-                },
-                onSuccess: () => {
-                  resolve()
-                },
-              })
-
-              // Check for previous uploads and resume if found
-              upload.findPreviousUploads().then((previousUploads) => {
-                if (previousUploads.length) {
-                  upload.resumeFromPreviousUpload(previousUploads[0])
-                }
-                upload.start()
-              })
-            })
-          } else {
-            // Standard upload for smaller files
-            const { error } = await supabase.storage
-              .from('post-media')
-              .upload(fileName, file, {
-                cacheControl: '3600',
-                upsert: false
-              })
-
-            if (error) throw error
-          }
-
-          // Get public URL
-          const { data: { publicUrl } } = supabase.storage
-            .from('post-media')
-            .getPublicUrl(fileName)
+          // Upload to R2 (no file size limit!)
+          const { url: publicUrl } = await r2Storage.upload(file, key, file.type)
 
           // Handle video files with thumbnail generation
           if (isVideoFile(file) && shouldGenerateThumbnails) {
             try {
               const thumbnailFile = await extractVideoThumbnail(file)
               if (thumbnailFile) {
-                const thumbFileName = `${user.id}/thumbnails/${timestamp}-${randomString}_thumb.jpg`
-                const { error: thumbError } = await supabase.storage
-                  .from('post-media')
-                  .upload(thumbFileName, thumbnailFile, {
-                    cacheControl: '3600',
-                    upsert: false,
-                    contentType: 'image/jpeg'
-                  })
+                const thumbKey = r2Storage.generateKey(user.id, `thumb_${file.name.replace(/\.[^/.]+$/, '')}.jpg`)
+                const { url: thumbUrl } = await r2Storage.upload(
+                  thumbnailFile,
+                  thumbKey,
+                  'image/jpeg'
+                )
 
-                if (!thumbError) {
-                  const { data: { publicUrl: thumbUrl } } = supabase.storage
-                    .from('post-media')
-                    .getPublicUrl(thumbFileName)
-
+                if (thumbUrl) {
                   return {
                     index,
                     result: { url: publicUrl, thumbnailUrl: thumbUrl, type: 'video', name: file.name, size: file.size }
