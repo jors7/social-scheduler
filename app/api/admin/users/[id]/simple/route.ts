@@ -80,6 +80,9 @@ export async function GET(
       }
     }
     
+    // Debug: Log what we received from Supabase
+    console.log('Subscription data from Supabase:', JSON.stringify(subscription, null, 2))
+
     const userDetails = {
       id: params.id,
       email,
@@ -97,7 +100,9 @@ export async function GET(
       cancel_at: subscription?.cancel_at,
       canceled_at: subscription?.canceled_at,
       cancel_at_period_end: subscription?.cancel_at_period_end || false,
-      is_suspended: subscription?.is_suspended || false
+      is_suspended: subscription?.is_suspended || false,
+      // Debug: Include raw value to see what Supabase returned
+      _debug_raw_cancel_at_period_end: subscription?.cancel_at_period_end
     }
     
     return NextResponse.json(userDetails, {
