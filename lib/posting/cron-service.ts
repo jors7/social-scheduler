@@ -367,22 +367,36 @@ export async function postToLinkedInDirect(content: string, account: any, mediaU
   }
 }
 
-export async function postToTwitterDirect(content: string, account: any, mediaUrls?: string[]) {
+export async function postToTwitterDirect(content: string, account: any, mediaUrls?: any[]) {
   console.log('=== DIRECT TWITTER POST ===');
   console.log('Content:', content);
   console.log('Has media:', !!mediaUrls && mediaUrls.length > 0);
 
   try {
+    // Normalize mediaUrls - extract URL strings from objects if needed
+    const normalizedMediaUrls: string[] | undefined = mediaUrls?.map(item => {
+      if (typeof item === 'string') {
+        return item;  // Already a string
+      } else if (item && typeof item === 'object' && item.url) {
+        return item.url;  // Extract URL from object
+      } else {
+        console.error('[Twitter] Invalid media URL format:', item);
+        return '';  // Return empty string for invalid items
+      }
+    }).filter(url => url !== '');  // Remove any empty strings
+
+    console.log('[Twitter] Normalized media URLs:', normalizedMediaUrls);
+
     const twitterService = new TwitterService({
       accessToken: account.access_token,
       accessSecret: account.access_secret
     });
 
-    if (mediaUrls && mediaUrls.length > 0) {
+    if (normalizedMediaUrls && normalizedMediaUrls.length > 0) {
       // Upload media first
       const mediaIds: string[] = [];
 
-      for (const mediaUrl of mediaUrls.slice(0, 4)) { // Twitter allows max 4 images
+      for (const mediaUrl of normalizedMediaUrls.slice(0, 4)) { // Twitter allows max 4 images
         const mediaResponse = await fetch(mediaUrl);
         const mediaBuffer = Buffer.from(await mediaResponse.arrayBuffer());
         const mimeType = mediaResponse.headers.get('content-type') || 'image/jpeg';
