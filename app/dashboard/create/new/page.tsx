@@ -842,40 +842,68 @@ function CreateNewPostPageContent() {
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-          // Upload to R2 via API endpoint (no file size limit!)
-          const formData = new FormData()
-          formData.append('file', file)
-
-          const response = await fetch('/api/upload/post-media', {
+          // Step 1: Get presigned upload URL from API
+          const presignResponse = await fetch('/api/upload/post-media', {
             method: 'POST',
-            body: formData
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              filename: file.name,
+              contentType: file.type,
+              size: file.size
+            })
           })
 
-          if (!response.ok) {
-            const errorData = await response.json()
-            throw new Error(errorData.error || 'Upload failed')
+          if (!presignResponse.ok) {
+            const errorData = await presignResponse.json()
+            throw new Error(errorData.error || 'Failed to get upload URL')
           }
 
-          const { url: publicUrl } = await response.json()
+          const { uploadUrl, publicUrl } = await presignResponse.json()
+
+          // Step 2: Upload directly to R2 using presigned URL
+          const uploadResponse = await fetch(uploadUrl, {
+            method: 'PUT',
+            body: file,
+            headers: {
+              'Content-Type': file.type
+            }
+          })
+
+          if (!uploadResponse.ok) {
+            throw new Error(`Upload failed: ${uploadResponse.status}`)
+          }
 
           // Handle video files with thumbnail generation
           if (isVideoFile(file) && shouldGenerateThumbnails) {
             try {
               const thumbnailFile = await extractVideoThumbnail(file)
               if (thumbnailFile) {
-                const thumbFormData = new FormData()
-                thumbFormData.append('file', thumbnailFile)
-
-                const thumbResponse = await fetch('/api/upload/post-media', {
+                // Get presigned URL for thumbnail
+                const thumbPresignResponse = await fetch('/api/upload/post-media', {
                   method: 'POST',
-                  body: thumbFormData
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    filename: `thumb_${file.name.replace(/\.[^/.]+$/, '')}.jpg`,
+                    contentType: 'image/jpeg',
+                    size: thumbnailFile.size
+                  })
                 })
 
-                if (thumbResponse.ok) {
-                  const { url: thumbUrl } = await thumbResponse.json()
-                  return {
-                    index,
-                    result: { url: publicUrl, thumbnailUrl: thumbUrl, type: 'video', name: file.name, size: file.size }
+                if (thumbPresignResponse.ok) {
+                  const { uploadUrl: thumbUploadUrl, publicUrl: thumbUrl } = await thumbPresignResponse.json()
+
+                  // Upload thumbnail directly to R2
+                  const thumbUploadResponse = await fetch(thumbUploadUrl, {
+                    method: 'PUT',
+                    body: thumbnailFile,
+                    headers: { 'Content-Type': 'image/jpeg' }
+                  })
+
+                  if (thumbUploadResponse.ok) {
+                    return {
+                      index,
+                      result: { url: publicUrl, thumbnailUrl: thumbUrl, type: 'video', name: file.name, size: file.size }
+                    }
                   }
                 }
               }

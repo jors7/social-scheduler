@@ -1,8 +1,8 @@
-import { 
-  PutObjectCommand, 
-  DeleteObjectCommand, 
+import {
+  PutObjectCommand,
+  DeleteObjectCommand,
   HeadObjectCommand,
-  GetObjectCommand 
+  GetObjectCommand
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { createR2Client, R2_BUCKET_NAME, R2_PUBLIC_URL } from './client'
@@ -132,6 +132,25 @@ export class R2Storage {
   }
 
   /**
+   * Get a presigned URL for uploading a file directly to R2
+   */
+  async getPresignedUploadUrl(key: string, contentType: string, expiresIn: number = 3600): Promise<string> {
+    try {
+      const command = new PutObjectCommand({
+        Bucket: R2_BUCKET_NAME,
+        Key: key,
+        ContentType: contentType,
+        CacheControl: 'public, max-age=31536000',
+      })
+
+      return await getSignedUrl(this.getClient(), command, { expiresIn })
+    } catch (error) {
+      console.error('R2 presigned upload URL error:', error)
+      throw new Error(`Failed to generate presigned upload URL: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  /**
    * Get the public URL for a file (assumes public bucket or CDN)
    */
   getPublicUrl(key: string): string {
@@ -172,6 +191,7 @@ export const r2Storage = {
   deleteMany: (...args: Parameters<R2Storage['deleteMany']>) => getR2Storage().deleteMany(...args),
   exists: (...args: Parameters<R2Storage['exists']>) => getR2Storage().exists(...args),
   getSignedUrl: (...args: Parameters<R2Storage['getSignedUrl']>) => getR2Storage().getSignedUrl(...args),
+  getPresignedUploadUrl: (...args: Parameters<R2Storage['getPresignedUploadUrl']>) => getR2Storage().getPresignedUploadUrl(...args),
   getPublicUrl: (...args: Parameters<R2Storage['getPublicUrl']>) => getR2Storage().getPublicUrl(...args),
   generateKey: (...args: Parameters<R2Storage['generateKey']>) => getR2Storage().generateKey(...args),
 }

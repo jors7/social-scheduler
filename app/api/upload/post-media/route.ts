@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { r2Storage } from '@/lib/r2/storage'
 
-export const maxDuration = 300 // 5 minutes for large files
-
 export async function POST(request: NextRequest) {
   try {
     const supabase = createClient()
@@ -17,19 +15,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse form data
-    const formData = await request.formData()
-    const file = formData.get('file') as File
+    // Parse JSON body
+    const body = await request.json()
+    const { filename, contentType, size } = body
 
-    if (!file) {
+    if (!filename || !contentType) {
       return NextResponse.json(
-        { error: 'No file provided' },
+        { error: 'Missing filename or contentType' },
         { status: 400 }
       )
     }
 
     // Validate file type
-    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+    if (!contentType.startsWith('image/') && !contentType.startsWith('video/')) {
       return NextResponse.json(
         { error: 'Invalid file type. Only images and videos are allowed.' },
         { status: 400 }
@@ -37,9 +35,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file size (max 500MB for videos, 50MB for images)
-    const isVideo = file.type.startsWith('video/')
+    const isVideo = contentType.startsWith('video/')
     const maxSize = isVideo ? 500 * 1024 * 1024 : 50 * 1024 * 1024
-    if (file.size > maxSize) {
+    if (size && size > maxSize) {
       return NextResponse.json(
         { error: `File too large. Maximum size is ${isVideo ? '500MB' : '50MB'}.` },
         { status: 400 }
@@ -47,22 +45,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate unique key for R2
-    const key = r2Storage.generateKey(user.id, file.name)
+    const key = r2Storage.generateKey(user.id, filename)
 
-    // Upload to R2
-    const { url } = await r2Storage.upload(file, key, file.type)
+    // Get presigned upload URL (valid for 1 hour)
+    const uploadUrl = await r2Storage.getPresignedUploadUrl(key, contentType, 3600)
+
+    // Get the public URL for after upload completes
+    const publicUrl = r2Storage.getPublicUrl(key)
 
     return NextResponse.json({
-      url,
+      uploadUrl,
+      publicUrl,
       key,
-      name: file.name,
-      size: file.size,
-      type: file.type.startsWith('video/') ? 'video' : 'image'
+      contentType
     })
   } catch (error) {
-    console.error('Post media upload error:', error)
+    console.error('Post media presigned URL error:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Upload failed' },
+      { error: error instanceof Error ? error.message : 'Failed to generate upload URL' },
       { status: 500 }
     )
   }
