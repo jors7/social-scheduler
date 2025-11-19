@@ -3042,6 +3042,12 @@ function CreateNewPostPageContent() {
     } else {
       setSelectedFiles(prev => prev.filter((_, i) => i !== index))
     }
+
+    // Reset file input so same file can be selected again
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement
+    if (fileInput) {
+      fileInput.value = ''
+    }
   }
 
   const handleDrop = (e: React.DragEvent) => {
