@@ -2,7 +2,8 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
-  GetObjectCommand
+  GetObjectCommand,
+  ListObjectsV2Command
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { createR2Client, R2_BUCKET_NAME, R2_PUBLIC_URL } from './client'
@@ -151,6 +152,46 @@ export class R2Storage {
   }
 
   /**
+   * List all objects in R2 bucket (with optional prefix)
+   */
+  async listObjects(prefix?: string): Promise<{ key: string; lastModified: Date; size: number }[]> {
+    try {
+      const objects: { key: string; lastModified: Date; size: number }[] = []
+      let continuationToken: string | undefined
+
+      do {
+        const command = new ListObjectsV2Command({
+          Bucket: R2_BUCKET_NAME,
+          Prefix: prefix,
+          ContinuationToken: continuationToken,
+          MaxKeys: 1000
+        })
+
+        const response = await this.getClient().send(command)
+
+        if (response.Contents) {
+          for (const obj of response.Contents) {
+            if (obj.Key && obj.LastModified) {
+              objects.push({
+                key: obj.Key,
+                lastModified: obj.LastModified,
+                size: obj.Size || 0
+              })
+            }
+          }
+        }
+
+        continuationToken = response.NextContinuationToken
+      } while (continuationToken)
+
+      return objects
+    } catch (error) {
+      console.error('R2 list objects error:', error)
+      throw new Error(`Failed to list objects in R2: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  /**
    * Get the public URL for a file (assumes public bucket or CDN)
    */
   getPublicUrl(key: string): string {
@@ -194,4 +235,5 @@ export const r2Storage = {
   getPresignedUploadUrl: (...args: Parameters<R2Storage['getPresignedUploadUrl']>) => getR2Storage().getPresignedUploadUrl(...args),
   getPublicUrl: (...args: Parameters<R2Storage['getPublicUrl']>) => getR2Storage().getPublicUrl(...args),
   generateKey: (...args: Parameters<R2Storage['generateKey']>) => getR2Storage().generateKey(...args),
+  listObjects: (...args: Parameters<R2Storage['listObjects']>) => getR2Storage().listObjects(...args),
 }
