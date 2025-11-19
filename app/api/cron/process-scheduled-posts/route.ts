@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { PostingService } from '@/lib/posting/service';
 import { Receiver } from '@upstash/qstash';
+import { r2Storage } from '@/lib/r2/storage';
+import { R2_PUBLIC_URL } from '@/lib/r2/client';
 import {
   postToFacebookDirect,
   postToBlueskyDirect,
@@ -431,7 +433,7 @@ async function processScheduledPosts(request: NextRequest) {
 
           if (post.media_urls && post.media_urls.length > 0 && !shouldSkipCleanup) {
             try {
-              await cleanupMediaFiles(post.media_urls, supabase);
+              await cleanupMediaFiles(post.media_urls);
             } catch (cleanupError) {
               console.error('Media cleanup error:', cleanupError);
             }
@@ -551,13 +553,22 @@ function cleanHtmlContent(content: string): string {
 }
 
 // Helper function to clean up media files after successful posting
-async function cleanupMediaFiles(mediaUrls: string[], supabase: any) {
+async function cleanupMediaFiles(mediaUrls: string[]) {
   for (const url of mediaUrls) {
     try {
+      // Handle R2 URLs (new format)
+      if (R2_PUBLIC_URL && url.startsWith(R2_PUBLIC_URL)) {
+        const key = url.replace(`${R2_PUBLIC_URL}/`, '');
+        await r2Storage.delete(key);
+        console.log(`Deleted R2 file: ${key}`);
+        continue;
+      }
+
+      // Handle legacy Supabase URLs (for old posts)
       const urlParts = url.split('/storage/v1/object/public/post-media/');
       if (urlParts.length === 2) {
-        const filePath = urlParts[1];
-        await supabase.storage.from('post-media').remove([filePath]);
+        console.log(`Skipping legacy Supabase URL: ${url}`);
+        // Note: Old Supabase files will need manual cleanup or a migration script
       }
     } catch (error) {
       console.error('Error cleaning up file:', url, error);
