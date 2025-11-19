@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback, Suspense, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { toast } from 'sonner'
-import { r2Storage } from '@/lib/r2/storage'
 import { PostingService, PostData } from '@/lib/posting/service'
 import { PostingProgressTracker } from '@/lib/posting/progress-tracker'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -843,25 +842,37 @@ function CreateNewPostPageContent() {
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-          // Generate unique key for R2
-          const key = r2Storage.generateKey(user.id, file.name)
+          // Upload to R2 via API endpoint (no file size limit!)
+          const formData = new FormData()
+          formData.append('file', file)
 
-          // Upload to R2 (no file size limit!)
-          const { url: publicUrl } = await r2Storage.upload(file, key, file.type)
+          const response = await fetch('/api/upload/post-media', {
+            method: 'POST',
+            body: formData
+          })
+
+          if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || 'Upload failed')
+          }
+
+          const { url: publicUrl } = await response.json()
 
           // Handle video files with thumbnail generation
           if (isVideoFile(file) && shouldGenerateThumbnails) {
             try {
               const thumbnailFile = await extractVideoThumbnail(file)
               if (thumbnailFile) {
-                const thumbKey = r2Storage.generateKey(user.id, `thumb_${file.name.replace(/\.[^/.]+$/, '')}.jpg`)
-                const { url: thumbUrl } = await r2Storage.upload(
-                  thumbnailFile,
-                  thumbKey,
-                  'image/jpeg'
-                )
+                const thumbFormData = new FormData()
+                thumbFormData.append('file', thumbnailFile)
 
-                if (thumbUrl) {
+                const thumbResponse = await fetch('/api/upload/post-media', {
+                  method: 'POST',
+                  body: thumbFormData
+                })
+
+                if (thumbResponse.ok) {
+                  const { url: thumbUrl } = await thumbResponse.json()
                   return {
                     index,
                     result: { url: publicUrl, thumbnailUrl: thumbUrl, type: 'video', name: file.name, size: file.size }
