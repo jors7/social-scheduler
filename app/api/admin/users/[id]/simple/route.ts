@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Force rebuild - ensure cancel_at_period_end field is returned
+// Force dynamic rendering - disable Next.js route caching
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export async function GET(
   request: NextRequest,
