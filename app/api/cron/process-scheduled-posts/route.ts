@@ -223,20 +223,30 @@ async function processScheduledPosts(request: NextRequest) {
               continue;
             }
 
-            // Get the Instagram account
-            const { data: accounts } = await supabase
+            // Get the Instagram account, respecting selected_accounts if specified
+            const { data: instagramAccounts } = await supabase
               .from('social_accounts')
               .select('*')
               .eq('user_id', post.user_id)
               .eq('platform', 'instagram')
-              .eq('is_active', true)
-              .limit(1);
+              .eq('is_active', true);
 
-            if (!accounts || accounts.length === 0) {
+            if (!instagramAccounts || instagramAccounts.length === 0) {
               throw new Error('Instagram account not found');
             }
 
-            const account = accounts[0];
+            // Find the correct account based on selection
+            let account;
+            if (post.selected_accounts && post.selected_accounts['instagram']) {
+              const selectedIds = post.selected_accounts['instagram'];
+              account = instagramAccounts.find(acc => selectedIds.includes(acc.id));
+              if (!account) {
+                console.log('Selected Instagram account not found, falling back to first available');
+                account = instagramAccounts[0];
+              }
+            } else {
+              account = instagramAccounts[0];
+            }
             const instagramClient = new InstagramClient({
               accessToken: account.access_token,
               userID: account.platform_user_id,
