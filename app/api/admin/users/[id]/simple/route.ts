@@ -98,7 +98,11 @@ export async function GET(
       is_suspended: subscription?.is_suspended || false
     }
     
-    return NextResponse.json(userDetails)
+    return NextResponse.json(userDetails, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      }
+    })
   } catch (error) {
     console.error('Simple user details API error:', error)
     return NextResponse.json(
