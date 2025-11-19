@@ -3031,6 +3031,12 @@ function CreateNewPostPageContent() {
       // If upload failed, still keep files in selectedFiles for retry
       setSelectedFiles(prev => [...prev, ...validFiles])
     }
+
+    // Reset file input so same file can be selected again
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement
+    if (fileInput) {
+      fileInput.value = ''
+    }
   }
 
   const removeFile = (index: number) => {
