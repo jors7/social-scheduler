@@ -343,6 +343,7 @@ function CreateNewPostPageContent() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploadedMediaUrls, setUploadedMediaUrls] = useState<(string | { url: string; thumbnailUrl?: string; type?: string })[]>([])
   const [uploadedMediaTypes, setUploadedMediaTypes] = useState<string[]>([])
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false)
   const [loadingDraft, setLoadingDraft] = useState(false)
   const [editingScheduledPost, setEditingScheduledPost] = useState(false)
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
@@ -801,6 +802,8 @@ function CreateNewPostPageContent() {
       return []
     }
 
+    setIsUploadingMedia(true)
+
     // Validate video sizes for Bluesky
     if (selectedPlatforms.includes('bluesky')) {
       const BLUESKY_VIDEO_SIZE_LIMIT = 900 * 1024 // 900KB (safety margin below 976.56KB limit)
@@ -814,6 +817,7 @@ function CreateNewPostPageContent() {
               `Video "${file.name}" is ${fileSizeMB}MB, but Bluesky has a 1MB limit. Please compress your video or deselect Bluesky.`,
               { duration: 8000 }
             )
+            setIsUploadingMedia(false)
             return []
           }
         }
@@ -919,6 +923,7 @@ function CreateNewPostPageContent() {
       toast.success(`Uploaded ${uploadedUrls.length} file(s) successfully`)
     }
 
+    setIsUploadingMedia(false)
     return uploadedUrls
   }
 
@@ -3508,8 +3513,21 @@ function CreateNewPostPageContent() {
                   onChange={(e) => handleFileSelect(e.target.files)}
                 />
 
+                {/* Persistent upload indicator */}
+                {isUploadingMedia && (
+                  <div className="border-2 border-blue-300 bg-blue-50 rounded-lg p-6 text-center">
+                    <div className="flex items-center justify-center gap-3">
+                      <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                      <div>
+                        <p className="text-sm font-medium text-blue-700">Uploading media...</p>
+                        <p className="text-xs text-blue-600">Please wait while your files are being uploaded</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Large upload box - only show when no media exists */}
-                {selectedFiles.length === 0 && uploadedMediaUrls.length === 0 && (
+                {selectedFiles.length === 0 && uploadedMediaUrls.length === 0 && !isUploadingMedia && (
                   <div
                     className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
                     onClick={() => document.getElementById('file-upload')?.click()}
