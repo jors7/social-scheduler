@@ -36,6 +36,7 @@ interface UserDetails {
   connected_accounts: number
   stripe_customer_id?: string
   trial_ends_at?: string
+  current_period_end?: string
   cancel_at?: string
   canceled_at?: string
   cancel_at_period_end?: boolean
@@ -346,6 +347,14 @@ export default function UserDetailsClient({ userId }: { userId: string }) {
                     ✓ Trial active. User will be charged and converted to paid subscription.
                   </p>
                 )}
+              </div>
+            )}
+            {user.subscription_status === 'active' && user.current_period_end && !user.cancel_at_period_end && (
+              <div>
+                <p className="text-sm text-gray-500">Next Payment</p>
+                <p className="text-sm font-medium text-blue-600">
+                  {formatDate(user.current_period_end)}
+                </p>
               </div>
             )}
             {user.cancel_at && !user.trial_ends_at && (

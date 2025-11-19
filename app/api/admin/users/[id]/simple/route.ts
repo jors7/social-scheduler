@@ -96,6 +96,7 @@ export async function GET(
       connected_accounts: accountsCount,
       stripe_customer_id: subscription?.stripe_customer_id,
       trial_ends_at: subscription?.trial_end || subscription?.trial_ends_at,
+      current_period_end: subscription?.current_period_end,
       cancel_at: subscription?.cancel_at,
       canceled_at: subscription?.canceled_at,
       cancel_at_period_end: subscription?.cancel_at_period_end || false,
