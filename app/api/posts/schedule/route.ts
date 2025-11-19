@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Schedule request body:', JSON.stringify(body, null, 2));
 
-    const { content, platforms, platformContent, mediaUrls, scheduledFor, pinterestBoardId, pinterestTitle, pinterestDescription, pinterestLink, threadsMode, threadPosts, threadsThreadMedia, instagramAsStory, instagramAsReel, facebookAsStory, facebookAsReel, youtubeAsShort } = body;
+    const { content, platforms, platformContent, mediaUrls, scheduledFor, pinterestBoardId, pinterestTitle, pinterestDescription, pinterestLink, threadsMode, threadPosts, threadsThreadMedia, instagramAsStory, instagramAsReel, facebookAsStory, facebookAsReel, youtubeAsShort, selectedAccounts } = body;
 
     // Check if this is a Pinterest-only post with media
     const isPinterestOnlyWithMedia = platforms?.length === 1 &&
@@ -190,7 +190,12 @@ export async function POST(request: NextRequest) {
     // Set media_urls to empty array if not provided to avoid null issues
     // This ensures the JSONB field always has a valid array value
     insertData.media_urls = mediaUrls && mediaUrls.length > 0 ? mediaUrls : [];
-    
+
+    // Add selected accounts if provided (for multi-account platforms)
+    if (selectedAccounts && Object.keys(selectedAccounts).length > 0) {
+      insertData.selected_accounts = selectedAccounts;
+    }
+
     // Add Pinterest-specific fields if provided
     if (pinterestBoardId) {
       insertData.pinterest_board_id = pinterestBoardId;

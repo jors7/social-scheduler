@@ -494,8 +494,23 @@ async function processScheduledPosts(request: NextRequest) {
             continue;
           }
           
-          const account = accounts.find(acc => acc.platform === platform);
-          
+          // Find the account for this platform, respecting selected_accounts if specified
+          let account;
+          if (post.selected_accounts && post.selected_accounts[platform]) {
+            // User selected specific account(s) - use the first one
+            const selectedIds = post.selected_accounts[platform];
+            account = accounts.find(acc =>
+              acc.platform === platform && selectedIds.includes(acc.id)
+            );
+            if (!account) {
+              console.log(`Selected account not found for ${platform}, falling back to first available`);
+              account = accounts.find(acc => acc.platform === platform);
+            }
+          } else {
+            // No specific selection - use first available
+            account = accounts.find(acc => acc.platform === platform);
+          }
+
           if (!account) {
             postResults.push({
               platform,
