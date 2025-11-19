@@ -348,7 +348,7 @@ export default function UserDetailsClient({ userId }: { userId: string }) {
                 )}
               </div>
             )}
-            {user.cancel_at && (
+            {user.cancel_at && !user.trial_ends_at && (
               <div className="border-t pt-4">
                 <p className="text-sm text-gray-500">Subscription Cancels On</p>
                 <p className="text-sm font-medium text-red-600">{formatDate(user.cancel_at)}</p>
