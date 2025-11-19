@@ -883,9 +883,10 @@ async function cleanupMediaFiles(mediaUrls: any[]) {
         url = mediaItem;
       } else if (mediaItem && typeof mediaItem === 'object' && mediaItem.url) {
         url = mediaItem.url;
-        // Also delete thumbnail if present
-        if (mediaItem.thumbnailUrl && typeof mediaItem.thumbnailUrl === 'string') {
-          await cleanupSingleUrl(mediaItem.thumbnailUrl);
+        // Keep thumbnails - they're needed for display in the dashboard
+        // Thumbnails are small JPG files so storage impact is minimal
+        if (mediaItem.thumbnailUrl) {
+          console.log('Keeping thumbnail for display:', mediaItem.thumbnailUrl);
         }
       } else {
         console.error('Invalid media item format:', mediaItem);
