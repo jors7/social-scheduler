@@ -793,13 +793,13 @@ function CreateNewPostPageContent() {
   }
 
   // Upload files immediately when selected (for autosave functionality)
-  const uploadFilesImmediately = async (files: File[]): Promise<(string | { url: string; thumbnailUrl?: string; type?: string })[]> => {
-    if (files.length === 0) return []
+  const uploadFilesImmediately = async (files: File[]): Promise<{ urls: (string | { url: string; thumbnailUrl?: string; type?: string })[], failedIndices: number[] }> => {
+    if (files.length === 0) return { urls: [], failedIndices: [] }
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       toast.error('Please sign in to upload files')
-      return []
+      return { urls: [], failedIndices: files.map((_, i) => i) }
     }
 
     setIsUploadingMedia(true)
@@ -818,13 +818,14 @@ function CreateNewPostPageContent() {
               { duration: 8000 }
             )
             setIsUploadingMedia(false)
-            return []
+            return { urls: [], failedIndices: files.map((_, i) => i) }
           }
         }
       }
     }
 
     const uploadedUrls: (string | { url: string; thumbnailUrl?: string; type?: string })[] = []
+    const failedIndices: number[] = []
     const hasVideos = files.some(file => file.type.startsWith('video/'))
     const shouldGenerateThumbnails = selectedPlatforms.includes('tiktok') || hasVideos
 
@@ -916,15 +917,19 @@ function CreateNewPostPageContent() {
       } catch (error) {
         console.error('Upload error for file:', file.name, error)
         toast.error(`Failed to upload ${file.name}`)
+        failedIndices.push(i)
       }
     }
 
     if (uploadedUrls.length > 0) {
       toast.success(`Uploaded ${uploadedUrls.length} file(s) successfully`)
     }
+    if (failedIndices.length > 0 && uploadedUrls.length > 0) {
+      toast.warning(`${failedIndices.length} file(s) failed to upload`)
+    }
 
     setIsUploadingMedia(false)
-    return uploadedUrls
+    return { urls: uploadedUrls, failedIndices }
   }
 
   const uploadFiles = async (): Promise<(string | { url: string; thumbnailUrl?: string; type?: string })[]> => {
@@ -2614,7 +2619,7 @@ function CreateNewPostPageContent() {
         }
         for (const mediaFiles of threadsThreadMedia) {
           if (mediaFiles && mediaFiles.length > 0) {
-            const urls = await uploadFilesImmediately(mediaFiles)
+            const { urls } = await uploadFilesImmediately(mediaFiles)
             if (urls && urls.length > 0) {
               threadsThreadMediaUrls.push(urls)
             } else {
@@ -3018,18 +3023,25 @@ function CreateNewPostPageContent() {
     if (validFiles.length === 0) return
 
     // Upload files immediately for autosave
-    const newUrls = await uploadFilesImmediately(validFiles)
+    const { urls: newUrls, failedIndices } = await uploadFilesImmediately(validFiles)
 
     if (newUrls.length > 0) {
-      // Add new URLs to existing uploaded media URLs
+      // Add successful URLs to existing uploaded media URLs
       setUploadedMediaUrls(prev => [...prev, ...newUrls])
-      // Track the types of uploaded media
-      setUploadedMediaTypes(prev => [...prev, ...validFiles.map(f => f.type)])
-      // Clear selectedFiles since we have uploaded URLs now
-      setSelectedFiles([])
+      // Track the types of successfully uploaded media
+      const successfulTypes = validFiles
+        .filter((_, i) => !failedIndices.includes(i))
+        .map(f => f.type)
+      setUploadedMediaTypes(prev => [...prev, ...successfulTypes])
+    }
+
+    // Keep failed files in selectedFiles for retry
+    if (failedIndices.length > 0) {
+      const failedFiles = validFiles.filter((_, i) => failedIndices.includes(i))
+      setSelectedFiles(failedFiles)
     } else {
-      // If upload failed, still keep files in selectedFiles for retry
-      setSelectedFiles(prev => [...prev, ...validFiles])
+      // All uploads succeeded, clear selectedFiles
+      setSelectedFiles([])
     }
 
     // Reset file input so same file can be selected again
@@ -3582,12 +3594,15 @@ function CreateNewPostPageContent() {
                   </div>
                 )}
 
-                {/* Selected Files Display */}
+                {/* Selected Files Display (also used for failed uploads pending retry) */}
                 {selectedFiles.length > 0 && (
                   <div className="mt-4">
                     <div className="flex items-center justify-between mb-2">
                       <Label className="text-sm font-medium">
-                        Selected Files ({selectedFiles.length})
+                        {uploadedMediaUrls.length > 0
+                          ? `Failed Uploads - Retry (${selectedFiles.length})`
+                          : `Selected Files (${selectedFiles.length})`
+                        }
                       </Label>
                       <div className="flex gap-2">
                         {selectedPlatforms.includes('instagram') && selectedFiles.length > 1 && (
@@ -3683,10 +3698,10 @@ function CreateNewPostPageContent() {
                 )}
 
                 {/* Show existing media from draft with drag-and-drop reordering */}
-                {uploadedMediaUrls.length > 0 && selectedFiles.length === 0 && (
+                {uploadedMediaUrls.length > 0 && (
                   <div className="mt-4">
                     <div className="flex items-center justify-between mb-2">
-                      <Label className="text-sm font-medium">Previously Uploaded Media</Label>
+                      <Label className="text-sm font-medium">Uploaded Media ({uploadedMediaUrls.length})</Label>
                       {uploadedMediaUrls.length > 1 && (
                         <span className="text-xs text-blue-600 font-medium">
                           💡 Drag to reorder
