@@ -824,100 +824,122 @@ function CreateNewPostPageContent() {
       }
     }
 
-    const uploadedUrls: (string | { url: string; thumbnailUrl?: string; type?: string })[] = []
-    const failedIndices: number[] = []
     const hasVideos = files.some(file => file.type.startsWith('video/'))
     const shouldGenerateThumbnails = selectedPlatforms.includes('tiktok') || hasVideos
 
-    toast.info(`Uploading ${files.length} file(s)...`, { duration: 2000 })
+    toast.info(`Uploading ${files.length} file(s)...`)
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i]
-      try {
-        // Generate unique filename
-        const timestamp = Date.now()
-        const randomString = Math.random().toString(36).substring(2, 8)
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${user.id}/${timestamp}-${randomString}.${fileExt}`
+    // Helper function to upload a single file with retry
+    const uploadSingleFile = async (
+      file: File,
+      index: number,
+      maxRetries: number = 3
+    ): Promise<{ index: number; result: string | { url: string; thumbnailUrl?: string; type?: string } | null }> => {
+      let lastError: Error | null = null
 
-        // Always upload directly to Supabase Storage for consistency
-        const { data, error } = await supabase.storage
-          .from('post-media')
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false
-          })
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          // Generate unique filename
+          const timestamp = Date.now()
+          const randomString = Math.random().toString(36).substring(2, 8)
+          const fileExt = file.name.split('.').pop()
+          const fileName = `${user.id}/${timestamp}-${randomString}.${fileExt}`
 
-        if (error) throw error
-
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('post-media')
-          .getPublicUrl(fileName)
-
-        // Check if this is a video file and extract thumbnail
-        if (isVideoFile(file) && shouldGenerateThumbnails) {
-          try {
-            const thumbnailFile = await extractVideoThumbnail(file)
-            if (thumbnailFile) {
-              // Upload thumbnail
-              const thumbFileName = `${user.id}/thumbnails/${timestamp}-${randomString}_thumb.jpg`
-              const { error: thumbError } = await supabase.storage
-                .from('post-media')
-                .upload(thumbFileName, thumbnailFile, {
-                  cacheControl: '3600',
-                  upsert: false,
-                  contentType: 'image/jpeg'
-                })
-
-              if (!thumbError) {
-                const { data: { publicUrl: thumbUrl } } = supabase.storage
-                  .from('post-media')
-                  .getPublicUrl(thumbFileName)
-
-                // Store as object with thumbnail URL
-                uploadedUrls.push({
-                  url: publicUrl,
-                  thumbnailUrl: thumbUrl,
-                  type: 'video'
-                })
-                console.log('Video uploaded with thumbnail:', { url: publicUrl, thumbnailUrl: thumbUrl })
-              } else {
-                // Thumbnail upload failed, store video without thumbnail
-                uploadedUrls.push({
-                  url: publicUrl,
-                  type: 'video'
-                })
-              }
-            } else {
-              // Thumbnail extraction failed, store video without thumbnail
-              uploadedUrls.push({
-                url: publicUrl,
-                type: 'video'
-              })
-            }
-          } catch (thumbError) {
-            console.error('Failed to extract video thumbnail:', thumbError)
-            // Store video without thumbnail
-            uploadedUrls.push({
-              url: publicUrl,
-              type: 'video'
+          // Upload to Supabase Storage
+          const { error } = await supabase.storage
+            .from('post-media')
+            .upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: false
             })
+
+          if (error) throw error
+
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('post-media')
+            .getPublicUrl(fileName)
+
+          // Handle video files with thumbnail generation
+          if (isVideoFile(file) && shouldGenerateThumbnails) {
+            try {
+              const thumbnailFile = await extractVideoThumbnail(file)
+              if (thumbnailFile) {
+                const thumbFileName = `${user.id}/thumbnails/${timestamp}-${randomString}_thumb.jpg`
+                const { error: thumbError } = await supabase.storage
+                  .from('post-media')
+                  .upload(thumbFileName, thumbnailFile, {
+                    cacheControl: '3600',
+                    upsert: false,
+                    contentType: 'image/jpeg'
+                  })
+
+                if (!thumbError) {
+                  const { data: { publicUrl: thumbUrl } } = supabase.storage
+                    .from('post-media')
+                    .getPublicUrl(thumbFileName)
+
+                  return {
+                    index,
+                    result: { url: publicUrl, thumbnailUrl: thumbUrl, type: 'video' }
+                  }
+                }
+              }
+            } catch (thumbError) {
+              console.error('Failed to extract video thumbnail:', thumbError)
+            }
+            // Video uploaded but thumbnail failed - still success
+            return { index, result: { url: publicUrl, type: 'video' } }
+          } else if (isVideoFile(file)) {
+            return { index, result: { url: publicUrl, type: 'video' } }
+          } else {
+            // Image file
+            return { index, result: publicUrl }
           }
-        } else if (isVideoFile(file)) {
-          // Video but no thumbnail generation requested
-          uploadedUrls.push({
-            url: publicUrl,
-            type: 'video'
-          })
-        } else {
-          // Image file - store as string for backward compatibility
-          uploadedUrls.push(publicUrl)
+        } catch (error) {
+          lastError = error as Error
+          console.error(`Upload attempt ${attempt}/${maxRetries} failed for ${file.name}:`, error)
+
+          if (attempt < maxRetries) {
+            // Exponential backoff: 1s, 2s, 4s
+            const delay = Math.pow(2, attempt - 1) * 1000
+            await new Promise(resolve => setTimeout(resolve, delay))
+          }
         }
-      } catch (error) {
-        console.error('Upload error for file:', file.name, error)
-        toast.error(`Failed to upload ${file.name}`)
-        failedIndices.push(i)
+      }
+
+      // All retries failed
+      console.error(`All ${maxRetries} upload attempts failed for ${file.name}:`, lastError)
+      return { index, result: null }
+    }
+
+    // Process files in parallel batches
+    const BATCH_SIZE = 3
+    const results: { index: number; result: string | { url: string; thumbnailUrl?: string; type?: string } | null }[] = []
+
+    for (let i = 0; i < files.length; i += BATCH_SIZE) {
+      const batch = files.slice(i, i + BATCH_SIZE)
+      const batchPromises = batch.map((file, batchIndex) =>
+        uploadSingleFile(file, i + batchIndex)
+      )
+
+      const batchResults = await Promise.all(batchPromises)
+      results.push(...batchResults)
+    }
+
+    // Separate successful uploads and failures
+    const uploadedUrls: (string | { url: string; thumbnailUrl?: string; type?: string })[] = []
+    const failedIndices: number[] = []
+
+    // Sort by index to maintain order
+    results.sort((a, b) => a.index - b.index)
+
+    for (const { index, result } of results) {
+      if (result !== null) {
+        uploadedUrls.push(result)
+      } else {
+        failedIndices.push(index)
+        toast.error(`Failed to upload ${files[index].name}`)
       }
     }
 
@@ -925,7 +947,7 @@ function CreateNewPostPageContent() {
       toast.success(`Uploaded ${uploadedUrls.length} file(s) successfully`)
     }
     if (failedIndices.length > 0 && uploadedUrls.length > 0) {
-      toast.warning(`${failedIndices.length} file(s) failed to upload`)
+      toast.warning(`${failedIndices.length} file(s) failed after retries`)
     }
 
     setIsUploadingMedia(false)
