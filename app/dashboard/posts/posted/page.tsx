@@ -30,7 +30,7 @@ interface PostedPost {
   content: string
   platforms: string[]
   platform_content: Record<string, string>
-  media_urls: string[]
+  media_urls: any[]
   scheduled_for: string
   status: 'posted' | 'failed'
   created_at: string
