@@ -849,26 +849,46 @@ function cleanHtmlContent(content: string): string {
 }
 
 // Helper function to clean up media files after successful posting
-async function cleanupMediaFiles(mediaUrls: string[]) {
-  for (const url of mediaUrls) {
+async function cleanupMediaFiles(mediaUrls: any[]) {
+  for (const mediaItem of mediaUrls) {
     try {
-      // Handle R2 URLs (new format)
-      if (R2_PUBLIC_URL && url.startsWith(R2_PUBLIC_URL)) {
-        const key = url.replace(`${R2_PUBLIC_URL}/`, '');
-        await r2Storage.delete(key);
-        console.log(`Deleted R2 file: ${key}`);
+      // Extract URL string from object if needed
+      let url: string;
+      if (typeof mediaItem === 'string') {
+        url = mediaItem;
+      } else if (mediaItem && typeof mediaItem === 'object' && mediaItem.url) {
+        url = mediaItem.url;
+        // Also delete thumbnail if present
+        if (mediaItem.thumbnailUrl && typeof mediaItem.thumbnailUrl === 'string') {
+          await cleanupSingleUrl(mediaItem.thumbnailUrl);
+        }
+      } else {
+        console.error('Invalid media item format:', mediaItem);
         continue;
       }
 
-      // Handle legacy Supabase URLs (for old posts)
-      const urlParts = url.split('/storage/v1/object/public/post-media/');
-      if (urlParts.length === 2) {
-        console.log(`Skipping legacy Supabase URL: ${url}`);
-        // Note: Old Supabase files will need manual cleanup or a migration script
-      }
+      await cleanupSingleUrl(url);
     } catch (error) {
-      console.error('Error cleaning up file:', url, error);
+      console.error('Error cleaning up file:', mediaItem, error);
     }
+  }
+}
+
+// Helper to cleanup a single URL
+async function cleanupSingleUrl(url: string) {
+  // Handle R2 URLs (new format)
+  if (R2_PUBLIC_URL && url.startsWith(R2_PUBLIC_URL)) {
+    const key = url.replace(`${R2_PUBLIC_URL}/`, '');
+    await r2Storage.delete(key);
+    console.log(`Deleted R2 file: ${key}`);
+    return;
+  }
+
+  // Handle legacy Supabase URLs (for old posts)
+  const urlParts = url.split('/storage/v1/object/public/post-media/');
+  if (urlParts.length === 2) {
+    console.log(`Skipping legacy Supabase URL: ${url}`);
+    // Note: Old Supabase files will need manual cleanup or a migration script
   }
 }
 

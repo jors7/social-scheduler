@@ -134,14 +134,26 @@ export async function postToFacebookDirect(
     const facebookService = new FacebookService();
     let result;
 
+    // Normalize mediaUrls - extract URL strings from objects if needed
+    const normalizedMediaUrls: string[] | undefined = mediaUrls?.map(item => {
+      if (typeof item === 'string') {
+        return item;
+      } else if (item && typeof item === 'object' && (item as any).url) {
+        return (item as any).url;
+      } else {
+        console.error('[Facebook] Invalid media URL format:', item);
+        return '';
+      }
+    }).filter(url => url !== '');
+
     // Check if this is a story or reel post
-    if (options?.isStory && mediaUrls && mediaUrls.length > 0) {
+    if (options?.isStory && normalizedMediaUrls && normalizedMediaUrls.length > 0) {
       // Facebook Story
       if (!options.userId || !options.supabase) {
         throw new Error('userId and supabase client are required for Facebook stories');
       }
 
-      const mediaUrl = mediaUrls[0];
+      const mediaUrl = normalizedMediaUrls[0];
       const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
       const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
       const mediaType = isVideo ? 'video' : 'photo';
@@ -155,13 +167,13 @@ export async function postToFacebookDirect(
         options.supabase,
         options.userId
       );
-    } else if (options?.isReel && mediaUrls && mediaUrls.length > 0) {
+    } else if (options?.isReel && normalizedMediaUrls && normalizedMediaUrls.length > 0) {
       // Facebook Reel
       if (!options.userId || !options.supabase) {
         throw new Error('userId and supabase client are required for Facebook reels');
       }
 
-      const videoUrl = mediaUrls[0];
+      const videoUrl = normalizedMediaUrls[0];
       console.log('Creating Facebook Reel');
       result = await facebookService.createReelPost(
         account.platform_user_id,
@@ -171,7 +183,7 @@ export async function postToFacebookDirect(
         options.supabase,
         options.userId
       );
-    } else if (!mediaUrls || mediaUrls.length === 0) {
+    } else if (!normalizedMediaUrls || normalizedMediaUrls.length === 0) {
       // Text-only post
       console.log('Creating text-only Facebook post');
       result = await facebookService.createPost(
@@ -179,9 +191,9 @@ export async function postToFacebookDirect(
         account.access_token,
         content
       );
-    } else if (mediaUrls.length === 1) {
+    } else if (normalizedMediaUrls.length === 1) {
       // Single media post (feed)
-      const mediaUrl = mediaUrls[0];
+      const mediaUrl = normalizedMediaUrls[0];
       const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
       const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
 
@@ -205,7 +217,7 @@ export async function postToFacebookDirect(
     } else {
       // Multiple photos (carousel)
       const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
-      const imageUrls = mediaUrls.filter(url =>
+      const imageUrls = normalizedMediaUrls.filter(url =>
         !videoExtensions.some(ext => url.toLowerCase().includes(ext))
       );
 
