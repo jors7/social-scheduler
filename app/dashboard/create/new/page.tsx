@@ -3620,12 +3620,40 @@ function CreateNewPostPageContent() {
                 {selectedFiles.length > 0 && (
                   <div className="mt-4">
                     <div className="flex items-center justify-between mb-2">
-                      <Label className="text-sm font-medium">
-                        {uploadedMediaUrls.length > 0
-                          ? `Failed Uploads - Retry (${selectedFiles.length})`
-                          : `Selected Files (${selectedFiles.length})`
-                        }
-                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-sm font-medium">
+                          {uploadedMediaUrls.length > 0
+                            ? `Failed Uploads - Retry (${selectedFiles.length})`
+                            : `Selected Files (${selectedFiles.length})`
+                          }
+                        </Label>
+                        {uploadedMediaUrls.length > 0 && !isUploadingMedia && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              const { urls: newUrls, failedIndices } = await uploadFilesImmediately(selectedFiles)
+                              if (newUrls.length > 0) {
+                                setUploadedMediaUrls(prev => [...prev, ...newUrls])
+                                const successfulTypes = selectedFiles
+                                  .filter((_, i) => !failedIndices.includes(i))
+                                  .map(f => f.type)
+                                setUploadedMediaTypes(prev => [...prev, ...successfulTypes])
+                              }
+                              if (failedIndices.length > 0) {
+                                const failedFiles = selectedFiles.filter((_, i) => failedIndices.includes(i))
+                                setSelectedFiles(failedFiles)
+                              } else {
+                                setSelectedFiles([])
+                              }
+                            }}
+                            className="h-6 px-2 text-xs"
+                          >
+                            Retry All
+                          </Button>
+                        )}
+                      </div>
                       <div className="flex gap-2">
                         {selectedPlatforms.includes('instagram') && selectedFiles.length > 1 && (
                           <span className="text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-1 rounded-full font-medium">
