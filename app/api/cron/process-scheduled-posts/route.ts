@@ -158,6 +158,38 @@ async function processScheduledPosts(request: NextRequest) {
       } else {
         console.log('No stuck posts found');
       }
+
+      // Also check for posts stuck in 'processing' status for too long (>30 minutes)
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+
+      const { data: stuckProcessingPosts, error: stuckProcessingError } = await supabase
+        .from('scheduled_posts')
+        .select('id, platforms, updated_at, processing_state')
+        .eq('status', 'processing')
+        .lte('updated_at', thirtyMinutesAgo);
+
+      if (!stuckProcessingError && stuckProcessingPosts && stuckProcessingPosts.length > 0) {
+        console.log(`Found ${stuckProcessingPosts.length} posts stuck in 'processing' status`);
+
+        for (const post of stuckProcessingPosts) {
+          const { error: resetError } = await supabase
+            .from('scheduled_posts')
+            .update({
+              status: 'failed',
+              error_message: 'Instagram video processing timed out after 30 minutes. Please try posting again with shorter videos or fewer media items.',
+              processing_state: null
+            })
+            .eq('id', post.id);
+
+          if (resetError) {
+            console.error(`Failed to reset stuck processing post ${post.id}:`, resetError);
+          } else {
+            console.log(`✅ Marked stuck processing post ${post.id} as failed`);
+          }
+        }
+      } else {
+        console.log('No stuck processing posts found');
+      }
     } catch (stuckError) {
       console.error('Error checking for stuck posts:', stuckError);
     }
@@ -274,14 +306,22 @@ async function processScheduledPosts(request: NextRequest) {
             }
           } catch (error) {
             console.error(`Error processing post ${post.id}:`, error);
-            await supabase
+            const errorMsg = error instanceof Error ? error.message : 'Processing error';
+            const { error: updateError } = await supabase
               .from('scheduled_posts')
               .update({
                 status: 'failed',
-                error_message: error instanceof Error ? error.message : 'Processing error',
+                error_message: errorMsg,
                 processing_state: null
               })
               .eq('id', post.id);
+
+            if (updateError) {
+              console.error(`CRITICAL: Failed to mark processing post ${post.id} as failed:`, updateError);
+              console.error(`Original error: ${errorMsg}`);
+            } else {
+              console.log(`✅ Marked processing post ${post.id} as failed: ${errorMsg}`);
+            }
           }
         }
       } else {
