@@ -880,7 +880,15 @@ function CreateNewPostPageContent() {
                 chunkSize: 6 * 1024 * 1024, // 6MB chunks
                 onError: (error) => {
                   console.error('TUS upload error:', error)
-                  reject(error)
+                  // Show detailed error to help diagnose
+                  const errorMessage = error instanceof Error ? error.message : String(error)
+                  console.error('TUS error details:', {
+                    message: errorMessage,
+                    file: file.name,
+                    size: file.size,
+                    endpoint: `https://${projectRef}.supabase.co/storage/v1/upload/resumable`
+                  })
+                  reject(new Error(`TUS upload failed: ${errorMessage}`))
                 },
                 onSuccess: () => {
                   resolve()
