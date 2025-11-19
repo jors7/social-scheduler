@@ -100,9 +100,15 @@ export default function PostedPostsPage() {
           ? post.platforms.map((p: any) => String(p)).filter((p: string) => p && p !== 'null' && p !== 'undefined')
           : []
 
-        // Normalize media_urls array
+        // Normalize media_urls array - preserve object format for thumbnails
         const safeMediaUrls = Array.isArray(post.media_urls)
-          ? post.media_urls.map((url: any) => String(url)).filter((url: string) => url && url !== 'null' && url !== 'undefined')
+          ? post.media_urls.filter((item: any) => {
+              if (typeof item === 'string') {
+                return item && item !== 'null' && item !== 'undefined'
+              }
+              // Keep objects with url property (which may have thumbnailUrl)
+              return item && typeof item === 'object' && item.url
+            })
           : []
 
         // Normalize media URL strings (ensure they're strings or null, not arrays/objects)
