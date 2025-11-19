@@ -704,7 +704,53 @@ function CreateNewPostPageContent() {
     }
   }, [postContent, selectedPlatforms])
 
-  const togglePlatform = (platformId: string) => {
+  const togglePlatform = async (platformId: string) => {
+    // Check if toggling Twitter ON with existing videos
+    if (platformId === 'twitter' && !selectedPlatforms.includes('twitter')) {
+      // Check if there are uploaded videos or selected video files
+      const hasUploadedVideos = uploadedMediaUrls.some(media => {
+        if (typeof media === 'object' && media.type === 'video') return true
+        const url = typeof media === 'string' ? media : media.url
+        return url.includes('.mp4') || url.includes('.mov') || url.includes('.avi') || url.includes('.webm')
+      })
+
+      const hasSelectedVideos = selectedFiles.some(file => file.type.startsWith('video/'))
+
+      if (hasUploadedVideos || hasSelectedVideos) {
+        // Check duration of selected files (if available)
+        for (const file of selectedFiles) {
+          if (file.type.startsWith('video/')) {
+            try {
+              const duration = await getVideoDuration(file)
+              if (duration > 140) {
+                const minutes = Math.floor(duration / 60)
+                const seconds = Math.floor(duration % 60)
+                toast.error(
+                  `Video "${file.name}" is ${minutes}m ${seconds}s long. Twitter allows max 2 minutes 20 seconds. Please remove the video or use a shorter clip before selecting Twitter.`,
+                  { duration: 8000 }
+                )
+                return // Don't toggle Twitter on
+              }
+            } catch (error) {
+              // Can't check duration, show warning
+              toast.warning(
+                'Twitter only allows videos up to 2 minutes 20 seconds. Please ensure your videos are within this limit.',
+                { duration: 6000 }
+              )
+            }
+          }
+        }
+
+        // If only uploaded videos (no selected files), show warning
+        if (hasUploadedVideos && selectedFiles.length === 0) {
+          toast.warning(
+            'Twitter only allows videos up to 2 minutes 20 seconds. Please ensure your uploaded videos are within this limit.',
+            { duration: 6000 }
+          )
+        }
+      }
+    }
+
     setSelectedPlatforms(prev => {
       // YouTube is exclusive - deselect all others when selecting YouTube
       if (platformId === 'youtube') {
@@ -794,6 +840,26 @@ function CreateNewPostPageContent() {
     return typeof media === 'string' ? media : media.url
   }
 
+  // Helper to get video duration from a file
+  const getVideoDuration = (file: File): Promise<number> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video')
+      video.preload = 'metadata'
+
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src)
+        resolve(video.duration)
+      }
+
+      video.onerror = () => {
+        window.URL.revokeObjectURL(video.src)
+        reject(new Error('Failed to load video metadata'))
+      }
+
+      video.src = URL.createObjectURL(file)
+    })
+  }
+
   // Upload files immediately when selected (for autosave functionality)
   const uploadFilesImmediately = async (files: File[]): Promise<{ urls: (string | { url: string; thumbnailUrl?: string; type?: string })[], failedIndices: number[] }> => {
     if (files.length === 0) return { urls: [], failedIndices: [] }
@@ -821,6 +887,32 @@ function CreateNewPostPageContent() {
             )
             setIsUploadingMedia(false)
             return { urls: [], failedIndices: files.map((_, i) => i) }
+          }
+        }
+      }
+    }
+
+    // Validate video duration for Twitter (max 2 minutes 20 seconds = 140 seconds)
+    if (selectedPlatforms.includes('twitter')) {
+      const TWITTER_VIDEO_DURATION_LIMIT = 140 // 2 minutes 20 seconds
+
+      for (const file of files) {
+        if (file.type.startsWith('video/')) {
+          try {
+            const duration = await getVideoDuration(file)
+            if (duration > TWITTER_VIDEO_DURATION_LIMIT) {
+              const minutes = Math.floor(duration / 60)
+              const seconds = Math.floor(duration % 60)
+              toast.error(
+                `Video "${file.name}" is ${minutes}m ${seconds}s long. Twitter allows max 2 minutes 20 seconds. Please trim your video or deselect Twitter.`,
+                { duration: 8000 }
+              )
+              setIsUploadingMedia(false)
+              return { urls: [], failedIndices: files.map((_, i) => i) }
+            }
+          } catch (error) {
+            console.error('Failed to check video duration:', error)
+            // Continue with upload if we can't check duration - server will reject if too long
           }
         }
       }
