@@ -154,8 +154,8 @@ export default function AdminUsersPage() {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-6">
-            <div className="md:col-span-2">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-6">
+            <div className="sm:col-span-2 lg:col-span-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <Input
@@ -321,7 +321,7 @@ export default function AdminUsersPage() {
 
           {/* Pagination */}
           {!loading && totalPages > 1 && (
-            <div className="flex items-center justify-between px-6 py-3 border-t">
+            <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-3 border-t gap-3">
               <div className="text-sm text-gray-700">
                 Page {page} of {totalPages}
               </div>
@@ -333,7 +333,7 @@ export default function AdminUsersPage() {
                   disabled={page === 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
-                  Previous
+                  <span className="hidden sm:inline">Previous</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -341,7 +341,7 @@ export default function AdminUsersPage() {
                   onClick={() => setPage(Math.min(totalPages, page + 1))}
                   disabled={page === totalPages}
                 >
-                  Next
+                  <span className="hidden sm:inline">Next</span>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>

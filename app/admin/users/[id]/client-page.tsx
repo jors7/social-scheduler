@@ -221,7 +221,7 @@ export default function UserDetailsClient({ userId }: { userId: string }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center space-x-4">
           <Button
             variant="ghost"
@@ -232,26 +232,28 @@ export default function UserDetailsClient({ userId }: { userId: string }) {
             Back
           </Button>
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">User Details</h2>
-            <p className="text-muted-foreground">{user.email}</p>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">User Details</h2>
+            <p className="text-muted-foreground text-sm sm:text-base truncate max-w-[200px] sm:max-w-none">{user.email}</p>
           </div>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button
             variant="destructive"
+            size="sm"
             onClick={handleSuspend}
             disabled={updating}
           >
             <Ban className="h-4 w-4 mr-2" />
-            Suspend Account
+            Suspend
           </Button>
           <Button
             variant="outline"
+            size="sm"
             onClick={handleActivate}
             disabled={updating}
           >
             <CheckCircle className="h-4 w-4 mr-2" />
-            Activate Account
+            Activate
           </Button>
         </div>
       </div>
@@ -404,7 +406,7 @@ export default function UserDetailsClient({ userId }: { userId: string }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
             <div className="flex items-center space-x-4">
               <div className="p-3 bg-blue-100 rounded-lg">
                 <FileText className="h-6 w-6 text-blue-600" />
