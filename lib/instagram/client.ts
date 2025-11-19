@@ -1099,6 +1099,45 @@ export class InstagramClient {
       const { id: carouselId } = await carouselResponse.json();
       console.log('Carousel container created with ID:', carouselId);
 
+      // Wait for carousel container to be ready before publishing
+      // This is critical - even though item containers are FINISHED, the carousel container needs time
+      console.log('Waiting for carousel container to be ready...');
+      let attempts = 0;
+      const maxAttempts = 30; // 30 attempts * 2 seconds = 1 minute max
+      let isReady = false;
+
+      while (attempts < maxAttempts && !isReady) {
+        attempts++;
+        const statusUrl = `${this.baseURL}/${carouselId}?fields=status_code&access_token=${this.accessToken}`;
+        const statusResponse = await fetch(statusUrl);
+
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+          console.log(`Carousel container status check ${attempts}: ${statusData.status_code || 'IN_PROGRESS'}`);
+
+          if (statusData.status_code === 'FINISHED') {
+            isReady = true;
+            console.log('Carousel container ready for publishing');
+          } else if (statusData.status_code === 'ERROR') {
+            throw new Error(`Carousel container processing failed: ${JSON.stringify(statusData)}`);
+          } else {
+            // Still processing, wait 2 seconds
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        } else {
+          console.warn('Failed to check carousel container status');
+          // Wait and try again
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+
+      if (!isReady) {
+        console.warn('Carousel container timeout, attempting to publish anyway...');
+      }
+
+      // Add small delay before publish to ensure Instagram is fully ready
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       // Publish carousel
       const publishParams = new URLSearchParams({
         creation_id: carouselId,
