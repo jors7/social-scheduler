@@ -298,15 +298,52 @@ export async function postToInstagramDirect(
 
     console.log('[Instagram] Normalized media URLs:', normalizedMediaUrls);
 
+    if (!normalizedMediaUrls || normalizedMediaUrls.length === 0) {
+      throw new Error('Instagram posts require at least one media file');
+    }
+
+    // Check if this is a carousel with videos (needs two-phase processing)
+    const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
+    const isCarousel = normalizedMediaUrls.length >= 2 && !options?.isStory && !options?.isReel;
+    const hasVideos = normalizedMediaUrls.some(url =>
+      videoExtensions.some(ext => url.toLowerCase().includes(ext))
+    );
+
+    if (isCarousel && hasVideos) {
+      // Use two-phase processing for carousels with videos
+      console.log('[Instagram] Using two-phase processing for carousel with videos');
+
+      const { InstagramClient } = await import('@/lib/instagram/client');
+      const instagramClient = new InstagramClient({
+        accessToken: account.access_token,
+        userID: account.platform_user_id,
+        appSecret: process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET
+      });
+
+      // Prepare media items with type detection
+      const mediaItems = normalizedMediaUrls.map(url => ({
+        url,
+        isVideo: videoExtensions.some(ext => url.toLowerCase().includes(ext))
+      }));
+
+      // Phase 1: Create containers only
+      const { containerIds } = await instagramClient.createCarouselContainersOnly(mediaItems);
+
+      // Return special result indicating two-phase processing
+      return {
+        success: true,
+        twoPhase: true,
+        containerIds,
+        message: 'Carousel containers created, waiting for video processing'
+      };
+    }
+
+    // Standard single-phase processing for non-video carousels or single posts
     const instagramService = new InstagramService({
       accessToken: account.access_token,
       userID: account.platform_user_id,
       appSecret: process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET
     });
-
-    if (!normalizedMediaUrls || normalizedMediaUrls.length === 0) {
-      throw new Error('Instagram posts require at least one media file');
-    }
 
     const result = await instagramService.createPost({
       caption: content,

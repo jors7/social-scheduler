@@ -57,17 +57,41 @@ export class TwitterService {
       };
     } catch (error: any) {
       console.error('Error posting tweet:', error);
-      
+
       // Check for rate limit errors
       if (error.code === 429) {
         throw new Error('Twitter rate limit exceeded. Please try again later.');
       }
-      
+
       // Check for authentication errors
       if (error.code === 401) {
         throw new Error('Twitter authentication failed. Please reconnect your account.');
       }
-      
+
+      // Check for forbidden errors (403) with detailed message
+      if (error.code === 403) {
+        // Parse the detailed error message from Twitter
+        const detail = error.data?.detail || error.message || 'Action forbidden';
+
+        // Common 403 error messages
+        if (detail.includes('video longer than')) {
+          throw new Error('Twitter video limit: Your account can only post videos up to 2 minutes 20 seconds. Please trim your video or use a shorter clip.');
+        }
+        if (detail.includes('duplicate')) {
+          throw new Error('Twitter does not allow duplicate tweets. Please modify your content.');
+        }
+        if (detail.includes('suspended')) {
+          throw new Error('Your Twitter account may be suspended. Please check your account status on Twitter.');
+        }
+
+        throw new Error(`Twitter error: ${detail}`);
+      }
+
+      // Check for media errors
+      if (error.data?.detail) {
+        throw new Error(`Twitter error: ${error.data.detail}`);
+      }
+
       // Generic error
       throw new Error('Failed to post tweet. Please try again.');
     }

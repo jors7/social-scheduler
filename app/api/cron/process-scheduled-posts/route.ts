@@ -126,6 +126,171 @@ async function processScheduledPosts(request: NextRequest) {
       // Continue with post processing even if refresh fails
     }
 
+    // Recover posts stuck in 'posting' status for more than 10 minutes
+    console.log('=== Checking for stuck posts ===');
+    try {
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+
+      const { data: stuckPosts, error: stuckError } = await supabase
+        .from('scheduled_posts')
+        .select('id, platforms, updated_at')
+        .eq('status', 'posting')
+        .lte('updated_at', tenMinutesAgo);
+
+      if (!stuckError && stuckPosts && stuckPosts.length > 0) {
+        console.log(`Found ${stuckPosts.length} posts stuck in 'posting' status`);
+
+        for (const post of stuckPosts) {
+          const { error: resetError } = await supabase
+            .from('scheduled_posts')
+            .update({
+              status: 'failed',
+              error_message: 'Post processing timed out after 10 minutes. The post may have been partially published - please check your social media accounts and try again.'
+            })
+            .eq('id', post.id);
+
+          if (resetError) {
+            console.error(`Failed to reset stuck post ${post.id}:`, resetError);
+          } else {
+            console.log(`✅ Marked stuck post ${post.id} as failed`);
+          }
+        }
+      } else {
+        console.log('No stuck posts found');
+      }
+    } catch (stuckError) {
+      console.error('Error checking for stuck posts:', stuckError);
+    }
+
+    // Process posts in 'processing' status (Phase 2 of two-phase posting)
+    console.log('=== Checking for processing posts (Phase 2) ===');
+    try {
+      const { data: processingPosts, error: processingError } = await supabase
+        .from('scheduled_posts')
+        .select('*')
+        .eq('status', 'processing')
+        .limit(5);
+
+      if (!processingError && processingPosts && processingPosts.length > 0) {
+        console.log(`Found ${processingPosts.length} posts in processing status`);
+
+        const { InstagramClient } = await import('@/lib/instagram/client');
+
+        for (const post of processingPosts) {
+          try {
+            const processingState = post.processing_state;
+            if (!processingState || !processingState.container_ids) {
+              console.log(`Post ${post.id} has no processing state, marking as failed`);
+              await supabase
+                .from('scheduled_posts')
+                .update({
+                  status: 'failed',
+                  error_message: 'Invalid processing state'
+                })
+                .eq('id', post.id);
+              continue;
+            }
+
+            // Get the Instagram account
+            const { data: accounts } = await supabase
+              .from('social_accounts')
+              .select('*')
+              .eq('user_id', post.user_id)
+              .eq('platform', 'instagram')
+              .eq('is_active', true)
+              .limit(1);
+
+            if (!accounts || accounts.length === 0) {
+              throw new Error('Instagram account not found');
+            }
+
+            const account = accounts[0];
+            const instagramClient = new InstagramClient({
+              accessToken: account.access_token,
+              userID: account.platform_user_id,
+              appSecret: process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET
+            });
+
+            // Check if containers are ready
+            const { allReady, statuses } = await instagramClient.checkCarouselContainersReady(
+              processingState.container_ids
+            );
+
+            if (allReady) {
+              console.log(`Post ${post.id}: All containers ready, publishing...`);
+
+              // Get caption
+              const content = cleanHtmlContent(post.platform_content?.instagram || post.content);
+
+              // Publish the carousel
+              const result = await instagramClient.publishCarouselFromContainers(
+                processingState.container_ids,
+                content
+              );
+
+              // Mark as posted
+              await supabase
+                .from('scheduled_posts')
+                .update({
+                  status: 'posted',
+                  posted_at: new Date().toISOString(),
+                  post_results: [{ platform: 'instagram', success: true, id: result.id }],
+                  processing_state: null
+                })
+                .eq('id', post.id);
+
+              console.log(`✅ Post ${post.id} published to Instagram`);
+            } else {
+              // Check attempt count
+              const attempts = (processingState.attempts || 0) + 1;
+              const maxAttempts = 30; // 30 cron runs = ~30 minutes with 1-minute intervals
+
+              if (attempts >= maxAttempts) {
+                console.log(`Post ${post.id}: Max attempts reached, marking as failed`);
+                await supabase
+                  .from('scheduled_posts')
+                  .update({
+                    status: 'failed',
+                    error_message: 'Instagram video processing timed out after 30 minutes',
+                    processing_state: null
+                  })
+                  .eq('id', post.id);
+              } else {
+                // Update attempt count
+                await supabase
+                  .from('scheduled_posts')
+                  .update({
+                    processing_state: {
+                      ...processingState,
+                      attempts,
+                      last_check: new Date().toISOString(),
+                      statuses
+                    }
+                  })
+                  .eq('id', post.id);
+
+                console.log(`Post ${post.id}: Still processing (attempt ${attempts}/${maxAttempts})`);
+              }
+            }
+          } catch (error) {
+            console.error(`Error processing post ${post.id}:`, error);
+            await supabase
+              .from('scheduled_posts')
+              .update({
+                status: 'failed',
+                error_message: error instanceof Error ? error.message : 'Processing error',
+                processing_state: null
+              })
+              .eq('id', post.id);
+          }
+        }
+      } else {
+        console.log('No posts in processing status');
+      }
+    } catch (phase2Error) {
+      console.error('Error in phase 2 processing:', phase2Error);
+    }
+
     // Find posts that are due to be posted
     const now = new Date().toISOString();
     console.log('Querying for posts due before:', now);
@@ -279,6 +444,7 @@ async function processScheduledPosts(request: NextRequest) {
 
         // Create a mock request context for the posting service
         const postResults = [];
+        let twoPhaseTriggered = false;
 
         // Post to each platform
         for (const platform of post.platforms) {
@@ -366,6 +532,48 @@ async function processScheduledPosts(request: NextRequest) {
                 continue;
             }
 
+            // Handle two-phase processing for Instagram carousels with videos
+            if ((result as any).twoPhase) {
+              console.log(`[Two-Phase] Instagram carousel needs processing, setting status to 'processing'`);
+
+              // Update post to processing status with container IDs
+              const { error: processingError } = await supabase
+                .from('scheduled_posts')
+                .update({
+                  status: 'processing',
+                  processing_state: {
+                    container_ids: (result as any).containerIds,
+                    platform: 'instagram',
+                    phase: 'waiting_for_containers',
+                    attempts: 0,
+                    created_at: new Date().toISOString()
+                  }
+                })
+                .eq('id', post.id);
+
+              if (processingError) {
+                console.error(`Failed to set processing status:`, processingError);
+                postResults.push({
+                  platform,
+                  success: false,
+                  error: `Failed to save processing state: ${processingError.message}`
+                });
+              } else {
+                // Return early from this post - it will be processed in the next cron run
+                results.push({
+                  postId: post.id,
+                  success: true,
+                  platforms: [],
+                  message: 'Instagram carousel containers created, waiting for video processing'
+                });
+
+                // Set flag and break to skip success/failed check
+                twoPhaseTriggered = true;
+                break;
+              }
+              continue;
+            }
+
             postResults.push({
               platform,
               success: true,
@@ -389,6 +597,11 @@ async function processScheduledPosts(request: NextRequest) {
               error: `${errorMsg} (${debugUrl})`
             });
           }
+        }
+
+        // Skip success/failed check if two-phase processing was triggered
+        if (twoPhaseTriggered) {
+          continue; // Move to next post
         }
 
         // Check if all posts were successful
