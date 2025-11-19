@@ -270,7 +270,7 @@ export async function postToBlueskyDirect(content: string, account: any, mediaUr
 export async function postToInstagramDirect(
   content: string,
   account: any,
-  mediaUrls?: string[],
+  mediaUrls?: any[],
   options?: {
     isStory?: boolean;
     isReel?: boolean;
@@ -284,19 +284,33 @@ export async function postToInstagramDirect(
   console.log('Is reel:', options?.isReel || false);
 
   try {
+    // Normalize mediaUrls - extract URL strings from objects if needed
+    const normalizedMediaUrls: string[] | undefined = mediaUrls?.map(item => {
+      if (typeof item === 'string') {
+        return item;  // Already a string
+      } else if (item && typeof item === 'object' && item.url) {
+        return item.url;  // Extract URL from object
+      } else {
+        console.error('[Instagram] Invalid media URL format:', item);
+        return '';  // Return empty string for invalid items
+      }
+    }).filter(url => url !== '');  // Remove any empty strings
+
+    console.log('[Instagram] Normalized media URLs:', normalizedMediaUrls);
+
     const instagramService = new InstagramService({
       accessToken: account.access_token,
       userID: account.platform_user_id,
       appSecret: process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET
     });
 
-    if (!mediaUrls || mediaUrls.length === 0) {
+    if (!normalizedMediaUrls || normalizedMediaUrls.length === 0) {
       throw new Error('Instagram posts require at least one media file');
     }
 
     const result = await instagramService.createPost({
       caption: content,
-      mediaUrls: mediaUrls,
+      mediaUrls: normalizedMediaUrls,
       isStory: options?.isStory,
       isReel: options?.isReel
     });

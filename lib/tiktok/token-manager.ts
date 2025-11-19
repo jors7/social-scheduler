@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 const TIKTOK_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
 const CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY || '';
@@ -25,14 +26,20 @@ interface TokenRefreshResult {
  * TikTok tokens expire after 24 hours, refresh if:
  * - Token is expired
  * - Token expires within 2 hours
+ * @param accountId - The social account ID
+ * @param supabaseClient - Optional Supabase client (use service role client for cron jobs)
  */
-export async function checkTikTokTokenExpiry(accountId: string): Promise<{
+export async function checkTikTokTokenExpiry(
+  accountId: string,
+  supabaseClient?: SupabaseClient
+): Promise<{
   needsRefresh: boolean;
   isExpired: boolean;
   account: TikTokAccount | null;
 }> {
   try {
-    const supabase = await createClient();
+    // Use provided client or create a new one (with user auth context)
+    const supabase = supabaseClient || await createClient();
 
     const { data: account, error } = await supabase
       .from('social_accounts')
@@ -82,8 +89,13 @@ export async function checkTikTokTokenExpiry(accountId: string): Promise<{
 /**
  * Refresh a TikTok access token using the refresh token
  * TikTok v2 API uses refresh_token grant type
+ * @param account - The TikTok account to refresh
+ * @param supabaseClient - Optional Supabase client (use service role client for cron jobs)
  */
-export async function refreshTikTokToken(account: TikTokAccount): Promise<TokenRefreshResult> {
+export async function refreshTikTokToken(
+  account: TikTokAccount,
+  supabaseClient?: SupabaseClient
+): Promise<TokenRefreshResult> {
   try {
     if (!account.refresh_token) {
       console.error('[TikTok Token Manager] No refresh token available for account:', account.id);
@@ -136,7 +148,8 @@ export async function refreshTikTokToken(account: TikTokAccount): Promise<TokenR
     const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
     // Update the token in the database
-    const supabase = await createClient();
+    // Use provided client or create a new one (with user auth context)
+    const supabase = supabaseClient || await createClient();
     const { error: updateError } = await supabase
       .from('social_accounts')
       .update({

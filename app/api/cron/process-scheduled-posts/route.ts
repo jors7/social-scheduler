@@ -103,11 +103,13 @@ async function processScheduledPosts(request: NextRequest) {
         const { checkTikTokTokenExpiry, refreshTikTokToken } = await import('@/lib/tiktok/token-manager');
 
         for (const account of expiringAccounts) {
-          const { needsRefresh, account: fullAccount } = await checkTikTokTokenExpiry(account.id);
+          // Pass the service role supabase client to bypass RLS
+          const { needsRefresh, account: fullAccount } = await checkTikTokTokenExpiry(account.id, supabase);
 
           if (needsRefresh && fullAccount) {
             console.log(`Refreshing token for TikTok account: ${account.username || account.id}`);
-            const { success, error } = await refreshTikTokToken(fullAccount);
+            // Pass the service role supabase client to bypass RLS
+            const { success, error } = await refreshTikTokToken(fullAccount, supabase);
 
             if (success) {
               console.log(`✅ Successfully refreshed token for ${account.username || account.id}`);
