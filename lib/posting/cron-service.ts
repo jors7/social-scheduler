@@ -436,6 +436,18 @@ export async function postToTwitterDirect(content: string, account: any, mediaUr
   console.log('Has media:', !!mediaUrls && mediaUrls.length > 0);
 
   try {
+    // Extract thumbnail URL from the first video media object (if any)
+    let thumbnailUrl: string | undefined;
+    if (mediaUrls && mediaUrls.length > 0) {
+      for (const item of mediaUrls) {
+        if (item && typeof item === 'object' && item.thumbnailUrl) {
+          thumbnailUrl = item.thumbnailUrl;
+          console.log('[Twitter] Found video thumbnail:', thumbnailUrl);
+          break;
+        }
+      }
+    }
+
     // Normalize mediaUrls - extract URL strings from objects if needed
     const normalizedMediaUrls: string[] | undefined = mediaUrls?.map(item => {
       if (typeof item === 'string') {
@@ -474,6 +486,7 @@ export async function postToTwitterDirect(content: string, account: any, mediaUr
       return {
         success: true,
         id: result.id,
+        thumbnailUrl, // Include thumbnail URL for video posts
         message: 'Posted to Twitter with media successfully'
       };
     } else {
