@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, Suspense, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { toast } from 'sonner'
+import * as tus from 'tus-js-client'
 import { PostingService, PostData } from '@/lib/posting/service'
 import { PostingProgressTracker } from '@/lib/posting/progress-tracker'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -341,10 +342,11 @@ function CreateNewPostPageContent() {
   const [showPreview, setShowPreview] = useState(false)
   const [isPosting, setIsPosting] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
-  const [uploadedMediaUrls, setUploadedMediaUrls] = useState<(string | { url: string; thumbnailUrl?: string; type?: string })[]>([])
+  const [uploadedMediaUrls, setUploadedMediaUrls] = useState<(string | { url: string; thumbnailUrl?: string; type?: string; name?: string; size?: number })[]>([])
   const [uploadedMediaTypes, setUploadedMediaTypes] = useState<string[]>([])
   const [isUploadingMedia, setIsUploadingMedia] = useState(false)
   const [hasUploadFailed, setHasUploadFailed] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 })
   const [loadingDraft, setLoadingDraft] = useState(false)
   const [editingScheduledPost, setEditingScheduledPost] = useState(false)
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
@@ -828,14 +830,15 @@ function CreateNewPostPageContent() {
     const hasVideos = files.some(file => file.type.startsWith('video/'))
     const shouldGenerateThumbnails = selectedPlatforms.includes('tiktok') || hasVideos
 
-    toast.info(`Uploading ${files.length} file(s)...`)
+    // Set initial progress
+    setUploadProgress({ current: 0, total: files.length })
 
     // Helper function to upload a single file with retry
     const uploadSingleFile = async (
       file: File,
       index: number,
       maxRetries: number = 3
-    ): Promise<{ index: number; result: string | { url: string; thumbnailUrl?: string; type?: string } | null }> => {
+    ): Promise<{ index: number; result: string | { url: string; thumbnailUrl?: string; type?: string; name?: string; size?: number } | null }> => {
       let lastError: Error | null = null
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -846,25 +849,52 @@ function CreateNewPostPageContent() {
           const fileExt = file.name.split('.').pop()
           const fileName = `${user.id}/${timestamp}-${randomString}.${fileExt}`
 
-          // Use signed upload URL for large files (>50MB) for better reliability
+          // Use TUS protocol for large files (>50MB) for resumable uploads
           const LARGE_FILE_THRESHOLD = 50 * 1024 * 1024 // 50MB
 
           if (file.size > LARGE_FILE_THRESHOLD) {
-            // Create signed upload URL for resumable upload
-            const { data: signedData, error: signError } = await supabase.storage
-              .from('post-media')
-              .createSignedUploadUrl(fileName)
+            // Get session for auth token
+            const { data: { session } } = await supabase.auth.getSession()
+            if (!session) throw new Error('No session for TUS upload')
 
-            if (signError) throw signError
+            // Use TUS protocol for large file upload
+            const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0]
+            if (!projectRef) throw new Error('Could not determine Supabase project ref')
 
-            // Upload using signed URL (handles large files better)
-            const { error } = await supabase.storage
-              .from('post-media')
-              .uploadToSignedUrl(fileName, signedData.token, file, {
-                upsert: false
+            await new Promise<void>((resolve, reject) => {
+              const upload = new tus.Upload(file, {
+                endpoint: `https://${projectRef}.supabase.co/storage/v1/upload/resumable`,
+                retryDelays: [0, 1000, 3000, 5000],
+                headers: {
+                  authorization: `Bearer ${session.access_token}`,
+                  'x-upsert': 'false',
+                },
+                uploadDataDuringCreation: true,
+                removeFingerprintOnSuccess: true,
+                metadata: {
+                  bucketName: 'post-media',
+                  objectName: fileName,
+                  contentType: file.type,
+                  cacheControl: '3600',
+                },
+                chunkSize: 6 * 1024 * 1024, // 6MB chunks
+                onError: (error) => {
+                  console.error('TUS upload error:', error)
+                  reject(error)
+                },
+                onSuccess: () => {
+                  resolve()
+                },
               })
 
-            if (error) throw error
+              // Check for previous uploads and resume if found
+              upload.findPreviousUploads().then((previousUploads) => {
+                if (previousUploads.length) {
+                  upload.resumeFromPreviousUpload(previousUploads[0])
+                }
+                upload.start()
+              })
+            })
           } else {
             // Standard upload for smaller files
             const { error } = await supabase.storage
@@ -903,7 +933,7 @@ function CreateNewPostPageContent() {
 
                   return {
                     index,
-                    result: { url: publicUrl, thumbnailUrl: thumbUrl, type: 'video' }
+                    result: { url: publicUrl, thumbnailUrl: thumbUrl, type: 'video', name: file.name, size: file.size }
                   }
                 }
               }
@@ -911,12 +941,12 @@ function CreateNewPostPageContent() {
               console.error('Failed to extract video thumbnail:', thumbError)
             }
             // Video uploaded but thumbnail failed - still success
-            return { index, result: { url: publicUrl, type: 'video' } }
+            return { index, result: { url: publicUrl, type: 'video', name: file.name, size: file.size } }
           } else if (isVideoFile(file)) {
-            return { index, result: { url: publicUrl, type: 'video' } }
+            return { index, result: { url: publicUrl, type: 'video', name: file.name, size: file.size } }
           } else {
-            // Image file
-            return { index, result: publicUrl }
+            // Image file - include metadata
+            return { index, result: { url: publicUrl, type: 'image', name: file.name, size: file.size } }
           }
         } catch (error) {
           lastError = error as Error
@@ -937,7 +967,7 @@ function CreateNewPostPageContent() {
 
     // Process files in parallel batches
     const BATCH_SIZE = 3
-    const results: { index: number; result: string | { url: string; thumbnailUrl?: string; type?: string } | null }[] = []
+    const results: { index: number; result: string | { url: string; thumbnailUrl?: string; type?: string; name?: string; size?: number } | null }[] = []
 
     for (let i = 0; i < files.length; i += BATCH_SIZE) {
       const batch = files.slice(i, i + BATCH_SIZE)
@@ -947,10 +977,13 @@ function CreateNewPostPageContent() {
 
       const batchResults = await Promise.all(batchPromises)
       results.push(...batchResults)
+
+      // Update progress after each batch
+      setUploadProgress({ current: Math.min(i + batch.length, files.length), total: files.length })
     }
 
     // Separate successful uploads and failures
-    const uploadedUrls: (string | { url: string; thumbnailUrl?: string; type?: string })[] = []
+    const uploadedUrls: (string | { url: string; thumbnailUrl?: string; type?: string; name?: string; size?: number })[] = []
     const failedIndices: number[] = []
 
     // Sort by index to maintain order
@@ -3596,7 +3629,12 @@ function CreateNewPostPageContent() {
                     <div className="flex items-center justify-center gap-3">
                       <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
                       <div>
-                        <p className="text-sm font-medium text-blue-700">Uploading media...</p>
+                        <p className="text-sm font-medium text-blue-700">
+                          {uploadProgress.total > 0
+                            ? `Uploading ${uploadProgress.current}/${uploadProgress.total} files...`
+                            : 'Uploading media...'
+                          }
+                        </p>
                         <p className="text-xs text-blue-600">Please wait while your files are being uploaded</p>
                       </div>
                     </div>
@@ -3808,20 +3846,39 @@ function CreateNewPostPageContent() {
                             const id = url + index
                             // Detect if URL is a video based on file extension
                             const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v']
-                            const isVideo = typeof url === 'string' && videoExtensions.some(ext => url.toLowerCase().includes(ext))
+                            const isVideo = typeof media === 'object' && media.type === 'video' ||
+                              (typeof url === 'string' && videoExtensions.some(ext => url.toLowerCase().includes(ext)))
+                            // Get metadata if available
+                            const fileName = typeof media === 'object' && media.name ? media.name : undefined
+                            const fileSize = typeof media === 'object' && media.size ? media.size : undefined
 
                             return (
-                              <SortableMediaItem
-                                key={id}
-                                id={id}
-                                url={url}
-                                index={index}
-                                isVideo={isVideo}
-                                onRemove={() => {
-                                  setUploadedMediaUrls(prev => prev.filter((_, i) => i !== index))
-                                  toast.info('Media removed from post')
-                                }}
-                              />
+                              <div key={id} className="flex flex-col">
+                                <SortableMediaItem
+                                  id={id}
+                                  url={url}
+                                  index={index}
+                                  isVideo={isVideo}
+                                  onRemove={() => {
+                                    setUploadedMediaUrls(prev => prev.filter((_, i) => i !== index))
+                                    toast.info('Media removed from post')
+                                  }}
+                                />
+                                {(fileName || fileSize) && (
+                                  <div className="mt-1">
+                                    {fileName && (
+                                      <p className="text-xs text-gray-700 truncate" title={fileName}>
+                                        {fileName}
+                                      </p>
+                                    )}
+                                    {fileSize && (
+                                      <p className="text-xs text-gray-500">
+                                        {(fileSize / 1024 / 1024).toFixed(1)} MB
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             )
                           })}
                         </SortableContext>
