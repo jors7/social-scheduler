@@ -266,7 +266,7 @@ async function processScheduledPosts(request: NextRequest) {
                 .update({
                   status: 'posted',
                   posted_at: new Date().toISOString(),
-                  post_results: [{ platform: 'instagram', success: true, id: result.id }],
+                  post_results: [{ platform: 'instagram', success: true, postId: result.id }],
                   processing_state: null
                 })
                 .eq('id', post.id);

@@ -501,18 +501,35 @@ export default function PostedPostsPage() {
                 // Helper function to get media URL (prioritize platform-fetched media URL)
                 const getMediaUrl = () => {
                   // Use platform-fetched media URL if available (includes Pinterest)
-                  if (post.platform_media_url) {
-                    return post.platform_media_url
+                  if (post.platform_media_url && typeof post.platform_media_url === 'string') {
+                    return post.platform_media_url.trim()
                   }
 
                   // Fallback to pinterest_media_url for backwards compatibility
-                  if (post.pinterest_media_url) {
-                    return post.pinterest_media_url
+                  if (post.pinterest_media_url && typeof post.pinterest_media_url === 'string') {
+                    return post.pinterest_media_url.trim()
                   }
 
                   // Otherwise use the first media URL from the array
                   if (post.media_urls && post.media_urls.length > 0) {
-                    return post.media_urls[0]
+                    const firstMedia = post.media_urls[0]
+
+                    // If it's a string URL, return it directly
+                    if (typeof firstMedia === 'string' && firstMedia.trim() !== '') {
+                      return firstMedia.trim()
+                    }
+
+                    // If it's an object with URL properties (new format with thumbnails)
+                    if (firstMedia && typeof firstMedia === 'object') {
+                      // Prefer thumbnail if available
+                      if ('thumbnailUrl' in firstMedia && typeof firstMedia.thumbnailUrl === 'string') {
+                        return firstMedia.thumbnailUrl.trim()
+                      }
+                      // Fall back to URL
+                      if ('url' in firstMedia && typeof firstMedia.url === 'string') {
+                        return firstMedia.url.trim()
+                      }
+                    }
                   }
 
                   return null

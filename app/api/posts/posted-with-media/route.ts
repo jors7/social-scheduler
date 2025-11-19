@@ -210,7 +210,16 @@ export async function GET(request: NextRequest) {
           const firstMedia = post.media_urls[0]
           if (typeof firstMedia === 'string' && firstMedia.trim() !== '') {
             platformMediaUrl = firstMedia.trim()
-            console.log('Using fallback media_urls for post:', post.id)
+            console.log('Using fallback media_urls (string) for post:', post.id)
+          } else if (firstMedia && typeof firstMedia === 'object') {
+            // Handle object format: { url: '...', thumbnailUrl: '...' }
+            if (firstMedia.thumbnailUrl && typeof firstMedia.thumbnailUrl === 'string') {
+              platformMediaUrl = firstMedia.thumbnailUrl.trim()
+              console.log('Using fallback media_urls (thumbnailUrl) for post:', post.id)
+            } else if (firstMedia.url && typeof firstMedia.url === 'string') {
+              platformMediaUrl = firstMedia.url.trim()
+              console.log('Using fallback media_urls (url) for post:', post.id)
+            }
           }
         }
 
