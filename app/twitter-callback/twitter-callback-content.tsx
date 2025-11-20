@@ -13,17 +13,6 @@ export default function TwitterCallbackContent() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  
-  useEffect(() => {
-    // Check if we got OAuth parameters from Twitter
-    const oauthToken = searchParams.get('oauth_token')
-    const oauthVerifier = searchParams.get('oauth_verifier')
-    
-    if (oauthToken && oauthVerifier) {
-      // We have the callback parameters, redirect to our API
-      window.location.href = `/api/auth/twitter/callback?oauth_token=${oauthToken}&oauth_verifier=${oauthVerifier}`
-    }
-  }, [searchParams])
 
   const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
