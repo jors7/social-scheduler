@@ -270,18 +270,41 @@ async function processScheduledPosts(request: NextRequest) {
                 content
               );
 
-              // Mark as posted
-              await supabase
-                .from('scheduled_posts')
-                .update({
-                  status: 'posted',
-                  posted_at: new Date().toISOString(),
-                  post_results: [{ platform: 'instagram', success: true, postId: result.id }],
-                  processing_state: null
-                })
-                .eq('id', post.id);
+              // Check if there are remaining accounts to process
+              const remainingAccounts = processingState.remaining_accounts || [];
 
-              console.log(`✅ Post ${post.id} published to Instagram`);
+              if (remainingAccounts.length > 0) {
+                console.log(`[Phase 2] ✅ Published to ${processingState.account_label || 'Instagram'}`);
+                console.log(`[Phase 2] Queueing ${remainingAccounts.length} remaining account(s): ${remainingAccounts.join(', ')}`);
+
+                // Reset post to pending status with only remaining accounts selected
+                await supabase
+                  .from('scheduled_posts')
+                  .update({
+                    status: 'pending',
+                    selected_accounts: {
+                      ...post.selected_accounts,
+                      instagram: remainingAccounts
+                    },
+                    processing_state: null
+                  })
+                  .eq('id', post.id);
+
+                console.log(`✅ Post ${post.id} published to ${processingState.account_label || 'Instagram'}, ${remainingAccounts.length} account(s) remaining`);
+              } else {
+                // No remaining accounts - mark as fully posted
+                await supabase
+                  .from('scheduled_posts')
+                  .update({
+                    status: 'posted',
+                    posted_at: new Date().toISOString(),
+                    post_results: [{ platform: 'instagram', success: true, postId: result.id }],
+                    processing_state: null
+                  })
+                  .eq('id', post.id);
+
+                console.log(`✅ Post ${post.id} published to Instagram (all accounts completed)`);
+              }
             } else {
               // Check attempt count
               const attempts = (processingState.attempts || 0) + 1;
@@ -606,9 +629,16 @@ async function processScheduledPosts(request: NextRequest) {
 
             // Handle two-phase processing for Instagram carousels with videos
             if ((result as any).twoPhase) {
-              console.log(`[Two-Phase] Instagram carousel needs processing, setting status to 'processing'`);
+              console.log(`[Two-Phase] Instagram carousel needs processing for ${platformLabel}`);
 
-              // Update post to processing status with container IDs
+              // Calculate remaining accounts to process after this one
+              const currentIndex = accountsToPost.indexOf(account);
+              const remainingAccounts = accountsToPost.slice(currentIndex + 1).map(a => a.id);
+
+              console.log(`[Two-Phase] Current account: ${account.id} (${platformLabel})`);
+              console.log(`[Two-Phase] Remaining accounts: ${remainingAccounts.length > 0 ? remainingAccounts.join(', ') : 'none'}`);
+
+              // Update post to processing status with container IDs and account tracking
               const { error: processingError } = await supabase
                 .from('scheduled_posts')
                 .update({
@@ -616,6 +646,9 @@ async function processScheduledPosts(request: NextRequest) {
                   processing_state: {
                     container_ids: (result as any).containerIds,
                     platform: 'instagram',
+                    account_id: account.id,
+                    account_label: platformLabel,
+                    remaining_accounts: remainingAccounts,
                     phase: 'waiting_for_containers',
                     attempts: 0,
                     created_at: new Date().toISOString()
