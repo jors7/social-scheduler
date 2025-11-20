@@ -131,13 +131,14 @@ export async function POST(request: NextRequest) {
         access_secret: 'hidden' 
       });
       
-      // Check if this account already exists
+      // Check if this specific Twitter account already exists
       const { data: existingAccount } = await supabase
         .from('social_accounts')
         .select('id')
         .eq('user_id', user.id)
         .eq('platform', 'twitter')
-        .single();
+        .eq('platform_user_id', platformUserId)
+        .maybeSingle();
 
       let data;
       if (existingAccount) {
