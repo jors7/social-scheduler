@@ -1273,7 +1273,7 @@ export default function SettingsContent() {
                 className="text-center text-lg tracking-widest"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                After authorizing on Twitter, you'll see a 7-digit PIN. Enter it here.
+                After authorizing on Twitter, you&apos;ll see a 7-digit PIN. Enter it here.
               </p>
             </div>
           </div>
