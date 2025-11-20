@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse tags
-    const tagArray = tags ? tags.split(',').map(tag => tag.trim()).filter(Boolean) : undefined;
+    const tagArray = tags ? tags.split(',').map((tag: string) => tag.trim()).filter(Boolean) : undefined;
 
     // Create YouTube service with user ID for token refresh
     const youtubeService = new YouTubeService(account.access_token, account.refresh_token, user.id);
