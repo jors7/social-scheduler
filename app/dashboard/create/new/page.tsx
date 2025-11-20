@@ -530,6 +530,10 @@ function CreateNewPostPageContent() {
   const [youtubeThumbnailFile, setYoutubeThumbnailFile] = useState<File | null>(null)
   const [youtubeAsShort, setYoutubeAsShort] = useState(false)
 
+  // YouTube video metadata and validation
+  const [youtubeVideoMetadata, setYoutubeVideoMetadata] = useState<any>(null)
+  const [youtubeShortsValidation, setYoutubeShortsValidation] = useState<any>(null)
+
   // Debug YouTube state changes
   useEffect(() => {
     console.log('YouTube state updated:', {
@@ -539,6 +543,74 @@ function CreateNewPostPageContent() {
       hasTitle: !!(youtubeTitle && youtubeTitle.trim())
     })
   }, [youtubeVideoFile, youtubeTitle])
+
+  // Extract video metadata when video file changes
+  useEffect(() => {
+    let mounted = true
+
+    async function extractMetadata() {
+      if (!youtubeVideoFile) {
+        setYoutubeVideoMetadata(null)
+        setYoutubeShortsValidation(null)
+        return
+      }
+
+      try {
+        const { extractVideoMetadata } = await import('@/lib/utils/video-metadata')
+        const { validateShorts, shouldSuggestAsShort } = await import('@/lib/youtube/shorts-validation')
+
+        const metadata = await extractVideoMetadata(youtubeVideoFile)
+
+        if (mounted) {
+          setYoutubeVideoMetadata(metadata)
+
+          // Validate if currently set as Short
+          if (youtubeAsShort) {
+            const validation = validateShorts(metadata)
+            setYoutubeShortsValidation(validation)
+          }
+
+          // Auto-suggest Short format for vertical videos under 60s
+          if (shouldSuggestAsShort(metadata) && !youtubeAsShort) {
+            setYoutubeAsShort(true)
+            toast.info('Vertical video detected! Set as YouTube Short.')
+          }
+        }
+      } catch (error) {
+        console.error('Error extracting video metadata:', error)
+        if (mounted) {
+          setYoutubeVideoMetadata(null)
+          setYoutubeShortsValidation(null)
+        }
+      }
+    }
+
+    extractMetadata()
+
+    return () => {
+      mounted = false
+    }
+  }, [youtubeVideoFile])
+
+  // Validate Shorts when toggle changes
+  useEffect(() => {
+    if (!youtubeVideoMetadata) {
+      setYoutubeShortsValidation(null)
+      return
+    }
+
+    async function validate() {
+      if (youtubeAsShort) {
+        const { validateShorts } = await import('@/lib/youtube/shorts-validation')
+        const validation = validateShorts(youtubeVideoMetadata)
+        setYoutubeShortsValidation(validation)
+      } else {
+        setYoutubeShortsValidation(null)
+      }
+    }
+
+    validate()
+  }, [youtubeAsShort, youtubeVideoMetadata])
 
   // YouTube video preview thumbnail (extracted from video if no custom thumbnail)
   const [youtubeVideoThumbnail, setYoutubeVideoThumbnail] = useState<string | null>(null)
@@ -1235,10 +1307,18 @@ function CreateNewPostPageContent() {
   }
 
   const handlePostNow = useCallback(async () => {
-    
+
     if (selectedPlatforms.length === 0) {
       toast.error('Please select at least one platform')
       return
+    }
+
+    // YouTube Shorts validation
+    if (selectedPlatforms.includes('youtube') && youtubeAsShort && youtubeShortsValidation) {
+      if (!youtubeShortsValidation.canProceed) {
+        toast.error('Cannot post as YouTube Short - please fix validation errors or switch to regular video')
+        return
+      }
     }
 
     // Special handling for Threads thread mode
@@ -2440,6 +2520,14 @@ function CreateNewPostPageContent() {
     if (selectedPlatforms.length === 0) {
       toast.error('Please select at least one platform')
       return
+    }
+
+    // YouTube Shorts validation
+    if (selectedPlatforms.includes('youtube') && youtubeAsShort && youtubeShortsValidation) {
+      if (!youtubeShortsValidation.canProceed) {
+        toast.error('Cannot schedule as YouTube Short - please fix validation errors or switch to regular video')
+        return
+      }
     }
 
     // Special handling for Threads thread mode
@@ -4708,14 +4796,66 @@ function CreateNewPostPageContent() {
                               )}
 
                               {youtubeAsShort && (
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-2">
-                                  <p className="text-[10px] text-red-700 leading-relaxed">
-                                    🎬 YouTube Shorts format<br/>
-                                    📐 Vertical format (9:16) required<br/>
-                                    ⏱️ Duration: up to 60 seconds<br/>
-                                    🖼️ Custom thumbnails not supported (YouTube auto-generates)
-                                  </p>
-                                </div>
+                                <>
+                                  {/* Validation Messages */}
+                                  {youtubeShortsValidation && youtubeShortsValidation.issues.length > 0 && (
+                                    <div className="space-y-2">
+                                      {youtubeShortsValidation.issues.map((issue: any, idx: number) => (
+                                        <div
+                                          key={idx}
+                                          className={cn(
+                                            "rounded-lg p-2 border",
+                                            issue.type === 'error' && "bg-red-50 border-red-300",
+                                            issue.type === 'warning' && "bg-amber-50 border-amber-300",
+                                            issue.type === 'info' && "bg-green-50 border-green-300"
+                                          )}
+                                        >
+                                          <p className={cn(
+                                            "text-[10px] leading-relaxed font-medium",
+                                            issue.type === 'error' && "text-red-700",
+                                            issue.type === 'warning' && "text-amber-700",
+                                            issue.type === 'info' && "text-green-700"
+                                          )}>
+                                            {issue.type === 'error' && '❌ '}
+                                            {issue.type === 'warning' && '⚠️ '}
+                                            {issue.type === 'info' && '✅ '}
+                                            {issue.message}
+                                          </p>
+                                        </div>
+                                      ))}
+                                      {!youtubeShortsValidation.valid && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setYoutubeAsShort(false)}
+                                          className="w-full text-[10px] text-blue-600 hover:text-blue-800 font-medium underline"
+                                        >
+                                          Switch to regular video instead
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* Show metadata if available */}
+                                  {youtubeVideoMetadata && !youtubeShortsValidation && (
+                                    <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+                                      <p className="text-[10px] text-red-700 leading-relaxed">
+                                        Analyzing video...
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  {/* Default info if no video uploaded yet */}
+                                  {!youtubeVideoMetadata && (
+                                    <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+                                      <p className="text-[10px] text-red-700 leading-relaxed">
+                                        🎬 YouTube Shorts format<br/>
+                                        📐 Vertical format (9:16) required<br/>
+                                        ⏱️ Duration: up to 3 minutes (60s recommended)<br/>
+                                        🖼️ Custom thumbnails not supported (YouTube auto-generates)
+                                      </p>
+                                    </div>
+                                  )}
+                                </>
                               )}
                             </div>
                           )}
