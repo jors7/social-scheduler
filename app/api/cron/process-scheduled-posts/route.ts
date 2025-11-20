@@ -503,25 +503,28 @@ async function processScheduledPosts(request: NextRequest) {
             console.log('Skipping YouTube platform - handled via native scheduling');
             continue;
           }
-          
-          // Find the account for this platform, respecting selected_accounts if specified
-          let account;
+
+          // Find accounts for this platform, respecting selected_accounts if specified
+          let accountsToPost;
           if (post.selected_accounts && post.selected_accounts[platform]) {
-            // User selected specific account(s) - use the first one
+            // User selected specific account(s) - use all selected accounts
             const selectedIds = post.selected_accounts[platform];
-            account = accounts.find(acc =>
+            accountsToPost = accounts.filter(acc =>
               acc.platform === platform && selectedIds.includes(acc.id)
             );
-            if (!account) {
-              console.log(`Selected account not found for ${platform}, falling back to first available`);
-              account = accounts.find(acc => acc.platform === platform);
+            if (accountsToPost.length === 0) {
+              console.log(`Selected accounts not found for ${platform}, falling back to first available`);
+              const fallbackAccount = accounts.find(acc => acc.platform === platform);
+              accountsToPost = fallbackAccount ? [fallbackAccount] : [];
             }
           } else {
-            // No specific selection - use first available
-            account = accounts.find(acc => acc.platform === platform);
+            // No specific selection - use primary account or first available
+            const platformAccounts = accounts.filter(acc => acc.platform === platform);
+            const primaryAccount = platformAccounts.find(acc => acc.is_primary);
+            accountsToPost = primaryAccount ? [primaryAccount] : platformAccounts.slice(0, 1);
           }
 
-          if (!account) {
+          if (accountsToPost.length === 0) {
             postResults.push({
               platform,
               success: false,
@@ -529,6 +532,10 @@ async function processScheduledPosts(request: NextRequest) {
             });
             continue;
           }
+
+          // Post to each selected account
+          for (const account of accountsToPost) {
+            const platformLabel = account.account_label || account.username || platform;
 
           try {
             const rawContent = post.platform_content?.[platform] || post.content;
@@ -640,14 +647,14 @@ async function processScheduledPosts(request: NextRequest) {
             }
 
             postResults.push({
-              platform,
+              platform: platformLabel,
               success: true,
               postId: (result as any).postId || (result as any).id || (result as any).uri,
               data: result
             });
 
           } catch (error) {
-            console.error(`Error posting to ${platform}:`, error);
+            console.error(`Error posting to ${platformLabel} (${platform}):`, error);
             
             // Include URL info in error for debugging
             const debugUrl = process.env.VERCEL_URL 
@@ -655,14 +662,15 @@ async function processScheduledPosts(request: NextRequest) {
               : 'Using localhost';
             
             const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-            
+
             postResults.push({
-              platform,
+              platform: platformLabel,
               success: false,
               error: `${errorMsg} (${debugUrl})`
             });
           }
-        }
+          } // End of accountsToPost loop
+        } // End of platforms loop
 
         // Skip success/failed check if two-phase processing was triggered
         if (twoPhaseTriggered) {
