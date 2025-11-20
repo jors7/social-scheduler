@@ -61,6 +61,7 @@ export default function SettingsContent() {
   const [showTwitterPinDialog, setShowTwitterPinDialog] = useState(false)
   const [twitterPin, setTwitterPin] = useState('')
   const [twitterAuthUrl, setTwitterAuthUrl] = useState('')
+  const [showTwitterAuthUrl, setShowTwitterAuthUrl] = useState(false)
   const router = useRouter()
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -522,6 +523,7 @@ export default function SettingsContent() {
         setShowTwitterPinDialog(false)
         setTwitterPin('')
         setTwitterAuthUrl('')
+        setShowTwitterAuthUrl(false)
         fetchConnectedAccounts()
       } else {
         toast.error(data.error || 'Failed to verify PIN')
@@ -1250,15 +1252,38 @@ export default function SettingsContent() {
               <p className="font-semibold mb-2">Step 1: Authorize on Twitter</p>
               <p className="mb-3">Click the button below to open Twitter authorization in a new tab:</p>
               <Button
-                onClick={() => {
-                  window.open(twitterAuthUrl, 'twitter-auth', 'width=600,height=700,scrollbars=yes,resizable=yes')
-                  toast.success('Twitter opened in new tab. Return here after authorizing.')
+                onClick={(e) => {
+                  e.preventDefault()
+                  const popup = window.open(twitterAuthUrl, '_blank')
+                  if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                    toast.error('Popup was blocked! Click the link below to open Twitter authorization.')
+                    setShowTwitterAuthUrl(true)
+                  } else {
+                    toast.success('Twitter opened in new tab. Return here after authorizing.')
+                    setShowTwitterAuthUrl(false)
+                  }
                 }}
                 className="w-full"
                 variant="default"
               >
                 Open Twitter Authorization
               </Button>
+
+              {showTwitterAuthUrl && (
+                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                  <p className="text-xs font-semibold text-yellow-800 mb-2">
+                    Popup blocked! Click the link below:
+                  </p>
+                  <a
+                    href={twitterAuthUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:underline break-all"
+                  >
+                    {twitterAuthUrl}
+                  </a>
+                </div>
+              )}
             </div>
 
             <div>
@@ -1285,6 +1310,7 @@ export default function SettingsContent() {
                 setShowTwitterPinDialog(false)
                 setTwitterPin('')
                 setTwitterAuthUrl('')
+                setShowTwitterAuthUrl(false)
               }}
             >
               Cancel
