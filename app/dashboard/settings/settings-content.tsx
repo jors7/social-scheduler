@@ -60,6 +60,7 @@ export default function SettingsContent() {
   })
   const [showTwitterPinDialog, setShowTwitterPinDialog] = useState(false)
   const [twitterPin, setTwitterPin] = useState('')
+  const [twitterAuthUrl, setTwitterAuthUrl] = useState('')
   const router = useRouter()
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -301,12 +302,10 @@ export default function SettingsContent() {
         console.log('Response data:', data)
 
         if (data.authUrl) {
-          console.log('Opening Twitter auth window:', data.authUrl)
-          // Open Twitter auth in a new window
-          window.open(data.authUrl, 'twitter-auth', 'width=600,height=700,scrollbars=yes,resizable=yes')
-
-          // Show PIN entry dialog
-          toast.info('After authorizing on Twitter, enter the PIN code shown.')
+          console.log('Got Twitter auth URL:', data.authUrl)
+          // Store the auth URL and show the dialog
+          // User will click button in modal to open Twitter (bypasses popup blocker)
+          setTwitterAuthUrl(data.authUrl)
           setShowTwitterPinDialog(true)
           setLoading(false)
         } else {
@@ -522,6 +521,7 @@ export default function SettingsContent() {
         toast.success('Twitter account connected successfully!')
         setShowTwitterPinDialog(false)
         setTwitterPin('')
+        setTwitterAuthUrl('')
         fetchConnectedAccounts()
       } else {
         toast.error(data.error || 'Failed to verify PIN')
@@ -1246,8 +1246,23 @@ export default function SettingsContent() {
           </DialogHeader>
 
           <div className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg text-sm text-gray-700">
+              <p className="font-semibold mb-2">Step 1: Authorize on Twitter</p>
+              <p className="mb-3">Click the button below to open Twitter authorization in a new tab:</p>
+              <Button
+                onClick={() => {
+                  window.open(twitterAuthUrl, 'twitter-auth', 'width=600,height=700,scrollbars=yes,resizable=yes')
+                  toast.success('Twitter opened in new tab. Return here after authorizing.')
+                }}
+                className="w-full"
+                variant="default"
+              >
+                Open Twitter Authorization
+              </Button>
+            </div>
+
             <div>
-              <Label htmlFor="twitter-pin">Twitter PIN Code</Label>
+              <Label htmlFor="twitter-pin">Step 2: Enter PIN Code</Label>
               <Input
                 id="twitter-pin"
                 type="text"
@@ -1258,17 +1273,8 @@ export default function SettingsContent() {
                 className="text-center text-lg tracking-widest"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Enter the 7-digit PIN code shown on Twitter after authorization
+                After authorizing on Twitter, you'll see a 7-digit PIN. Enter it here.
               </p>
-            </div>
-
-            <div className="bg-blue-50 p-3 rounded-lg text-sm text-gray-700">
-              <p className="font-semibold mb-1">Instructions:</p>
-              <ol className="list-decimal list-inside space-y-1">
-                <li>Authorize the app on Twitter</li>
-                <li>Copy the 7-digit PIN code shown</li>
-                <li>Enter it above and click Connect</li>
-              </ol>
             </div>
           </div>
 
@@ -1278,6 +1284,7 @@ export default function SettingsContent() {
               onClick={() => {
                 setShowTwitterPinDialog(false)
                 setTwitterPin('')
+                setTwitterAuthUrl('')
               }}
             >
               Cancel
