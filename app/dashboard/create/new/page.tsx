@@ -2842,27 +2842,64 @@ function CreateNewPostPageContent() {
           // Continue without thumbnail
         }
 
-        const formData = new FormData()
-        formData.append('video', youtubeVideoFile)
-        if (youtubeThumbnailFile) {
-          formData.append('thumbnail', youtubeThumbnailFile)
+        // Upload video to R2 first to avoid Vercel body size limits
+        toast.info('Uploading video to storage...')
+        const { urls: videoUrls } = await uploadFilesImmediately([youtubeVideoFile])
+
+        if (videoUrls.length === 0) {
+          throw new Error('Failed to upload video to storage')
         }
-        formData.append('title', youtubeTitle || 'New Video')
-        formData.append('description', youtubeDescription || postContent)
-        formData.append('tags', youtubeTags.join(','))
-        formData.append('categoryId', youtubeCategoryId)
-        formData.append('privacyStatus', 'private') // Must be private for scheduling
-        formData.append('publishAt', scheduledFor.toISOString()) // Set publish time
+
+        const videoUrl = typeof videoUrls[0] === 'string' ? videoUrls[0] : videoUrls[0].url
+
+        // Upload thumbnail to R2 if provided
+        let thumbnailUrl = youtubeThumbnailUrl // Use auto-extracted if available
+        if (youtubeThumbnailFile && !thumbnailUrl) {
+          const { urls: thumbUrls } = await uploadFilesImmediately([youtubeThumbnailFile])
+          if (thumbUrls.length > 0) {
+            thumbnailUrl = typeof thumbUrls[0] === 'string' ? thumbUrls[0] : thumbUrls[0].url
+          }
+        }
+
+        toast.info('Scheduling YouTube video...')
 
         try {
           const response = await fetch('/api/media/upload/youtube', {
             method: 'POST',
-            body: formData,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              videoUrl,
+              thumbnailUrl,
+              title: youtubeTitle || 'New Video',
+              description: youtubeDescription || postContent,
+              tags: youtubeTags.join(','),
+              categoryId: youtubeCategoryId,
+              privacyStatus: 'private',
+              publishAt: scheduledFor.toISOString(),
+            }),
           })
 
           if (!response.ok) {
-            const error = await response.json()
-            throw new Error(error.error || 'YouTube scheduling failed')
+            // Handle both JSON and text error responses
+            const contentType = response.headers.get('content-type')
+            let errorMessage = 'YouTube scheduling failed'
+
+            if (contentType && contentType.includes('application/json')) {
+              try {
+                const error = await response.json()
+                errorMessage = error.error || errorMessage
+              } catch (e) {
+                // Failed to parse JSON
+              }
+            } else {
+              // Plain text response (like 413 errors)
+              const text = await response.text()
+              errorMessage = text || errorMessage
+            }
+
+            throw new Error(errorMessage)
           }
 
           const result = await response.json()

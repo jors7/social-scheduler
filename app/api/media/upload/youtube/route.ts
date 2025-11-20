@@ -54,29 +54,60 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse form data
-    const formData = await request.formData();
-    const videoFile = formData.get('video') as File;
-    const thumbnailFile = formData.get('thumbnail') as File | null;
-    const title = formData.get('title') as string;
-    const description = formData.get('description') as string;
-    const tags = formData.get('tags') as string;
-    const categoryId = formData.get('categoryId') as string | null;
-    const privacyStatus = formData.get('privacyStatus') as 'private' | 'public' | 'unlisted';
-    const publishAt = formData.get('publishAt') as string | null; // ISO 8601 datetime for scheduled publishing
+    // Parse JSON body with R2 URLs
+    const body = await request.json();
+    const {
+      videoUrl,
+      thumbnailUrl,
+      title,
+      description,
+      tags,
+      categoryId,
+      privacyStatus,
+      publishAt
+    } = body;
 
     // Validate required fields
-    if (!videoFile || !title) {
+    if (!videoUrl || !title) {
       return NextResponse.json(
-        { error: 'Video file and title are required' },
+        { error: 'Video URL and title are required' },
         { status: 400 }
+      );
+    }
+
+    console.log('Fetching video from R2:', videoUrl);
+
+    // Fetch video from R2
+    let videoBuffer: Buffer;
+    let videoSize: number;
+    let videoType: string;
+
+    try {
+      const videoResponse = await fetch(videoUrl);
+      if (!videoResponse.ok) {
+        throw new Error(`Failed to fetch video from R2: ${videoResponse.statusText}`);
+      }
+
+      videoBuffer = Buffer.from(await videoResponse.arrayBuffer());
+      videoSize = videoBuffer.length;
+      videoType = videoResponse.headers.get('content-type') || 'video/mp4';
+
+      console.log('Video fetched from R2:', {
+        size: formatFileSize(videoSize),
+        type: videoType
+      });
+    } catch (fetchError: any) {
+      console.error('Error fetching video from R2:', fetchError);
+      return NextResponse.json(
+        { error: `Failed to fetch video from storage: ${fetchError.message}` },
+        { status: 500 }
       );
     }
 
     // Validate video file
     const validation = validateVideoFile({
-      type: videoFile.type,
-      size: videoFile.size,
+      type: videoType,
+      size: videoSize,
     });
 
     if (!validation.valid) {
@@ -88,30 +119,39 @@ export async function POST(request: NextRequest) {
 
     console.log('Uploading video to YouTube:', {
       title,
-      fileSize: formatFileSize(videoFile.size),
-      mimeType: videoFile.type,
+      fileSize: formatFileSize(videoSize),
+      mimeType: videoType,
     });
 
-    // Convert File to Buffer
-    const videoBuffer = Buffer.from(await videoFile.arrayBuffer());
-    
-    // Convert thumbnail if provided
+    // Fetch thumbnail if provided
     let thumbnailBuffer: Buffer | undefined;
-    if (thumbnailFile) {
-      // Validate thumbnail (max 2MB, must be image)
-      if (!thumbnailFile.type.startsWith('image/')) {
-        return NextResponse.json(
-          { error: 'Thumbnail must be an image file' },
-          { status: 400 }
-        );
+    if (thumbnailUrl) {
+      try {
+        const thumbnailResponse = await fetch(thumbnailUrl);
+        if (!thumbnailResponse.ok) {
+          console.error('Failed to fetch thumbnail from R2:', thumbnailResponse.statusText);
+        } else {
+          const thumbnailArrayBuffer = await thumbnailResponse.arrayBuffer();
+          const thumbnailSize = thumbnailArrayBuffer.byteLength;
+          const thumbnailType = thumbnailResponse.headers.get('content-type') || '';
+
+          // Validate thumbnail (max 2MB, must be image)
+          if (!thumbnailType.startsWith('image/')) {
+            console.error('Thumbnail is not an image type:', thumbnailType);
+          } else if (thumbnailSize > 2 * 1024 * 1024) {
+            console.error('Thumbnail is too large:', formatFileSize(thumbnailSize));
+          } else {
+            thumbnailBuffer = Buffer.from(thumbnailArrayBuffer);
+            console.log('Thumbnail fetched from R2:', {
+              size: formatFileSize(thumbnailSize),
+              type: thumbnailType
+            });
+          }
+        }
+      } catch (thumbnailError: any) {
+        console.error('Error fetching thumbnail from R2:', thumbnailError);
+        // Continue without thumbnail
       }
-      if (thumbnailFile.size > 2 * 1024 * 1024) {
-        return NextResponse.json(
-          { error: 'Thumbnail must be less than 2MB' },
-          { status: 400 }
-        );
-      }
-      thumbnailBuffer = Buffer.from(await thumbnailFile.arrayBuffer());
     }
 
     // Parse tags
