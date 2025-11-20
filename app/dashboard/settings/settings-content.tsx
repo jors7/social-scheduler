@@ -286,34 +286,37 @@ export default function SettingsContent() {
         console.log('Fetching Twitter auth URL...')
         const response = await fetch('/api/auth/twitter')
         console.log('Response status:', response.status)
-        
+
         if (!response.ok) {
           const errorText = await response.text()
           console.error('API Error:', errorText)
           toast.error(`Failed to connect: ${response.status}`)
+          setLoading(false)
           return
         }
-        
+
         const data = await response.json()
         console.log('Response data:', data)
-        
+
         if (data.authUrl) {
           console.log('Redirecting to:', data.authUrl)
-          // Open Twitter auth in a new window and show PIN entry instructions
-          const authWindow = window.open(data.authUrl, 'twitter-auth', 'width=600,height=700,scrollbars=yes,resizable=yes')
-          
-          // Redirect to PIN entry page
+          // Open Twitter auth in a new window
+          window.open(data.authUrl, 'twitter-auth', 'width=600,height=700,scrollbars=yes,resizable=yes')
+
+          // Show instructions and redirect to PIN entry page
           toast.info('After authorizing on Twitter, you\'ll get a PIN code. Come back here to enter it.')
+
+          // Use window.location for guaranteed redirect
           setTimeout(() => {
-            router.push('/twitter-callback')
+            window.location.href = '/twitter-callback'
           }, 2000)
         } else {
           toast.error('Failed to initialize Twitter authentication')
+          setLoading(false)
         }
       } catch (error) {
         console.error('Error connecting to Twitter:', error)
         toast.error('Failed to connect to Twitter')
-      } finally {
         setLoading(false)
       }
     } else if (platformId === 'bluesky') {
