@@ -58,6 +58,8 @@ export default function SettingsContent() {
     identifier: '', // handle or email
     password: ''    // app password
   })
+  const [showTwitterPinDialog, setShowTwitterPinDialog] = useState(false)
+  const [twitterPin, setTwitterPin] = useState('')
   const router = useRouter()
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -299,17 +301,14 @@ export default function SettingsContent() {
         console.log('Response data:', data)
 
         if (data.authUrl) {
-          console.log('Redirecting to:', data.authUrl)
+          console.log('Opening Twitter auth window:', data.authUrl)
           // Open Twitter auth in a new window
           window.open(data.authUrl, 'twitter-auth', 'width=600,height=700,scrollbars=yes,resizable=yes')
 
-          // Show instructions and redirect to PIN entry page
-          toast.info('After authorizing on Twitter, you\'ll get a PIN code. Come back here to enter it.')
-
-          // Use window.location for guaranteed redirect
-          setTimeout(() => {
-            window.location.href = '/twitter-callback'
-          }, 2000)
+          // Show PIN entry dialog
+          toast.info('After authorizing on Twitter, enter the PIN code shown.')
+          setShowTwitterPinDialog(true)
+          setLoading(false)
         } else {
           toast.error('Failed to initialize Twitter authentication')
           setLoading(false)
@@ -500,6 +499,38 @@ export default function SettingsContent() {
       }
     } else {
       toast.info(`${platformId} integration coming soon!`)
+    }
+  }
+
+  const handleTwitterPinSubmit = async () => {
+    if (!twitterPin.trim()) {
+      toast.error('Please enter the PIN code from Twitter')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const response = await fetch('/api/auth/twitter/pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: twitterPin.trim() }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast.success('Twitter account connected successfully!')
+        setShowTwitterPinDialog(false)
+        setTwitterPin('')
+        fetchConnectedAccounts()
+      } else {
+        toast.error(data.error || 'Failed to verify PIN')
+      }
+    } catch (error) {
+      console.error('Error submitting Twitter PIN:', error)
+      toast.error('Failed to connect Twitter account')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -1197,6 +1228,63 @@ export default function SettingsContent() {
             <Button
               onClick={handleBlueskyConnect}
               disabled={loading}
+            >
+              {loading ? 'Connecting...' : 'Connect'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Twitter PIN Dialog */}
+      <Dialog open={showTwitterPinDialog} onOpenChange={setShowTwitterPinDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Connect Twitter Account</DialogTitle>
+            <DialogDescription>
+              Enter the PIN code from Twitter to complete the connection.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="twitter-pin">Twitter PIN Code</Label>
+              <Input
+                id="twitter-pin"
+                type="text"
+                placeholder="Enter 7-digit PIN"
+                value={twitterPin}
+                onChange={(e) => setTwitterPin(e.target.value)}
+                maxLength={7}
+                className="text-center text-lg tracking-widest"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Enter the 7-digit PIN code shown on Twitter after authorization
+              </p>
+            </div>
+
+            <div className="bg-blue-50 p-3 rounded-lg text-sm text-gray-700">
+              <p className="font-semibold mb-1">Instructions:</p>
+              <ol className="list-decimal list-inside space-y-1">
+                <li>Authorize the app on Twitter</li>
+                <li>Copy the 7-digit PIN code shown</li>
+                <li>Enter it above and click Connect</li>
+              </ol>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowTwitterPinDialog(false)
+                setTwitterPin('')
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleTwitterPinSubmit}
+              disabled={loading || !twitterPin.trim()}
             >
               {loading ? 'Connecting...' : 'Connect'}
             </Button>
