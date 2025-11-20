@@ -148,14 +148,15 @@ export async function GET(request: NextRequest) {
     const username = userInfo?.display_name || 'TikTok User';
     const profileImageUrl = userInfo?.avatar_url || null;
     const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
-    
-    // Check if this account already exists
+
+    // Check if this specific TikTok account already exists
     const { data: existingAccount } = await supabase
       .from('social_accounts')
       .select('id')
       .eq('user_id', user.id)
       .eq('platform', 'tiktok')
-      .single();
+      .eq('platform_user_id', platformUserId)
+      .maybeSingle();
 
     if (existingAccount) {
       // Update existing account

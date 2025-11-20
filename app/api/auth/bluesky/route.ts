@@ -77,14 +77,15 @@ export async function POST(request: NextRequest) {
     const profileImageUrl = blueskyProfile.avatar;
 
     console.log('Saving Bluesky account data...');
-    
-    // Check if this account already exists
+
+    // Check if this specific Bluesky account already exists
     const { data: existingAccount } = await supabase
       .from('social_accounts')
       .select('id')
       .eq('user_id', user.id)
       .eq('platform', 'bluesky')
-      .single();
+      .eq('platform_user_id', platformUserId)
+      .maybeSingle();
 
     let data;
     if (existingAccount) {

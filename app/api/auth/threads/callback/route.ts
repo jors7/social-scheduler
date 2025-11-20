@@ -324,14 +324,15 @@ export async function GET(request: NextRequest) {
       : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000); // Default to 60 days if not provided
     
     console.log('Token will be stored with expiry:', expiresAt.toISOString());
-    
-    // Check if this account already exists
+
+    // Check if this specific Threads account already exists
     const { data: existingAccount } = await supabase
       .from('social_accounts')
       .select('id')
       .eq('user_id', user.id)
       .eq('platform', 'threads')
-      .single();
+      .eq('platform_user_id', threadsAccountData.id)
+      .maybeSingle();
 
     if (existingAccount) {
       // Update existing account

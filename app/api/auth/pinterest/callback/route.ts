@@ -98,14 +98,15 @@ export async function GET(request: NextRequest) {
     const username = userData.username;
     const profileImageUrl = userData.profile_image || null;
     const expiresAt = tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString() : null;
-    
-    // Check if this account already exists
+
+    // Check if this specific Pinterest account already exists
     const { data: existingAccount } = await supabase
       .from('social_accounts')
       .select('id')
       .eq('user_id', user.id)
       .eq('platform', 'pinterest')
-      .single();
+      .eq('platform_user_id', platformUserId)
+      .maybeSingle();
 
     if (existingAccount) {
       // Update existing account

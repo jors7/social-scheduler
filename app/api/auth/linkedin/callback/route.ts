@@ -144,13 +144,16 @@ export async function GET(request: NextRequest) {
     const expiresAt = new Date();
     expiresAt.setSeconds(expiresAt.getSeconds() + expiresIn);
 
-    // Check if account already exists
+    const platformUserId = profileData.sub || profileData.id;
+
+    // Check if this specific LinkedIn account already exists
     const { data: existingAccount } = await supabase
       .from('social_accounts')
       .select('id')
       .eq('user_id', user.id)
       .eq('platform', 'linkedin')
-      .single();
+      .eq('platform_user_id', platformUserId)
+      .maybeSingle();
 
     if (existingAccount) {
       // Update existing account
@@ -158,7 +161,7 @@ export async function GET(request: NextRequest) {
         .from('social_accounts')
         .update({
           access_token: accessToken,
-          platform_user_id: profileData.sub || profileData.id, // OpenID uses 'sub' for user ID
+          platform_user_id: platformUserId,
           username: displayName,
           expires_at: expiresAt.toISOString(),
           is_active: true,
@@ -180,7 +183,7 @@ export async function GET(request: NextRequest) {
           user_id: user.id,
           platform: 'linkedin',
           access_token: accessToken,
-          platform_user_id: profileData.sub || profileData.id, // OpenID uses 'sub' for user ID
+          platform_user_id: platformUserId,
           username: displayName,
           expires_at: expiresAt.toISOString(),
           is_active: true,

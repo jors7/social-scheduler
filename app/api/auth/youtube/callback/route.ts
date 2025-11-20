@@ -150,14 +150,15 @@ export async function GET(request: NextRequest) {
     const username = channel?.snippet?.customUrl || channel?.snippet?.title || 'YouTube';
     const profileImageUrl = channel?.snippet?.thumbnails?.default?.url || null;
     const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
-    
-    // Check if this account already exists
+
+    // Check if this specific YouTube account already exists
     const { data: existingAccount } = await supabase
       .from('social_accounts')
       .select('id, refresh_token')
       .eq('user_id', user.id)
       .eq('platform', 'youtube')
-      .single();
+      .eq('platform_user_id', platformUserId)
+      .maybeSingle();
 
     if (existingAccount) {
       // Update existing account

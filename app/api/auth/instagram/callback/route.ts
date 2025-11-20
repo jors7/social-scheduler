@@ -337,17 +337,6 @@ export async function GET(request: NextRequest) {
 
     console.log('[Instagram Callback] Service role client created successfully');
 
-    // First, deactivate all existing Instagram accounts for this user
-    const { error: deactivateError } = await supabaseAdmin
-      .from('social_accounts')
-      .update({ is_active: false })
-      .eq('user_id', user.id)
-      .eq('platform', 'instagram');
-
-    if (deactivateError) {
-      console.error('Error deactivating Instagram accounts:', deactivateError);
-    }
-
     // Check if this specific account (by platform_user_id) already exists
     const { data: existingAccount, error: fetchError } = await supabaseAdmin
       .from('social_accounts')
