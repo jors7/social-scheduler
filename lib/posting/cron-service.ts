@@ -690,6 +690,17 @@ export async function postToThreadsDirect(
         if (isVideo) {
           console.log('[Threads Phase 1] Detected video, using two-phase processing');
 
+          // Validate required fields for video posting
+          if (!accessToken || !account.platform_user_id) {
+            console.error('Missing required Threads credentials for video:', {
+              hasToken: !!accessToken,
+              tokenLength: accessToken?.length,
+              hasPlatformUserId: !!account.platform_user_id,
+              platformUserId: account.platform_user_id
+            });
+            throw new Error('Missing required fields: accessToken and platform_user_id are required for Threads video posting');
+          }
+
           const { ThreadsClient } = await import('@/lib/threads/client');
           const threadsClient = new ThreadsClient({
             accessToken: accessToken,
@@ -711,6 +722,17 @@ export async function postToThreadsDirect(
       }
 
       // For text-only or image posts, use single-phase processing
+      // Validate required fields
+      if (!accessToken || !account.platform_user_id) {
+        console.error('Missing required Threads credentials:', {
+          hasToken: !!accessToken,
+          tokenLength: accessToken?.length,
+          hasPlatformUserId: !!account.platform_user_id,
+          platformUserId: account.platform_user_id
+        });
+        throw new Error('Missing required fields: accessToken and platform_user_id are required for Threads posting');
+      }
+
       const threadsService = new ThreadsService({
         accessToken: accessToken,
         userID: account.platform_user_id
