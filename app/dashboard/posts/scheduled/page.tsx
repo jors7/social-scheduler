@@ -30,11 +30,13 @@ interface ScheduledPost {
   platform_content: Record<string, string>
   media_urls: string[]
   scheduled_for: string
-  status: 'pending' | 'posting' | 'posted' | 'failed' | 'cancelled'
+  status: 'pending' | 'posting' | 'posted' | 'failed' | 'cancelled' | 'processing'
   created_at: string
   // Thread-specific fields
   threads_mode?: string
   threads_thread_media?: any[][]
+  // Async job tracking
+  processing_state?: any
 }
 
 export default function ScheduledPostsPage() {
@@ -48,7 +50,7 @@ export default function ScheduledPostsPage() {
 
   const fetchScheduledPosts = async () => {
     try {
-      const response = await fetch('/api/posts/schedule?status=pending,posting,cancelled')
+      const response = await fetch('/api/posts/schedule?status=pending,posting,cancelled,processing')
       if (!response.ok) throw new Error('Failed to fetch')
       
       const data = await response.json()

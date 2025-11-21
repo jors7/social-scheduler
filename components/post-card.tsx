@@ -42,7 +42,7 @@ interface PostedPost extends BasePost {
 
 interface ScheduledPost extends BasePost {
   scheduled_for: string
-  status: 'pending' | 'posting' | 'posted' | 'failed' | 'cancelled'
+  status: 'pending' | 'posting' | 'posted' | 'failed' | 'cancelled' | 'processing'
   pinterest_title?: string
   pinterest_description?: string
   // Format flags
@@ -54,6 +54,8 @@ interface ScheduledPost extends BasePost {
   // Thread-specific fields
   threads_mode?: string
   threads_thread_media?: any[][]
+  // Async job tracking
+  processing_state?: any
 }
 
 interface DraftPost extends BasePost {
@@ -423,9 +425,10 @@ export function PostCard({
                     status === 'cancelled' ? 'bg-orange-100 text-orange-700' :
                     status === 'failed' ? 'bg-red-100 text-red-700' :
                     status === 'posting' ? 'bg-yellow-100 text-yellow-700' :
+                    status === 'processing' ? 'bg-blue-100 text-blue-700' :
                     'bg-gray-100 text-gray-700'
                   )}>
-                    {status}
+                    {status === 'processing' ? 'Processing...' : status}
                   </span>
                 )}
               </div>

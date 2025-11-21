@@ -595,39 +595,77 @@ export async function postToThreadsDirect(
       console.log('Thread media URLs:', flatMediaUrls);
       console.log('Raw thread media data:', JSON.stringify(threadData.threadsThreadMedia));
 
-      // NOTE: Cannot use two-phase processing for Threads threads because:
-      // - reply_to_id must be set during container creation
-      // - reply_to_id requires a PUBLISHED post ID (not container ID)
-      // - Therefore, we must create AND publish each post before creating the next
+      // Use queue-based processing for Threads threads to bypass 60s timeout
+      // Each post is processed sequentially via QStash to handle unlimited thread length
 
-      console.log('[Threads Thread] Creating and publishing thread synchronously');
+      console.log('[Threads Thread] Creating thread job for queue processing');
 
-      // Call the thread posting API (synchronous - creates and publishes all posts)
-      const threadResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/post/threads/thread`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: account.platform_user_id,
-          accessToken: accessToken,
-          posts: threadData.threadPosts,
-          mediaUrls: flatMediaUrls,
-          optimized: true // Use optimized timing
-        })
-      });
-
-      if (!threadResponse.ok) {
-        const errorData = await threadResponse.json();
-        throw new Error(errorData.error || 'Failed to create thread');
+      // Ensure we have a supabase client
+      if (!supabase) {
+        throw new Error('Supabase client is required for thread job creation');
       }
 
-      const threadResult = await threadResponse.json();
+      const { Client } = await import('@upstash/qstash');
+      const qstash = new Client({ token: process.env.QSTASH_TOKEN! });
 
-      return {
-        success: true,
-        id: threadResult.threadId,
-        thumbnailUrl: threadResult.thumbnailUrl,
-        message: `Posted Threads thread with ${threadData.threadPosts.length} posts successfully`
-      };
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Create thread job in database
+      const { data: threadJob, error: jobError } = await supabase
+        .from('thread_jobs')
+        .insert({
+          user_id: user.id,
+          account_id: account.id,
+          posts: threadData.threadPosts,
+          media_urls: threadData.threadsThreadMedia || [],
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (jobError || !threadJob) {
+        console.error('[Threads Thread] Failed to create thread job:', jobError);
+        throw new Error('Failed to create thread job');
+      }
+
+      console.log(`[Threads Thread] Job created: ${threadJob.id}`);
+
+      // Queue first post via QStash
+      try {
+        await qstash.publishJSON({
+          url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/queue/threads/process-post`,
+          body: {
+            jobId: threadJob.id,
+            postIndex: 0
+          },
+          retries: 3
+        });
+
+        console.log(`[Threads Thread] First post queued for job ${threadJob.id}`);
+
+        return {
+          success: true,
+          threadJobId: threadJob.id,
+          async: true, // Indicates async processing
+          thumbnailUrl: threadData.threadsThreadMedia?.[0]?.[0]?.url || flatMediaUrls[0],
+          message: `Threads thread queued for processing (${threadData.threadPosts.length} posts)`
+        };
+
+      } catch (queueError) {
+        console.error('[Threads Thread] Failed to queue first post:', queueError);
+
+        // Clean up job
+        await supabase
+          .from('thread_jobs')
+          .update({ status: 'failed', error_message: 'Failed to queue post' })
+          .eq('id', threadJob.id);
+
+        throw new Error('Failed to queue thread for processing');
+      }
     } else {
       // Single post mode
       // Use first media URL if available

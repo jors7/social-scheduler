@@ -12,7 +12,7 @@ interface ScheduledPost {
   platform_content: Record<string, string>
   media_urls: string[]
   scheduled_for: string
-  status: 'pending' | 'posting' | 'posted' | 'failed' | 'cancelled'
+  status: 'pending' | 'posting' | 'posted' | 'failed' | 'cancelled' | 'processing'
   created_at: string
   post_results?: any[]
   // Format flags
@@ -24,6 +24,8 @@ interface ScheduledPost {
   // Thread-specific fields
   threads_mode?: string
   threads_thread_media?: any[][]
+  // Async job tracking
+  processing_state?: any
 }
 
 interface ScheduledPostsListProps {

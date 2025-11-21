@@ -834,6 +834,57 @@ async function processScheduledPosts(request: NextRequest) {
               continue;
             }
 
+            // Handle async Threads thread processing (queue-based)
+            if ((result as any).async && (result as any).threadJobId) {
+              const asyncResult = result as any;
+
+              console.log(`[Async Thread] Job created: ${asyncResult.threadJobId} for ${platformLabel}`);
+
+              // Calculate remaining accounts to process after this one
+              const currentIndex = accountsToPost.indexOf(account);
+              const remainingAccounts = accountsToPost.slice(currentIndex + 1).map(a => a.id);
+
+              // Store job ID in scheduled_post for status tracking
+              const processingState: any = {
+                platform: 'threads_thread',
+                thread_job_id: asyncResult.threadJobId,
+                account_id: account.id,
+                account_label: platformLabel,
+                remaining_accounts: remainingAccounts,
+                phase: 'queued',
+                created_at: new Date().toISOString()
+              };
+
+              // Update post to processing status
+              await supabase
+                .from('scheduled_posts')
+                .update({
+                  status: 'processing',
+                  processing_state: processingState
+                })
+                .eq('id', post.id);
+
+              // Also link the scheduled_post_id to the thread job
+              await supabase
+                .from('thread_jobs')
+                .update({ scheduled_post_id: post.id })
+                .eq('id', asyncResult.threadJobId);
+
+              console.log(`[Async Thread] Scheduled post ${post.id} set to processing, job queued`);
+
+              // Return early - job will be processed asynchronously via QStash
+              results.push({
+                postId: post.id,
+                success: true,
+                platforms: [],
+                message: `Threads thread queued for async processing (${asyncResult.threadJobId})`
+              });
+
+              // Set flag and break to skip success/failed check
+              twoPhaseTriggered = true;
+              break;
+            }
+
             postResults.push({
               platform: platformLabel,
               success: true,
