@@ -141,6 +141,15 @@ export async function POST(request: NextRequest) {
     const containerId = createData.id;
     console.log('Container created with ID:', containerId);
 
+    // Add delay for media processing if media is present
+    if (mediaUrl) {
+      const videoExtensions = ['.mp4', '.mov', '.m4v', '.avi', '.wmv', '.flv', '.webm'];
+      const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().endsWith(ext));
+      const delay = isVideo ? 30000 : 3000; // 30s for videos, 3s for images
+      console.log(`Waiting ${delay}ms for Threads to process ${isVideo ? 'video' : 'image'}...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+
     // Step 2: Publish the container
     const publishFormData = new URLSearchParams();
     publishFormData.append('creation_id', containerId);
