@@ -5,10 +5,16 @@ import { stripHtml, truncateText, getAllEntities, getCharacterStatus, isVideoUrl
 interface ThreadsPreviewProps {
   content: string
   mediaUrls?: string[]
+  threadPosts?: string[]
 }
 
-export function ThreadsPreview({ content, mediaUrls = [] }: ThreadsPreviewProps) {
-  const plainText = stripHtml(content)
+export function ThreadsPreview({ content, mediaUrls = [], threadPosts }: ThreadsPreviewProps) {
+  // Use threadPosts[0] if available, otherwise fall back to content
+  const textToDisplay = (threadPosts && threadPosts.length > 0 && threadPosts[0])
+    ? threadPosts[0]
+    : content
+
+  const plainText = stripHtml(textToDisplay)
   const { text, truncated } = truncateText(plainText, 500, 'hard')
   const charStatus = getCharacterStatus(plainText.length, 500)
   const entities = getAllEntities(text)
@@ -65,23 +71,21 @@ export function ThreadsPreview({ content, mediaUrls = [] }: ThreadsPreviewProps)
 
           {/* Media - natural aspect ratio (4:5 or 9:16 recommended for mobile) */}
           {mediaUrls && mediaUrls.length > 0 && (
-            <div className="mt-3 rounded-xl overflow-hidden">
-              <div className="relative bg-gray-100 max-h-[400px]">
-                {isVideoUrl(mediaUrls[0]) ? (
-                  <video
-                    src={mediaUrls[0]}
-                    className="w-full h-full object-contain"
-                    muted
-                    preload="metadata"
-                  />
-                ) : (
-                  <img
-                    src={mediaUrls[0]}
-                    alt=""
-                    className="w-full h-full object-contain"
-                  />
-                )}
-              </div>
+            <div className="mt-3 rounded-xl overflow-hidden bg-gray-100">
+              {isVideoUrl(mediaUrls[0]) ? (
+                <video
+                  src={mediaUrls[0]}
+                  className="w-full max-h-[500px] object-contain"
+                  muted
+                  preload="metadata"
+                />
+              ) : (
+                <img
+                  src={mediaUrls[0]}
+                  alt=""
+                  className="w-full max-h-[500px] object-contain"
+                />
+              )}
             </div>
           )}
 

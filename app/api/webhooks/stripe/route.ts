@@ -595,6 +595,118 @@ export async function POST(request: NextRequest) {
           } else {
             console.log('Payment recorded with proration details')
 
+            // =====================================================
+            // AFFILIATE COMMISSION TRACKING
+            // =====================================================
+            // Check if this payment should generate an affiliate commission
+            const affiliate_id = subscription.metadata?.affiliate_id
+            if (affiliate_id && invoice.amount_paid > 0) {
+              console.log('💰 Processing affiliate commission:', {
+                affiliate_id,
+                amount: invoice.amount_paid,
+                subscription_id: subscription.id
+              })
+
+              try {
+                // Get affiliate details
+                const { data: affiliate } = await supabaseAdmin
+                  .from('affiliates')
+                  .select('id, commission_rate, total_earnings, pending_balance')
+                  .eq('id', affiliate_id)
+                  .eq('status', 'active')
+                  .single()
+
+                if (affiliate) {
+                  // Calculate commission (amount is in cents, convert to dollars)
+                  const paymentAmount = invoice.amount_paid / 100
+                  const commissionRate = affiliate.commission_rate || 30
+                  const commissionAmount = parseFloat((paymentAmount * (commissionRate / 100)).toFixed(2))
+
+                  console.log('💵 Commission calculated:', {
+                    payment: paymentAmount,
+                    rate: commissionRate + '%',
+                    commission: commissionAmount
+                  })
+
+                  // Create conversion record
+                  const { data: conversion, error: conversionError } = await supabaseAdmin
+                    .from('affiliate_conversions')
+                    .insert({
+                      affiliate_id: affiliate.id,
+                      customer_user_id: userId,
+                      subscription_id: userSub?.id,
+                      commission_amount: commissionAmount,
+                      status: 'pending',
+                      payment_date: new Date().toISOString(),
+                      stripe_invoice_id: invoice.id,
+                    })
+                    .select()
+                    .single()
+
+                  if (conversionError) {
+                    console.error('❌ Error creating affiliate conversion:', conversionError)
+                  } else {
+                    console.log('✅ Affiliate conversion recorded:', conversion.id)
+
+                    // Update affiliate earnings
+                    const { error: updateError } = await supabaseAdmin
+                      .from('affiliates')
+                      .update({
+                        total_earnings: affiliate.total_earnings + commissionAmount,
+                        pending_balance: affiliate.pending_balance + commissionAmount,
+                        updated_at: new Date().toISOString()
+                      })
+                      .eq('id', affiliate.id)
+
+                    if (updateError) {
+                      console.error('❌ Error updating affiliate earnings:', updateError)
+                    } else {
+                      console.log('✅ Affiliate earnings updated:', {
+                        new_total: affiliate.total_earnings + commissionAmount,
+                        new_pending: affiliate.pending_balance + commissionAmount
+                      })
+
+                      // TODO: Queue commission earned email to affiliate
+                      // Check if this is their first commission
+                      const { count } = await supabaseAdmin
+                        .from('affiliate_conversions')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('affiliate_id', affiliate.id)
+                        .neq('status', 'refunded')
+
+                      const isFirstCommission = count === 1
+
+                      // Queue email notification
+                      await supabaseAdmin.from('pending_emails').insert({
+                        email_type: isFirstCommission ? 'affiliate_first_commission' : 'affiliate_commission_earned',
+                        to_email: '', // TODO: Get affiliate email from user_id
+                        subject: isFirstCommission
+                          ? '🎉 Your First Commission!'
+                          : `You Earned $${commissionAmount}!`,
+                        email_data: {
+                          affiliate_id: affiliate.id,
+                          commission_amount: commissionAmount,
+                          payment_amount: paymentAmount,
+                          commission_rate: commissionRate,
+                          pending_balance: affiliate.pending_balance + commissionAmount,
+                          is_first_commission: isFirstCommission
+                        }
+                      }).catch(err => {
+                        console.error('Error queuing affiliate commission email:', err)
+                      })
+                    }
+                  }
+                } else {
+                  console.log('⚠️ Affiliate not found or inactive:', affiliate_id)
+                }
+              } catch (affiliateError) {
+                console.error('❌ Error processing affiliate commission:', affiliateError)
+                // Don't throw - payment succeeded, just log the error
+              }
+            }
+            // END AFFILIATE COMMISSION TRACKING
+            // =====================================================
+
             // Check if this payment is related to an upgrade/downgrade
             // Query subscription_change_log for recent changes (last 5 minutes)
             const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()

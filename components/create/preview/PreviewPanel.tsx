@@ -28,6 +28,7 @@ interface PreviewPanelProps {
   pinterestTitle?: string
   pinterestDescription?: string
   pinterestBoard?: string
+  threadPosts?: string[]
   onClose: () => void
 }
 
@@ -136,6 +137,7 @@ export function PreviewPanel({
   pinterestTitle,
   pinterestDescription,
   pinterestBoard,
+  threadPosts,
   onClose
 }: PreviewPanelProps) {
   // Normalize mediaUrls to string format for preview components
@@ -245,6 +247,12 @@ export function PreviewPanel({
               pinterestTitle={pinterestTitle}
               pinterestDescription={pinterestDescription}
               pinterestBoard={pinterestBoard}
+            />
+          ) : activePlatform === 'threads' ? (
+            <ThreadsPreview
+              content={platformContentToUse}
+              mediaUrls={mediaUrls}
+              threadPosts={threadPosts}
             />
           ) : (
             <ActivePreviewComponent

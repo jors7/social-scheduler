@@ -5,8 +5,11 @@ import type { NextRequest } from 'next/server'
 // Routes that require authentication
 const protectedRoutes = ['/dashboard']
 
+// Routes that require affiliate authentication
+const affiliateRoutes = ['/affiliate/dashboard']
+
 // Routes that require admin access
-const adminRoutes = ['/dashboard/blog']
+const adminRoutes = ['/dashboard/blog', '/admin']
 
 // Routes that require subscription (excluding free features)
 const subscriptionRoutes: string[] = [
@@ -26,7 +29,24 @@ export async function middleware(request: NextRequest) {
       headers: request.headers,
     },
   })
-  
+
+  // =====================================================
+  // AFFILIATE REFERRAL TRACKING
+  // =====================================================
+  // Capture ?ref= parameter and set cookie for 30-day attribution
+  const refParam = request.nextUrl.searchParams.get('ref') || request.nextUrl.searchParams.get('referral')
+  if (refParam) {
+    const cookieDuration = parseInt(process.env.AFFILIATE_COOKIE_DURATION_DAYS || '30', 10)
+    const maxAge = cookieDuration * 24 * 60 * 60 // Convert to seconds
+
+    response.cookies.set('socialcal_referral', refParam, {
+      maxAge,
+      path: '/',
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    })
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -72,9 +92,10 @@ export async function middleware(request: NextRequest) {
       },
     }
   )
-  
+
   const { data: { user } } = await supabase.auth.getUser()
   const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route))
+  const isAffiliateRoute = affiliateRoutes.some(route => request.nextUrl.pathname.startsWith(route))
   const isAuthRoute = authRoutes.includes(request.nextUrl.pathname)
   const isAdminRoute = adminRoutes.some(route => request.nextUrl.pathname.startsWith(route))
   const isSubscriptionRoute = subscriptionRoutes.some(route => request.nextUrl.pathname.startsWith(route))
@@ -83,6 +104,22 @@ export async function middleware(request: NextRequest) {
   // Allow public auth routes without any checks (password reset, auth confirmation)
   if (isPublicAuthRoute) {
     return response
+  }
+
+  // =====================================================
+  // AFFILIATE ROUTE PROTECTION
+  // =====================================================
+  // Protect affiliate dashboard - require affiliate or both user type
+  if (isAffiliateRoute && !user) {
+    return NextResponse.redirect(new URL('/affiliate/login', request.url))
+  }
+
+  if (isAffiliateRoute && user) {
+    const userType = user.user_metadata?.user_type
+    if (userType !== 'affiliate' && userType !== 'both') {
+      // User is a member but not an affiliate
+      return NextResponse.redirect(new URL('/dashboard?error=affiliate-only', request.url))
+    }
   }
 
   // If user is not signed in and the current path is on the dashboard, redirect to homepage with signin modal

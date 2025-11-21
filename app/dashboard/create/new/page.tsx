@@ -4523,6 +4523,7 @@ function CreateNewPostPageContent() {
               pinterestTitle={pinterestTitle}
               pinterestDescription={pinterestDescription}
               pinterestBoard={pinterestBoards.find(b => b.id === selectedPinterestBoard)?.name}
+              threadPosts={threadPosts}
               onClose={() => setShowPreview(false)}
               />
             </div>

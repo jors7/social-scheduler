@@ -37,6 +37,34 @@ export async function POST(request: NextRequest) {
       endorsely_referral?: string
     }
 
+    // =====================================================
+    // AFFILIATE TRACKING
+    // =====================================================
+    // Check for affiliate referral cookie
+    let affiliateId: string | undefined
+    const referralCode = cookieStore.get('socialcal_referral')?.value
+
+    if (referralCode) {
+      console.log('🔗 Affiliate referral detected:', referralCode)
+
+      // Look up affiliate by referral code
+      const { data: affiliate } = await supabase
+        .from('affiliates')
+        .select('id, referral_code')
+        .eq('referral_code', referralCode)
+        .eq('status', 'active')
+        .single()
+
+      if (affiliate) {
+        affiliateId = affiliate.id
+        console.log('✅ Affiliate found:', affiliate.id)
+      } else {
+        console.log('⚠️ Affiliate not found for code:', referralCode)
+      }
+    }
+    // END AFFILIATE TRACKING
+    // =====================================================
+
     // For non-authenticated users, Stripe will collect email during checkout
     // So we don't require it here
 
@@ -150,6 +178,7 @@ export async function POST(request: NextRequest) {
         billing_cycle: billingCycle,
         is_new_signup: !user ? 'true' : 'false',
         ...(endorsely_referral && { endorsely_referral }),
+        ...(affiliateId && { affiliate_id: affiliateId }),
       },
       subscription_data: {
         trial_period_days: plan.features.trial_days,
@@ -159,6 +188,7 @@ export async function POST(request: NextRequest) {
           plan_id: planId,
           billing_cycle: billingCycle,
           ...(endorsely_referral && { endorsely_referral }),
+          ...(affiliateId && { affiliate_id: affiliateId }),
         },
       },
     })
