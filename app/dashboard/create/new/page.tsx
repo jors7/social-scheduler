@@ -1743,7 +1743,13 @@ function CreateNewPostPageContent() {
           filteredPlatformContent[platform] = content
         }
       })
-      
+
+      // For Threads thread mode (even when posting to multiple platforms), add thread content
+      if (supportedPlatforms.includes('threads') && threadPosts.filter(p => p.trim()).length > 0) {
+        const filteredPosts = threadPosts.filter(p => p.trim().length > 0)
+        filteredPlatformContent.threads = `Thread: ${filteredPosts.join(' | ')}`
+      }
+
       // Handle YouTube separately if selected
       let youtubeVideoUrl: string | undefined;
       let youtubeThumbnailUrl: string | undefined; // Store the thumbnail image URL
@@ -3090,7 +3096,13 @@ function CreateNewPostPageContent() {
           filteredPlatformContent[platform] = content
         }
       })
-      
+
+      // For Threads thread mode, add thread content to platform_content
+      if (isThreadsThreadMode && threadPosts.filter(p => p.trim()).length > 0) {
+        const filteredPosts = threadPosts.filter(p => p.trim().length > 0)
+        filteredPlatformContent.threads = `Thread: ${filteredPosts.join(' | ')}`
+      }
+
       const requestData = {
         content: isThreadsThreadMode ? (threadPosts.filter(p => p.trim()).length > 0 ? threadPosts[0] : '') : postContent,
         platforms: selectedPlatforms,
