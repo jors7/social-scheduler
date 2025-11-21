@@ -743,10 +743,15 @@ async function processScheduledPosts(request: NextRequest) {
                 break;
 
               case 'threads':
+                // Clean HTML from thread posts if they exist
+                const threadPosts = post.thread_posts
+                  ? (post.thread_posts as string[]).map(text => cleanHtmlContent(text))
+                  : undefined;
+
                 result = await postToThreadsDirect(content, account, post.media_urls, supabase, {
-                  threadsMode: post.threads_mode,
-                  threadPosts: post.thread_posts,
-                  threadsThreadMedia: post.threads_thread_media
+                  threadsMode: post.threads_mode || undefined,
+                  threadPosts: threadPosts,
+                  threadsThreadMedia: post.threads_thread_media || undefined
                 });
                 break;
 
