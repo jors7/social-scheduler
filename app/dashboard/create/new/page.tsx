@@ -1353,9 +1353,9 @@ function CreateNewPostPageContent() {
     }
 
     // Special handling for Threads thread mode
-    const isThreadsThreadMode = selectedPlatforms.length === 1 && 
-      selectedPlatforms[0] === 'threads' && 
-      threadsMode === 'thread'
+    const isThreadsThreadMode = selectedPlatforms.length === 1 &&
+      selectedPlatforms[0] === 'threads' &&
+      (threadsMode === 'thread' || threadPosts.some(p => p && p.trim().length > 0))
     
     // Special handling for Twitter thread mode
     const isTwitterThreadMode = selectedPlatforms.length === 1 && 
@@ -2562,9 +2562,9 @@ function CreateNewPostPageContent() {
     }
 
     // Special handling for Threads thread mode
-    const isThreadsThreadMode = selectedPlatforms.length === 1 && 
-      selectedPlatforms[0] === 'threads' && 
-      threadsMode === 'thread'
+    const isThreadsThreadMode = selectedPlatforms.length === 1 &&
+      selectedPlatforms[0] === 'threads' &&
+      (threadsMode === 'thread' || threadPosts.some(p => p && p.trim().length > 0))
     
     // Special handling for Twitter thread mode
     const isTwitterThreadMode = selectedPlatforms.length === 1 && 
