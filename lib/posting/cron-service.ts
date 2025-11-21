@@ -621,19 +621,48 @@ export async function postToThreadsDirect(
       };
     } else {
       // Single post mode
+      // Use first media URL if available
+      const mediaUrl = mediaUrls && mediaUrls.length > 0 ? mediaUrls[0] : undefined;
+
+      // Check if this is a video post - if so, use two-phase processing
+      if (mediaUrl) {
+        const videoExtensions = ['.mp4', '.mov', '.m4v'];
+        const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
+
+        if (isVideo) {
+          console.log('[Threads Phase 1] Detected video, using two-phase processing');
+
+          const { ThreadsClient } = await import('@/lib/threads/client');
+          const threadsClient = new ThreadsClient({
+            accessToken: accessToken,
+            userID: account.platform_user_id
+          });
+
+          const { containerId } = await threadsClient.createContainerOnly(content, mediaUrl);
+
+          console.log('[Threads Phase 1] Video container created:', containerId);
+
+          return {
+            success: true,
+            twoPhase: true,
+            platform: 'threads',
+            containerId: containerId,
+            message: 'Threads video container created, waiting for processing'
+          };
+        }
+      }
+
+      // For text-only or image posts, use single-phase processing
       const threadsService = new ThreadsService({
         accessToken: accessToken,
         userID: account.platform_user_id
       });
 
-      // Use first media URL if available
-      const imageUrl = mediaUrls && mediaUrls.length > 0 ? mediaUrls[0] : undefined;
-
-      console.log('Creating single Threads post with media:', imageUrl);
+      console.log('Creating single Threads post with media:', mediaUrl);
 
       const result = await threadsService.createPost({
         text: content,
-        imageUrl: imageUrl
+        imageUrl: mediaUrl
       });
 
       return {

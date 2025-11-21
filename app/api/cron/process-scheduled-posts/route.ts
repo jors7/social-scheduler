@@ -207,12 +207,152 @@ async function processScheduledPosts(request: NextRequest) {
         console.log(`Found ${processingPosts.length} posts in processing status`);
 
         const { InstagramClient } = await import('@/lib/instagram/client');
+        const { ThreadsClient } = await import('@/lib/threads/client');
 
         for (const post of processingPosts) {
           try {
             const processingState = post.processing_state;
-            if (!processingState || !processingState.container_ids) {
+            if (!processingState) {
               console.log(`Post ${post.id} has no processing state, marking as failed`);
+              await supabase
+                .from('scheduled_posts')
+                .update({
+                  status: 'failed',
+                  error_message: 'Invalid processing state'
+                })
+                .eq('id', post.id);
+              continue;
+            }
+
+            // Handle Threads Phase 2 processing
+            if (processingState.platform === 'threads') {
+              console.log(`[Threads Phase 2] Processing post ${post.id}`);
+
+              if (!processingState.container_id) {
+                console.log(`Post ${post.id} has no container_id, marking as failed`);
+                await supabase
+                  .from('scheduled_posts')
+                  .update({
+                    status: 'failed',
+                    error_message: 'Invalid Threads processing state - missing container_id'
+                  })
+                  .eq('id', post.id);
+                continue;
+              }
+
+              // Get the Threads account
+              const { data: threadsAccounts } = await supabase
+                .from('social_accounts')
+                .select('*')
+                .eq('user_id', post.user_id)
+                .eq('platform', 'threads')
+                .eq('is_active', true);
+
+              if (!threadsAccounts || threadsAccounts.length === 0) {
+                throw new Error('Threads account not found');
+              }
+
+              // Find the correct account based on selection
+              let account;
+              if (post.selected_accounts && post.selected_accounts['threads']) {
+                const selectedIds = post.selected_accounts['threads'];
+                account = threadsAccounts.find(acc => selectedIds.includes(acc.id));
+                if (!account) {
+                  console.log('Selected Threads account not found, falling back to first available');
+                  account = threadsAccounts[0];
+                }
+              } else {
+                account = threadsAccounts[0];
+              }
+
+              const threadsClient = new ThreadsClient({
+                accessToken: account.access_token,
+                userID: account.platform_user_id
+              });
+
+              // Check if container is ready
+              const { ready, status } = await threadsClient.checkContainerReady(processingState.container_id);
+
+              if (ready) {
+                console.log(`[Threads Phase 2] Container ${processingState.container_id} ready, publishing...`);
+
+                // Publish the container
+                const result = await threadsClient.publishContainer(processingState.container_id);
+
+                // Check if there are remaining accounts to process
+                const remainingAccounts = processingState.remaining_accounts || [];
+
+                if (remainingAccounts.length > 0) {
+                  console.log(`[Threads Phase 2] ✅ Published to ${processingState.account_label || 'Threads'}`);
+                  console.log(`[Threads Phase 2] Queueing ${remainingAccounts.length} remaining account(s): ${remainingAccounts.join(', ')}`);
+
+                  // Reset post to pending status with only remaining accounts selected
+                  await supabase
+                    .from('scheduled_posts')
+                    .update({
+                      status: 'pending',
+                      selected_accounts: {
+                        ...post.selected_accounts,
+                        threads: remainingAccounts
+                      },
+                      processing_state: null
+                    })
+                    .eq('id', post.id);
+
+                  console.log(`✅ Post ${post.id} published to ${processingState.account_label || 'Threads'}, ${remainingAccounts.length} account(s) remaining`);
+                } else {
+                  // No remaining accounts - mark as fully posted
+                  await supabase
+                    .from('scheduled_posts')
+                    .update({
+                      status: 'posted',
+                      posted_at: new Date().toISOString(),
+                      post_results: [{ platform: 'threads', success: true, postId: result.id }],
+                      processing_state: null
+                    })
+                    .eq('id', post.id);
+
+                  console.log(`✅ Post ${post.id} published to Threads (all accounts completed)`);
+                }
+              } else {
+                // Check attempt count
+                const attempts = (processingState.attempts || 0) + 1;
+                const maxAttempts = 30; // 30 cron runs = ~30 minutes with 1-minute intervals
+
+                if (attempts >= maxAttempts) {
+                  console.log(`Post ${post.id}: Max attempts reached, marking as failed`);
+                  await supabase
+                    .from('scheduled_posts')
+                    .update({
+                      status: 'failed',
+                      error_message: 'Threads video processing timed out after 30 minutes',
+                      processing_state: null
+                    })
+                    .eq('id', post.id);
+                } else {
+                  // Update attempt count
+                  await supabase
+                    .from('scheduled_posts')
+                    .update({
+                      processing_state: {
+                        ...processingState,
+                        attempts,
+                        last_check: new Date().toISOString(),
+                        status
+                      }
+                    })
+                    .eq('id', post.id);
+
+                  console.log(`[Threads Phase 2] Still processing (attempt ${attempts}/${maxAttempts}, status: ${status})`);
+                }
+              }
+
+              continue; // Move to next post
+            }
+
+            // Handle Instagram Phase 2 processing
+            if (!processingState.container_ids) {
+              console.log(`Post ${post.id} has no container_ids (Instagram), marking as failed`);
               await supabase
                 .from('scheduled_posts')
                 .update({
@@ -627,9 +767,13 @@ async function processScheduledPosts(request: NextRequest) {
                 continue;
             }
 
-            // Handle two-phase processing for Instagram carousels with videos
+            // Handle two-phase processing for Instagram carousels and Threads videos
             if ((result as any).twoPhase) {
-              console.log(`[Two-Phase] Instagram carousel needs processing for ${platformLabel}`);
+              const twoPhaseResult = result as any;
+              const isThreads = twoPhaseResult.platform === 'threads';
+              const isInstagram = twoPhaseResult.platform === 'instagram' || !twoPhaseResult.platform;
+
+              console.log(`[Two-Phase] ${isThreads ? 'Threads video' : 'Instagram carousel'} needs processing for ${platformLabel}`);
 
               // Calculate remaining accounts to process after this one
               const currentIndex = accountsToPost.indexOf(account);
@@ -638,21 +782,30 @@ async function processScheduledPosts(request: NextRequest) {
               console.log(`[Two-Phase] Current account: ${account.id} (${platformLabel})`);
               console.log(`[Two-Phase] Remaining accounts: ${remainingAccounts.length > 0 ? remainingAccounts.join(', ') : 'none'}`);
 
+              // Build processing state based on platform
+              const processingState: any = {
+                platform: isThreads ? 'threads' : 'instagram',
+                account_id: account.id,
+                account_label: platformLabel,
+                remaining_accounts: remainingAccounts,
+                phase: 'waiting_for_containers',
+                attempts: 0,
+                created_at: new Date().toISOString()
+              };
+
+              // Add platform-specific container IDs
+              if (isThreads) {
+                processingState.container_id = twoPhaseResult.containerId;
+              } else {
+                processingState.container_ids = twoPhaseResult.containerIds;
+              }
+
               // Update post to processing status with container IDs and account tracking
               const { error: processingError } = await supabase
                 .from('scheduled_posts')
                 .update({
                   status: 'processing',
-                  processing_state: {
-                    container_ids: (result as any).containerIds,
-                    platform: 'instagram',
-                    account_id: account.id,
-                    account_label: platformLabel,
-                    remaining_accounts: remainingAccounts,
-                    phase: 'waiting_for_containers',
-                    attempts: 0,
-                    created_at: new Date().toISOString()
-                  }
+                  processing_state: processingState
                 })
                 .eq('id', post.id);
 
@@ -669,7 +822,9 @@ async function processScheduledPosts(request: NextRequest) {
                   postId: post.id,
                   success: true,
                   platforms: [],
-                  message: 'Instagram carousel containers created, waiting for video processing'
+                  message: isThreads
+                    ? 'Threads video container created, waiting for processing'
+                    : 'Instagram carousel containers created, waiting for video processing'
                 });
 
                 // Set flag and break to skip success/failed check
