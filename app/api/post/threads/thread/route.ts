@@ -354,3 +354,10 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Configure max duration for video thread processing
+// Video threads require longer timeouts due to:
+// - Video polling (up to 180s per video)
+// - 120s delay after video posts (for parent to mature)
+// - Multiple posts in sequence
+export const maxDuration = 300; // 5 minutes
