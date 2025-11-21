@@ -647,11 +647,22 @@ export async function postToThreadsDirect(
 
         console.log(`[Threads Thread] First post queued for job ${threadJob.id}`);
 
+        // Extract thumbnail URL (can be string or object with url property)
+        const firstMedia = threadData.threadsThreadMedia?.[0]?.[0];
+        let thumbnailUrl: string | undefined;
+        if (typeof firstMedia === 'string') {
+          thumbnailUrl = firstMedia;
+        } else if (firstMedia && typeof firstMedia === 'object' && 'url' in firstMedia) {
+          thumbnailUrl = (firstMedia as any).url;
+        } else {
+          thumbnailUrl = flatMediaUrls[0];
+        }
+
         return {
           success: true,
           threadJobId: threadJob.id,
           async: true, // Indicates async processing
-          thumbnailUrl: threadData.threadsThreadMedia?.[0]?.[0]?.url || flatMediaUrls[0],
+          thumbnailUrl,
           message: `Threads thread queued for processing (${threadData.threadPosts.length} posts)`
         };
 
