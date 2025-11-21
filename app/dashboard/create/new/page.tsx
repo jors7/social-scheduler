@@ -1922,6 +1922,37 @@ function CreateNewPostPageContent() {
 
       // Handle Threads thread mode separately
       if (supportedPlatforms.length === 1 && supportedPlatforms[0] === 'threads' && (threadsMode === 'thread' || threadPosts.some(p => p && p.trim().length > 0))) {
+        // Validate thread media types - Threads has limitations on video threading
+        const videoExtensions = ['.mp4', '.mov', '.m4v', '.avi', '.wmv', '.flv', '.webm']
+
+        const isVideo = (media: any) => {
+          if (!media || !media.length) return false
+          const url = typeof media[0] === 'string' ? media[0] : media[0]?.url || ''
+          return videoExtensions.some(ext => url.toLowerCase().endsWith(ext))
+        }
+
+        // Check each post's media type
+        const hasVideo = threadsThreadMedia.map(media => isVideo(media))
+
+        // Block: Multiple videos in thread
+        const videoCount = hasVideo.filter(Boolean).length
+        if (videoCount > 1) {
+          toast.error('Threads doesn\'t support threading multiple videos together. Please use images for threads, or post videos separately.')
+          progressTracker.finish()
+          setIsPosting(false)
+          return
+        }
+
+        // Block: Video after any other post (Image→Video, Text→Video)
+        for (let i = 1; i < hasVideo.length; i++) {
+          if (hasVideo[i]) {
+            toast.error('Threads doesn\'t support videos as replies. Videos can only be the first post in a thread, followed by images.')
+            progressTracker.finish()
+            setIsPosting(false)
+            return
+          }
+        }
+
         // Get Threads account
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
