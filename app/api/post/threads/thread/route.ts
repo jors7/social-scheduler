@@ -264,45 +264,19 @@ export async function POST(request: NextRequest) {
           nextPostIndex: i + 2
         });
 
-        // Add a delay between posts to ensure the post is fully processed
-        // Threads needs time to make the post available as a reply target
-        // Posts with media need significantly more time (especially the first post)
-        // VIDEOS specifically need parent posts to be FULLY mature/indexed (120s minimum)
+        // Add a small grace period after publishing to ensure Threads indexes the post
+        // Status polling already ensures the container is ready (status=FINISHED)
+        // This is just a safety buffer for Threads to make the post available as a reply target
         if (i < posts.length - 1) {
-          // Check if current and next posts have media
           const currentHasMedia = mediaUrls[i];
-          const nextHasMedia = mediaUrls[i + 1];
 
-          const videoExtensions = ['.mp4', '.mov', '.m4v', '.avi', '.wmv', '.flv', '.webm'];
+          // Small grace period: 10s for media posts, 2s for text-only
+          // This replaces the previous 120s delay which was redundant with status polling
+          const graceDelay = currentHasMedia ? 10000 : 2000;
 
-          // Check if CURRENT post is a VIDEO (video parents need MORE time to be reply-ready)
-          let currentIsVideo = false;
-          if (currentHasMedia) {
-            const currentMediaUrl = typeof currentHasMedia === 'string' ? currentHasMedia : (currentHasMedia as any)?.url || '';
-            currentIsVideo = videoExtensions.some(ext => currentMediaUrl.toLowerCase().endsWith(ext));
-          }
-
-          // Check if NEXT post is a VIDEO (videos need mature parents to reply to)
-          let nextIsVideo = false;
-          if (nextHasMedia) {
-            const nextMediaUrl = typeof nextHasMedia === 'string' ? nextHasMedia : (nextHasMedia as any)?.url || '';
-            nextIsVideo = videoExtensions.some(ext => nextMediaUrl.toLowerCase().endsWith(ext));
-          }
-
-          // Determine delay based on BOTH current and next post types:
-          // - 120s when CURRENT post is VIDEO (video parent needs MORE time to be fully indexed/reply-ready)
-          // - 60s when NEXT post is VIDEO (needs mature parent to reply to)
-          // - 30s for first post with media (thread starter needs extra time)
-          // - 10s for other media posts
-          // - 5s for text-only posts
-          const delay = currentIsVideo ? 120000 : // 120s when CURRENT is video (parent needs time to mature)
-                        nextIsVideo ? 60000 :     // 60s when NEXT is video (needs mature parent)
-                        (i === 0 && currentHasMedia) ? 30000 : // 30s for first post with media
-                        (currentHasMedia || nextHasMedia ? 10000 : 5000); // 10s/5s otherwise
-
-          console.log(`⏰ Waiting ${delay}ms for post ${i + 1} to be fully processed and available as reply target...`);
-          console.log(`   Reason: ${i === 0 ? 'First post (thread starter)' : 'Subsequent post'}, current has media: ${!!currentHasMedia}, current is VIDEO: ${currentIsVideo}, next has media: ${!!nextHasMedia}, next is VIDEO: ${nextIsVideo}`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          console.log(`⏰ Grace period: waiting ${graceDelay}ms for post ${i + 1} to be indexed as reply target...`);
+          console.log(`   Post type: ${currentHasMedia ? 'media' : 'text'}, Status polling already completed`);
+          await new Promise(resolve => setTimeout(resolve, graceDelay));
         }
 
       } catch (error) {
