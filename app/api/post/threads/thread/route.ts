@@ -267,15 +267,31 @@ export async function POST(request: NextRequest) {
         // Add a delay between posts to ensure the post is fully processed
         // Threads needs time to make the post available as a reply target
         // Posts with media need significantly more time (especially the first post)
+        // VIDEOS specifically need parent posts to be FULLY mature/indexed (60s minimum)
         if (i < posts.length - 1) {
-          // If this post or next post has media, wait longer
+          // Check if current and next posts have media
           const currentHasMedia = mediaUrls[i];
           const nextHasMedia = mediaUrls[i + 1];
-          // 30s for first post with media (Threads needs extra time for the thread starter)
-          // 10s for subsequent posts with media, 5s for text-only
-          const delay = (i === 0 && currentHasMedia) ? 30000 : (currentHasMedia || nextHasMedia ? 10000 : 5000);
+
+          // Check if NEXT post is a VIDEO (videos are pickier about reply target maturity)
+          let nextIsVideo = false;
+          if (nextHasMedia) {
+            const videoExtensions = ['.mp4', '.mov', '.m4v', '.avi', '.wmv', '.flv', '.webm'];
+            const nextMediaUrl = typeof nextHasMedia === 'string' ? nextHasMedia : (nextHasMedia as any)?.url || '';
+            nextIsVideo = videoExtensions.some(ext => nextMediaUrl.toLowerCase().endsWith(ext));
+          }
+
+          // Determine delay based on what's coming next:
+          // - 60s if next post is VIDEO (needs parent to be fully mature/indexed)
+          // - 30s for first post with media (thread starter needs extra time)
+          // - 10s for other media posts
+          // - 5s for text-only posts
+          const delay = nextIsVideo ? 60000 : // 60s when next post is video
+                        (i === 0 && currentHasMedia) ? 30000 : // 30s for first post with media
+                        (currentHasMedia || nextHasMedia ? 10000 : 5000); // 10s/5s otherwise
+
           console.log(`⏰ Waiting ${delay}ms for post ${i + 1} to be fully processed and available as reply target...`);
-          console.log(`   Reason: ${i === 0 ? 'First post (thread starter)' : 'Subsequent post'}, has media: ${!!currentHasMedia}, next has media: ${!!nextHasMedia}`);
+          console.log(`   Reason: ${i === 0 ? 'First post (thread starter)' : 'Subsequent post'}, has media: ${!!currentHasMedia}, next has media: ${!!nextHasMedia}, next is VIDEO: ${nextIsVideo}`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
 
