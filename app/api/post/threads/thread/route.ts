@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     const publishedPosts = [];
+    let firstPostId: string | null = null; // Store first post ID for thread replies
     let previousPostId = null;
 
     // Process each post in the thread sequentially
@@ -73,11 +74,11 @@ export async function POST(request: NextRequest) {
         // Note: reply_control parameter removed - it requires additional permissions
 
         // If this is not the first post, add reply_to_id to create a thread
-        // This works with threads_basic + threads_content_publish
-        if (previousPostId) {
-          formData.append('reply_to_id', previousPostId);
+        // All replies should reply to the FIRST post to create a proper thread structure
+        if (firstPostId) {
+          formData.append('reply_to_id', firstPostId);
           console.log(`Adding reply_to_id to post ${i + 1}:`, {
-            reply_to_id: previousPostId,
+            reply_to_id: firstPostId,
             postNumber: i + 1,
             totalPosts: posts.length
           });
@@ -158,7 +159,7 @@ export async function POST(request: NextRequest) {
         if (mediaUrl) {
           const videoExtensions = ['.mp4', '.mov', '.m4v'];
           const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
-          const delay = isVideo ? 30000 : 5000; // 30s for videos, 5s for images
+          const delay = isVideo ? 30000 : 3000; // 30s for videos, 3s for images (reduced from 5s)
           console.log(`Waiting ${delay}ms for Threads to process ${isVideo ? 'video' : 'image'}...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
@@ -203,14 +204,19 @@ export async function POST(request: NextRequest) {
           isReply: previousPostId !== null
         });
 
-        // Update previousPostId for the next iteration
-        previousPostId = postId;
-        console.log(`Setting previousPostId for next post: ${previousPostId}`);
+        // Store first post ID for thread replies
+        if (i === 0) {
+          firstPostId = postId;
+          console.log(`Stored first post ID for thread replies: ${firstPostId}`);
+        }
 
-        // Add a longer delay between posts to ensure the post is fully processed
+        // Keep previousPostId for backward compatibility (not used for reply_to_id anymore)
+        previousPostId = postId;
+
+        // Add a delay between posts to ensure the post is fully processed
         // Threads needs time to make the post available as a reply target
         if (i < posts.length - 1) {
-          const delay = 10000; // 10 seconds delay - Threads needs time to process posts with media
+          const delay = 5000; // 5 seconds delay (reduced from 10s to avoid timeout)
           console.log(`Waiting ${delay}ms for post to be fully processed before creating reply...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
