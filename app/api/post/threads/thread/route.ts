@@ -266,10 +266,11 @@ export async function POST(request: NextRequest) {
           // If this post or next post has media, wait longer
           const currentHasMedia = mediaUrls[i];
           const nextHasMedia = mediaUrls[i + 1];
-          // 20s for first post with media, 10s for subsequent posts with media, 5s for text-only
-          const delay = (i === 0 && currentHasMedia) ? 20000 : (currentHasMedia || nextHasMedia ? 10000 : 5000);
+          // 30s for first post with media (Threads needs extra time for the thread starter)
+          // 10s for subsequent posts with media, 5s for text-only
+          const delay = (i === 0 && currentHasMedia) ? 30000 : (currentHasMedia || nextHasMedia ? 10000 : 5000);
           console.log(`⏰ Waiting ${delay}ms for post ${i + 1} to be fully processed and available as reply target...`);
-          console.log(`   Reason: ${i === 0 ? 'First post' : 'Subsequent post'}, has media: ${!!currentHasMedia}, next has media: ${!!nextHasMedia}`);
+          console.log(`   Reason: ${i === 0 ? 'First post (thread starter)' : 'Subsequent post'}, has media: ${!!currentHasMedia}, next has media: ${!!nextHasMedia}`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
 
