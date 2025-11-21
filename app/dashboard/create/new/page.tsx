@@ -1911,7 +1911,7 @@ function CreateNewPostPageContent() {
       }
 
       // Handle Threads thread mode separately
-      if (supportedPlatforms.length === 1 && supportedPlatforms[0] === 'threads' && threadsMode === 'thread' && threadPosts.length > 0) {
+      if (supportedPlatforms.length === 1 && supportedPlatforms[0] === 'threads' && threadsMode === 'thread') {
         // Get Threads account
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
