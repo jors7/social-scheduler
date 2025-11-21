@@ -6,12 +6,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, X, Link2, ImageIcon, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import { extractVideoThumbnail, isVideoFile } from '@/lib/utils/video-thumbnail';
 
 interface ThreadPost {
   id: string;
   text: string;
   mediaFiles?: File[];
   mediaUrls?: string[];
+  mediaThumbnails?: string[];
+  mediaTypes?: ('image' | 'video')[];
 }
 
 interface ThreadComposerProps {
@@ -150,32 +153,73 @@ export function ThreadComposer({
     }
   };
   
-  const handleMediaSelect = (postId: string, files: FileList | null) => {
+  const handleMediaSelect = async (postId: string, files: FileList | null) => {
     if (!files) return;
-    
+
     const fileArray = Array.from(files);
     const post = posts.find(p => p.id === postId);
-    
+
     if (!post) return;
-    
+
     // Check media limit
     const currentCount = post.mediaFiles?.length || 0;
     if (currentCount + fileArray.length > mediaLimit) {
       toast.error(`Maximum ${mediaLimit} ${mediaLimit === 1 ? 'image' : 'images'} per ${platform === 'threads' ? 'post' : 'tweet'}`);
       return;
     }
-    
+
+    // Process files and generate thumbnails for videos
+    const processedMedia = await Promise.all(
+      fileArray.map(async (file) => {
+        const blobUrl = URL.createObjectURL(file);
+        const isVideo = isVideoFile(file);
+        let thumbnailUrl = blobUrl; // Default to blob URL for images
+
+        if (isVideo) {
+          try {
+            const thumbnailFile = await extractVideoThumbnail(file);
+            if (thumbnailFile) {
+              thumbnailUrl = URL.createObjectURL(thumbnailFile);
+            }
+          } catch (error) {
+            console.error('Failed to generate video thumbnail:', error);
+          }
+        }
+
+        return {
+          file,
+          blobUrl,
+          thumbnailUrl,
+          mediaType: isVideo ? 'video' as const : 'image' as const
+        };
+      })
+    );
+
     const updatedPosts = posts.map(p => {
       if (p.id === postId) {
-        const newFiles = [...(p.mediaFiles || []), ...fileArray];
-        const newUrls = newFiles.map(f => URL.createObjectURL(f));
-        return { ...p, mediaFiles: newFiles, mediaUrls: newUrls };
+        const existingFiles = p.mediaFiles || [];
+        const existingUrls = p.mediaUrls || [];
+        const existingThumbnails = p.mediaThumbnails || [];
+        const existingTypes = p.mediaTypes || [];
+
+        const newFiles = [...existingFiles, ...processedMedia.map(m => m.file)];
+        const newUrls = [...existingUrls, ...processedMedia.map(m => m.blobUrl)];
+        const newThumbnails = [...existingThumbnails, ...processedMedia.map(m => m.thumbnailUrl)];
+        const newTypes = [...existingTypes, ...processedMedia.map(m => m.mediaType)];
+
+        return {
+          ...p,
+          mediaFiles: newFiles,
+          mediaUrls: newUrls,
+          mediaThumbnails: newThumbnails,
+          mediaTypes: newTypes
+        };
       }
       return p;
     });
-    
+
     setPosts(updatedPosts);
-    
+
     // Update parent
     if (autoUpdate && onMediaChange) {
       const media = updatedPosts.map(p => p.mediaFiles);
@@ -188,22 +232,36 @@ export function ThreadComposer({
       if (p.id === postId) {
         const newFiles = [...(p.mediaFiles || [])];
         const newUrls = [...(p.mediaUrls || [])];
-        
-        // Revoke the URL to free memory
+        const newThumbnails = [...(p.mediaThumbnails || [])];
+        const newTypes = [...(p.mediaTypes || [])];
+
+        // Revoke the URLs to free memory
         if (newUrls[index]) {
           URL.revokeObjectURL(newUrls[index]);
         }
-        
+        // Revoke thumbnail URL if it's different from the main URL (video case)
+        if (newThumbnails[index] && newThumbnails[index] !== newUrls[index]) {
+          URL.revokeObjectURL(newThumbnails[index]);
+        }
+
         newFiles.splice(index, 1);
         newUrls.splice(index, 1);
-        
-        return { ...p, mediaFiles: newFiles, mediaUrls: newUrls };
+        newThumbnails.splice(index, 1);
+        newTypes.splice(index, 1);
+
+        return {
+          ...p,
+          mediaFiles: newFiles,
+          mediaUrls: newUrls,
+          mediaThumbnails: newThumbnails,
+          mediaTypes: newTypes
+        };
       }
       return p;
     });
-    
+
     setPosts(updatedPosts);
-    
+
     // Update parent
     if (autoUpdate && onMediaChange) {
       const media = updatedPosts.map(p => p.mediaFiles);
@@ -313,23 +371,38 @@ export function ThreadComposer({
                 {/* Media preview */}
                 {post.mediaUrls && post.mediaUrls.length > 0 && (
                   <div className="mt-3 grid grid-cols-2 gap-2">
-                    {post.mediaUrls.map((url, mediaIndex) => (
-                      <div key={mediaIndex} className="relative group">
-                        <img
-                          src={url}
-                          alt={`Media ${mediaIndex + 1}`}
-                          className="w-full max-h-40 object-contain rounded-lg bg-gray-100"
-                        />
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => removeMedia(post.id, mediaIndex)}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
+                    {post.mediaUrls.map((url, mediaIndex) => {
+                      const isVideo = post.mediaTypes?.[mediaIndex] === 'video';
+                      const thumbnailUrl = post.mediaThumbnails?.[mediaIndex] || url;
+
+                      return (
+                        <div key={mediaIndex} className="relative group">
+                          <img
+                            src={thumbnailUrl}
+                            alt={`Media ${mediaIndex + 1}`}
+                            className="w-full max-h-40 object-contain rounded-lg bg-gray-100"
+                          />
+                          {/* Video indicator overlay */}
+                          {isVideo && (
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <div className="bg-white/90 rounded-full p-2 shadow-lg">
+                                <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                                </svg>
+                              </div>
+                            </div>
+                          )}
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeMedia(post.id, mediaIndex)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
