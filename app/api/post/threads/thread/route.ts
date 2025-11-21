@@ -264,18 +264,29 @@ export async function POST(request: NextRequest) {
           nextPostIndex: i + 2
         });
 
-        // Add a small grace period after publishing to ensure Threads indexes the post
-        // Status polling already ensures the container is ready (status=FINISHED)
-        // This is just a safety buffer for Threads to make the post available as a reply target
+        // Add a grace period after publishing to ensure Threads indexes the post as a reply target
+        // VIDEO containers require parents to be older (60s) than IMAGE containers (10s)
+        // This is based on testing: Video→Image works with 10s, but Image→Video fails with 10s
         if (i < posts.length - 1) {
           const currentHasMedia = mediaUrls[i];
+          const nextHasMedia = mediaUrls[i + 1];
 
-          // Small grace period: 10s for media posts, 2s for text-only
-          // This replaces the previous 120s delay which was redundant with status polling
-          const graceDelay = currentHasMedia ? 10000 : 2000;
+          // Check if NEXT post is a VIDEO (video containers need older parents to accept reply_to_id)
+          let nextIsVideo = false;
+          if (nextHasMedia) {
+            const videoExtensions = ['.mp4', '.mov', '.m4v', '.avi', '.wmv', '.flv', '.webm'];
+            const nextMediaUrl = typeof nextHasMedia === 'string' ? nextHasMedia : (nextHasMedia as any)?.url || '';
+            nextIsVideo = videoExtensions.some(ext => nextMediaUrl.toLowerCase().endsWith(ext));
+          }
+
+          // Grace periods based on what's being created next:
+          // - 60s if NEXT post is VIDEO (video containers require parent to be 60s+ old)
+          // - 10s if current has media (image containers work with 10s old parents)
+          // - 2s for text-only
+          const graceDelay = nextIsVideo ? 60000 : (currentHasMedia ? 10000 : 2000);
 
           console.log(`⏰ Grace period: waiting ${graceDelay}ms for post ${i + 1} to be indexed as reply target...`);
-          console.log(`   Post type: ${currentHasMedia ? 'media' : 'text'}, Status polling already completed`);
+          console.log(`   Current: ${currentHasMedia ? 'media' : 'text'}, Next is VIDEO: ${nextIsVideo} (videos need older parents)`);
           await new Promise(resolve => setTimeout(resolve, graceDelay));
         }
 
