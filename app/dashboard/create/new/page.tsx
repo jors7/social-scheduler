@@ -4092,13 +4092,28 @@ function CreateNewPostPageContent() {
           {selectedPlatforms.includes('threads') && (
             <Card variant="elevated" className="hover:shadow-xl transition-all duration-300 border-purple-200 dark:border-purple-800">
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
-                  <span className="text-2xl">🧵</span>
-                  Create Thread Posts
-                </CardTitle>
-                <CardDescription className="text-sm sm:text-base text-gray-600">
-                  Fill one post for a single post, or add multiple to create a thread
-                </CardDescription>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
+                      <span className="text-2xl">🧵</span>
+                      Create Thread Posts
+                    </CardTitle>
+                    <CardDescription className="text-sm sm:text-base text-gray-600">
+                      Fill one post for a single post, or add multiple to create a thread
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowPreview(!showPreview)}
+                      className="bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border-blue-200 hover:border-blue-300 flex-1 sm:flex-initial"
+                    >
+                      <Eye className="mr-2 h-4 w-4 text-blue-600" />
+                      Preview
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <ThreadComposer
