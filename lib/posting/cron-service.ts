@@ -573,12 +573,19 @@ export async function postToThreadsDirect(
       // Threads API expects mediaUrls[i] to be a single URL for post i
       const flatMediaUrls = (threadData.threadsThreadMedia || [])
         .map(mediaArray => {
-          // Check if mediaArray is an array and has valid string URLs
+          // Check if mediaArray is an array and has items
           if (Array.isArray(mediaArray) && mediaArray.length > 0) {
             const firstItem = mediaArray[0];
-            // Only return if it's a non-empty string (not an object or empty string)
+
+            // Handle both string URLs and object format with url property
             if (typeof firstItem === 'string' && firstItem.trim().length > 0) {
-              return firstItem;
+              return firstItem; // Plain string URL
+            } else if (firstItem && typeof firstItem === 'object' && 'url' in firstItem) {
+              // Object with url property (like { url: string, type: string, thumbnailUrl?: string })
+              const url = (firstItem as { url: string }).url;
+              if (typeof url === 'string' && url.trim().length > 0) {
+                return url;
+              }
             }
           }
           return undefined;
