@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, accessToken, posts, mediaUrls = [] } = await request.json();
+    const { userId, accessToken, posts, mediaUrls = [], phaseOneOnly = false } = await request.json();
 
     if (!userId || !accessToken || !posts || !Array.isArray(posts) || posts.length === 0) {
       return NextResponse.json(
@@ -11,10 +11,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`Creating connected thread with ${posts.length} posts for user ${userId}`);
+    console.log(`${phaseOneOnly ? '[Phase 1]' : ''} Creating connected thread with ${posts.length} posts for user ${userId}`);
     console.log('Posts to create:', posts.map((p, i) => `Post ${i + 1}: ${p.substring(0, 30)}...`));
     console.log('Access token preview:', accessToken ? `${accessToken.substring(0, 20)}...` : 'null');
-    
+    console.log('Mode:', phaseOneOnly ? 'Phase 1 (containers only)' : 'Full (create + publish)');
+
     // First, get the Threads user ID (different from Instagram user ID)
     console.log('Getting Threads user ID...');
     const meResponse = await fetch(
@@ -74,11 +75,11 @@ export async function POST(request: NextRequest) {
         // Note: reply_control parameter removed - it requires additional permissions
 
         // If this is not the first post, add reply_to_id to create a thread
-        // All replies should reply to the FIRST post to create a proper thread structure
-        if (firstPostId) {
-          formData.append('reply_to_id', firstPostId);
+        // Each post should reply to the PREVIOUS post to create a proper thread chain (1→2→3)
+        if (previousPostId) {
+          formData.append('reply_to_id', previousPostId);
           console.log(`Adding reply_to_id to post ${i + 1}:`, {
-            reply_to_id: firstPostId,
+            reply_to_id: previousPostId,
             postNumber: i + 1,
             totalPosts: posts.length
           });
@@ -154,7 +155,39 @@ export async function POST(request: NextRequest) {
         const containerId = createData.id;
         console.log(`Container created: ${containerId}`);
 
-        // Add delay for media processing
+        // If Phase 1 only, skip publishing and delay
+        if (phaseOneOnly) {
+          console.log(`[Phase 1] Skipping publish for container ${containerId}`);
+
+          // Determine media type
+          let mediaType = 'TEXT';
+          if (mediaUrl) {
+            const videoExtensions = ['.mp4', '.mov', '.m4v'];
+            mediaType = videoExtensions.some(ext => mediaUrl.toLowerCase().endsWith(ext)) ? 'VIDEO' : 'IMAGE';
+          }
+
+          publishedPosts.push({
+            index: i,
+            text: postText,
+            containerId: containerId,
+            isReply: previousPostId !== null,
+            mediaType: mediaType
+          });
+
+          // Store IDs for chaining
+          if (i === 0) {
+            firstPostId = containerId; // Store container ID for first post
+          }
+          previousPostId = containerId;
+
+          // Small delay between container creations
+          if (i < posts.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+          continue; // Skip to next post
+        }
+
+        // Phase 2 or full mode: Add delay for media processing
         // Threads needs time to download and process media before publishing
         if (mediaUrl) {
           const videoExtensions = ['.mp4', '.mov', '.m4v'];
@@ -244,6 +277,24 @@ export async function POST(request: NextRequest) {
           throw error; // Re-throw if no posts were published
         }
       }
+    }
+
+    if (phaseOneOnly) {
+      console.log(`[Phase 1] All ${publishedPosts.length} containers created successfully`);
+
+      // Get the first media URL for thumbnail (if any)
+      const firstMediaUrl = mediaUrls && mediaUrls.length > 0 ? mediaUrls[0] : undefined;
+
+      return NextResponse.json({
+        success: true,
+        phaseOne: true,
+        message: `Created ${publishedPosts.length} containers (Phase 1)`,
+        containerIds: publishedPosts.map(p => p.containerId),
+        containers: publishedPosts,
+        totalContainers: posts.length,
+        thumbnailUrl: firstMediaUrl,
+        note: 'Phase 1 complete - containers created, publish in Phase 2'
+      });
     }
 
     console.log(`Thread created successfully with ${publishedPosts.length} posts`);

@@ -595,7 +595,10 @@ export async function postToThreadsDirect(
       console.log('Thread media URLs:', flatMediaUrls);
       console.log('Raw thread media data:', JSON.stringify(threadData.threadsThreadMedia));
 
-      // Call the thread posting API
+      // Use two-phase processing for threads (to avoid 60s timeout)
+      console.log('[Threads Thread Phase 1] Creating containers only');
+
+      // Phase 1: Create containers
       const threadResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/post/threads/thread`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -603,21 +606,27 @@ export async function postToThreadsDirect(
           userId: account.platform_user_id,
           accessToken: accessToken,
           posts: threadData.threadPosts,
-          mediaUrls: flatMediaUrls
+          mediaUrls: flatMediaUrls,
+          phaseOneOnly: true // Enable two-phase processing
         })
       });
 
       if (!threadResponse.ok) {
         const errorData = await threadResponse.json();
-        throw new Error(errorData.error || 'Failed to create thread');
+        throw new Error(errorData.error || 'Failed to create thread containers');
       }
 
       const threadResult = await threadResponse.json();
+
+      console.log('[Threads Thread Phase 1] Containers created:', threadResult.containerIds);
+
+      // Return special result indicating two-phase processing
       return {
         success: true,
-        id: threadResult.threadId,
-        thumbnailUrl: threadResult.thumbnailUrl, // Include thumbnail URL for display
-        message: `Posted Threads thread with ${threadData.threadPosts.length} posts successfully`
+        phaseOne: true,
+        containerIds: threadResult.containerIds,
+        thumbnailUrl: threadResult.thumbnailUrl,
+        message: `Created ${threadResult.totalContainers} thread containers (Phase 1)`
       };
     } else {
       // Single post mode
