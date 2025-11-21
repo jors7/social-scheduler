@@ -52,9 +52,19 @@ export async function POST(request: NextRequest) {
         formData.append('access_token', accessToken);
         
         if (mediaUrl) {
-          formData.append('media_type', 'IMAGE');
-          formData.append('image_url', mediaUrl);
-          formData.append('caption', postText);
+          // Determine if media is video or image
+          const videoExtensions = ['.mp4', '.mov', '.m4v', '.avi', '.wmv', '.flv', '.webm'];
+          const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().endsWith(ext));
+
+          if (isVideo) {
+            formData.append('media_type', 'VIDEO');
+            formData.append('video_url', mediaUrl);
+            formData.append('caption', postText);
+          } else {
+            formData.append('media_type', 'IMAGE');
+            formData.append('image_url', mediaUrl);
+            formData.append('caption', postText);
+          }
         } else {
           formData.append('media_type', 'TEXT');
           formData.append('text', postText);
@@ -200,7 +210,7 @@ export async function POST(request: NextRequest) {
         // Add a longer delay between posts to ensure the post is fully processed
         // Threads needs time to make the post available as a reply target
         if (i < posts.length - 1) {
-          const delay = 5000; // 5 seconds delay - Threads needs time to process
+          const delay = 10000; // 10 seconds delay - Threads needs time to process posts with media
           console.log(`Waiting ${delay}ms for post to be fully processed before creating reply...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }

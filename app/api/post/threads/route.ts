@@ -57,10 +57,19 @@ export async function POST(request: NextRequest) {
     formData.append('access_token', activeToken);
 
     if (mediaUrl) {
-      // For image posts
-      formData.append('media_type', 'IMAGE');
-      formData.append('image_url', mediaUrl);
-      formData.append('text', text); // Use 'text' for both text and image posts
+      // For image/video posts - determine media type
+      const videoExtensions = ['.mp4', '.mov', '.m4v', '.avi', '.wmv', '.flv', '.webm'];
+      const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().endsWith(ext));
+
+      if (isVideo) {
+        formData.append('media_type', 'VIDEO');
+        formData.append('video_url', mediaUrl);
+        formData.append('caption', text); // Use 'caption' for video posts
+      } else {
+        formData.append('media_type', 'IMAGE');
+        formData.append('image_url', mediaUrl);
+        formData.append('caption', text); // Use 'caption' for image posts
+      }
     } else {
       // For text-only posts
       formData.append('media_type', 'TEXT');
