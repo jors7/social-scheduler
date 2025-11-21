@@ -404,30 +404,6 @@ function CreateNewPostPageContent() {
     };
   }, [filePreviewUrls])
 
-  // Create blob URLs for thread media (first thread post only, for preview)
-  const threadMediaPreviewUrls = useMemo(() => {
-    if (!threadsThreadMedia || threadsThreadMedia.length === 0) return []
-
-    // Get first thread post's media
-    const firstPostMedia = threadsThreadMedia[0]
-    if (!firstPostMedia || firstPostMedia.length === 0) return []
-
-    // Create blob URLs for the files
-    const urls = firstPostMedia.map(file => ({
-      file,
-      url: URL.createObjectURL(file)
-    }))
-
-    return urls
-  }, [threadsThreadMedia])
-
-  // Cleanup thread media blob URLs
-  useEffect(() => {
-    return () => {
-      threadMediaPreviewUrls.forEach(({ url }) => URL.revokeObjectURL(url));
-    };
-  }, [threadMediaPreviewUrls])
-
   // Combine uploaded URLs and file blob URLs for preview
   const previewMediaUrls = useMemo(() => {
     // Combine uploaded URLs and blob URLs from new files
@@ -750,6 +726,30 @@ function CreateNewPostPageContent() {
       setCurrentDraftId(autoSaveDraftId)
     }
   }, [autoSaveDraftId, currentDraftId])
+
+  // Create blob URLs for thread media (first thread post only, for preview)
+  const threadMediaPreviewUrls = useMemo(() => {
+    if (!threadsThreadMedia || threadsThreadMedia.length === 0) return []
+
+    // Get first thread post's media
+    const firstPostMedia = threadsThreadMedia[0]
+    if (!firstPostMedia || firstPostMedia.length === 0) return []
+
+    // Create blob URLs for the files
+    const urls = firstPostMedia.map(file => ({
+      file,
+      url: URL.createObjectURL(file)
+    }))
+
+    return urls
+  }, [threadsThreadMedia])
+
+  // Cleanup thread media blob URLs
+  useEffect(() => {
+    return () => {
+      threadMediaPreviewUrls.forEach(({ url }) => URL.revokeObjectURL(url));
+    };
+  }, [threadMediaPreviewUrls])
 
   // Warn user before leaving page with unsaved changes
   useEffect(() => {
