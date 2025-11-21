@@ -51,6 +51,9 @@ interface ScheduledPost extends BasePost {
   facebook_as_story?: boolean
   facebook_as_reel?: boolean
   youtube_as_short?: boolean
+  // Thread-specific fields
+  threads_mode?: string
+  threads_thread_media?: any[][]
 }
 
 interface DraftPost extends BasePost {
@@ -154,6 +157,22 @@ export function PostCard({
       // Otherwise extract URL from media_urls (handles both string and object formats)
       return getMediaUrl(postedPost.media_urls?.[0])
     }
+
+    // For scheduled posts, check Threads thread media first
+    if (variant === 'scheduled') {
+      const scheduledPost = post as ScheduledPost
+      if (scheduledPost.threads_mode === 'thread' &&
+          scheduledPost.threads_thread_media &&
+          Array.isArray(scheduledPost.threads_thread_media) &&
+          scheduledPost.threads_thread_media.length > 0) {
+        const firstPostMedia = scheduledPost.threads_thread_media[0]
+        if (Array.isArray(firstPostMedia) && firstPostMedia.length > 0) {
+          // Extract URL from first thread post's first media item
+          return getMediaUrl(firstPostMedia[0])
+        }
+      }
+    }
+
     // For scheduled and draft posts, handle media_urls properly
     const mediaUrls = post.media_urls
     if (mediaUrls && Array.isArray(mediaUrls) && mediaUrls.length > 0) {
@@ -165,6 +184,21 @@ export function PostCard({
 
   // Get video thumbnail if available (new format only)
   const getVideoThumbnailUrl = () => {
+    // For scheduled posts, check Threads thread media first
+    if (variant === 'scheduled') {
+      const scheduledPost = post as ScheduledPost
+      if (scheduledPost.threads_mode === 'thread' &&
+          scheduledPost.threads_thread_media &&
+          Array.isArray(scheduledPost.threads_thread_media) &&
+          scheduledPost.threads_thread_media.length > 0) {
+        const firstPostMedia = scheduledPost.threads_thread_media[0]
+        if (Array.isArray(firstPostMedia) && firstPostMedia.length > 0) {
+          // Extract thumbnail from first thread post's first media item
+          return getMediaThumbnail(firstPostMedia[0])
+        }
+      }
+    }
+
     const mediaUrls = post.media_urls
     if (mediaUrls && Array.isArray(mediaUrls) && mediaUrls.length > 0) {
       return getMediaThumbnail(mediaUrls[0])

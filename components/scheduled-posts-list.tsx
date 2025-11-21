@@ -21,6 +21,9 @@ interface ScheduledPost {
   facebook_as_story?: boolean
   facebook_as_reel?: boolean
   youtube_as_short?: boolean
+  // Thread-specific fields
+  threads_mode?: string
+  threads_thread_media?: any[][]
 }
 
 interface ScheduledPostsListProps {

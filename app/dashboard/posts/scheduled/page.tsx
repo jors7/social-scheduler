@@ -32,6 +32,9 @@ interface ScheduledPost {
   scheduled_for: string
   status: 'pending' | 'posting' | 'posted' | 'failed' | 'cancelled'
   created_at: string
+  // Thread-specific fields
+  threads_mode?: string
+  threads_thread_media?: any[][]
 }
 
 export default function ScheduledPostsPage() {
