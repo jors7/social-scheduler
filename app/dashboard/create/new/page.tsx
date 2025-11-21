@@ -1692,16 +1692,26 @@ function CreateNewPostPageContent() {
         file.type.startsWith('video/') ||
         (file.name && ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'].some(ext => file.name.toLowerCase().endsWith(ext)))
       );
-    
+
+    // Check if we're posting a Threads thread with media (needs longer timeout for polling)
+    const hasThreadsThreadWithMedia = selectedPlatforms.length === 1 &&
+      selectedPlatforms[0] === 'threads' &&
+      (threadsMode === 'thread' || threadPosts.some(p => p && p.trim().length > 0)) &&
+      threadsThreadMedia.some(m => m && m.length > 0);
+
     // Safety timeout to prevent button getting stuck
-    // Instagram videos need much more time for processing (especially HD/4K videos)
-    const timeoutDuration = hasInstagramVideoPost ? 300000 : 60000; // 5 minutes for IG video, 1 minute for others
+    // Instagram videos and Threads threads with media need longer timeout
+    const timeoutDuration = hasInstagramVideoPost ? 300000 : (hasThreadsThreadWithMedia ? 300000 : 60000); // 5 minutes for IG/Threads media, 1 minute for others
     const timeoutId = setTimeout(() => {
       console.warn('Posting timeout - resetting button state')
       progressTracker.finish()
       setIsPosting(false)
       if (hasInstagramVideoPost) {
         toast.warning('Instagram video is taking longer than expected. It should still complete - check Instagram in a few moments.', {
+          duration: 8000
+        });
+      } else if (hasThreadsThreadWithMedia) {
+        toast.warning('Threads thread is taking longer than expected. It should still complete - check Threads in a few moments.', {
           duration: 8000
         });
       } else {

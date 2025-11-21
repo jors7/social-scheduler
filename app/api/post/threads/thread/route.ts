@@ -77,13 +77,14 @@ export async function POST(request: NextRequest) {
         // Each post should reply to the PREVIOUS post to create a proper thread chain (1→2→3)
         if (previousPostId) {
           formData.append('reply_to_id', previousPostId);
-          console.log(`Adding reply_to_id to post ${i + 1}:`, {
+          console.log(`🔗 Adding reply_to_id to post ${i + 1}:`, {
             reply_to_id: previousPostId,
             postNumber: i + 1,
-            totalPosts: posts.length
+            totalPosts: posts.length,
+            willCreateReply: true
           });
         } else {
-          console.log(`Post ${i + 1} is the first post, no reply_to_id needed`);
+          console.log(`📝 Post ${i + 1} is the first post, no reply_to_id needed (will be standalone)`);
         }
 
         // Use the correct endpoint with threads_user_id
@@ -154,16 +155,52 @@ export async function POST(request: NextRequest) {
         const containerId = createData.id;
         console.log(`Container created: ${containerId}`);
 
-        // Add delay for media processing
-        // Threads needs time to download and process media before publishing
-        // Use optimized timing when called from cron to prevent timeout
+        // Poll for media processing completion if media is present
         if (mediaUrl) {
-          const videoExtensions = ['.mp4', '.mov', '.m4v'];
-          const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
-          // Optimized: 20s for videos, 2s for images (reduced from 30s/3s)
-          const delay = optimized ? (isVideo ? 20000 : 2000) : (isVideo ? 30000 : 3000);
-          console.log(`Waiting ${delay}ms for Threads to process ${isVideo ? 'video' : 'image'}...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          const videoExtensions = ['.mp4', '.mov', '.m4v', '.avi', '.wmv', '.flv', '.webm'];
+          const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().endsWith(ext));
+
+          // Use dynamic polling instead of fixed delay
+          const maxAttempts = isVideo ? 18 : 6; // Videos: 3 min (18×10s), Images: 1 min (6×10s)
+          const pollInterval = 10000; // 10 seconds
+          let attempts = 0;
+          let ready = false;
+
+          console.log(`Polling for ${isVideo ? 'video' : 'image'} processing (max ${maxAttempts * pollInterval / 1000}s)...`);
+
+          while (attempts < maxAttempts && !ready) {
+            // Wait before checking status
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
+            attempts++;
+
+            // Check container status
+            try {
+              const statusUrl = `https://graph.threads.net/v1.0/${containerId}?fields=status&access_token=${accessToken}`;
+              const statusResponse = await fetch(statusUrl);
+              const statusData = await statusResponse.json();
+              const status = statusData.status;
+
+              console.log(`Post ${i + 1} status check ${attempts}/${maxAttempts}: ${status}`);
+
+              if (status === 'FINISHED') {
+                ready = true;
+                console.log(`Post ${i + 1} media processing completed after ${attempts * pollInterval / 1000}s`);
+              } else if (status === 'ERROR') {
+                throw new Error(`Media processing failed with ERROR status`);
+              } else if (status === 'EXPIRED') {
+                throw new Error(`Container expired (not published within 24 hours)`);
+              }
+              // If IN_PROGRESS or other status, continue polling
+            } catch (statusError) {
+              console.error(`Post ${i + 1} status check failed:`, statusError);
+              // Don't fail immediately - might be temporary API issue
+              // Will retry on next attempt or timeout
+            }
+          }
+
+          if (!ready) {
+            throw new Error(`Media processing timeout after ${maxAttempts * pollInterval / 1000} seconds`);
+          }
         }
 
         // Step 2: Publish this post
@@ -190,14 +227,14 @@ export async function POST(request: NextRequest) {
         }
 
         const postId = publishData.id;
-        console.log(`Post ${i + 1} published successfully:`, {
+        console.log(`✅ Post ${i + 1} published successfully:`, {
           postId: postId,
           containerId: containerId,
           isReply: previousPostId !== null,
           replyToId: previousPostId,
           text: postText.substring(0, 50) + '...'
         });
-        
+
         publishedPosts.push({
           index: i,
           text: postText,
@@ -209,11 +246,18 @@ export async function POST(request: NextRequest) {
         // Store first post ID for thread replies
         if (i === 0) {
           firstPostId = postId;
-          console.log(`Stored first post ID for thread replies: ${firstPostId}`);
+          console.log(`📌 Stored first post ID for thread replies: ${firstPostId}`);
         }
 
-        // Keep previousPostId for backward compatibility (not used for reply_to_id anymore)
+        // Update previousPostId for the next post to reply to this one
+        const oldPreviousPostId = previousPostId;
         previousPostId = postId;
+        console.log(`🔄 Updated previousPostId for next iteration:`, {
+          oldValue: oldPreviousPostId,
+          newValue: previousPostId,
+          nextPostWillReplyTo: previousPostId,
+          nextPostIndex: i + 2
+        });
 
         // Add a delay between posts to ensure the post is fully processed
         // Threads needs time to make the post available as a reply target
