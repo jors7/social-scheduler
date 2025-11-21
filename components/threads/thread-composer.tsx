@@ -318,7 +318,7 @@ export function ThreadComposer({
                         <img
                           src={url}
                           alt={`Media ${mediaIndex + 1}`}
-                          className="w-full h-24 object-cover rounded-lg"
+                          className="w-full max-h-40 object-contain rounded-lg bg-gray-100"
                         />
                         <Button
                           variant="destructive"
