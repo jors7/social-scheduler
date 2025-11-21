@@ -5,9 +5,18 @@ export async function POST(request: NextRequest) {
   try {
     const { userId, accessToken, text, mediaUrl, accountId, replyControl } = await request.json();
 
-    if (!userId || !accessToken || !text) {
+    // Validate required fields - need either text or media
+    if (!userId || !accessToken) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields: userId and accessToken are required' },
+        { status: 400 }
+      );
+    }
+
+    // Threads requires either text OR media (or both)
+    if (!text && !mediaUrl) {
+      return NextResponse.json(
+        { error: 'Missing required fields: either text or mediaUrl must be provided' },
         { status: 400 }
       );
     }
@@ -64,11 +73,15 @@ export async function POST(request: NextRequest) {
       if (isVideo) {
         formData.append('media_type', 'VIDEO');
         formData.append('video_url', mediaUrl);
-        formData.append('caption', text); // Use 'caption' for video posts
+        if (text) {
+          formData.append('caption', text); // Caption is optional for video posts
+        }
       } else {
         formData.append('media_type', 'IMAGE');
         formData.append('image_url', mediaUrl);
-        formData.append('caption', text); // Use 'caption' for image posts
+        if (text) {
+          formData.append('caption', text); // Caption is optional for image posts
+        }
       }
     } else {
       // For text-only posts
