@@ -510,7 +510,8 @@ export async function postToThreadsDirect(
   account: any,
   mediaUrls?: string[],
   supabase?: SupabaseClient,
-  threadData?: { threadsMode?: string; threadPosts?: string[]; threadsThreadMedia?: string[] }
+  threadData?: { threadsMode?: string; threadPosts?: string[]; threadsThreadMedia?: string[] },
+  userId?: string
 ) {
   console.log('=== DIRECT THREADS POST ===');
   console.log('Content:', content);
@@ -608,17 +609,17 @@ export async function postToThreadsDirect(
       const { Client } = await import('@upstash/qstash');
       const qstash = new Client({ token: process.env.QSTASH_TOKEN! });
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('User not authenticated');
+      // Ensure we have a userId (either passed or from account)
+      const finalUserId = userId || account.user_id;
+      if (!finalUserId) {
+        throw new Error('User ID is required for thread job creation');
       }
 
       // Create thread job in database
       const { data: threadJob, error: jobError } = await supabase
         .from('thread_jobs')
         .insert({
-          user_id: user.id,
+          user_id: finalUserId,
           account_id: account.id,
           posts: threadData.threadPosts,
           media_urls: threadData.threadsThreadMedia || [],

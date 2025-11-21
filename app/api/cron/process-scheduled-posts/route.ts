@@ -752,7 +752,7 @@ async function processScheduledPosts(request: NextRequest) {
                   threadsMode: post.threads_mode || undefined,
                   threadPosts: threadPosts,
                   threadsThreadMedia: post.threads_thread_media || undefined
-                });
+                }, post.user_id);
                 break;
 
               case 'pinterest':
