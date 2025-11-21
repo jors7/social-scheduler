@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, accessToken, posts, mediaUrls = [], phaseOneOnly = false } = await request.json();
+    const { userId, accessToken, posts, mediaUrls = [], optimized = false } = await request.json();
 
     if (!userId || !accessToken || !posts || !Array.isArray(posts) || posts.length === 0) {
       return NextResponse.json(
@@ -11,10 +11,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`${phaseOneOnly ? '[Phase 1]' : ''} Creating connected thread with ${posts.length} posts for user ${userId}`);
+    console.log(`${optimized ? '[Optimized]' : ''} Creating connected thread with ${posts.length} posts for user ${userId}`);
     console.log('Posts to create:', posts.map((p, i) => `Post ${i + 1}: ${p.substring(0, 30)}...`));
     console.log('Access token preview:', accessToken ? `${accessToken.substring(0, 20)}...` : 'null');
-    console.log('Mode:', phaseOneOnly ? 'Phase 1 (containers only)' : 'Full (create + publish)');
 
     // First, get the Threads user ID (different from Instagram user ID)
     console.log('Getting Threads user ID...');
@@ -155,44 +154,14 @@ export async function POST(request: NextRequest) {
         const containerId = createData.id;
         console.log(`Container created: ${containerId}`);
 
-        // If Phase 1 only, skip publishing and delay
-        if (phaseOneOnly) {
-          console.log(`[Phase 1] Skipping publish for container ${containerId}`);
-
-          // Determine media type
-          let mediaType = 'TEXT';
-          if (mediaUrl) {
-            const videoExtensions = ['.mp4', '.mov', '.m4v'];
-            mediaType = videoExtensions.some(ext => mediaUrl.toLowerCase().endsWith(ext)) ? 'VIDEO' : 'IMAGE';
-          }
-
-          publishedPosts.push({
-            index: i,
-            text: postText,
-            containerId: containerId,
-            isReply: previousPostId !== null,
-            mediaType: mediaType
-          });
-
-          // Store IDs for chaining
-          if (i === 0) {
-            firstPostId = containerId; // Store container ID for first post
-          }
-          previousPostId = containerId;
-
-          // Small delay between container creations
-          if (i < posts.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-          continue; // Skip to next post
-        }
-
-        // Phase 2 or full mode: Add delay for media processing
+        // Add delay for media processing
         // Threads needs time to download and process media before publishing
+        // Use optimized timing when called from cron to prevent timeout
         if (mediaUrl) {
           const videoExtensions = ['.mp4', '.mov', '.m4v'];
           const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
-          const delay = isVideo ? 30000 : 3000; // 30s for videos, 3s for images (reduced from 5s)
+          // Optimized: 20s for videos, 2s for images (reduced from 30s/3s)
+          const delay = optimized ? (isVideo ? 20000 : 2000) : (isVideo ? 30000 : 3000);
           console.log(`Waiting ${delay}ms for Threads to process ${isVideo ? 'video' : 'image'}...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
@@ -249,7 +218,8 @@ export async function POST(request: NextRequest) {
         // Add a delay between posts to ensure the post is fully processed
         // Threads needs time to make the post available as a reply target
         if (i < posts.length - 1) {
-          const delay = 5000; // 5 seconds delay (reduced from 10s to avoid timeout)
+          // Optimized: 3s delay (reduced from 5s to avoid timeout)
+          const delay = optimized ? 3000 : 5000;
           console.log(`Waiting ${delay}ms for post to be fully processed before creating reply...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
@@ -277,24 +247,6 @@ export async function POST(request: NextRequest) {
           throw error; // Re-throw if no posts were published
         }
       }
-    }
-
-    if (phaseOneOnly) {
-      console.log(`[Phase 1] All ${publishedPosts.length} containers created successfully`);
-
-      // Get the first media URL for thumbnail (if any)
-      const firstMediaUrl = mediaUrls && mediaUrls.length > 0 ? mediaUrls[0] : undefined;
-
-      return NextResponse.json({
-        success: true,
-        phaseOne: true,
-        message: `Created ${publishedPosts.length} containers (Phase 1)`,
-        containerIds: publishedPosts.map(p => p.containerId),
-        containers: publishedPosts,
-        totalContainers: posts.length,
-        thumbnailUrl: firstMediaUrl,
-        note: 'Phase 1 complete - containers created, publish in Phase 2'
-      });
     }
 
     console.log(`Thread created successfully with ${publishedPosts.length} posts`);

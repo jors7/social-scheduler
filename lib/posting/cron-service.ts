@@ -595,10 +595,14 @@ export async function postToThreadsDirect(
       console.log('Thread media URLs:', flatMediaUrls);
       console.log('Raw thread media data:', JSON.stringify(threadData.threadsThreadMedia));
 
-      // Use two-phase processing for threads (to avoid 60s timeout)
-      console.log('[Threads Thread Phase 1] Creating containers only');
+      // NOTE: Cannot use two-phase processing for Threads threads because:
+      // - reply_to_id must be set during container creation
+      // - reply_to_id requires a PUBLISHED post ID (not container ID)
+      // - Therefore, we must create AND publish each post before creating the next
 
-      // Phase 1: Create containers
+      console.log('[Threads Thread] Creating and publishing thread synchronously');
+
+      // Call the thread posting API (synchronous - creates and publishes all posts)
       const threadResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/post/threads/thread`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -607,26 +611,22 @@ export async function postToThreadsDirect(
           accessToken: accessToken,
           posts: threadData.threadPosts,
           mediaUrls: flatMediaUrls,
-          phaseOneOnly: true // Enable two-phase processing
+          optimized: true // Use optimized timing
         })
       });
 
       if (!threadResponse.ok) {
         const errorData = await threadResponse.json();
-        throw new Error(errorData.error || 'Failed to create thread containers');
+        throw new Error(errorData.error || 'Failed to create thread');
       }
 
       const threadResult = await threadResponse.json();
 
-      console.log('[Threads Thread Phase 1] Containers created:', threadResult.containerIds);
-
-      // Return special result indicating two-phase processing
       return {
         success: true,
-        phaseOne: true,
-        containerIds: threadResult.containerIds,
+        id: threadResult.threadId,
         thumbnailUrl: threadResult.thumbnailUrl,
-        message: `Created ${threadResult.totalContainers} thread containers (Phase 1)`
+        message: `Posted Threads thread with ${threadData.threadPosts.length} posts successfully`
       };
     } else {
       // Single post mode
