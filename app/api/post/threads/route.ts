@@ -141,13 +141,52 @@ export async function POST(request: NextRequest) {
     const containerId = createData.id;
     console.log('Container created with ID:', containerId);
 
-    // Add delay for media processing if media is present
+    // Poll for media processing completion if media is present
     if (mediaUrl) {
       const videoExtensions = ['.mp4', '.mov', '.m4v', '.avi', '.wmv', '.flv', '.webm'];
       const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().endsWith(ext));
-      const delay = isVideo ? 30000 : 3000; // 30s for videos, 3s for images
-      console.log(`Waiting ${delay}ms for Threads to process ${isVideo ? 'video' : 'image'}...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+
+      // Use dynamic polling instead of fixed delay
+      const maxAttempts = isVideo ? 18 : 6; // Videos: 3 min (18×10s), Images: 1 min (6×10s)
+      const pollInterval = 10000; // 10 seconds
+      let attempts = 0;
+      let ready = false;
+
+      console.log(`Polling for ${isVideo ? 'video' : 'image'} processing (max ${maxAttempts * pollInterval / 1000}s)...`);
+
+      while (attempts < maxAttempts && !ready) {
+        // Wait before checking status
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        attempts++;
+
+        // Check container status
+        try {
+          const statusUrl = `https://graph.threads.net/v1.0/${containerId}?fields=status&access_token=${activeToken}`;
+          const statusResponse = await fetch(statusUrl);
+          const statusData = await statusResponse.json();
+          const status = statusData.status;
+
+          console.log(`Status check ${attempts}/${maxAttempts}: ${status}`);
+
+          if (status === 'FINISHED') {
+            ready = true;
+            console.log(`Media processing completed after ${attempts * pollInterval / 1000}s`);
+          } else if (status === 'ERROR') {
+            throw new Error(`Media processing failed with ERROR status`);
+          } else if (status === 'EXPIRED') {
+            throw new Error(`Container expired (not published within 24 hours)`);
+          }
+          // If IN_PROGRESS or other status, continue polling
+        } catch (statusError) {
+          console.error(`Status check failed:`, statusError);
+          // Don't fail immediately - might be temporary API issue
+          // Will retry on next attempt or timeout
+        }
+      }
+
+      if (!ready) {
+        throw new Error(`Media processing timeout after ${maxAttempts * pollInterval / 1000} seconds`);
+      }
     }
 
     // Step 2: Publish the container
