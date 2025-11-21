@@ -156,6 +156,7 @@ export async function POST(request: NextRequest) {
         console.log(`Container created: ${containerId}`);
 
         // Poll for media processing completion if media is present
+        // OR add small delay for text posts (containers need time to be ready)
         if (mediaUrl) {
           const videoExtensions = ['.mp4', '.mov', '.m4v', '.avi', '.wmv', '.flv', '.webm'];
           const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().endsWith(ext));
@@ -201,6 +202,10 @@ export async function POST(request: NextRequest) {
           if (!ready) {
             throw new Error(`Media processing timeout after ${maxAttempts * pollInterval / 1000} seconds`);
           }
+        } else {
+          // Text-only posts still need a small delay for container to be ready
+          console.log(`⏰ Text post - waiting 2s for container to be ready...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
 
         // Step 2: Publish this post
