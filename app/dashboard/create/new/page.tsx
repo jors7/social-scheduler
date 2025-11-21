@@ -404,20 +404,6 @@ function CreateNewPostPageContent() {
     };
   }, [filePreviewUrls])
 
-  // Combine uploaded URLs and file blob URLs for preview
-  const previewMediaUrls = useMemo(() => {
-    // Combine uploaded URLs and blob URLs from new files
-    const blobUrls = filePreviewUrls.map(({ url }) => url)
-    const threadBlobUrls = threadMediaPreviewUrls.map(({ url }) => url)
-
-    // If Threads is selected and has thread media, use that for preview
-    if (selectedPlatforms.includes('threads') && threadBlobUrls.length > 0) {
-      return threadBlobUrls
-    }
-
-    return [...uploadedMediaUrls, ...blobUrls]
-  }, [uploadedMediaUrls, filePreviewUrls, threadMediaPreviewUrls, selectedPlatforms])
-
   // Fetch connected accounts on mount
   useEffect(() => {
     async function fetchAccounts() {
@@ -750,6 +736,20 @@ function CreateNewPostPageContent() {
       threadMediaPreviewUrls.forEach(({ url }) => URL.revokeObjectURL(url));
     };
   }, [threadMediaPreviewUrls])
+
+  // Combine uploaded URLs and file blob URLs for preview
+  const previewMediaUrls = useMemo(() => {
+    // Combine uploaded URLs and blob URLs from new files
+    const blobUrls = filePreviewUrls.map(({ url }) => url)
+    const threadBlobUrls = threadMediaPreviewUrls.map(({ url }) => url)
+
+    // If Threads is selected and has thread media, use that for preview
+    if (selectedPlatforms.includes('threads') && threadBlobUrls.length > 0) {
+      return threadBlobUrls
+    }
+
+    return [...uploadedMediaUrls, ...blobUrls]
+  }, [uploadedMediaUrls, filePreviewUrls, threadMediaPreviewUrls, selectedPlatforms])
 
   // Warn user before leaving page with unsaved changes
   useEffect(() => {
