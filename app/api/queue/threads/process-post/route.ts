@@ -159,7 +159,7 @@ async function handler(request: NextRequest) {
       const mediaUrlString = typeof mediaUrl === 'string' ? mediaUrl : mediaUrl.url;
       const videoExtensions = ['.mp4', '.mov', '.m4v', '.avi', '.wmv', '.flv', '.webm'];
       const isVideo = videoExtensions.some(ext => mediaUrlString.toLowerCase().endsWith(ext));
-      const delay = isVideo ? 20000 : 2000; // 20s for videos, 2s for images
+      const delay = isVideo ? 30000 : 3000; // 30s for videos, 3s for images
       console.log(`[Thread Job ${jobId}] Waiting ${delay}ms for media processing...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }

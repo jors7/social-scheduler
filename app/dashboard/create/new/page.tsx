@@ -2284,7 +2284,7 @@ function CreateNewPostPageContent() {
 
       // If we're in threads mode with thread posts, we've already handled it above
       // This prevents duplicate posting
-      if (selectedPlatforms.length === 1 && selectedPlatforms[0] === 'threads' && threadsMode === 'thread') {
+      if (selectedPlatforms.length === 1 && selectedPlatforms[0] === 'threads' && (threadsMode === 'thread' || threadPosts.some(p => p && p.trim().length > 0))) {
         clearTimeout(timeoutId)
         setIsPosting(false)
         return
