@@ -677,23 +677,25 @@ export async function POST(request: NextRequest) {
                       const isFirstCommission = count === 1
 
                       // Queue email notification
-                      await supabaseAdmin.from('pending_emails').insert({
-                        email_type: isFirstCommission ? 'affiliate_first_commission' : 'affiliate_commission_earned',
-                        to_email: '', // TODO: Get affiliate email from user_id
-                        subject: isFirstCommission
-                          ? '🎉 Your First Commission!'
-                          : `You Earned $${commissionAmount}!`,
-                        email_data: {
-                          affiliate_id: affiliate.id,
-                          commission_amount: commissionAmount,
-                          payment_amount: paymentAmount,
-                          commission_rate: commissionRate,
-                          pending_balance: affiliate.pending_balance + commissionAmount,
-                          is_first_commission: isFirstCommission
-                        }
-                      }).catch(err => {
+                      try {
+                        await supabaseAdmin.from('pending_emails').insert({
+                          email_type: isFirstCommission ? 'affiliate_first_commission' : 'affiliate_commission_earned',
+                          to_email: '', // TODO: Get affiliate email from user_id
+                          subject: isFirstCommission
+                            ? '🎉 Your First Commission!'
+                            : `You Earned $${commissionAmount}!`,
+                          email_data: {
+                            affiliate_id: affiliate.id,
+                            commission_amount: commissionAmount,
+                            payment_amount: paymentAmount,
+                            commission_rate: commissionRate,
+                            pending_balance: affiliate.pending_balance + commissionAmount,
+                            is_first_commission: isFirstCommission
+                          }
+                        })
+                      } catch (err) {
                         console.error('Error queuing affiliate commission email:', err)
-                      })
+                      }
                     }
                   }
                 } else {
