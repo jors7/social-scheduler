@@ -192,13 +192,18 @@ export async function POST(request: NextRequest) {
     insertData.media_urls = mediaUrls && mediaUrls.length > 0 ? mediaUrls : [];
 
     // Extract platform_media_url from first media URL for thumbnail display
+    console.log('[Scheduled POST] mediaUrls:', JSON.stringify(mediaUrls));
     if (mediaUrls && mediaUrls.length > 0) {
       const firstMedia = mediaUrls[0];
+      console.log('[Scheduled POST] firstMedia type:', typeof firstMedia, 'value:', firstMedia);
+
       if (typeof firstMedia === 'string') {
         insertData.platform_media_url = firstMedia;
+        console.log('[Scheduled POST] Set platform_media_url (string):', insertData.platform_media_url);
       } else if (firstMedia && typeof firstMedia === 'object') {
         // Handle object format: { url: '...', thumbnailUrl: '...' }
         insertData.platform_media_url = firstMedia.thumbnailUrl || firstMedia.url || null;
+        console.log('[Scheduled POST] Set platform_media_url (object):', insertData.platform_media_url);
       }
     }
 
@@ -343,19 +348,28 @@ export async function GET(request: NextRequest) {
     const enhancedPosts = posts.map(post => {
       // If platform_media_url is already set, use it
       if (post.platform_media_url) {
+        console.log(`[Scheduled GET] Post ${post.id} already has platform_media_url:`, post.platform_media_url);
         return post;
       }
 
       // Otherwise, extract from media_urls for backward compatibility
       let platformMediaUrl = null;
+      console.log(`[Scheduled GET] Post ${post.id} media_urls:`, JSON.stringify(post.media_urls));
+
       if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
         const firstMedia = post.media_urls[0];
+        console.log(`[Scheduled GET] Post ${post.id} firstMedia type:`, typeof firstMedia, 'value:', firstMedia);
+
         if (typeof firstMedia === 'string') {
           platformMediaUrl = firstMedia;
+          console.log(`[Scheduled GET] Post ${post.id} extracted string URL:`, platformMediaUrl);
         } else if (firstMedia && typeof firstMedia === 'object') {
           // Handle object format: { url: '...', thumbnailUrl: '...' }
           platformMediaUrl = firstMedia.thumbnailUrl || firstMedia.url || null;
+          console.log(`[Scheduled GET] Post ${post.id} extracted object URL:`, platformMediaUrl);
         }
+      } else {
+        console.log(`[Scheduled GET] Post ${post.id} has no valid media_urls`);
       }
 
       return {
