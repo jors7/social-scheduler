@@ -155,6 +155,50 @@ export default function PostedPostsPage() {
       .trim()
   }
 
+  const getUserFriendlyError = (errorMessage: string): string => {
+    if (!errorMessage) return 'An error occurred while posting'
+
+    // Remove account label/username prefix (e.g., "janorsula: ")
+    const cleanError = errorMessage.replace(/^[^:]+:\s*/, '')
+
+    // Map common errors to friendly messages
+    if (cleanError.includes('Pinterest API error: 500') || cleanError.includes('Something went wrong on our end')) {
+      return 'Pinterest server error - please try again later'
+    }
+    if (cleanError.includes("doesn't support mixing images and videos")) {
+      return 'Pinterest doesn\'t support mixing images and videos in one post'
+    }
+    if (cleanError.includes('toLowerCase is not a function') || cleanError.includes('VERCEL_URL')) {
+      return 'Temporary processing error - please try reposting'
+    }
+    if (cleanError.toLowerCase().includes('authentication') || cleanError.includes('401') || cleanError.includes('unauthorized')) {
+      return 'Account needs to be reconnected'
+    }
+    if (cleanError.toLowerCase().includes('permission') || cleanError.includes('403') || cleanError.includes('forbidden')) {
+      return 'Permission error - check account settings'
+    }
+    if (cleanError.toLowerCase().includes('timed out') || cleanError.includes('timeout')) {
+      return 'Post took too long to process - may have been partially published'
+    }
+    if (cleanError.toLowerCase().includes('rate limit') || cleanError.includes('429')) {
+      return 'Too many posts - please wait before trying again'
+    }
+    if (cleanError.includes('exceeds') && cleanError.includes('limit')) {
+      // Keep size/limit errors as they're already user-friendly
+      return cleanError.split(/(?:\(VERCEL_URL|\.)/)[0].trim()
+    }
+
+    // Generic fallback - extract just the first sentence, remove technical details
+    const firstSentence = cleanError.split(/[.;]|(?:\(VERCEL_URL)/)[0].trim()
+
+    // If it's too technical or too long, use generic message
+    if (firstSentence.length > 100 || firstSentence.includes('{') || firstSentence.includes('Error:')) {
+      return 'An error occurred while posting - please try again'
+    }
+
+    return firstSentence
+  }
+
   const filteredPosts = postedPosts.filter(post => {
     const content = stripHtml(post.content)
     if (searchQuery && !content.toLowerCase().includes(searchQuery.toLowerCase())) return false
@@ -706,7 +750,7 @@ export default function PostedPostsPage() {
                           
                           {post.error_message && (
                             <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-600">
-                              {post.error_message.slice(0, 100)}...
+                              {getUserFriendlyError(post.error_message)}
                             </div>
                           )}
                           
