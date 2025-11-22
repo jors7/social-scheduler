@@ -1346,12 +1346,13 @@ function DashboardContent() {
                   const videoThumbnail = getVideoThumbnail()
 
                   // Check if we have an image thumbnail (for all platforms including YouTube)
-                  const hasImageThumbnail = firstMediaUrl && (
-                    firstMediaUrl.includes('.jpg') ||
-                    firstMediaUrl.includes('.jpeg') ||
-                    firstMediaUrl.includes('.png') ||
-                    firstMediaUrl.includes('.webp')
-                  )
+                  const hasImageThumbnail = firstMediaUrl && (() => {
+                    const urlPath = firstMediaUrl.split('?')[0].split('#')[0].toLowerCase()
+                    return urlPath.endsWith('.jpg') ||
+                           urlPath.endsWith('.jpeg') ||
+                           urlPath.endsWith('.png') ||
+                           urlPath.endsWith('.webp')
+                  })()
 
                   // Determine if this should be rendered as a video
                   // Check if we have video content (either from media_urls object structure or video file URL)
@@ -1365,14 +1366,15 @@ function DashboardContent() {
                       }
                     }
 
-                    // Check if firstMediaUrl is a video file
-                    if (!hasImageThumbnail && firstMediaUrl && (
-                      firstMediaUrl.includes('.mp4') ||
-                      firstMediaUrl.includes('.mov') ||
-                      firstMediaUrl.includes('.webm') ||
-                      firstMediaUrl.includes('.avi')
-                    )) {
-                      return true
+                    // Check if firstMediaUrl is a video file (using proper extension checking)
+                    if (!hasImageThumbnail && firstMediaUrl) {
+                      const urlPath = firstMediaUrl.split('?')[0].split('#')[0].toLowerCase()
+                      if (urlPath.endsWith('.mp4') ||
+                          urlPath.endsWith('.mov') ||
+                          urlPath.endsWith('.webm') ||
+                          urlPath.endsWith('.avi')) {
+                        return true
+                      }
                     }
 
                     return false
