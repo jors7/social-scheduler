@@ -353,6 +353,30 @@ function CreateNewPostPageContent() {
   const [shouldAutoSchedule, setShouldAutoSchedule] = useState(false)
   const [showRequestPlatformModal, setShowRequestPlatformModal] = useState(false)
 
+  // Validate uploaded media when Bluesky is selected after upload
+  useEffect(() => {
+    if (!selectedPlatforms.includes('bluesky')) return
+
+    const BLUESKY_MEDIA_SIZE_LIMIT = 900 * 1024 // 900KB
+
+    // Check existing uploaded media
+    for (const media of uploadedMediaUrls) {
+      // Handle both string URLs and object formats
+      if (typeof media === 'object' && media.size) {
+        const fileSizeMB = (media.size / (1024 * 1024)).toFixed(2)
+        const fileName = media.name || 'file'
+        const mediaType = media.type === 'video' ? 'Video' : 'Image'
+
+        if (media.size > BLUESKY_MEDIA_SIZE_LIMIT) {
+          toast.error(
+            `${mediaType} "${fileName}" is ${fileSizeMB}MB, but Bluesky has a 1MB limit for all media. Please remove this file or deselect Bluesky.`,
+            { duration: 8000 }
+          )
+        }
+      }
+    }
+  }, [selectedPlatforms, uploadedMediaUrls])
+
   // Ref for preview panel to enable auto-scroll on mobile
   const previewPanelRef = useRef<HTMLDivElement>(null)
 
@@ -3957,7 +3981,7 @@ function CreateNewPostPageContent() {
                     )}
                     {selectedPlatforms.includes('bluesky') && (
                       <p className="text-xs text-blue-600 font-medium mt-2">
-                        ⚠️ Bluesky: Videos must be under 1MB (900KB recommended)
+                        ⚠️ Bluesky: All media (images & videos) must be under 1MB (900KB recommended)
                       </p>
                     )}
                   </div>
@@ -5119,7 +5143,8 @@ function CreateNewPostPageContent() {
               </div>
             )}
 
-            {selectedPlatforms.includes('bluesky') && uploadedMediaUrls.length > 0 && (
+            {/* Bluesky Alt Text - Hidden for now, keeping for future use */}
+            {/* {selectedPlatforms.includes('bluesky') && uploadedMediaUrls.length > 0 && (
               <div className="mt-6">
                 <AltTextInput
                   platform="Bluesky"
@@ -5127,7 +5152,7 @@ function CreateNewPostPageContent() {
                   onChange={setBlueskyAltText}
                 />
               </div>
-            )}
+            )} */}
 
             {/* Bluesky Reply Controls - Phase 3 Community Controls */}
             {ENABLE_BLUESKY_REPLY_CONTROLS && selectedPlatforms.includes('bluesky') && (
