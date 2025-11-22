@@ -1185,6 +1185,9 @@ function CreateNewPostPageContent() {
 
     if (selectedFiles.length === 0) return []
 
+    // Check if we have video files
+    const hasVideos = selectedFiles.some(file => file.type.startsWith('video/'))
+
     // Check if we have media files
     const hasMedia = selectedFiles.some(file =>
       file.type.startsWith('video/') || file.type.startsWith('image/')
