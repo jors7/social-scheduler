@@ -212,6 +212,14 @@ async function processScheduledPosts(request: NextRequest) {
         for (const post of processingPosts) {
           try {
             const processingState = post.processing_state;
+
+            // Skip posts that are actually already posted (race condition protection)
+            // This can happen with async queue processing for Threads threads
+            if (post.status === 'posted' || post.posted_at) {
+              console.log(`Post ${post.id} is already posted, skipping processing validation`);
+              continue;
+            }
+
             if (!processingState) {
               console.log(`Post ${post.id} has no processing state, marking as failed`);
               await supabase

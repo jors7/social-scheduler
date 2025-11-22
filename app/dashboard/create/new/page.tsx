@@ -2122,17 +2122,26 @@ function CreateNewPostPageContent() {
               
               // Use first post content for main content field
               const mainContent = filteredPosts[0] || threadPosts[0]
-              
+
+              // Format media_urls to include thumbnailUrl for the first media
+              const formattedMediaUrls = mediaUrlsPerPost.filter(url => url).map((url, index) => {
+                // For the first media item, include thumbnailUrl from API response
+                if (index === 0 && data.thumbnailUrl) {
+                  return { url, thumbnailUrl: data.thumbnailUrl }
+                }
+                return url
+              })
+
               await supabase
                 .from('scheduled_posts')
                 .insert({
                   user_id: user.id,
                   content: mainContent,
                   platforms: ['threads'],
-                  platform_content: { 
+                  platform_content: {
                     threads: `Thread: ${filteredPosts.join(' | ')}` // Store all posts
                   },
-                  media_urls: mediaUrlsPerPost.filter(url => url), // Filter out empty strings
+                  media_urls: formattedMediaUrls,
                   status: 'posted',
                   scheduled_for: postedTime,
                   posted_at: postedTime,

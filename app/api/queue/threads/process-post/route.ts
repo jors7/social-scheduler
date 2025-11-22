@@ -255,6 +255,7 @@ async function handler(request: NextRequest) {
           .update({
             status: 'posted',
             posted_at: new Date().toISOString(),
+            processing_state: null, // Clear processing state to prevent false errors
             post_results: [
               {
                 platform: 'threads',
