@@ -743,13 +743,13 @@ function CreateNewPostPageContent() {
     const blobUrls = filePreviewUrls.map(({ url }) => url)
     const threadBlobUrls = threadMediaPreviewUrls.map(({ url }) => url)
 
-    // If Threads is selected and has thread media, use that for preview
-    if (selectedPlatforms.includes('threads') && threadBlobUrls.length > 0) {
+    // If Threads is selected in thread mode and has thread media, use that for preview
+    if (selectedPlatforms.includes('threads') && threadsMode === 'thread' && threadBlobUrls.length > 0) {
       return threadBlobUrls
     }
 
     return [...uploadedMediaUrls, ...blobUrls]
-  }, [uploadedMediaUrls, filePreviewUrls, threadMediaPreviewUrls, selectedPlatforms])
+  }, [uploadedMediaUrls, filePreviewUrls, threadMediaPreviewUrls, selectedPlatforms, threadsMode])
 
   // Warn user before leaving page with unsaved changes
   useEffect(() => {
