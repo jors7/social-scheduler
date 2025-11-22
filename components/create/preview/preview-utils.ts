@@ -280,6 +280,11 @@ export function exceedsLimit(content: string, platform: string): boolean {
  * Check if a URL points to a video file
  */
 export function isVideoUrl(url: string): boolean {
+  if (!url || typeof url !== 'string') return false
+
+  // Strip query parameters and fragments to get the actual file path
+  const urlPath = url.split('?')[0].split('#')[0]
+
   const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v']
-  return videoExtensions.some(ext => url.toLowerCase().includes(ext))
+  return videoExtensions.some(ext => urlPath.toLowerCase().endsWith(ext))
 }
