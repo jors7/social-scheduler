@@ -71,14 +71,24 @@ export function ThreadsPreview({ content, mediaUrls = [], threadPosts }: Threads
 
           {/* Media - natural aspect ratio (4:5 or 9:16 recommended for mobile) */}
           {mediaUrls && mediaUrls.length > 0 && (
-            <div className="mt-3 rounded-xl overflow-hidden bg-gray-100">
+            <div className="mt-3 rounded-xl overflow-hidden bg-gray-100 relative">
               {isVideoUrl(mediaUrls[0]) ? (
-                <video
-                  src={mediaUrls[0]}
-                  className="w-full max-h-[500px] object-contain"
-                  muted
-                  preload="metadata"
-                />
+                <>
+                  <video
+                    src={mediaUrls[0]}
+                    className="w-full max-h-[500px] object-contain"
+                    muted
+                    preload="metadata"
+                  />
+                  {/* Video play icon overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="bg-black/50 rounded-full p-4">
+                      <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                  </div>
+                </>
               ) : (
                 <img
                   src={mediaUrls[0]}
