@@ -191,6 +191,17 @@ export async function POST(request: NextRequest) {
     // This ensures the JSONB field always has a valid array value
     insertData.media_urls = mediaUrls && mediaUrls.length > 0 ? mediaUrls : [];
 
+    // Extract platform_media_url from first media URL for thumbnail display
+    if (mediaUrls && mediaUrls.length > 0) {
+      const firstMedia = mediaUrls[0];
+      if (typeof firstMedia === 'string') {
+        insertData.platform_media_url = firstMedia;
+      } else if (firstMedia && typeof firstMedia === 'object') {
+        // Handle object format: { url: '...', thumbnailUrl: '...' }
+        insertData.platform_media_url = firstMedia.thumbnailUrl || firstMedia.url || null;
+      }
+    }
+
     // Add selected accounts if provided (for multi-account platforms)
     if (selectedAccounts && Object.keys(selectedAccounts).length > 0) {
       insertData.selected_accounts = selectedAccounts;
@@ -381,7 +392,23 @@ export async function PATCH(request: NextRequest) {
     if (content !== undefined) updateData.content = content;
     if (platforms !== undefined) updateData.platforms = platforms;
     if (platformContent !== undefined) updateData.platform_content = platformContent;
-    if (mediaUrls !== undefined) updateData.media_urls = mediaUrls;
+    if (mediaUrls !== undefined) {
+      updateData.media_urls = mediaUrls;
+
+      // Extract platform_media_url from first media URL for thumbnail display
+      if (mediaUrls && mediaUrls.length > 0) {
+        const firstMedia = mediaUrls[0];
+        if (typeof firstMedia === 'string') {
+          updateData.platform_media_url = firstMedia;
+        } else if (firstMedia && typeof firstMedia === 'object') {
+          // Handle object format: { url: '...', thumbnailUrl: '...' }
+          updateData.platform_media_url = firstMedia.thumbnailUrl || firstMedia.url || null;
+        }
+      } else {
+        // If media_urls is being cleared, clear platform_media_url too
+        updateData.platform_media_url = null;
+      }
+    }
     if (pinterestBoardId !== undefined) updateData.pinterest_board_id = pinterestBoardId;
     if (pinterestTitle !== undefined) updateData.pinterest_title = pinterestTitle;
     if (pinterestDescription !== undefined) updateData.pinterest_description = pinterestDescription;
