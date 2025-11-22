@@ -860,7 +860,30 @@ export async function postToPinterestDirect(content: string, account: any, media
       boardId = boards[0].id;
     }
 
-    // Use createSmartPin to automatically detect media type (image/video/carousel)
+    // Check if this is a single video - use two-phase processing to avoid timeouts
+    const isSingleVideo = hasVideo && !hasImage && normalizedMediaUrls.length === 1;
+
+    if (isSingleVideo) {
+      console.log('=== Pinterest Video: Using Two-Phase Processing ===');
+      // Phase 1: Upload video without waiting for processing
+      const { PinterestClient } = await import('@/lib/pinterest/client');
+      const pinterestClient = new PinterestClient(account.access_token, false);
+
+      const { mediaId } = await pinterestClient.startVideoUpload(normalizedMediaUrls[0]);
+
+      return {
+        success: true,
+        twoPhase: true,
+        platform: 'pinterest',
+        mediaId: mediaId,
+        boardId: boardId,
+        title: title,
+        description: description,
+        message: 'Pinterest video uploaded, waiting for processing'
+      };
+    }
+
+    // Standard image/carousel processing (synchronous - fast)
     const result = await pinterestService.createSmartPin(
       boardId,
       title,

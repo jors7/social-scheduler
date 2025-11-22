@@ -358,6 +358,113 @@ async function processScheduledPosts(request: NextRequest) {
               continue; // Move to next post
             }
 
+            // Handle Pinterest Phase 2 processing (video pins)
+            if (processingState.platform === 'pinterest') {
+              console.log(`[Pinterest Phase 2] Processing post ${post.id}`);
+
+              if (!processingState.mediaId || !processingState.boardId) {
+                console.log(`Post ${post.id} has invalid Pinterest processing state`);
+                await supabase
+                  .from('scheduled_posts')
+                  .update({
+                    status: 'failed',
+                    error_message: 'Invalid Pinterest processing state - missing mediaId or boardId',
+                    processing_state: null
+                  })
+                  .eq('id', post.id);
+                continue;
+              }
+
+              // Get Pinterest account
+              const { data: pinterestAccounts } = await supabase
+                .from('social_accounts')
+                .select('*')
+                .eq('user_id', post.user_id)
+                .eq('platform', 'pinterest')
+                .eq('is_active', true);
+
+              if (!pinterestAccounts || pinterestAccounts.length === 0) {
+                throw new Error('Pinterest account not found');
+              }
+
+              const account = pinterestAccounts[0];
+              const { PinterestClient } = await import('@/lib/pinterest/client');
+              const pinterestClient = new PinterestClient(account.access_token, false);
+
+              // Check if video is ready
+              const { ready, status } = await pinterestClient.checkVideoReady(processingState.mediaId);
+
+              if (ready) {
+                console.log(`[Pinterest Phase 2] Video ${processingState.mediaId} ready, creating pin...`);
+
+                // Create pin with processed video
+                const result = await pinterestClient.createPinFromVideoId(
+                  processingState.boardId,
+                  processingState.title || '',
+                  processingState.description || '',
+                  processingState.mediaId
+                );
+
+                // Mark as posted
+                await supabase
+                  .from('scheduled_posts')
+                  .update({
+                    status: 'posted',
+                    posted_at: new Date().toISOString(),
+                    post_results: [{ platform: 'pinterest', success: true, postId: result.id }],
+                    processing_state: null
+                  })
+                  .eq('id', post.id);
+
+                console.log(`✅ Post ${post.id} published to Pinterest (video pin ${result.id})`);
+              } else if (status === 'failed') {
+                // Video processing failed
+                await supabase
+                  .from('scheduled_posts')
+                  .update({
+                    status: 'failed',
+                    error_message: 'Pinterest video processing failed',
+                    processing_state: null
+                  })
+                  .eq('id', post.id);
+
+                console.log(`❌ Post ${post.id} failed - Pinterest video processing failed`);
+              } else {
+                // Still processing - increment attempt counter
+                const attempts = (processingState.attempts || 0) + 1;
+                const maxAttempts = 30; // 30 minutes max
+
+                if (attempts >= maxAttempts) {
+                  await supabase
+                    .from('scheduled_posts')
+                    .update({
+                      status: 'failed',
+                      error_message: 'Pinterest video processing timed out after 30 minutes',
+                      processing_state: null
+                    })
+                    .eq('id', post.id);
+
+                  console.log(`❌ Post ${post.id} timed out after ${maxAttempts} attempts`);
+                } else {
+                  await supabase
+                    .from('scheduled_posts')
+                    .update({
+                      processing_state: {
+                        ...processingState,
+                        attempts,
+                        last_check: new Date().toISOString(),
+                        status
+                      }
+                    })
+                    .eq('id', post.id);
+
+                  console.log(`[Pinterest Phase 2] Still processing (attempt ${attempts}/${maxAttempts}, status: ${status})`);
+                }
+              }
+
+              continue; // Move to next post
+            }
+
             // Handle Instagram Phase 2 processing
             if (!processingState.container_ids) {
               console.log(`Post ${post.id} has no container_ids (Instagram), marking as failed`);
@@ -780,13 +887,14 @@ async function processScheduledPosts(request: NextRequest) {
                 continue;
             }
 
-            // Handle two-phase processing for Instagram carousels and Threads videos
+            // Handle two-phase processing for Instagram carousels, Threads videos, and Pinterest videos
             if ((result as any).twoPhase) {
               const twoPhaseResult = result as any;
               const isThreads = twoPhaseResult.platform === 'threads';
+              const isPinterest = twoPhaseResult.platform === 'pinterest';
               const isInstagram = twoPhaseResult.platform === 'instagram' || !twoPhaseResult.platform;
 
-              console.log(`[Two-Phase] ${isThreads ? 'Threads video' : 'Instagram carousel'} needs processing for ${platformLabel}`);
+              console.log(`[Two-Phase] ${isThreads ? 'Threads video' : isPinterest ? 'Pinterest video' : 'Instagram carousel'} needs processing for ${platformLabel}`);
 
               // Calculate remaining accounts to process after this one
               const currentIndex = accountsToPost.indexOf(account);
@@ -797,7 +905,7 @@ async function processScheduledPosts(request: NextRequest) {
 
               // Build processing state based on platform
               const processingState: any = {
-                platform: isThreads ? 'threads' : 'instagram',
+                platform: isThreads ? 'threads' : isPinterest ? 'pinterest' : 'instagram',
                 account_id: account.id,
                 account_label: platformLabel,
                 remaining_accounts: remainingAccounts,
@@ -806,9 +914,15 @@ async function processScheduledPosts(request: NextRequest) {
                 created_at: new Date().toISOString()
               };
 
-              // Add platform-specific container IDs
+              // Add platform-specific container/media IDs
               if (isThreads) {
                 processingState.container_id = twoPhaseResult.containerId; // Single Threads video uses containerId
+              } else if (isPinterest) {
+                // Pinterest video uses mediaId
+                processingState.mediaId = twoPhaseResult.mediaId;
+                processingState.boardId = twoPhaseResult.boardId;
+                processingState.title = twoPhaseResult.title;
+                processingState.description = twoPhaseResult.description;
               } else {
                 processingState.container_ids = twoPhaseResult.containerIds; // Instagram carousel uses containerIds array
               }
@@ -837,6 +951,8 @@ async function processScheduledPosts(request: NextRequest) {
                   platforms: [],
                   message: isThreads
                     ? 'Threads video container created, waiting for processing'
+                    : isPinterest
+                    ? 'Pinterest video uploaded, waiting for processing'
                     : 'Instagram carousel containers created, waiting for video processing'
                 });
 

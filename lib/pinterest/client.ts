@@ -399,4 +399,92 @@ export class PinterestClient {
       throw error;
     }
   }
+
+  /**
+   * Phase 1: Start video upload without waiting for processing
+   * Returns media_id for later status checking
+   */
+  async startVideoUpload(videoUrl: string): Promise<{ mediaId: string }> {
+    console.log('=== Phase 1: Starting Video Upload ===');
+    console.log('Video URL:', videoUrl);
+
+    try {
+      // Step 1: Register media upload
+      const mediaRegistration = await this.registerMediaUpload();
+      const { media_id, upload_url, upload_parameters } = mediaRegistration;
+      console.log('Media registered:', media_id);
+
+      // Step 2: Upload video file to S3
+      await this.uploadVideoFile(upload_url, upload_parameters, videoUrl);
+      console.log('✅ Video uploaded to S3');
+
+      // Return immediately - don't wait for processing
+      return { mediaId: media_id };
+
+    } catch (error) {
+      console.error('Phase 1 video upload failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Phase 2: Check if video processing is complete
+   */
+  async checkVideoReady(mediaId: string): Promise<{ ready: boolean; status: string }> {
+    try {
+      const statusData = await this.getMediaStatus(mediaId);
+
+      return {
+        ready: statusData.status === 'succeeded',
+        status: statusData.status
+      };
+    } catch (error) {
+      console.error('Error checking video status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Phase 2: Create pin with processed video
+   */
+  async createPinFromVideoId(
+    boardId: string,
+    title: string,
+    description: string,
+    mediaId: string,
+    coverImageUrl?: string,
+    link?: string
+  ) {
+    console.log('=== Phase 2: Creating Pin from Processed Video ===');
+    console.log('Media ID:', mediaId);
+
+    try {
+      const pinData: any = {
+        title,
+        description,
+        media_source: {
+          source_type: 'video_id',
+          media_id: mediaId,
+        }
+      };
+
+      // Pinterest REQUIRES a cover image for video pins
+      if (coverImageUrl) {
+        pinData.media_source.cover_image_url = coverImageUrl;
+      } else {
+        // Use keyframe at 0 seconds to auto-generate cover from video
+        pinData.media_source.cover_image_key_frame_time = 0;
+      }
+
+      if (link) {
+        pinData.link = link;
+      }
+
+      return await this.createPin(boardId, pinData);
+
+    } catch (error) {
+      console.error('Phase 2 pin creation failed:', error);
+      throw error;
+    }
+  }
 }
