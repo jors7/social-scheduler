@@ -977,17 +977,18 @@ function CreateNewPostPageContent() {
 
     setIsUploadingMedia(true)
 
-    // Validate video sizes for Bluesky
+    // Validate media sizes for Bluesky (both images and videos)
     if (selectedPlatforms.includes('bluesky')) {
-      const BLUESKY_VIDEO_SIZE_LIMIT = 900 * 1024 // 900KB (safety margin below 976.56KB limit)
+      const BLUESKY_MEDIA_SIZE_LIMIT = 900 * 1024 // 900KB (safety margin below 1MB limit)
 
       for (const file of files) {
-        if (file.type.startsWith('video/')) {
+        if (file.type.startsWith('video/') || file.type.startsWith('image/')) {
           const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+          const mediaType = file.type.startsWith('video/') ? 'Video' : 'Image'
 
-          if (file.size > BLUESKY_VIDEO_SIZE_LIMIT) {
+          if (file.size > BLUESKY_MEDIA_SIZE_LIMIT) {
             toast.error(
-              `Video "${file.name}" is ${fileSizeMB}MB, but Bluesky has a 1MB limit. Please compress your video or deselect Bluesky.`,
+              `${mediaType} "${file.name}" is ${fileSizeMB}MB, but Bluesky has a 1MB limit for all media. Please compress or use a smaller file.`,
               { duration: 8000 }
             )
             setIsUploadingMedia(false)
@@ -1184,20 +1185,23 @@ function CreateNewPostPageContent() {
 
     if (selectedFiles.length === 0) return []
 
-    // Check if we have video files
-    const hasVideos = selectedFiles.some(file => file.type.startsWith('video/'))
+    // Check if we have media files
+    const hasMedia = selectedFiles.some(file =>
+      file.type.startsWith('video/') || file.type.startsWith('image/')
+    )
 
-    // Validate video sizes for Bluesky
-    if (selectedPlatforms.includes('bluesky') && hasVideos) {
-      const BLUESKY_VIDEO_SIZE_LIMIT = 900 * 1024 // 900KB (safety margin below 976.56KB limit)
+    // Validate media sizes for Bluesky (both images and videos)
+    if (selectedPlatforms.includes('bluesky') && hasMedia) {
+      const BLUESKY_MEDIA_SIZE_LIMIT = 900 * 1024 // 900KB (safety margin below 1MB limit)
 
       for (const file of selectedFiles) {
-        if (file.type.startsWith('video/')) {
+        if (file.type.startsWith('video/') || file.type.startsWith('image/')) {
           const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2)
+          const mediaType = file.type.startsWith('video/') ? 'Video' : 'Image'
 
-          if (file.size > BLUESKY_VIDEO_SIZE_LIMIT) {
+          if (file.size > BLUESKY_MEDIA_SIZE_LIMIT) {
             toast.error(
-              `Video "${file.name}" is ${fileSizeMB}MB, but Bluesky has a 1MB limit. Please compress your video or deselect Bluesky.`,
+              `${mediaType} "${file.name}" is ${fileSizeMB}MB, but Bluesky has a 1MB limit for all media. Please compress or use a smaller file.`,
               { duration: 8000 }
             )
             return []

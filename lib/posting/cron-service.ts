@@ -250,25 +250,40 @@ export async function postToFacebookDirect(
   }
 }
 
-export async function postToBlueskyDirect(content: string, account: any, mediaUrls?: string[]) {
+export async function postToBlueskyDirect(content: string, account: any, mediaUrls?: any[]) {
   console.log('=== DIRECT BLUESKY POST ===');
   console.log('Content:', JSON.stringify(content));
   console.log('Content length:', content.length);
   console.log('First 10 chars:', JSON.stringify(content.substring(0, 10)));
   console.log('Content type:', typeof content);
-  console.log('Media URLs:', JSON.stringify(mediaUrls));
+  console.log('Media URLs (raw):', JSON.stringify(mediaUrls));
   console.log('Has media:', !!mediaUrls && mediaUrls.length > 0);
 
   // Make absolutely sure content is a string
   const textContent = String(content);
   console.log('Text content after String():', JSON.stringify(textContent));
 
+  // Normalize mediaUrls - extract URL strings from objects if needed
+  const normalizedMediaUrls: string[] | undefined = mediaUrls?.map(item => {
+    if (typeof item === 'string') {
+      return item;
+    } else if (item && typeof item === 'object' && item.url) {
+      console.log('[Bluesky] Extracting URL from object:', item.url);
+      return item.url;
+    } else {
+      console.error('[Bluesky] Invalid media URL format:', item);
+      return '';
+    }
+  }).filter(url => url !== '');
+
+  console.log('Media URLs (normalized):', normalizedMediaUrls);
+
   const blueskyService = new BlueskyService();
   const result = await blueskyService.createPost(
     account.access_token, // identifier stored in access_token
     account.access_secret, // password stored in access_secret
     textContent,
-    mediaUrls
+    normalizedMediaUrls
   );
 
   return {

@@ -22,9 +22,19 @@ export class BlueskyService {
           try {
             const response = await fetch(url);
             const arrayBuffer = await response.arrayBuffer();
+
+            // Bluesky has a 1MB (1,000,000 bytes) limit for images
+            const sizeInBytes = arrayBuffer.byteLength;
+            if (sizeInBytes > 1000000) {
+              const sizeInMB = (sizeInBytes / 1000000).toFixed(2);
+              console.error(`[Bluesky] Image too large: ${sizeInBytes} bytes (${sizeInMB}MB), max 1MB`);
+              throw new Error(`Image exceeds Bluesky's 1MB limit (${sizeInMB}MB). Please use a smaller image.`);
+            }
+
             imageBuffers.push(Buffer.from(arrayBuffer));
           } catch (error) {
             console.error('Failed to download image:', url, error);
+            throw error; // Re-throw to ensure posting fails with clear error
           }
         }
       }
