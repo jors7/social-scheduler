@@ -820,6 +820,29 @@ export async function postToPinterestDirect(content: string, account: any, media
       throw new Error('Pinterest posts require valid image URLs');
     }
 
+    // Validate mixed media - Pinterest doesn't support mixing images and videos
+    const videoExtensions = ['.mp4', '.mov', '.m4v', '.webm', '.avi', '.mkv', '.flv', '.wmv'];
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+
+    let hasVideo = false;
+    let hasImage = false;
+
+    for (const url of normalizedMediaUrls) {
+      const lowerUrl = url.toLowerCase();
+      if (videoExtensions.some(ext => lowerUrl.endsWith(ext))) {
+        hasVideo = true;
+      } else if (imageExtensions.some(ext => lowerUrl.endsWith(ext))) {
+        hasImage = true;
+      }
+    }
+
+    if (hasVideo && hasImage) {
+      throw new Error(
+        'Pinterest doesn\'t support mixing images and videos in one post. ' +
+        'Please post images only, videos only, or create separate posts for each media type.'
+      );
+    }
+
     const pinterestService = new PinterestService(account.access_token);
 
     // Format content for Pinterest (title + description)

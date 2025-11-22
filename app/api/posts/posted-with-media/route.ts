@@ -32,9 +32,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fetch posts - newest first
+    // Fetch posts - newest first by scheduled_for (works for both posted and failed)
     const { data: posts, error: postsError } = await query
-      .order('posted_at', { ascending: false, nullsFirst: false })
       .order('scheduled_for', { ascending: false });
 
     if (postsError) {
