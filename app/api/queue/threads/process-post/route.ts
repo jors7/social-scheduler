@@ -250,12 +250,30 @@ async function handler(request: NextRequest) {
 
       // Update scheduled_post to posted status if linked
       if (job.scheduled_post_id) {
+        // Get the first media URL for thumbnail (if exists)
+        const firstMediaUrl = mediaUrls && mediaUrls.length > 0 ? mediaUrls[0]?.[0] : null;
+
+        // Format media_urls to include thumbnail for first media
+        let formattedMediaUrls = null;
+        if (firstMediaUrl) {
+          const allMediaUrls = mediaUrls.map((mediaArray: any[]) => mediaArray[0]).filter(Boolean);
+          formattedMediaUrls = allMediaUrls.map((url: string, index: number) => {
+            // For the first media item, include thumbnailUrl
+            if (index === 0) {
+              return { url, thumbnailUrl: url }; // Use the same URL as thumbnail for queued threads
+            }
+            return url;
+          });
+        }
+
         await supabase
           .from('scheduled_posts')
           .update({
             status: 'posted',
             posted_at: new Date().toISOString(),
             processing_state: null, // Clear processing state to prevent false errors
+            error_message: null, // Clear any previous error messages
+            media_urls: formattedMediaUrls, // Add/update media_urls with thumbnail
             post_results: [
               {
                 platform: 'threads',
