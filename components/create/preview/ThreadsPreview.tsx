@@ -4,7 +4,7 @@ import { stripHtml, truncateText, getAllEntities, getCharacterStatus, isVideoUrl
 
 interface ThreadsPreviewProps {
   content: string
-  mediaUrls?: string[]
+  mediaUrls?: (string | { url: string; type?: string })[]
   threadPosts?: string[]
 }
 
@@ -19,21 +19,30 @@ export function ThreadsPreview({ content, mediaUrls = [], threadPosts }: Threads
   const charStatus = getCharacterStatus(plainText.length, 500)
   const entities = getAllEntities(text)
 
-  // Extract URL from media (handle both string and object formats)
-  const getMediaUrl = (media: any): string | null => {
+  // Extract URL and type from media (handle both string and object formats)
+  const getMediaInfo = (media: any): { url: string; isVideo: boolean } | null => {
     if (!media) return null
-    if (typeof media === 'string') return media
-    if (typeof media === 'object' && media.url) return media.url
+
+    // String format - use URL extension to detect video
+    if (typeof media === 'string') {
+      return {
+        url: media,
+        isVideo: isVideoUrl(media)
+      }
+    }
+
+    // Object format - use type property if available, otherwise check URL
+    if (typeof media === 'object' && media.url) {
+      return {
+        url: media.url,
+        isVideo: media.type === 'video' || isVideoUrl(media.url)
+      }
+    }
+
     return null
   }
 
-  const firstMediaUrl = mediaUrls.length > 0 ? getMediaUrl(mediaUrls[0]) : null
-
-  // Debug for video detection
-  if (firstMediaUrl) {
-    console.log('[ThreadsPreview] firstMediaUrl:', firstMediaUrl)
-    console.log('[ThreadsPreview] isVideoUrl result:', isVideoUrl(firstMediaUrl))
-  }
+  const mediaInfo = mediaUrls.length > 0 ? getMediaInfo(mediaUrls[0]) : null
 
   const renderContent = () => {
     if (entities.length === 0) {
@@ -86,12 +95,12 @@ export function ThreadsPreview({ content, mediaUrls = [], threadPosts }: Threads
           </div>
 
           {/* Media - natural aspect ratio (4:5 or 9:16 recommended for mobile) */}
-          {firstMediaUrl && (
+          {mediaInfo && (
             <div className="mt-3 rounded-xl overflow-hidden bg-gray-100 relative">
-              {isVideoUrl(firstMediaUrl) ? (
+              {mediaInfo.isVideo ? (
                 <>
                   <video
-                    src={firstMediaUrl}
+                    src={mediaInfo.url}
                     className="w-full max-h-[500px] object-contain"
                     muted
                     preload="metadata"
@@ -107,7 +116,7 @@ export function ThreadsPreview({ content, mediaUrls = [], threadPosts }: Threads
                 </>
               ) : (
                 <img
-                  src={firstMediaUrl}
+                  src={mediaInfo.url}
                   alt=""
                   className="w-full max-h-[500px] object-contain"
                 />

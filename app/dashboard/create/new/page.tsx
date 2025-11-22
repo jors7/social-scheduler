@@ -721,10 +721,11 @@ function CreateNewPostPageContent() {
     const firstPostMedia = threadsThreadMedia[0]
     if (!firstPostMedia || firstPostMedia.length === 0) return []
 
-    // Create blob URLs for the files
+    // Create blob URLs for the files with type information
     const urls = firstPostMedia.map(file => ({
       file,
-      url: URL.createObjectURL(file)
+      url: URL.createObjectURL(file),
+      type: file.type.startsWith('video/') ? 'video' : 'image'
     }))
 
     return urls
@@ -741,7 +742,7 @@ function CreateNewPostPageContent() {
   const previewMediaUrls = useMemo(() => {
     // Combine uploaded URLs and blob URLs from new files
     const blobUrls = filePreviewUrls.map(({ url }) => url)
-    const threadBlobUrls = threadMediaPreviewUrls.map(({ url }) => url)
+    const threadBlobUrls = threadMediaPreviewUrls.map(({ url, type }) => ({ url, type }))
 
     // If Threads is selected and has thread media, use that for preview
     // (thread media exists whenever user uploads to thread composer, regardless of threadsMode)
