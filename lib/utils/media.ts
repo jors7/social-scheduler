@@ -45,8 +45,11 @@ export function getMediaThumbnail(media: any): string | null {
 export function isVideoUrl(url: string | null): boolean {
   if (!url || typeof url !== 'string') return false
 
+  // Strip query parameters and fragments to get the actual file path
+  const urlPath = url.split('?')[0].split('#')[0]
+
   const videoExtensions = ['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v', '.flv', '.wmv']
-  return videoExtensions.some(ext => url.toLowerCase().includes(ext))
+  return videoExtensions.some(ext => urlPath.toLowerCase().endsWith(ext))
 }
 
 /**
@@ -55,8 +58,11 @@ export function isVideoUrl(url: string | null): boolean {
 export function isImageUrl(url: string | null): boolean {
   if (!url || typeof url !== 'string') return false
 
+  // Strip query parameters and fragments to get the actual file path
+  const urlPath = url.split('?')[0].split('#')[0]
+
   const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg']
-  return imageExtensions.some(ext => url.toLowerCase().includes(ext))
+  return imageExtensions.some(ext => urlPath.toLowerCase().endsWith(ext))
 }
 
 /**
