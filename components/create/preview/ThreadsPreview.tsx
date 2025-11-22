@@ -29,6 +29,12 @@ export function ThreadsPreview({ content, mediaUrls = [], threadPosts }: Threads
 
   const firstMediaUrl = mediaUrls.length > 0 ? getMediaUrl(mediaUrls[0]) : null
 
+  // Debug for video detection
+  if (firstMediaUrl) {
+    console.log('[ThreadsPreview] firstMediaUrl:', firstMediaUrl)
+    console.log('[ThreadsPreview] isVideoUrl result:', isVideoUrl(firstMediaUrl))
+  }
+
   const renderContent = () => {
     if (entities.length === 0) {
       return <span>{text}</span>
