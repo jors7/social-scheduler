@@ -19,6 +19,16 @@ export function ThreadsPreview({ content, mediaUrls = [], threadPosts }: Threads
   const charStatus = getCharacterStatus(plainText.length, 500)
   const entities = getAllEntities(text)
 
+  // Extract URL from media (handle both string and object formats)
+  const getMediaUrl = (media: any): string | null => {
+    if (!media) return null
+    if (typeof media === 'string') return media
+    if (typeof media === 'object' && media.url) return media.url
+    return null
+  }
+
+  const firstMediaUrl = mediaUrls.length > 0 ? getMediaUrl(mediaUrls[0]) : null
+
   const renderContent = () => {
     if (entities.length === 0) {
       return <span>{text}</span>
@@ -70,12 +80,12 @@ export function ThreadsPreview({ content, mediaUrls = [], threadPosts }: Threads
           </div>
 
           {/* Media - natural aspect ratio (4:5 or 9:16 recommended for mobile) */}
-          {mediaUrls && mediaUrls.length > 0 && (
+          {firstMediaUrl && (
             <div className="mt-3 rounded-xl overflow-hidden bg-gray-100 relative">
-              {isVideoUrl(mediaUrls[0]) ? (
+              {isVideoUrl(firstMediaUrl) ? (
                 <>
                   <video
-                    src={mediaUrls[0]}
+                    src={firstMediaUrl}
                     className="w-full max-h-[500px] object-contain"
                     muted
                     preload="metadata"
@@ -91,7 +101,7 @@ export function ThreadsPreview({ content, mediaUrls = [], threadPosts }: Threads
                 </>
               ) : (
                 <img
-                  src={mediaUrls[0]}
+                  src={firstMediaUrl}
                   alt=""
                   className="w-full max-h-[500px] object-contain"
                 />
