@@ -265,17 +265,23 @@ export async function POST(request: NextRequest) {
         });
 
         // Add a small grace period after publishing to ensure Threads indexes the post as a reply target
-        // Testing confirmed: Video→Image works perfectly with 10s
+        // Testing confirmed: Video→Image works with 10s, Image→Image works with 5s (same as scheduled threads)
         // Note: Video threading has limitations (Video→Video and Image→Video don't work)
         // These are blocked at the client level with validation
         if (i < posts.length - 1) {
           const currentHasMedia = mediaUrls[i];
 
-          // Simple grace period: 10s for media, 2s for text
-          const graceDelay = currentHasMedia ? 10000 : 2000;
+          // Check if current media is a video
+          const videoExtensions = ['.mp4', '.mov', '.m4v', '.avi', '.wmv', '.flv', '.webm'];
+          const isVideo = currentHasMedia && videoExtensions.some(ext =>
+            currentHasMedia.toLowerCase().endsWith(ext)
+          );
+
+          // Optimized grace periods: Videos need 10s, images only need 5s (proven in scheduled threads)
+          const graceDelay = isVideo ? 10000 : (currentHasMedia ? 5000 : 2000);
 
           console.log(`⏰ Grace period: waiting ${graceDelay}ms for post ${i + 1} to be indexed as reply target...`);
-          console.log(`   Post type: ${currentHasMedia ? 'media' : 'text'}`);
+          console.log(`   Post type: ${isVideo ? 'video' : (currentHasMedia ? 'image' : 'text')}`);
           await new Promise(resolve => setTimeout(resolve, graceDelay));
         }
 
