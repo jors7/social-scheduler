@@ -131,6 +131,14 @@ export default function PostedPostsPage() {
 
       // Posts are already sorted by the API, just set them
       setPostedPosts(normalizedPosts)
+
+      // DEBUG: Track failed posts through pipeline
+      const failedPosts = normalizedPosts.filter((p: any) => p.status === 'failed')
+      console.log('🔍 [DEBUG] Total posts fetched:', normalizedPosts.length)
+      console.log('🔍 [DEBUG] Failed posts fetched:', failedPosts.length)
+      if (failedPosts.length > 0) {
+        console.log('🔍 [DEBUG] Failed posts data:', failedPosts)
+      }
     } catch (error) {
       console.error('Error fetching posted posts:', error)
       toast.error('Failed to load posted posts')
@@ -161,6 +169,13 @@ export default function PostedPostsPage() {
     return true
   })
 
+  // DEBUG: Track failed posts after search filter
+  const failedFiltered = filteredPosts.filter((p: any) => p.status === 'failed')
+  if (postedPosts.length > 0 && failedFiltered.length === 0 && postedPosts.some((p: any) => p.status === 'failed')) {
+    console.log('⚠️ [DEBUG] Failed posts filtered out by search! Search query:', searchQuery)
+  }
+  console.log('🔍 [DEBUG] Failed posts after search filter:', failedFiltered.length)
+
   const togglePostSelection = (postId: string) => {
     setSelectedPosts(prev =>
       prev.includes(postId)
@@ -181,6 +196,17 @@ export default function PostedPostsPage() {
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const paginatedPosts = filteredPosts.slice(startIndex, endIndex)
+
+  // DEBUG: Track failed posts after pagination
+  const failedPaginated = paginatedPosts.filter((p: any) => p.status === 'failed')
+  if (failedFiltered.length > 0 && failedPaginated.length === 0) {
+    console.log('⚠️ [DEBUG] Failed posts exist but not on current page! Current page:', currentPage)
+    console.log('🔍 [DEBUG] Total pages:', Math.ceil(filteredPosts.length / itemsPerPage))
+  }
+  console.log('🔍 [DEBUG] Failed posts on current page:', failedPaginated.length)
+  if (failedPaginated.length > 0) {
+    console.log('🔍 [DEBUG] Failed posts to render:', failedPaginated.map((p: any) => ({ id: p.id, status: p.status, content: p.content?.substring(0, 50) })))
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
