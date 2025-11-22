@@ -140,7 +140,11 @@ export function PreviewPanel({
   threadPosts,
   onClose
 }: PreviewPanelProps) {
-  // Note: mediaUrls can be strings or objects with {url, type} - preview components handle both
+  // Normalize mediaUrls to strings for most preview components
+  // ThreadsPreview needs the full object with type info for video detection
+  const normalizedMediaUrls = mediaUrls.map(item =>
+    typeof item === 'string' ? item : item.url
+  )
 
   const [activePlatform, setActivePlatform] = useState(
     selectedPlatforms[0] || 'twitter'
@@ -219,19 +223,19 @@ export function PreviewPanel({
           {activePlatform === 'instagram' ? (
             <InstagramPreview
               content={platformContentToUse}
-              mediaUrls={mediaUrls}
+              mediaUrls={normalizedMediaUrls}
               format={instagramFormat}
             />
           ) : activePlatform === 'facebook' ? (
             <FacebookPreview
               content={platformContentToUse}
-              mediaUrls={mediaUrls}
+              mediaUrls={normalizedMediaUrls}
               format={facebookFormat}
             />
           ) : activePlatform === 'youtube' ? (
             <YouTubePreview
               content={platformContentToUse}
-              mediaUrls={mediaUrls}
+              mediaUrls={normalizedMediaUrls}
               format={youtubeFormat}
               youtubeTitle={youtubeTitle}
               youtubeDescription={youtubeDescription}
@@ -240,7 +244,7 @@ export function PreviewPanel({
           ) : activePlatform === 'pinterest' ? (
             <PinterestPreview
               content={platformContentToUse}
-              mediaUrls={mediaUrls}
+              mediaUrls={normalizedMediaUrls}
               pinterestTitle={pinterestTitle}
               pinterestDescription={pinterestDescription}
               pinterestBoard={pinterestBoard}
@@ -254,7 +258,7 @@ export function PreviewPanel({
           ) : (
             <ActivePreviewComponent
               content={platformContentToUse}
-              mediaUrls={mediaUrls}
+              mediaUrls={normalizedMediaUrls}
             />
           )}
         </div>
