@@ -257,12 +257,25 @@ async function handler(request: NextRequest) {
         let formattedMediaUrls = null;
         if (firstMediaUrl) {
           const allMediaUrls = mediaUrls.map((mediaArray: any[]) => mediaArray[0]).filter(Boolean);
-          formattedMediaUrls = allMediaUrls.map((url: string, index: number) => {
-            // For the first media item, include thumbnailUrl
+
+          formattedMediaUrls = allMediaUrls.map((mediaItem: any, index: number) => {
+            // Extract the actual URL string from the media object (handles both string and object formats)
+            const urlString = typeof mediaItem === 'string' ? mediaItem : mediaItem?.url;
+            const thumbnailString = typeof mediaItem === 'object' ? mediaItem?.thumbnailUrl : undefined;
+
+            // For the first media item, preserve or use URL as thumbnail
             if (index === 0) {
-              return { url, thumbnailUrl: url }; // Use the same URL as thumbnail for queued threads
+              return {
+                url: urlString,
+                thumbnailUrl: thumbnailString || urlString
+              };
             }
-            return url;
+
+            // For other items, preserve thumbnail if exists
+            if (thumbnailString) {
+              return { url: urlString, thumbnailUrl: thumbnailString };
+            }
+            return urlString;
           });
         }
 
