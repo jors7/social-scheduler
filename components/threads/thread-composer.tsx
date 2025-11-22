@@ -168,6 +168,19 @@ export function ThreadComposer({
       return;
     }
 
+    // Threads-specific validation: Block video uploads for posts after the first one
+    if (platform === 'threads') {
+      const postIndex = posts.findIndex(p => p.id === postId);
+
+      // Check if any of the files being uploaded are videos
+      const hasVideoUpload = fileArray.some(file => isVideoFile(file));
+
+      if (postIndex > 0 && hasVideoUpload) {
+        toast.error('Videos can only be added to the first post in a Threads thread. Please use images for subsequent posts.');
+        return;
+      }
+    }
+
     // Process files and generate thumbnails for videos
     const processedMedia = await Promise.all(
       fileArray.map(async (file) => {
