@@ -1357,12 +1357,22 @@ function DashboardContent() {
                   // Determine if this should be rendered as a video
                   // Check if we have video content (either from media_urls object structure or video file URL)
                   const hasVideoContent = () => {
-                    // Check if media_urls contains video object with thumbnail (TikTok, YouTube, etc.)
+                    // Check if media_urls contains video object
                     if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
                       const firstMedia = post.media_urls[0]
-                      if (typeof firstMedia === 'object' && firstMedia.thumbnailUrl) {
-                        // Has thumbnail in object = video content
-                        return true
+
+                      // Check if it's a video by checking the URL extension (not just presence of thumbnailUrl)
+                      if (typeof firstMedia === 'object' && firstMedia.url) {
+                        const urlPath = firstMedia.url.split('?')[0].split('#')[0].toLowerCase()
+                        if (urlPath.endsWith('.mp4') ||
+                            urlPath.endsWith('.mov') ||
+                            urlPath.endsWith('.webm') ||
+                            urlPath.endsWith('.avi') ||
+                            urlPath.endsWith('.m4v') ||
+                            urlPath.endsWith('.flv') ||
+                            urlPath.endsWith('.wmv')) {
+                          return true
+                        }
                       }
                     }
 
@@ -1372,7 +1382,10 @@ function DashboardContent() {
                       if (urlPath.endsWith('.mp4') ||
                           urlPath.endsWith('.mov') ||
                           urlPath.endsWith('.webm') ||
-                          urlPath.endsWith('.avi')) {
+                          urlPath.endsWith('.avi') ||
+                          urlPath.endsWith('.m4v') ||
+                          urlPath.endsWith('.flv') ||
+                          urlPath.endsWith('.wmv')) {
                         return true
                       }
                     }
@@ -1637,8 +1650,17 @@ function DashboardContent() {
                               const url = typeof media === 'string' ? media : media.url
                               const thumbnailUrl = typeof media === 'object' && media.thumbnailUrl ? media.thumbnailUrl : null
 
-                              // Check if this is video content (has thumbnail OR is video file)
-                              const isVideo = thumbnailUrl || (url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.webm') || url.includes('.avi')))
+                              // Check if this is video content by checking URL extension
+                              const isVideo = url && (() => {
+                                const urlPath = url.split('?')[0].split('#')[0].toLowerCase()
+                                return urlPath.endsWith('.mp4') ||
+                                       urlPath.endsWith('.mov') ||
+                                       urlPath.endsWith('.webm') ||
+                                       urlPath.endsWith('.avi') ||
+                                       urlPath.endsWith('.m4v') ||
+                                       urlPath.endsWith('.flv') ||
+                                       urlPath.endsWith('.wmv')
+                              })()
                               // Hide thumbnails 3 and 4 on desktop (index 2 and 3)
                               const isHiddenOnDesktop = hasMany && index >= desktopLimit
 
