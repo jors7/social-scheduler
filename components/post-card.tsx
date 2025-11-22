@@ -43,6 +43,7 @@ interface PostedPost extends BasePost {
 interface ScheduledPost extends BasePost {
   scheduled_for: string
   status: 'pending' | 'posting' | 'posted' | 'failed' | 'cancelled' | 'processing'
+  platform_media_url?: string
   pinterest_title?: string
   pinterest_description?: string
   // Format flags
@@ -160,9 +161,13 @@ export function PostCard({
       return getMediaUrl(postedPost.media_urls?.[0])
     }
 
-    // For scheduled posts, check Threads thread media first
+    // For scheduled posts, check platform_media_url first (same as posted)
     if (variant === 'scheduled') {
       const scheduledPost = post as ScheduledPost
+      // If platform_media_url exists, use it
+      if (scheduledPost.platform_media_url) return scheduledPost.platform_media_url
+
+      // Check Threads thread media
       if (scheduledPost.threads_mode === 'thread' &&
           scheduledPost.threads_thread_media &&
           Array.isArray(scheduledPost.threads_thread_media) &&
