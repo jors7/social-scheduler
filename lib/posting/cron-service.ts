@@ -801,6 +801,25 @@ export async function postToPinterestDirect(content: string, account: any, media
       throw new Error('Pinterest posts require an image');
     }
 
+    // Normalize mediaUrls - extract URL strings from objects if needed
+    const normalizedMediaUrls: string[] | undefined = mediaUrls?.map(item => {
+      if (typeof item === 'string') {
+        return item;
+      } else if (item && typeof item === 'object' && (item as any).url) {
+        console.log('[Pinterest] Extracting URL from object:', (item as any).url);
+        return (item as any).url;
+      } else {
+        console.error('[Pinterest] Invalid media URL format:', item);
+        return '';
+      }
+    }).filter(url => url !== '');
+
+    console.log('[Pinterest] Normalized media URLs:', normalizedMediaUrls);
+
+    if (!normalizedMediaUrls || normalizedMediaUrls.length === 0) {
+      throw new Error('Pinterest posts require valid image URLs');
+    }
+
     const pinterestService = new PinterestService(account.access_token);
 
     // Format content for Pinterest (title + description)
@@ -823,7 +842,7 @@ export async function postToPinterestDirect(content: string, account: any, media
       boardId,
       title,
       description,
-      mediaUrls // Pass all media URLs for smart detection
+      normalizedMediaUrls // Pass normalized media URLs for smart detection
     );
 
     return {
