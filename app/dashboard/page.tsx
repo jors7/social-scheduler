@@ -1233,7 +1233,7 @@ function DashboardContent() {
               <CardTitle className="text-white text-xl">Recent Posts</CardTitle>
               <CardDescription className="text-purple-100">Your latest social media activity</CardDescription>
             </div>
-            <Link href="/dashboard/posts">
+            <Link href="/dashboard/posts/scheduled">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
                 View all
                 <ArrowUpRight className="ml-1 h-4 w-4" />

@@ -171,7 +171,7 @@ export function MobileMenu({
                   </Link>
 
                   <Link
-                    href="/dashboard/posts"
+                    href="/dashboard/posts/scheduled"
                     onClick={onClose}
                     className="flex items-center gap-3 px-4 py-3.5 text-gray-700 hover:bg-green-50 hover:text-green-600 rounded-xl transition-all duration-200 group"
                   >

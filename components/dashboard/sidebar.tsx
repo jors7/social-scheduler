@@ -79,7 +79,6 @@ const navigation: NavigationItem[] = [
     badge: null,
     children: [
       { name: 'Calendar View', href: '/dashboard/calendar', icon: Calendar },
-      { name: 'All Posts', href: '/dashboard/posts', icon: FileText },
       { name: 'Scheduled', href: '/dashboard/posts/scheduled', icon: Clock },
       { name: 'Published', href: '/dashboard/posts/posted', icon: Send },
       { name: 'Drafts', href: '/dashboard/posts/drafts', icon: Edit3 },
