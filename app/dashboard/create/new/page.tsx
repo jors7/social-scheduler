@@ -743,22 +743,14 @@ function CreateNewPostPageContent() {
     const blobUrls = filePreviewUrls.map(({ url }) => url)
     const threadBlobUrls = threadMediaPreviewUrls.map(({ url }) => url)
 
-    console.log('[previewMediaUrls] selectedPlatforms:', selectedPlatforms)
-    console.log('[previewMediaUrls] threadsMode:', threadsMode)
-    console.log('[previewMediaUrls] threadBlobUrls:', threadBlobUrls)
-    console.log('[previewMediaUrls] uploadedMediaUrls:', uploadedMediaUrls)
-    console.log('[previewMediaUrls] blobUrls:', blobUrls)
-
-    // If Threads is selected in thread mode and has thread media, use that for preview
-    if (selectedPlatforms.includes('threads') && threadsMode === 'thread' && threadBlobUrls.length > 0) {
-      console.log('[previewMediaUrls] Using threadBlobUrls:', threadBlobUrls)
+    // If Threads is selected and has thread media, use that for preview
+    // (thread media exists whenever user uploads to thread composer, regardless of threadsMode)
+    if (selectedPlatforms.includes('threads') && threadBlobUrls.length > 0) {
       return threadBlobUrls
     }
 
-    const result = [...uploadedMediaUrls, ...blobUrls]
-    console.log('[previewMediaUrls] Using combined URLs:', result)
-    return result
-  }, [uploadedMediaUrls, filePreviewUrls, threadMediaPreviewUrls, selectedPlatforms, threadsMode])
+    return [...uploadedMediaUrls, ...blobUrls]
+  }, [uploadedMediaUrls, filePreviewUrls, threadMediaPreviewUrls, selectedPlatforms])
 
   // Warn user before leaving page with unsaved changes
   useEffect(() => {
