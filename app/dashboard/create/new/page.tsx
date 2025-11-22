@@ -880,6 +880,36 @@ function CreateNewPostPageContent() {
       }
     }
 
+    // Check if toggling Pinterest ON with mixed media
+    if (platformId === 'pinterest' && !selectedPlatforms.includes('pinterest')) {
+      if (uploadedMediaUrls.length > 0) {
+        const videoExtensions = ['.mp4', '.mov', '.m4v', '.webm', '.avi', '.mkv', '.flv', '.wmv']
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
+
+        let hasVideo = false
+        let hasImage = false
+
+        for (const media of uploadedMediaUrls) {
+          const url = typeof media === 'string' ? media : (media as any).url
+          const lowerUrl = url.toLowerCase()
+
+          if (videoExtensions.some(ext => lowerUrl.endsWith(ext))) {
+            hasVideo = true
+          } else if (imageExtensions.some(ext => lowerUrl.endsWith(ext))) {
+            hasImage = true
+          }
+        }
+
+        if (hasVideo && hasImage) {
+          toast.error(
+            'Pinterest doesn\'t support mixing images and videos in one post. Please use only images or only videos, or create separate posts.',
+            { duration: 8000 }
+          )
+          return // Don't toggle Pinterest on
+        }
+      }
+    }
+
     setSelectedPlatforms(prev => {
       // YouTube is exclusive - deselect all others when selecting YouTube
       if (platformId === 'youtube') {
@@ -3406,7 +3436,39 @@ function CreateNewPostPageContent() {
 
     if (newUrls.length > 0) {
       // Add successful URLs to existing uploaded media URLs
-      setUploadedMediaUrls(prev => [...prev, ...newUrls])
+      setUploadedMediaUrls(prev => {
+        const updated = [...prev, ...newUrls]
+
+        // Check if Pinterest is selected and we now have mixed media
+        if (selectedPlatforms.includes('pinterest') && updated.length > 0) {
+          const videoExtensions = ['.mp4', '.mov', '.m4v', '.webm', '.avi', '.mkv', '.flv', '.wmv']
+          const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
+
+          let hasVideo = false
+          let hasImage = false
+
+          for (const media of updated) {
+            const url = typeof media === 'string' ? media : (media as any).url
+            const lowerUrl = url.toLowerCase()
+
+            if (videoExtensions.some(ext => lowerUrl.endsWith(ext))) {
+              hasVideo = true
+            } else if (imageExtensions.some(ext => lowerUrl.endsWith(ext))) {
+              hasImage = true
+            }
+          }
+
+          if (hasVideo && hasImage) {
+            toast.warning(
+              'Pinterest doesn\'t support mixing images and videos. Pinterest has been deselected from this post.',
+              { duration: 8000 }
+            )
+            setSelectedPlatforms(prev => prev.filter(p => p !== 'pinterest'))
+          }
+        }
+
+        return updated
+      })
       // Track the types of successfully uploaded media
       const successfulTypes = validFiles
         .filter((_, i) => !failedIndices.includes(i))
