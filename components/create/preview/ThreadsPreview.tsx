@@ -44,11 +44,6 @@ export function ThreadsPreview({ content, mediaUrls = [], threadPosts }: Threads
 
   const mediaInfo = mediaUrls.length > 0 ? getMediaInfo(mediaUrls[0]) : null
 
-  // Debug logging
-  console.log('[ThreadsPreview] mediaUrls:', mediaUrls)
-  console.log('[ThreadsPreview] mediaUrls[0]:', mediaUrls[0])
-  console.log('[ThreadsPreview] mediaInfo:', mediaInfo)
-
   const renderContent = () => {
     if (entities.length === 0) {
       return <span>{text}</span>

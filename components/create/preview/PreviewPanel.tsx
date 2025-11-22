@@ -127,7 +127,7 @@ export function PreviewPanel({
   selectedPlatforms,
   content,
   platformContent,
-  mediaUrls: rawMediaUrls,
+  mediaUrls,
   instagramFormat = 'feed-portrait',
   facebookFormat = 'feed',
   youtubeFormat = 'video',
@@ -140,10 +140,7 @@ export function PreviewPanel({
   threadPosts,
   onClose
 }: PreviewPanelProps) {
-  // Normalize mediaUrls to string format for preview components
-  const mediaUrls = rawMediaUrls.map(item =>
-    typeof item === 'string' ? item : item.url
-  )
+  // Note: mediaUrls can be strings or objects with {url, type} - preview components handle both
 
   const [activePlatform, setActivePlatform] = useState(
     selectedPlatforms[0] || 'twitter'
