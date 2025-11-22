@@ -11,6 +11,7 @@ interface ScheduledPost {
   platforms: string[]
   platform_content: Record<string, string>
   media_urls: string[]
+  platform_media_url?: string
   scheduled_for: string
   status: 'pending' | 'posting' | 'posted' | 'failed' | 'cancelled' | 'processing'
   created_at: string
