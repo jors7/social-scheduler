@@ -325,16 +325,48 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch scheduled posts - newest first
-    const { data, error } = await query.order('scheduled_for', { ascending: false });
+    const { data: posts, error } = await query.order('scheduled_for', { ascending: false });
 
     if (error) {
       console.error('Database error:', error);
       return NextResponse.json({ error: 'Failed to fetch scheduled posts' }, { status: 500 });
     }
 
-    return NextResponse.json({ 
+    if (!posts || posts.length === 0) {
+      return NextResponse.json({
+        success: true,
+        posts: []
+      });
+    }
+
+    // Enhance posts with platform_media_url if missing (for backward compatibility with old posts)
+    const enhancedPosts = posts.map(post => {
+      // If platform_media_url is already set, use it
+      if (post.platform_media_url) {
+        return post;
+      }
+
+      // Otherwise, extract from media_urls for backward compatibility
+      let platformMediaUrl = null;
+      if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
+        const firstMedia = post.media_urls[0];
+        if (typeof firstMedia === 'string') {
+          platformMediaUrl = firstMedia;
+        } else if (firstMedia && typeof firstMedia === 'object') {
+          // Handle object format: { url: '...', thumbnailUrl: '...' }
+          platformMediaUrl = firstMedia.thumbnailUrl || firstMedia.url || null;
+        }
+      }
+
+      return {
+        ...post,
+        platform_media_url: platformMediaUrl
+      };
+    });
+
+    return NextResponse.json({
       success: true,
-      posts: data || [] 
+      posts: enhancedPosts
     });
 
   } catch (error) {
