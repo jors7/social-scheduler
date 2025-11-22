@@ -880,27 +880,37 @@ function CreateNewPostPageContent() {
       }
     }
 
-    // Check if toggling Pinterest ON with mixed media
+    // Check if toggling Pinterest ON with mixed media or multiple videos
     if (platformId === 'pinterest' && !selectedPlatforms.includes('pinterest')) {
       if (uploadedMediaUrls.length > 0) {
         const videoExtensions = ['.mp4', '.mov', '.m4v', '.webm', '.avi', '.mkv', '.flv', '.wmv']
         const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
 
-        let hasVideo = false
-        let hasImage = false
+        let videoCount = 0
+        let imageCount = 0
 
         for (const media of uploadedMediaUrls) {
           const url = typeof media === 'string' ? media : (media as any).url
           const lowerUrl = url.toLowerCase()
 
           if (videoExtensions.some(ext => lowerUrl.endsWith(ext))) {
-            hasVideo = true
+            videoCount++
           } else if (imageExtensions.some(ext => lowerUrl.endsWith(ext))) {
-            hasImage = true
+            imageCount++
           }
         }
 
-        if (hasVideo && hasImage) {
+        // Check for multiple videos
+        if (videoCount > 1) {
+          toast.error(
+            'Pinterest doesn\'t support video carousels. Please select only one video, or use images for a carousel (2-5 images).',
+            { duration: 8000 }
+          )
+          return // Don't toggle Pinterest on
+        }
+
+        // Check for mixed media
+        if (videoCount > 0 && imageCount > 0) {
           toast.error(
             'Pinterest doesn\'t support mixing images and videos in one post. Please use only images or only videos, or create separate posts.',
             { duration: 8000 }
@@ -3439,26 +3449,35 @@ function CreateNewPostPageContent() {
       setUploadedMediaUrls(prev => {
         const updated = [...prev, ...newUrls]
 
-        // Check if Pinterest is selected and we now have mixed media
+        // Check if Pinterest is selected and we now have mixed media or multiple videos
         if (selectedPlatforms.includes('pinterest') && updated.length > 0) {
           const videoExtensions = ['.mp4', '.mov', '.m4v', '.webm', '.avi', '.mkv', '.flv', '.wmv']
           const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
 
-          let hasVideo = false
-          let hasImage = false
+          let videoCount = 0
+          let imageCount = 0
 
           for (const media of updated) {
             const url = typeof media === 'string' ? media : (media as any).url
             const lowerUrl = url.toLowerCase()
 
             if (videoExtensions.some(ext => lowerUrl.endsWith(ext))) {
-              hasVideo = true
+              videoCount++
             } else if (imageExtensions.some(ext => lowerUrl.endsWith(ext))) {
-              hasImage = true
+              imageCount++
             }
           }
 
-          if (hasVideo && hasImage) {
+          // Check for multiple videos
+          if (videoCount > 1) {
+            toast.warning(
+              'Pinterest doesn\'t support video carousels. Pinterest has been deselected from this post.',
+              { duration: 8000 }
+            )
+            setSelectedPlatforms(prev => prev.filter(p => p !== 'pinterest'))
+          }
+          // Check for mixed media
+          else if (videoCount > 0 && imageCount > 0) {
             toast.warning(
               'Pinterest doesn\'t support mixing images and videos. Pinterest has been deselected from this post.',
               { duration: 8000 }

@@ -135,21 +135,49 @@ export class PinterestService {
       throw new Error('At least one media URL is required');
     }
 
-    // Detect media type from first URL
-    const firstUrl = mediaUrls[0].toLowerCase();
-    const isVideo = firstUrl.match(/\.(mp4|mov|m4v|webm)$/);
+    // Detect media types for all URLs
+    const videoExtensions = /\.(mp4|mov|m4v|webm)$/;
+    const mediaTypes = mediaUrls.map(url => ({
+      url,
+      isVideo: videoExtensions.test(url.toLowerCase())
+    }));
 
-    if (isVideo) {
-      // Create video pin
-      const coverImage = mediaUrls.length > 1 ? mediaUrls[1] : undefined;
-      return await this.createVideoPin(boardId, title, description, mediaUrls[0], coverImage, link);
-    } else if (mediaUrls.length >= 2 && mediaUrls.length <= 5) {
-      // Create carousel pin (2-5 images)
+    const videoCount = mediaTypes.filter(m => m.isVideo).length;
+    const imageCount = mediaTypes.filter(m => !m.isVideo).length;
+
+    // Validate: Pinterest doesn't support video carousels
+    if (videoCount > 1) {
+      throw new Error('Pinterest does not support video carousels. Please select only one video, or use images for a carousel (2-5 images).');
+    }
+
+    // Validate: Pinterest doesn't support mixed media (this should be caught earlier, but double-check)
+    if (videoCount > 0 && imageCount > 0) {
+      throw new Error('Pinterest does not support mixing videos and images. Please select either one video OR multiple images (2-5).');
+    }
+
+    // Create video pin (single video only)
+    if (videoCount === 1) {
+      return await this.createVideoPin(
+        boardId,
+        title,
+        description,
+        mediaUrls[0],
+        undefined, // Let Pinterest auto-generate cover from video
+        link
+      );
+    }
+
+    // Create carousel pin (2-5 images)
+    if (imageCount >= 2 && imageCount <= 5) {
       return await this.createCarouselPin(boardId, title, description, mediaUrls, link);
-    } else {
-      // Create standard image pin
+    }
+
+    // Create standard image pin (single image)
+    if (imageCount === 1) {
       return await this.createPin(boardId, title, description, mediaUrls[0], link, altText);
     }
+
+    throw new Error('Invalid media selection for Pinterest');
   }
 }
 
