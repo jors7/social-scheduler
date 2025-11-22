@@ -744,13 +744,19 @@ function CreateNewPostPageContent() {
     const blobUrls = filePreviewUrls.map(({ url }) => url)
     const threadBlobUrls = threadMediaPreviewUrls.map(({ url, type }) => ({ url, type }))
 
+    console.log('[previewMediaUrls] threadMediaPreviewUrls:', threadMediaPreviewUrls)
+    console.log('[previewMediaUrls] threadBlobUrls:', threadBlobUrls)
+
     // If Threads is selected and has thread media, use that for preview
     // (thread media exists whenever user uploads to thread composer, regardless of threadsMode)
     if (selectedPlatforms.includes('threads') && threadBlobUrls.length > 0) {
+      console.log('[previewMediaUrls] Returning threadBlobUrls:', threadBlobUrls)
       return threadBlobUrls
     }
 
-    return [...uploadedMediaUrls, ...blobUrls]
+    const result = [...uploadedMediaUrls, ...blobUrls]
+    console.log('[previewMediaUrls] Returning combined:', result)
+    return result
   }, [uploadedMediaUrls, filePreviewUrls, threadMediaPreviewUrls, selectedPlatforms])
 
   // Warn user before leaving page with unsaved changes
