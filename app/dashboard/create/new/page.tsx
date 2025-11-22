@@ -3261,7 +3261,12 @@ function CreateNewPostPageContent() {
             instagram_as_reel: requestData.instagramAsReel,
             facebook_as_story: requestData.facebookAsStory,
             facebook_as_reel: requestData.facebookAsReel,
-            youtube_as_short: requestData.youtubeAsShort
+            youtube_as_short: requestData.youtubeAsShort,
+            // Include Pinterest fields (convert camelCase to snake_case)
+            pinterest_board_id: requestData.pinterestBoardId,
+            pinterest_title: requestData.pinterestTitle,
+            pinterest_description: requestData.pinterestDescription,
+            pinterest_link: requestData.pinterestLink
           }),
         })
       } else {
