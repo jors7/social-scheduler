@@ -135,16 +135,13 @@ function AffiliateLoginForm() {
           </form>
 
           <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300/20"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white/10 text-gray-400">New to our affiliate program?</span>
-              </div>
+            <div className="w-full border-t border-gray-300/20 mb-4"></div>
+
+            <div className="text-center text-sm text-gray-400 mb-4">
+              New to our affiliate program?
             </div>
 
-            <div className="mt-6">
+            <div>
               <Link
                 href="/affiliate/signup"
                 className="w-full flex justify-center py-3 px-4 border border-purple-500/50 rounded-lg shadow-sm text-sm font-medium text-white bg-transparent hover:bg-purple-500/10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200"
