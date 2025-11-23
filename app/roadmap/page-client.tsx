@@ -360,34 +360,37 @@ function FeatureCard({ feature, hasVoted, onVote, isAuthenticated, showCompleted
             </div>
           </div>
 
-          <button
-            onClick={handleVote}
-            disabled={!isAuthenticated || hasVoted || isVoting}
-            className={cn(
-              "flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-full font-medium transition-all",
-              hasVoted
-                ? "bg-blue-100 text-blue-700 cursor-not-allowed"
-                : isAuthenticated
-                ? "bg-green-100 text-green-700 hover:bg-green-200"
-                : "bg-gray-100 text-gray-500 cursor-not-allowed",
-              isVoting && "opacity-50"
-            )}
-            title={hasVoted ? "You voted for this" : !isAuthenticated ? "Sign in to vote" : "Vote for this feature"}
-          >
-            {hasVoted ? (
-              <>
-                <Check className="h-4 w-4" />
-                <span className="text-sm font-bold">{feature.vote_count}</span>
-              </>
-            ) : isVoting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                <ArrowUp className="h-4 w-4" />
-                <span className="text-sm font-bold">{feature.vote_count}</span>
-              </>
-            )}
-          </button>
+          {/* Hide vote button for completed features */}
+          {feature.status !== 'completed' && (
+            <button
+              onClick={handleVote}
+              disabled={!isAuthenticated || hasVoted || isVoting}
+              className={cn(
+                "flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-full font-medium transition-all",
+                hasVoted
+                  ? "bg-blue-100 text-blue-700 cursor-not-allowed"
+                  : isAuthenticated
+                  ? "bg-green-100 text-green-700 hover:bg-green-200"
+                  : "bg-gray-100 text-gray-500 cursor-not-allowed",
+                isVoting && "opacity-50"
+              )}
+              title={hasVoted ? "You voted for this" : !isAuthenticated ? "Sign in to vote" : "Vote for this feature"}
+            >
+              {hasVoted ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  <span className="text-sm font-bold">{feature.vote_count}</span>
+                </>
+              ) : isVoting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <ArrowUp className="h-4 w-4" />
+                  <span className="text-sm font-bold">{feature.vote_count}</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-2 mt-4 flex-wrap">

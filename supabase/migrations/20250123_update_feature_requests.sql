@@ -32,10 +32,19 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO feature_requests (title, description, category, status, is_custom, vote_count, requested_by, completed_at)
 VALUES
-  ('Bulk Post Scheduling', 'Upload CSV file to schedule multiple posts at once with drag-and-drop calendar integration', 'posting', 'completed', false, 0, NULL, '2025-01-15 00:00:00+00'),
-  ('Content Calendar View', 'Visual drag-and-drop calendar for managing and rescheduling posts across all platforms', 'posting', 'completed', false, 0, NULL, '2025-01-18 00:00:00+00'),
-  ('Post Templates Library', 'Save and reuse post templates with custom placeholders for faster content creation', 'posting', 'completed', false, 0, NULL, '2025-01-10 00:00:00+00')
+  ('Bulk Post Scheduling', 'Upload CSV file to schedule multiple posts at once with drag-and-drop calendar integration', 'posting', 'completed', false, 0, NULL, '2024-10-15 00:00:00+00'),
+  ('Content Calendar View', 'Visual drag-and-drop calendar for managing and rescheduling posts across all platforms', 'posting', 'completed', false, 0, NULL, '2024-10-18 00:00:00+00'),
+  ('Post Templates Library', 'Save and reuse post templates with custom placeholders for faster content creation', 'posting', 'completed', false, 0, NULL, '2024-10-10 00:00:00+00')
 ON CONFLICT DO NOTHING;
+
+-- ============================================================================
+-- STEP 4: Update Mobile App status to 'planned'
+-- ============================================================================
+
+UPDATE feature_requests
+SET status = 'planned', updated_at = NOW()
+WHERE title = 'Mobile App'
+AND is_custom = false;
 
 -- ============================================================================
 -- VERIFICATION: Check the results
