@@ -93,6 +93,7 @@ export function SimpleDragCalendar({
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null)
   const [touchedPost, setTouchedPost] = useState<ScheduledPost | null>(null)
   const [modalTouchStart, setModalTouchStart] = useState<{ x: number; y: number; time: number; target: EventTarget } | null>(null)
+  const [showPublishedPosts, setShowPublishedPosts] = useState(false)
 
   // Auto-scroll state for drag-and-drop
   const autoScrollRef = useRef<number | null>(null)
@@ -170,6 +171,18 @@ export function SimpleDragCalendar({
     }
   }, [selectedDate])
 
+  // Load and persist "Show Published Posts" preference
+  useEffect(() => {
+    const saved = localStorage.getItem('calendar-show-published')
+    if (saved !== null) {
+      setShowPublishedPosts(saved === 'true')
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem('calendar-show-published', String(showPublishedPosts))
+  }, [showPublishedPosts])
+
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -204,7 +217,7 @@ export function SimpleDragCalendar({
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
     const dateString = `${year}-${month}-${day}`
-    
+
     return scheduledPosts
       .filter(post => {
         const postDate = new Date(post.scheduled_for)
@@ -212,10 +225,27 @@ export function SimpleDragCalendar({
         const postMonth = String(postDate.getMonth() + 1).padStart(2, '0')
         const postDay = String(postDate.getDate()).padStart(2, '0')
         const postDateString = `${postYear}-${postMonth}-${postDay}`
-        
-        return postDateString === dateString && post.status === 'pending'
+
+        if (postDateString !== dateString) return false
+
+        // Always show pending posts
+        if (post.status === 'pending') return true
+
+        // Show published/failed posts only when toggle is enabled
+        if (showPublishedPosts && (post.status === 'posted' || post.status === 'failed')) {
+          return true
+        }
+
+        return false
       })
-      .sort((a, b) => new Date(a.scheduled_for).getTime() - new Date(b.scheduled_for).getTime())
+      .sort((a, b) => {
+        // Sort: pending posts first, then published/failed
+        if (a.status === 'pending' && b.status !== 'pending') return -1
+        if (a.status !== 'pending' && b.status === 'pending') return 1
+
+        // Within same status, sort by time
+        return new Date(a.scheduled_for).getTime() - new Date(b.scheduled_for).getTime()
+      })
   }
 
   const stripHtml = (html: string) => {
@@ -238,12 +268,24 @@ export function SimpleDragCalendar({
     })
   }
 
+  const isPublished = (post: ScheduledPost) => {
+    return post.status === 'posted' || post.status === 'failed'
+  }
+
   const getPostColor = (post: ScheduledPost) => {
+    // Published posts get grey color
+    if (isPublished(post)) {
+      return 'bg-gray-400'
+    }
     const primaryPlatform = post.platforms[0] as keyof typeof platformColors
     return platformColors[primaryPlatform] || 'bg-gray-500'
   }
 
   const getPostColorModal = (post: ScheduledPost) => {
+    // Published posts get grey color
+    if (isPublished(post)) {
+      return 'bg-gray-400/30'
+    }
     const primaryPlatform = post.platforms[0] as keyof typeof platformColorsModal
     return platformColorsModal[primaryPlatform] || 'bg-gray-500/30'
   }
@@ -572,6 +614,20 @@ export function SimpleDragCalendar({
           <span className="hidden md:inline">Click calendar items to view, edit, or manage your posts</span>
         </div>
 
+        {/* Toggle for showing published posts */}
+        <div className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            id="show-published-toggle"
+            checked={showPublishedPosts}
+            onChange={(e) => setShowPublishedPosts(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 cursor-pointer"
+          />
+          <label htmlFor="show-published-toggle" className="cursor-pointer text-gray-700 whitespace-nowrap">
+            Show Published
+          </label>
+        </div>
+
         {/* Navigation buttons - hidden on mobile, visible on desktop */}
         <div className="hidden md:flex items-center space-x-1 sm:space-x-2">
           <Button
@@ -658,22 +714,25 @@ export function SimpleDragCalendar({
                   </div>
                   
                   <div className="space-y-0.5 sm:space-y-1">
-                    {posts.slice(0, posts.length > 1 ? 1 : 1).map((post) => (
+                    {posts.slice(0, posts.length > 1 ? 1 : 1).map((post) => {
+                      const published = isPublished(post)
+                      return (
                         <div
                           key={post.id}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, post.id)}
-                          onDragEnd={handleDragEnd}
-                          onTouchStart={(e) => handleTouchStart(e, post.id, post)}
-                          onTouchMove={handleTouchMove}
-                          onTouchEnd={handleTouchEnd}
+                          draggable={!published}
+                          onDragStart={!published ? (e) => handleDragStart(e, post.id) : undefined}
+                          onDragEnd={!published ? handleDragEnd : undefined}
+                          onTouchStart={!published ? (e) => handleTouchStart(e, post.id, post) : undefined}
+                          onTouchMove={!published ? handleTouchMove : undefined}
+                          onTouchEnd={!published ? handleTouchEnd : undefined}
                           onClick={(e) => {
                             // Clicking the post card opens modal on both desktop and mobile
                             e.stopPropagation()
                             setSelectedDate(date)
                           }}
                           className={cn(
-                            "group text-xs px-1 sm:px-1.5 py-0.5 sm:py-1 rounded text-white cursor-move transition-all hover:shadow-md",
+                            "group text-xs px-1 sm:px-1.5 py-0.5 sm:py-1 rounded text-white transition-all hover:shadow-md",
+                            published ? "cursor-pointer opacity-50" : "cursor-move",
                             getPostColor(post),
                             draggedPostId === post.id ? "opacity-50" : "",
                             isPostSelected(post.id) ? "ring-2 ring-blue-400 ring-offset-1" : ""
@@ -693,8 +752,13 @@ export function SimpleDragCalendar({
                             />
                           )}
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-[10px] sm:text-[11px]">
+                            <div className="font-medium text-[10px] sm:text-[11px] flex items-center gap-1">
                               {formatTime(post.scheduled_for)}
+                              {published && (
+                                <span className="text-[10px]" title={post.status === 'posted' ? 'Posted' : 'Failed'}>
+                                  {post.status === 'posted' ? '✓' : '✗'}
+                                </span>
+                              )}
                             </div>
                             <div className="hidden sm:block truncate opacity-90 text-[10px] leading-tight">
                               {post.platforms?.includes('pinterest') && post.pinterest_title
@@ -731,7 +795,8 @@ export function SimpleDragCalendar({
                           </button>
                         </div>
                       </div>
-                    ))}
+                      )
+                    })}
                     {posts.length > 1 && (
                       <button
                         onClick={(e) => {
@@ -861,20 +926,21 @@ export function SimpleDragCalendar({
                   const mediaUrl = getMediaUrl(post)
                   const primaryPlatform = post.platforms[0]
                   const platformIcon = platformIcons[primaryPlatform] || '📝'
-
                   const isVideo = isVideoUrl(mediaUrl)
+                  const published = isPublished(post)
 
                   return (
                     <div
                       key={post.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, post.id)}
-                      onDragEnd={handleDragEnd}
-                      onTouchStart={(e) => handleTouchStart(e, post.id, post)}
-                      onTouchMove={handleTouchMove}
-                      onTouchEnd={handleTouchEnd}
+                      draggable={!published}
+                      onDragStart={!published ? (e) => handleDragStart(e, post.id) : undefined}
+                      onDragEnd={!published ? handleDragEnd : undefined}
+                      onTouchStart={!published ? (e) => handleTouchStart(e, post.id, post) : undefined}
+                      onTouchMove={!published ? handleTouchMove : undefined}
+                      onTouchEnd={!published ? handleTouchEnd : undefined}
                       className={cn(
-                        "group relative p-2 sm:p-5 lg:p-6 rounded-lg text-gray-900 cursor-move transition-all hover:shadow-xl hover:scale-[1.02]",
+                        "group relative p-2 sm:p-5 lg:p-6 rounded-lg text-gray-900 transition-all hover:shadow-xl hover:scale-[1.02]",
+                        published ? "cursor-pointer opacity-50" : "cursor-move",
                         getPostColorModal(post),
                         draggedPostId === post.id ? "opacity-50" : "",
                         isPostSelected(post.id) ? "ring-2 ring-blue-400 ring-offset-2" : ""
@@ -951,6 +1017,11 @@ export function SimpleDragCalendar({
                                 <span className="font-medium text-xs">
                                   {formatTime(post.scheduled_for)}
                                 </span>
+                                {published && (
+                                  <span className="text-xs ml-1" title={post.status === 'posted' ? 'Posted' : 'Failed'}>
+                                    {post.status === 'posted' ? '✓' : '✗'}
+                                  </span>
+                                )}
                               </div>
                               {/* Content preview */}
                               <div className="text-[11px] opacity-90 line-clamp-3">
@@ -973,27 +1044,29 @@ export function SimpleDragCalendar({
 
                             {/* Bottom section: Action buttons */}
                             <div className="flex gap-1.5 mt-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="flex-1 hover:bg-gray-900/10 text-gray-900 text-xs h-7 px-2"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setSelectedDate(null)
-                                  onPostEdit(post.id)
-                                }}
-                              >
-                                <Edit className="h-3 w-3 mr-1" />
-                                Edit
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="flex-1 hover:bg-gray-900/10 text-gray-900 text-xs h-7 px-2"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  if (confirm('Are you sure you want to delete this post?')) {
-                                    onPostDelete(post.id)
+                              {!published && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="flex-1 hover:bg-gray-900/10 text-gray-900 text-xs h-7 px-2"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setSelectedDate(null)
+                                      onPostEdit(post.id)
+                                    }}
+                                  >
+                                    <Edit className="h-3 w-3 mr-1" />
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="flex-1 hover:bg-gray-900/10 text-gray-900 text-xs h-7 px-2"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      if (confirm('Are you sure you want to delete this post?')) {
+                                        onPostDelete(post.id)
                                     if (getPostsForDate(selectedDate).length === 1) {
                                       setSelectedDate(null)
                                     }
@@ -1003,6 +1076,8 @@ export function SimpleDragCalendar({
                                 <Trash2 className="h-3 w-3 mr-1" />
                                 Delete
                               </Button>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1060,6 +1135,11 @@ export function SimpleDragCalendar({
                                 <span className="font-medium">
                                   {formatTime(post.scheduled_for)}
                                 </span>
+                                {published && (
+                                  <span className="text-sm ml-1" title={post.status === 'posted' ? 'Posted' : 'Failed'}>
+                                    {post.status === 'posted' ? '✓' : '✗'}
+                                  </span>
+                                )}
                               </div>
                               {/* Post content */}
                               <div className="text-sm opacity-90 mb-2 line-clamp-3">
@@ -1099,37 +1179,39 @@ export function SimpleDragCalendar({
                               {/* Spacer to push buttons to bottom */}
                               <div className="flex-1"></div>
                               {/* Action buttons at bottom */}
-                              <div className="flex flex-col gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="hover:bg-gray-900/10 text-gray-900"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setSelectedDate(null)
-                                  onPostEdit(post.id)
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="hover:bg-gray-900/10 text-gray-900"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  if (confirm('Are you sure you want to delete this post?')) {
-                                    onPostDelete(post.id)
-                                    // Refresh the modal if still open
-                                    if (getPostsForDate(selectedDate).length === 1) {
-                                      setSelectedDate(null)
+                              {!published && (
+                                <div className="flex flex-col gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="hover:bg-gray-900/10 text-gray-900"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setSelectedDate(null)
+                                    onPostEdit(post.id)
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="hover:bg-gray-900/10 text-gray-900"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (confirm('Are you sure you want to delete this post?')) {
+                                      onPostDelete(post.id)
+                                      // Refresh the modal if still open
+                                      if (getPostsForDate(selectedDate).length === 1) {
+                                        setSelectedDate(null)
+                                      }
                                     }
-                                  }
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                              </div>
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
