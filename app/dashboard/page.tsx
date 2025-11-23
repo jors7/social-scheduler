@@ -110,6 +110,7 @@ function AuthSuccessHandler() {
 }
 
 function DashboardContent() {
+  const searchParams = useSearchParams()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentPosts, setRecentPosts] = useState<PostData[]>([])
   const [upcomingSchedule, setUpcomingSchedule] = useState<{date: string, posts: number, platforms: string[], dateObj: Date, media_urls: any[], postGroups: string[][]}[]>([])
@@ -608,6 +609,16 @@ function DashboardContent() {
 
     loadDashboard()
   }, [])
+
+  // Check for feature-request URL parameter to auto-open modal
+  useEffect(() => {
+    const featureRequestParam = searchParams.get('feature-request')
+    if (featureRequestParam === 'true') {
+      setFeatureRequestModalOpen(true)
+      // Clear the URL parameter by replacing the URL without the parameter
+      window.history.replaceState({}, '', '/dashboard')
+    }
+  }, [searchParams])
 
   // Auto-rotate tips every 15 seconds
   useEffect(() => {

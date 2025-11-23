@@ -131,7 +131,7 @@ export default function RoadmapPageClient() {
                   </Button>
                 </Link>
               ) : (
-                <Link href="/login">
+                <Link href="/?signin=true">
                   <Button>
                     Sign In to Vote
                   </Button>
@@ -298,13 +298,13 @@ export default function RoadmapPageClient() {
                   We&apos;d love to hear your ideas! Submit a feature request and vote on what matters most to you.
                 </p>
                 {isAuthenticated ? (
-                  <Link href="/dashboard">
+                  <Link href="/dashboard?feature-request=true">
                     <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
                       Request a Feature
                     </Button>
                   </Link>
                 ) : (
-                  <Link href="/signup">
+                  <Link href="/?signup=true">
                     <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
                       Sign Up to Request Features
                     </Button>

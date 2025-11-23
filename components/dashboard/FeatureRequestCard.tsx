@@ -45,32 +45,35 @@ export function FeatureRequestCard({ feature, hasVoted, onVote }: FeatureRequest
             <h4 className="font-semibold text-sm text-gray-900 line-clamp-2">
               {feature.title}
             </h4>
-            <button
-              onClick={handleVote}
-              disabled={isVoting || hasVoted}
-              className={cn(
-                "flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all",
-                hasVoted
-                  ? "bg-blue-100 text-blue-700 cursor-not-allowed"
-                  : "bg-green-100 text-green-700 hover:bg-green-200",
-                isVoting && "opacity-50"
-              )}
-              title={hasVoted ? "You voted for this" : "Vote for this feature"}
-            >
-              {hasVoted ? (
-                <>
-                  <Check className="h-3.5 w-3.5" />
-                  <span className="text-xs font-bold">Voted</span>
-                </>
-              ) : isVoting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <>
-                  <ArrowUp className="h-3.5 w-3.5" />
-                  <span className="text-xs font-bold">{feature.vote_count}</span>
-                </>
-              )}
-            </button>
+            {/* Hide vote button for completed features */}
+            {feature.status !== 'completed' && (
+              <button
+                onClick={handleVote}
+                disabled={isVoting || hasVoted}
+                className={cn(
+                  "flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all",
+                  hasVoted
+                    ? "bg-blue-100 text-blue-700 cursor-not-allowed"
+                    : "bg-green-100 text-green-700 hover:bg-green-200",
+                  isVoting && "opacity-50"
+                )}
+                title={hasVoted ? "You voted for this" : "Vote for this feature"}
+              >
+                {hasVoted ? (
+                  <>
+                    <Check className="h-3.5 w-3.5" />
+                    <span className="text-xs font-bold">Voted</span>
+                  </>
+                ) : isVoting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <>
+                    <ArrowUp className="h-3.5 w-3.5" />
+                    <span className="text-xs font-bold">{feature.vote_count}</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
 
           {/* Description */}
