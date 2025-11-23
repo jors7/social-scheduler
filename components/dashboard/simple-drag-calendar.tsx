@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight, Edit, Trash2, X, Clock, Image, FileText } from 'lucide-react'
@@ -94,7 +94,70 @@ export function SimpleDragCalendar({
   const [touchedPost, setTouchedPost] = useState<ScheduledPost | null>(null)
   const [modalTouchStart, setModalTouchStart] = useState<{ x: number; y: number; time: number; target: EventTarget } | null>(null)
 
-  // Smooth scroll to top when modal opens (desktop only)
+  // Auto-scroll state for drag-and-drop
+  const autoScrollRef = useRef<number | null>(null)
+  const scrollSpeedRef = useRef<number>(0)
+
+  // Auto-scroll utility functions
+  const getScrollDirection = (clientY: number): 'up' | 'down' | null => {
+    const threshold = 100 // pixels from edge to trigger scroll
+    const viewportHeight = window.innerHeight
+
+    if (clientY < threshold) {
+      // Near top edge - scroll up
+      const distance = threshold - clientY
+      scrollSpeedRef.current = -Math.min(distance / 10, 10) // Max speed: 10px per frame
+      return 'up'
+    } else if (clientY > viewportHeight - threshold) {
+      // Near bottom edge - scroll down
+      const distance = clientY - (viewportHeight - threshold)
+      scrollSpeedRef.current = Math.min(distance / 10, 10) // Max speed: 10px per frame
+      return 'down'
+    }
+
+    return null
+  }
+
+  const startAutoScroll = () => {
+    if (autoScrollRef.current !== null) return // Already scrolling
+
+    const scroll = () => {
+      const currentScrollY = window.scrollY
+      const maxScrollY = document.documentElement.scrollHeight - window.innerHeight
+
+      // Check boundaries
+      if (
+        (scrollSpeedRef.current < 0 && currentScrollY <= 0) || // At top
+        (scrollSpeedRef.current > 0 && currentScrollY >= maxScrollY) // At bottom
+      ) {
+        stopAutoScroll()
+        return
+      }
+
+      window.scrollBy(0, scrollSpeedRef.current)
+      autoScrollRef.current = requestAnimationFrame(scroll)
+    }
+
+    autoScrollRef.current = requestAnimationFrame(scroll)
+  }
+
+  const stopAutoScroll = () => {
+    if (autoScrollRef.current !== null) {
+      cancelAnimationFrame(autoScrollRef.current)
+      autoScrollRef.current = null
+      scrollSpeedRef.current = 0
+    }
+  }
+
+  // Clean up auto-scroll on unmount
+  useEffect(() => {
+    return () => {
+      stopAutoScroll()
+    }
+  }, [])
+
+  // Scroll to top when modal opens (desktop only) - modal is at the top
+  // Users can use auto-scroll during drag to reach dates below the fold
   useEffect(() => {
     if (selectedDate) {
       // Only scroll on desktop/tablet (not on mobile)
@@ -236,6 +299,7 @@ export function SimpleDragCalendar({
     setDraggedPostId(null)
     setDragOverDate(null)
     setIsDragging(false)
+    stopAutoScroll() // Stop auto-scrolling when drag ends
     // Modal will reappear after drag ends if it was open before
   }
 
@@ -243,6 +307,14 @@ export function SimpleDragCalendar({
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
     setDragOverDate(dateString)
+
+    // Check if near viewport edges and trigger auto-scroll
+    const direction = getScrollDirection(e.clientY)
+    if (direction) {
+      startAutoScroll()
+    } else {
+      stopAutoScroll()
+    }
   }
 
   const handleDragLeave = () => {
@@ -252,9 +324,10 @@ export function SimpleDragCalendar({
   const handleDrop = async (e: React.DragEvent, targetDate: Date) => {
     e.preventDefault()
     const postId = e.dataTransfer.getData('text/plain')
-    
+
     setDragOverDate(null)
     setDraggedPostId(null)
+    stopAutoScroll() // Stop auto-scrolling when dropped
 
     if (!postId) {
       console.log('No postId in drag data')
@@ -374,13 +447,22 @@ export function SimpleDragCalendar({
         }
       }
 
-      // Prevent scrolling while dragging
-      e.preventDefault()
+      // Check if near viewport edges and trigger auto-scroll
+      const direction = getScrollDirection(touch.clientY)
+      if (direction) {
+        startAutoScroll()
+        // Don't prevent default when auto-scrolling - allow the scroll to happen
+      } else {
+        stopAutoScroll()
+        // Prevent scrolling while dragging (but not when auto-scrolling)
+        e.preventDefault()
+      }
     }
   }
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (!touchedPost) {
+      stopAutoScroll() // Ensure auto-scroll is stopped
       return
     }
 
@@ -390,6 +472,7 @@ export function SimpleDragCalendar({
       setTouchedPost(null)
       setDraggedPostId(null)
       setDragOverDate(null)
+      stopAutoScroll() // Ensure auto-scroll is stopped even on tap
       return
     }
 
@@ -437,6 +520,7 @@ export function SimpleDragCalendar({
     setDraggedPostId(null)
     setDragOverDate(null)
     setIsDragging(false)
+    stopAutoScroll() // Stop auto-scrolling when touch ends
     // Keep modal open after drag so user can reschedule multiple posts
   }
 
