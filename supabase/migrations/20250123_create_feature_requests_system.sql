@@ -270,15 +270,23 @@ CREATE TRIGGER feature_status_change_notification
 INSERT INTO feature_requests (title, description, category, status, is_custom, vote_count, requested_by)
 VALUES
   ('Post Performance Predictions', 'AI-powered predictions for best posting times and expected engagement based on historical data', 'ai_features', 'submitted', false, 0, NULL),
-  ('Bulk Post Scheduling', 'Upload CSV file to schedule multiple posts at once with drag-and-drop calendar integration', 'posting', 'submitted', false, 0, NULL),
-  ('Content Calendar View', 'Visual drag-and-drop calendar for managing and rescheduling posts across all platforms', 'posting', 'submitted', false, 0, NULL),
+  ('Content Recycling & Evergreen Posts', 'Automatically repost top-performing content at optimal times with customizable intervals for evergreen content strategies', 'automation', 'submitted', false, 0, NULL),
+  ('Social Listening & Keyword Monitoring', 'Track brand mentions, keywords, and trending topics across social platforms to inform content strategy', 'analytics', 'submitted', false, 0, NULL),
   ('Hashtag Analytics', 'Track hashtag performance across platforms with trending suggestions and reach metrics', 'analytics', 'submitted', false, 0, NULL),
   ('Mobile App', 'Native iOS and Android applications for posting and managing content on the go', 'mobile', 'submitted', false, 0, NULL),
-  ('Post Templates Library', 'Save and reuse post templates with custom placeholders for faster content creation', 'posting', 'submitted', false, 0, NULL),
+  ('Automated Reporting & Export', 'Schedule automated PDF/Excel reports with analytics delivered weekly/monthly via email', 'analytics', 'submitted', false, 0, NULL),
   ('Competitor Analysis', 'Track and analyze competitor social media activity, posting patterns, and engagement', 'analytics', 'submitted', false, 0, NULL),
   ('Team Approval Workflow', 'Require team member approval before scheduled posts go live with comment threads', 'collaboration', 'submitted', false, 0, NULL),
   ('Dark Mode', 'Full dark mode support across the entire application for better viewing at night', 'ui_ux', 'submitted', false, 0, NULL),
   ('Advanced Analytics Dashboard', 'Detailed insights including engagement trends, best posting times, audience demographics', 'analytics', 'submitted', false, 0, NULL)
+ON CONFLICT DO NOTHING;
+
+-- Insert completed features (already implemented in the app)
+INSERT INTO feature_requests (title, description, category, status, is_custom, vote_count, requested_by, completed_at)
+VALUES
+  ('Bulk Post Scheduling', 'Upload CSV file to schedule multiple posts at once with drag-and-drop calendar integration', 'posting', 'completed', false, 0, NULL, '2025-01-15 00:00:00+00'),
+  ('Content Calendar View', 'Visual drag-and-drop calendar for managing and rescheduling posts across all platforms', 'posting', 'completed', false, 0, NULL, '2025-01-18 00:00:00+00'),
+  ('Post Templates Library', 'Save and reuse post templates with custom placeholders for faster content creation', 'posting', 'completed', false, 0, NULL, '2025-01-10 00:00:00+00')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================================
