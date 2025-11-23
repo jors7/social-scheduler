@@ -14,7 +14,8 @@ import {
   Loader2,
   MessageSquarePlus,
   Menu,
-  X
+  X,
+  Lightbulb
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -211,6 +212,19 @@ export default function AdminLayoutClient({
               </li>
               <li>
                 <Link
+                  href="/admin/feature-requests"
+                  className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    isActive('/admin/feature-requests')
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'hover:bg-gray-100'
+                  }`}
+                >
+                  <Lightbulb className="h-5 w-5 mr-3 text-gray-400" />
+                  <span>Feature Requests</span>
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/admin/settings"
                   className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                     isActive('/admin/settings')
@@ -306,6 +320,19 @@ export default function AdminLayoutClient({
                 >
                   <MessageSquarePlus className="h-5 w-5 mr-3 text-gray-400" />
                   <span>Platform Requests</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/admin/feature-requests"
+                  className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    isActive('/admin/feature-requests')
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'hover:bg-gray-100'
+                  }`}
+                >
+                  <Lightbulb className="h-5 w-5 mr-3 text-gray-400" />
+                  <span>Feature Requests</span>
                 </Link>
               </li>
               <li>

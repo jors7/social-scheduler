@@ -48,6 +48,7 @@ import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscr
 import { useOnboarding } from '@/providers/onboarding-provider'
 import { OnboardingWizard } from '@/components/onboarding/onboarding-wizard'
 import { useSearchParams } from 'next/navigation'
+import { FeatureRequestModal } from '@/components/dashboard/FeatureRequestModal'
 
 interface PostData {
   id: string
@@ -132,6 +133,7 @@ function DashboardContent() {
   const activityOverviewRef = useRef<HTMLDivElement>(null)
   const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes in milliseconds
   const [currentTipIndex, setCurrentTipIndex] = useState(0)
+  const [featureRequestModalOpen, setFeatureRequestModalOpen] = useState(false)
 
   // Store scheduled/draft counts in refs to avoid stale closure issues
   const scheduledCountRef = useRef<number>(0)
@@ -844,6 +846,16 @@ function DashboardContent() {
                     Tour
                   </Button>
                 )}
+                {/* Feature Request Button */}
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => setFeatureRequestModalOpen(true)}
+                  className="bg-white hover:bg-gradient-to-r hover:from-yellow-50 hover:to-blue-50 shadow-sm hover:shadow-md transition-all w-full sm:w-auto"
+                >
+                  <Lightbulb className="mr-2 h-5 w-5 text-yellow-500" />
+                  Request Feature
+                </Button>
                 {subscription && !subscription.hasSubscription && (
                   <Link href="/#pricing" className="w-full sm:w-auto">
                     <Button variant="outline" size="lg" className="hover:bg-purple-50 w-full sm:w-auto">
@@ -1975,6 +1987,12 @@ function DashboardContent() {
         onClose={closeOnboarding}
         onComplete={completeOnboarding}
         onSkip={skipOnboarding}
+      />
+
+      {/* Feature Request Modal */}
+      <FeatureRequestModal
+        open={featureRequestModalOpen}
+        onOpenChange={setFeatureRequestModalOpen}
       />
     </>
   )
