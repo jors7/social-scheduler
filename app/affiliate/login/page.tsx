@@ -6,6 +6,9 @@ import { createClient } from '@/lib/supabase/client';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 
+// Force dynamic rendering for this page due to useSearchParams
+export const dynamic = 'force-dynamic';
+
 function AffiliateLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
