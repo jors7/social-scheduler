@@ -164,7 +164,7 @@ export default function AffiliateLoginPage() {
         <div className="bg-purple-500/20 border border-purple-500/30 rounded-lg p-4 mt-4">
           <h3 className="text-white font-semibold mb-2 text-sm">Application Status</h3>
           <p className="text-gray-300 text-xs">
-            If you've submitted an application, you'll receive an email within 24-48 hours once it's approved.
+            If you&apos;ve submitted an application, you&apos;ll receive an email within 24-48 hours once it&apos;s approved.
             You can then use your credentials to log in here.
           </p>
         </div>

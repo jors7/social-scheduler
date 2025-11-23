@@ -566,9 +566,9 @@ export default function AffiliateSignupPage() {
               <h3 className="text-white font-semibold mb-2">What happens next?</h3>
               <ul className="text-gray-300 text-sm space-y-1">
                 <li>• Your application will be submitted for admin review</li>
-                <li>• We'll review your application within 24-48 hours</li>
-                <li>• Once approved, you'll receive an email with login instructions</li>
-                <li>• You'll get your unique referral code and start earning!</li>
+                <li>• We&apos;ll review your application within 24-48 hours</li>
+                <li>• Once approved, you&apos;ll receive an email with login instructions</li>
+                <li>• You&apos;ll get your unique referral code and start earning!</li>
               </ul>
             </div>
 

@@ -103,13 +103,11 @@ export async function POST(request: NextRequest) {
 
     // Prepare PayPal batch payout
     const paypalPayouts = payouts.map((payout: any) => ({
-      amount: payout.amount,
-      currency: 'USD',
-      recipient: payout.affiliates.paypal_email,
-      note: `SocialCal Affiliate Commission - ${payout.affiliates.referral_code}`,
-      sender_item_id: payout.id, // Use our payout ID for tracking
-      receiver: payout.affiliates.paypal_email,
-      recipient_wallet: 'PAYPAL' as const,
+      affiliate_id: payout.affiliate_id,
+      payout_id: payout.id,
+      amount: parseFloat(payout.amount),
+      paypal_email: payout.affiliates.paypal_email,
+      affiliate_name: `${payout.affiliates.user_id}`, // Or use actual name if available
     }));
 
     // Send batch payout to PayPal
@@ -128,23 +126,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!paypalResponse.success) {
+    // Check if PayPal batch was created successfully
+    if (!paypalResponse.batch_header || !paypalResponse.batch_header.payout_batch_id) {
       return NextResponse.json(
         {
           success: false,
-          error: 'PayPal payout failed',
-          details: paypalResponse.error,
+          error: 'PayPal payout failed - no batch ID returned',
         },
         { status: 500 }
       );
     }
 
     // Update payout records with PayPal batch ID
+    const paypalBatchId = paypalResponse.batch_header.payout_batch_id;
     const { error: updateError } = await supabaseAdmin
       .from('affiliate_payouts')
       .update({
         status: 'processing',
-        paypal_batch_id: paypalResponse.batch_id,
+        paypal_batch_id: paypalBatchId,
         processed_at: new Date().toISOString(),
       })
       .in('id', payout_ids);
@@ -178,7 +177,7 @@ export async function POST(request: NextRequest) {
             amount: payout.amount,
             paypal_email: payout.affiliates.paypal_email,
             referral_code: payout.affiliates.referral_code,
-            paypal_batch_id: paypalResponse.batch_id,
+            paypal_batch_id: paypalBatchId,
           },
         });
       } catch (emailError) {
@@ -192,7 +191,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: `Successfully processed ${payouts.length} payout(s) via PayPal`,
-      batch_id: paypalResponse.batch_id,
+      batch_id: paypalBatchId,
       payout_count: payouts.length,
       total_amount: payouts.reduce((sum: number, p: any) => sum + p.amount, 0),
     });
