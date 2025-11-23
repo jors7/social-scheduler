@@ -6,9 +6,9 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { CustomSelect } from '@/components/ui/custom-select'
 import {
   Search,
-  Filter,
   MoreHorizontal,
   Edit,
   Trash2,
@@ -74,6 +74,9 @@ interface InstagramInsights {
 
 export default function PostedPostsPage() {
   const [searchQuery, setSearchQuery] = useState('')
+  const [filterPlatform, setFilterPlatform] = useState('all')
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [filterDateRange, setFilterDateRange] = useState('all')
   const [selectedPosts, setSelectedPosts] = useState<string[]>([])
   const [postedPosts, setPostedPosts] = useState<PostedPost[]>([])
   const [loading, setLoading] = useState(true)
@@ -201,7 +204,27 @@ export default function PostedPostsPage() {
 
   const filteredPosts = postedPosts.filter(post => {
     const content = stripHtml(post.content)
+
+    // Search filter
     if (searchQuery && !content.toLowerCase().includes(searchQuery.toLowerCase())) return false
+
+    // Platform filter
+    if (filterPlatform !== 'all' && !post.platforms.includes(filterPlatform)) return false
+
+    // Status filter
+    if (filterStatus !== 'all' && post.status !== filterStatus) return false
+
+    // Date range filter
+    if (filterDateRange !== 'all') {
+      const postDate = new Date(post.posted_at || post.scheduled_for)
+      const now = new Date()
+      const daysDiff = Math.floor((now.getTime() - postDate.getTime()) / (1000 * 60 * 60 * 24))
+
+      if (filterDateRange === '7days' && daysDiff > 7) return false
+      if (filterDateRange === '30days' && daysDiff > 30) return false
+      if (filterDateRange === '90days' && daysDiff > 90) return false
+    }
+
     return true
   })
 
@@ -418,17 +441,44 @@ export default function PostedPostsPage() {
                 className="pl-10"
               />
             </div>
-            <Button 
-              variant="outline" 
-              className="opacity-50 cursor-not-allowed"
-              onClick={(e) => {
-                e.preventDefault()
-                toast.info('Advanced filtering coming soon')
-              }}
-            >
-              <Filter className="mr-2 h-4 w-4" />
-              Filter
-            </Button>
+            <CustomSelect
+              value={filterPlatform}
+              onChange={setFilterPlatform}
+              options={[
+                { value: 'all', label: 'All Platforms' },
+                { value: 'facebook', label: 'Facebook' },
+                { value: 'instagram', label: 'Instagram' },
+                { value: 'bluesky', label: 'Bluesky' },
+                { value: 'twitter', label: 'Twitter' },
+                { value: 'linkedin', label: 'LinkedIn' },
+                { value: 'threads', label: 'Threads' },
+                { value: 'youtube', label: 'YouTube' },
+                { value: 'tiktok', label: 'TikTok' },
+                { value: 'pinterest', label: 'Pinterest' }
+              ]}
+              className="min-w-[150px] h-10"
+            />
+            <CustomSelect
+              value={filterStatus}
+              onChange={setFilterStatus}
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'posted', label: 'Posted Successfully' },
+                { value: 'failed', label: 'Failed' }
+              ]}
+              className="min-w-[150px] h-10"
+            />
+            <CustomSelect
+              value={filterDateRange}
+              onChange={setFilterDateRange}
+              options={[
+                { value: 'all', label: 'All Time' },
+                { value: '7days', label: 'Last 7 Days' },
+                { value: '30days', label: 'Last 30 Days' },
+                { value: '90days', label: 'Last 90 Days' }
+              ]}
+              className="min-w-[150px] h-10"
+            />
           </div>
 
 
