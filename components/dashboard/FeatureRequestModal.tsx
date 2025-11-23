@@ -452,7 +452,7 @@ export function FeatureRequestModal({ open, onOpenChange }: FeatureRequestModalP
               </div>
 
               <p className="text-xs text-gray-500 text-center pt-2">
-                Your request will be reviewed by our team. You'll automatically vote for your own feature.
+                Your request will be reviewed by our team. You&apos;ll automatically vote for your own feature.
               </p>
             </form>
           )}

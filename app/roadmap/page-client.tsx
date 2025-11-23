@@ -115,7 +115,7 @@ export default function RoadmapPageClient() {
                 <span className="text-4xl">🚀</span>
                 Product Roadmap
               </h1>
-              <p className="text-gray-600 mt-2">See what we're building and vote on features you want</p>
+              <p className="text-gray-600 mt-2">See what we&apos;re building and vote on features you want</p>
             </div>
             <div className="flex gap-3">
               <Link href="/">
@@ -232,7 +232,7 @@ export default function RoadmapPageClient() {
                   <span className="text-3xl">📋</span>
                   Next - On Our Roadmap
                 </h2>
-                <p className="text-gray-600 mt-1">Features we've committed to building soon</p>
+                <p className="text-gray-600 mt-1">Features we&apos;ve committed to building soon</p>
               </div>
 
               {plannedFeatures.length === 0 ? (
@@ -263,7 +263,7 @@ export default function RoadmapPageClient() {
                   <span className="text-3xl">✅</span>
                   Recently Completed
                 </h2>
-                <p className="text-gray-600 mt-1">Features we've shipped recently</p>
+                <p className="text-gray-600 mt-1">Features we&apos;ve shipped recently</p>
               </div>
 
               {completedFeatures.length === 0 ? (
@@ -292,10 +292,10 @@ export default function RoadmapPageClient() {
             <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
               <CardContent className="text-center py-12">
                 <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                  Don't see your feature?
+                  Don&apos;t see your feature?
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  We'd love to hear your ideas! Submit a feature request and vote on what matters most to you.
+                  We&apos;d love to hear your ideas! Submit a feature request and vote on what matters most to you.
                 </p>
                 {isAuthenticated ? (
                   <Link href="/dashboard">

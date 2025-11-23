@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category') as FeatureCategory | null;
+    const category = searchParams.get('category') as FeatureCategory | 'all' | null;
     const status = searchParams.get('status');
     const sort = searchParams.get('sort') || 'votes'; // votes, newest, oldest, updated
 

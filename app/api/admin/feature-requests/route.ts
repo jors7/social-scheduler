@@ -34,8 +34,8 @@ export async function GET(request: Request) {
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category') as FeatureCategory | null;
-    const status = searchParams.get('status') as FeatureStatus | null;
+    const category = searchParams.get('category') as FeatureCategory | 'all' | null;
+    const status = searchParams.get('status') as FeatureStatus | 'all' | null;
     const priority = searchParams.get('priority');
     const sort = searchParams.get('sort') || 'votes';
 
