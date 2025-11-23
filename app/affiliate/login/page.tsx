@@ -140,7 +140,7 @@ function AffiliateLoginForm() {
                 <div className="w-full border-t border-gray-300/20"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-transparent text-gray-400">New to our affiliate program?</span>
+                <span className="px-2 bg-white/10 text-gray-400">New to our affiliate program?</span>
               </div>
             </div>
 
