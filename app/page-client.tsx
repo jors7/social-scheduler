@@ -13,6 +13,7 @@ import { Navbar } from '@/components/layout/navbar'
 import OAuthRedirectHandler from '@/components/landing/oauth-redirect-handler'
 import HomePageWrapper from '@/components/landing/home-page-wrapper'
 import Script from 'next/script'
+import { createClient } from '@/lib/supabase/client'
 
 // Keep hero non-lazy for immediate display
 import { HeroWithPlatforms } from '@/components/landing/hero-with-platforms'
@@ -177,8 +178,43 @@ interface LandingPageContentProps {
 function LandingPageContent({ isAuthenticated, userEmail }: LandingPageContentProps) {
   const [signInOpen, setSignInOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  // Client-side auth state (will be updated after mount)
+  const [clientAuth, setClientAuth] = useState<{
+    isAuthenticated: boolean
+    userEmail: string | null
+    isChecking: boolean
+  }>({
+    isAuthenticated,
+    userEmail,
+    isChecking: true // Initially checking
+  })
   const router = useRouter()
   const searchParams = useSearchParams()
+
+  // Check client-side auth state on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        setClientAuth({
+          isAuthenticated: !!user,
+          userEmail: user?.email || null,
+          isChecking: false
+        })
+      } catch (error) {
+        console.error('Error checking auth:', error)
+        setClientAuth({
+          isAuthenticated: false,
+          userEmail: null,
+          isChecking: false
+        })
+      }
+    }
+
+    checkAuth()
+  }, [])
 
   useEffect(() => {
     // Check URL parameters for modal triggers and scrolling
@@ -253,9 +289,9 @@ function LandingPageContent({ isAuthenticated, userEmail }: LandingPageContentPr
       />
 
       {/* Shared Navbar Component */}
-      <Navbar 
-        isAuthenticated={isAuthenticated}
-        userEmail={userEmail}
+      <Navbar
+        isAuthenticated={clientAuth.isChecking ? null : clientAuth.isAuthenticated}
+        userEmail={clientAuth.userEmail}
         onSignInClick={() => setSignInOpen(true)}
         onMobileMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         isMobileMenuOpen={isMobileMenuOpen}
@@ -265,16 +301,16 @@ function LandingPageContent({ isAuthenticated, userEmail }: LandingPageContentPr
       <MobileMenu
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
-        isAuthenticated={isAuthenticated}
-        userEmail={userEmail}
+        isAuthenticated={clientAuth.isAuthenticated}
+        userEmail={clientAuth.userEmail}
         onSignInClick={() => setSignInOpen(true)}
       />
 
       {/* Main Content Wrapper - No margin needed as header is sticky */}
       <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 overflow-x-hidden">
       {/* Hero Section with Platforms - Not lazy loaded for immediate display */}
-      <HeroWithPlatforms 
-        isAuthenticated={isAuthenticated} 
+      <HeroWithPlatforms
+        isAuthenticated={clientAuth.isAuthenticated}
         onSignInClick={() => setSignInOpen(true)}
       />
 

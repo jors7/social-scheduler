@@ -395,32 +395,32 @@ export function Navbar({
             {/* Desktop buttons - hidden on mobile */}
             <div className="hidden md:flex items-center space-x-4">
               {isAuthenticated === null ? (
-                <div className="w-48 h-10" />
+                <div className="w-48 h-10 animate-pulse bg-gray-100 rounded-lg" />
               ) : isAuthenticated ? (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => router.push('/dashboard')}
-                  className="border border-blue-300 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200"
+                  className="border border-blue-300 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 animate-in fade-in"
                 >
                   <BarChart className="h-4 w-4 mr-2" />
                   Dashboard
                 </Button>
               ) : (
-                <>
-                  <Button 
+                <div className="flex items-center space-x-4 animate-in fade-in">
+                  <Button
                     variant="outline"
                     onClick={onSignInClick}
                     className="text-base font-medium border border-blue-500 text-blue-500 hover:bg-blue-50 transition-all duration-200 px-6 py-2"
                   >
                     Sign In
                   </Button>
-                  <Button 
+                  <Button
                     onClick={() => router.push('/pricing')}
                     className="text-base font-medium bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 px-6 py-2"
                   >
                     Start Free Trial
                   </Button>
-                </>
+                </div>
               )}
             </div>
             <button 
