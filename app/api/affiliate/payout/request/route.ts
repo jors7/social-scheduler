@@ -122,10 +122,11 @@ export async function POST(request: NextRequest) {
       const adminEmail = process.env.EMAIL_REPLY_TO || 'support@socialcal.app';
 
       await supabaseAdmin.from('pending_emails').insert({
+        user_id: affiliate.user_id,
+        email_to: adminEmail,
         email_type: 'affiliate_payout_requested',
-        to_email: adminEmail,
         subject: `Payout Request from ${affiliate.referral_code} - $${amount}`,
-        email_data: {
+        template_data: {
           affiliate_id: affiliate.id,
           referral_code: affiliate.referral_code,
           amount: amount,

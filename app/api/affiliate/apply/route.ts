@@ -139,10 +139,11 @@ export async function POST(request: NextRequest) {
     // Send confirmation email to applicant using existing email queue
     try {
       await supabase.from('pending_emails').insert({
+        user_id: authData.user.id,
+        email_to: body.email,
         email_type: 'affiliate_application_submitted',
-        to_email: body.email,
         subject: 'Your SocialCal Affiliate Application Has Been Received',
-        email_data: {
+        template_data: {
           first_name: body.first_name,
           application_id: application.id,
         },
@@ -158,10 +159,11 @@ export async function POST(request: NextRequest) {
       const adminEmail = process.env.EMAIL_REPLY_TO || 'support@socialcal.app';
 
       await supabase.from('pending_emails').insert({
+        user_id: authData.user.id,
+        email_to: adminEmail,
         email_type: 'affiliate_application_admin_notification',
-        to_email: adminEmail,
         subject: `New Affiliate Application from ${body.first_name} ${body.last_name}`,
-        email_data: {
+        template_data: {
           applicant_name: `${body.first_name} ${body.last_name}`,
           applicant_email: body.email,
           application_id: application.id,

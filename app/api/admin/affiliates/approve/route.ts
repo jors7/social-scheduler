@@ -94,10 +94,11 @@ export async function POST(request: NextRequest) {
       // Queue welcome email
       try {
         await supabaseAdmin.from('pending_emails').insert({
+          user_id: application.user_id,
+          email_to: application.email,
           email_type: 'affiliate_application_approved',
-          to_email: application.email,
           subject: 'Welcome to the SocialCal Affiliate Program!',
-          email_data: {
+          template_data: {
             first_name: application.first_name,
             referral_code: result.affiliate.referral_code,
             commission_rate: result.affiliate.commission_rate,
@@ -127,10 +128,11 @@ export async function POST(request: NextRequest) {
       // Queue rejection email
       try {
         await supabaseAdmin.from('pending_emails').insert({
+          user_id: application.user_id,
+          email_to: application.email,
           email_type: 'affiliate_application_rejected',
-          to_email: application.email,
           subject: 'Update on Your SocialCal Affiliate Application',
-          email_data: {
+          template_data: {
             first_name: application.first_name,
             rejection_reason: rejection_reason || 'Application did not meet our requirements',
           },

@@ -376,6 +376,22 @@ async function sendEmailFromQueue(email: any): Promise<{
         const { default: ResetPasswordEmail } = await import('./templates/reset-password');
         emailTemplate = ResetPasswordEmail(email.template_data);
         break;
+      case 'affiliate_application_approved':
+        const { default: AffiliateApprovedEmail } = await import('./templates/affiliate-application-approved');
+        emailTemplate = AffiliateApprovedEmail(email.template_data);
+        break;
+      case 'affiliate_application_submitted':
+        const { default: AffiliateSubmittedEmail } = await import('./templates/affiliate-application-submitted');
+        emailTemplate = AffiliateSubmittedEmail(email.template_data);
+        break;
+      case 'affiliate_application_rejected':
+        const { default: AffiliateRejectedEmail } = await import('./templates/affiliate-application-rejected');
+        emailTemplate = AffiliateRejectedEmail(email.template_data);
+        break;
+      case 'affiliate_payout_processed':
+        const { default: AffiliatePayoutEmail } = await import('./templates/affiliate-payout-processed');
+        emailTemplate = AffiliatePayoutEmail(email.template_data);
+        break;
       default:
         return {
           success: false,

@@ -64,12 +64,13 @@ export async function POST(request: NextRequest) {
     const supabaseAdmin = getServiceClient();
 
     // Get all pending payouts with affiliate details
-    const { data: payouts, error: payoutsError } = await supabaseAdmin
+    const { data: payouts, error: payoutsError} = await supabaseAdmin
       .from('affiliate_payouts')
       .select(`
         *,
         affiliates:affiliate_id (
           id,
+          user_id,
           referral_code,
           paypal_email,
           pending_balance
@@ -170,10 +171,11 @@ export async function POST(request: NextRequest) {
       // Queue payout confirmation email
       try {
         await supabaseAdmin.from('pending_emails').insert({
+          user_id: payout.affiliates.user_id,
+          email_to: payout.affiliates.paypal_email,
           email_type: 'affiliate_payout_processed',
-          to_email: payout.affiliates.paypal_email,
           subject: `Your SocialCal Affiliate Payout of $${payout.amount} is Being Processed`,
-          email_data: {
+          template_data: {
             amount: payout.amount,
             paypal_email: payout.affiliates.paypal_email,
             referral_code: payout.affiliates.referral_code,

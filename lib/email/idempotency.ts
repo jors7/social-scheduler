@@ -38,7 +38,11 @@ export type EmailType =
   | 'subscription_cancelled'
   | 'downgrade_reminder'
   | 'magic_link'
-  | 'password_reset';
+  | 'password_reset'
+  | 'affiliate_application_approved'
+  | 'affiliate_application_submitted'
+  | 'affiliate_application_rejected'
+  | 'affiliate_payout_processed';
 
 /**
  * Options for idempotency check
