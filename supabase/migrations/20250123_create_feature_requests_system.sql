@@ -289,6 +289,12 @@ VALUES
   ('Post Templates Library', 'Save and reuse post templates with custom placeholders for faster content creation', 'posting', 'completed', false, 0, NULL, '2025-11-02 00:00:00+00')
 ON CONFLICT DO NOTHING;
 
+-- Insert in-progress features (currently being developed)
+INSERT INTO feature_requests (title, description, category, status, priority, is_custom, vote_count, requested_by)
+VALUES
+  ('Social Media Analytics Profile Selection', 'Choose specific profiles under each platform to view targeted analytics. Perfect for agencies and users managing multiple accounts - filter analytics by specific Facebook pages, Instagram accounts, or other platform profiles instead of viewing aggregated data from all accounts.', 'analytics', 'in_progress', 'high', false, 0, NULL)
+ON CONFLICT DO NOTHING;
+
 -- ============================================================================
 -- COMMENTS
 -- ============================================================================

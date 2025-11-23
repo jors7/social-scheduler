@@ -47,6 +47,15 @@ WHERE title = 'Mobile App'
 AND is_custom = false;
 
 -- ============================================================================
+-- STEP 5: Add in-progress features
+-- ============================================================================
+
+INSERT INTO feature_requests (title, description, category, status, priority, is_custom, vote_count, requested_by)
+VALUES
+  ('Social Media Analytics Profile Selection', 'Choose specific profiles under each platform to view targeted analytics. Perfect for agencies and users managing multiple accounts - filter analytics by specific Facebook pages, Instagram accounts, or other platform profiles instead of viewing aggregated data from all accounts.', 'analytics', 'in_progress', 'high', false, 0, NULL)
+ON CONFLICT DO NOTHING;
+
+-- ============================================================================
 -- VERIFICATION: Check the results
 -- ============================================================================
 
