@@ -44,6 +44,8 @@ export default function ScheduledPostsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedPosts, setSelectedPosts] = useState<string[]>([])
   const [filterStatus, setFilterStatus] = useState('all')
+  const [filterPlatform, setFilterPlatform] = useState('all')
+  const [filterTimeRange, setFilterTimeRange] = useState('all')
   const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
@@ -171,9 +173,29 @@ export default function ScheduledPostsPage() {
   }, [])
 
   const filteredPosts = scheduledPosts.filter(post => {
+    // Search filter
     if (searchQuery && !post.content.toLowerCase().includes(searchQuery.toLowerCase())) return false
+
+    // Status filter (existing Active/Paused)
     if (filterStatus === 'active' && post.status !== 'pending') return false
     if (filterStatus === 'paused' && post.status !== 'cancelled') return false
+
+    // Platform filter
+    if (filterPlatform !== 'all' && !post.platforms.includes(filterPlatform)) return false
+
+    // Time range filter (forward-looking for scheduled content)
+    if (filterTimeRange !== 'all') {
+      const scheduledDate = new Date(post.scheduled_for)
+      const now = new Date()
+      const hoursDiff = (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60)
+      const daysDiff = hoursDiff / 24
+
+      if (filterTimeRange === '24h' && hoursDiff > 24) return false
+      if (filterTimeRange === '7days' && daysDiff > 7) return false
+      if (filterTimeRange === '30days' && daysDiff > 30) return false
+      if (filterTimeRange === '90days' && daysDiff > 90) return false
+    }
+
     return true
   })
 
@@ -263,6 +285,23 @@ export default function ScheduledPostsPage() {
               />
             </div>
             <CustomSelect
+              value={filterPlatform}
+              onChange={setFilterPlatform}
+              options={[
+                { value: 'all', label: 'All Platforms' },
+                { value: 'facebook', label: 'Facebook' },
+                { value: 'instagram', label: 'Instagram' },
+                { value: 'bluesky', label: 'Bluesky' },
+                { value: 'twitter', label: 'Twitter' },
+                { value: 'linkedin', label: 'LinkedIn' },
+                { value: 'threads', label: 'Threads' },
+                { value: 'youtube', label: 'YouTube' },
+                { value: 'tiktok', label: 'TikTok' },
+                { value: 'pinterest', label: 'Pinterest' }
+              ]}
+              className="min-w-[150px] h-10"
+            />
+            <CustomSelect
               value={filterStatus}
               onChange={setFilterStatus}
               options={[
@@ -272,9 +311,21 @@ export default function ScheduledPostsPage() {
               ]}
               className="min-w-[150px] h-10"
             />
+            <CustomSelect
+              value={filterTimeRange}
+              onChange={setFilterTimeRange}
+              options={[
+                { value: 'all', label: 'All Time' },
+                { value: '24h', label: 'Next 24 Hours' },
+                { value: '7days', label: 'Next 7 Days' },
+                { value: '30days', label: 'Next 30 Days' },
+                { value: '90days', label: 'Next 90 Days' }
+              ]}
+              className="min-w-[150px] h-10"
+            />
             {/* Add post count */}
             <div className="flex items-center text-sm text-gray-600">
-              {filteredPosts.length} post{filteredPosts.length !== 1 ? 's' : ''} 
+              {filteredPosts.length} post{filteredPosts.length !== 1 ? 's' : ''}
               {activePosts > 0 && ` (${activePosts} active, ${pausedPosts} paused)`}
             </div>
           </div>
