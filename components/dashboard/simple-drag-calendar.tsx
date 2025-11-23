@@ -93,7 +93,7 @@ export function SimpleDragCalendar({
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null)
   const [touchedPost, setTouchedPost] = useState<ScheduledPost | null>(null)
   const [modalTouchStart, setModalTouchStart] = useState<{ x: number; y: number; time: number; target: EventTarget } | null>(null)
-  const [showPublishedPosts, setShowPublishedPosts] = useState(false)
+  const [showPublishedPosts, setShowPublishedPosts] = useState(true)
 
   // Auto-scroll state for drag-and-drop
   const autoScrollRef = useRef<number | null>(null)
