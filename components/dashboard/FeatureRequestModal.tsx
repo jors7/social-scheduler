@@ -170,9 +170,11 @@ export function FeatureRequestModal({ open, onOpenChange }: FeatureRequestModalP
   // Filter requests by category and status
   const filteredRequests = requests
 
-  // Separate pre-suggested and custom requests
-  const suggestedFeatures = filteredRequests.filter(r => !r.is_custom)
-  const customFeatures = filteredRequests.filter(r => r.is_custom)
+  // Separate pre-suggested and custom requests, split by active/completed
+  const activeSuggestedFeatures = filteredRequests.filter(r => !r.is_custom && r.status !== 'completed')
+  const completedSuggestedFeatures = filteredRequests.filter(r => !r.is_custom && r.status === 'completed')
+  const activeCustomFeatures = filteredRequests.filter(r => r.is_custom && r.status !== 'completed')
+  const completedCustomFeatures = filteredRequests.filter(r => r.is_custom && r.status === 'completed')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -292,15 +294,15 @@ export function FeatureRequestModal({ open, onOpenChange }: FeatureRequestModalP
                 </div>
               ) : (
                 <>
-                  {/* Suggested Features */}
-                  {suggestedFeatures.length > 0 && (
+                  {/* Active Popular Requests */}
+                  {activeSuggestedFeatures.length > 0 && (
                     <div>
                       <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                         <span>🌟</span>
                         Popular Requests
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {suggestedFeatures.map(feature => (
+                        {activeSuggestedFeatures.map(feature => (
                           <FeatureRequestCard
                             key={feature.id}
                             feature={feature}
@@ -312,15 +314,55 @@ export function FeatureRequestModal({ open, onOpenChange }: FeatureRequestModalP
                     </div>
                   )}
 
-                  {/* Custom Features */}
-                  {customFeatures.length > 0 && (
+                  {/* Completed Popular Requests */}
+                  {completedSuggestedFeatures.length > 0 && (
+                    <div className="pt-6 mt-6 border-t-2 border-gray-200">
+                      <h3 className="text-sm font-semibold text-gray-600 mb-3 flex items-center gap-2">
+                        <span>✅</span>
+                        Completed Popular Requests
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {completedSuggestedFeatures.map(feature => (
+                          <FeatureRequestCard
+                            key={feature.id}
+                            feature={feature}
+                            hasVoted={votedFeatures.includes(feature.id)}
+                            onVote={handleVote}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Active Community Requests */}
+                  {activeCustomFeatures.length > 0 && (
                     <div className="pt-4 border-t">
                       <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                         <span>💡</span>
                         Community Requests
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {customFeatures.map(feature => (
+                        {activeCustomFeatures.map(feature => (
+                          <FeatureRequestCard
+                            key={feature.id}
+                            feature={feature}
+                            hasVoted={votedFeatures.includes(feature.id)}
+                            onVote={handleVote}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Completed Community Requests */}
+                  {completedCustomFeatures.length > 0 && (
+                    <div className="pt-6 mt-6 border-t-2 border-gray-200">
+                      <h3 className="text-sm font-semibold text-gray-600 mb-3 flex items-center gap-2">
+                        <span>✅</span>
+                        Completed Community Requests
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {completedCustomFeatures.map(feature => (
                           <FeatureRequestCard
                             key={feature.id}
                             feature={feature}
