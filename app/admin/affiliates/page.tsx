@@ -33,14 +33,30 @@ interface Application {
 
 interface Affiliate {
   id: string;
+  user_id: string;
   referral_code: string;
   total_earnings: number;
   pending_balance: number;
   paid_balance: number;
   commission_rate: number;
+  paypal_email: string;
   status: string;
   created_at: string;
   conversions_count?: number;
+  application?: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    company?: string;
+    website?: string;
+    application_reason: string;
+    audience_size: string;
+    primary_platform: string;
+    promotional_methods: string[];
+    social_media_profiles: Array<{ platform: string; url: string; followers: string }>;
+    affiliate_experience: string;
+    created_at: string;
+  };
 }
 
 interface Payout {
@@ -67,6 +83,7 @@ export default function AdminAffiliatesPage() {
 
   // Active Affiliates
   const [affiliates, setAffiliates] = useState<Affiliate[]>([]);
+  const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
 
   // Payouts
   const [payouts, setPayouts] = useState<Payout[]>([]);
@@ -123,7 +140,23 @@ export default function AdminAffiliatesPage() {
   async function loadAffiliates() {
     const { data, error } = await supabase
       .from('affiliates')
-      .select('*')
+      .select(`
+        *,
+        application:affiliate_applications!affiliates_user_id_affiliate_applications_user_id_fkey(
+          first_name,
+          last_name,
+          email,
+          company,
+          website,
+          application_reason,
+          audience_size,
+          primary_platform,
+          promotional_methods,
+          social_media_profiles,
+          affiliate_experience,
+          created_at
+        )
+      `)
       .eq('status', 'active')
       .order('total_earnings', { ascending: false });
 
@@ -135,14 +168,23 @@ export default function AdminAffiliatesPage() {
     // Get conversion counts for each affiliate
     if (data) {
       const affiliatesWithCounts = await Promise.all(
-        data.map(async (affiliate) => {
+        data.map(async (affiliate: any) => {
           const { count } = await supabase
             .from('affiliate_conversions')
             .select('*', { count: 'exact', head: true })
             .eq('affiliate_id', affiliate.id)
             .neq('status', 'refunded');
 
-          return { ...affiliate, conversions_count: count || 0 };
+          // Flatten the application array to a single object (Supabase returns array)
+          const application = affiliate.application && affiliate.application.length > 0
+            ? affiliate.application[0]
+            : null;
+
+          return {
+            ...affiliate,
+            conversions_count: count || 0,
+            application
+          };
         })
       );
 
@@ -476,54 +518,87 @@ export default function AdminAffiliatesPage() {
                   </h2>
                 </div>
 
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Code
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Earnings
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Pending
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Paid
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Conversions
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Rate
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {affiliates.map((affiliate) => (
-                      <tr key={affiliate.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {affiliate.referral_code}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          ${affiliate.total_earnings.toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-purple-600">
-                          ${affiliate.pending_balance.toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                          ${affiliate.paid_balance.toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {affiliate.conversions_count || 0}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {affiliate.commission_rate}%
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Email
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          PayPal Email
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Code
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Earnings
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Pending
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Paid
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Conversions
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Rate
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Actions
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {affiliates.map((affiliate) => (
+                        <tr key={affiliate.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {affiliate.application
+                              ? `${affiliate.application.first_name} ${affiliate.application.last_name}`
+                              : 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {affiliate.application?.email || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {affiliate.paypal_email || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-purple-600">
+                            {affiliate.referral_code}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${affiliate.total_earnings.toFixed(2)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-purple-600">
+                            ${affiliate.pending_balance.toFixed(2)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
+                            ${affiliate.paid_balance.toFixed(2)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {affiliate.conversions_count || 0}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {affiliate.commission_rate}%
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <button
+                              onClick={() => setSelectedAffiliate(affiliate)}
+                              className="text-purple-600 hover:text-purple-900 font-medium"
+                            >
+                              View Details
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
 
@@ -783,6 +858,191 @@ export default function AdminAffiliatesPage() {
               >
                 <CheckCircleIcon className="h-5 w-5" />
                 Approve
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Affiliate Details Modal */}
+      {selectedAffiliate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900">Affiliate Details</h2>
+              <button
+                onClick={() => setSelectedAffiliate(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="px-6 py-4 space-y-6">
+              {/* Personal Information Section */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Personal Information</h3>
+                {selectedAffiliate.application ? (
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500 font-medium">Full Name:</span>{' '}
+                      <span className="text-gray-900">
+                        {selectedAffiliate.application.first_name} {selectedAffiliate.application.last_name}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 font-medium">Email:</span>{' '}
+                      <span className="text-gray-900">{selectedAffiliate.application.email}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 font-medium">PayPal Email:</span>{' '}
+                      <span className="text-gray-900">{selectedAffiliate.paypal_email || 'Not set'}</span>
+                    </div>
+                    {selectedAffiliate.application.company && (
+                      <div>
+                        <span className="text-gray-500 font-medium">Company:</span>{' '}
+                        <span className="text-gray-900">{selectedAffiliate.application.company}</span>
+                      </div>
+                    )}
+                    {selectedAffiliate.application.website && (
+                      <div className="col-span-2">
+                        <span className="text-gray-500 font-medium">Website:</span>{' '}
+                        <a
+                          href={selectedAffiliate.application.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-purple-600 hover:text-purple-700"
+                        >
+                          {selectedAffiliate.application.website} →
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Application details not available</p>
+                )}
+              </div>
+
+              {/* Performance Stats Section */}
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Performance Statistics</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="text-sm text-gray-500 mb-1">Referral Code</div>
+                    <div className="text-lg font-semibold text-purple-600 font-mono">
+                      {selectedAffiliate.referral_code}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="text-sm text-gray-500 mb-1">Commission Rate</div>
+                    <div className="text-lg font-semibold text-gray-900">
+                      {selectedAffiliate.commission_rate}%
+                    </div>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-4">
+                    <div className="text-sm text-green-600 mb-1">Total Earnings</div>
+                    <div className="text-lg font-semibold text-green-700">
+                      ${selectedAffiliate.total_earnings.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="bg-purple-50 rounded-lg p-4">
+                    <div className="text-sm text-purple-600 mb-1">Pending Balance</div>
+                    <div className="text-lg font-semibold text-purple-700">
+                      ${selectedAffiliate.pending_balance.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <div className="text-sm text-blue-600 mb-1">Paid Out</div>
+                    <div className="text-lg font-semibold text-blue-700">
+                      ${selectedAffiliate.paid_balance.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="text-sm text-gray-500 mb-1">Conversions</div>
+                    <div className="text-lg font-semibold text-gray-900">
+                      {selectedAffiliate.conversions_count || 0}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Application Details Section */}
+              {selectedAffiliate.application && (
+                <>
+                  <div className="border-t pt-4">
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">Application Details</h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-500 font-medium">Audience Size:</span>{' '}
+                        <span className="text-gray-900">{selectedAffiliate.application.audience_size}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 font-medium">Primary Platform:</span>{' '}
+                        <span className="text-gray-900">{selectedAffiliate.application.primary_platform}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-gray-500 font-medium">Affiliate Experience:</span>{' '}
+                        <span className="text-gray-900">{selectedAffiliate.application.affiliate_experience}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h4 className="font-medium text-gray-900 mb-2">Social Media Profiles</h4>
+                    <div className="space-y-2">
+                      {selectedAffiliate.application.social_media_profiles.map((profile, idx) => (
+                        <div key={idx} className="text-sm bg-gray-50 rounded-lg p-3">
+                          <span className="font-medium text-gray-900">{profile.platform}:</span>{' '}
+                          <a
+                            href={profile.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-purple-600 hover:text-purple-700"
+                          >
+                            {profile.url}
+                          </a>{' '}
+                          <span className="text-gray-500">({profile.followers} followers)</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h4 className="font-medium text-gray-900 mb-2">Promotional Methods</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedAffiliate.application.promotional_methods.map((method, idx) => (
+                        <span
+                          key={idx}
+                          className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
+                        >
+                          {method}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h4 className="font-medium text-gray-900 mb-2">Why They Applied</h4>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 rounded-lg p-4">
+                      {selectedAffiliate.application.application_reason}
+                    </p>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <div className="text-xs text-gray-500">
+                      Application submitted on {new Date(selectedAffiliate.application.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setSelectedAffiliate(null)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              >
+                Close
               </button>
             </div>
           </div>
