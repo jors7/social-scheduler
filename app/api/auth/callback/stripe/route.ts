@@ -255,6 +255,34 @@ export async function GET(request: NextRequest) {
                     console.log('⚠️ Affiliate user has no email, skipping notification')
                   }
 
+                  // Create trial conversion record for dashboard tracking
+                  try {
+                    console.log('📝 Creating trial conversion record...')
+
+                    const { data: conversion, error: conversionError } = await supabaseAdmin
+                      .from('affiliate_conversions')
+                      .insert({
+                        affiliate_id: affiliate.id,
+                        customer_user_id: userId,
+                        subscription_id: null, // Will be populated when first payment occurs
+                        commission_amount: 0, // Trial = $0 commission (commission added on first payment)
+                        status: 'pending',
+                        payment_date: null, // No payment yet during trial
+                        stripe_invoice_id: null,
+                      })
+                      .select()
+                      .single()
+
+                    if (conversionError) {
+                      console.error('❌ Error creating trial conversion:', conversionError)
+                    } else {
+                      console.log('✅ Trial conversion recorded:', conversion.id)
+                    }
+                  } catch (conversionCreationError) {
+                    console.error('❌ Exception creating conversion record:', conversionCreationError)
+                    // Don't throw - notification is more important than conversion record
+                  }
+
                   // Mark the affiliate click as converted for attribution tracking
                   try {
                     console.log('🔍 Looking for unconverted click to mark as converted...')

@@ -681,23 +681,60 @@ export async function POST(request: NextRequest) {
                     commission: commissionAmount
                   })
 
-                  // Create conversion record
-                  const { data: conversion, error: conversionError } = await supabaseAdmin
+                  // Check if trial conversion already exists (created during signup)
+                  const { data: existingConversion } = await supabaseAdmin
                     .from('affiliate_conversions')
-                    .insert({
-                      affiliate_id: affiliate.id,
-                      customer_user_id: userId,
-                      subscription_id: userSub?.id,
-                      commission_amount: commissionAmount,
-                      status: 'pending',
-                      payment_date: new Date().toISOString(),
-                      stripe_invoice_id: invoice.id,
-                    })
-                    .select()
+                    .select('id, commission_amount')
+                    .eq('affiliate_id', affiliate.id)
+                    .eq('customer_user_id', userId)
                     .single()
 
+                  let conversion
+                  let conversionError
+
+                  if (existingConversion) {
+                    // Update existing trial conversion with payment details
+                    console.log('📝 Updating existing trial conversion with payment:', existingConversion.id)
+
+                    const { data: updated, error: updateError } = await supabaseAdmin
+                      .from('affiliate_conversions')
+                      .update({
+                        subscription_id: userSub?.id,
+                        commission_amount: commissionAmount,
+                        status: 'pending',
+                        payment_date: new Date().toISOString(),
+                        stripe_invoice_id: invoice.id,
+                      })
+                      .eq('id', existingConversion.id)
+                      .select()
+                      .single()
+
+                    conversion = updated
+                    conversionError = updateError
+                  } else {
+                    // Create new conversion record (for direct paid signups without trial)
+                    console.log('📝 Creating new conversion record')
+
+                    const { data: created, error: createError } = await supabaseAdmin
+                      .from('affiliate_conversions')
+                      .insert({
+                        affiliate_id: affiliate.id,
+                        customer_user_id: userId,
+                        subscription_id: userSub?.id,
+                        commission_amount: commissionAmount,
+                        status: 'pending',
+                        payment_date: new Date().toISOString(),
+                        stripe_invoice_id: invoice.id,
+                      })
+                      .select()
+                      .single()
+
+                    conversion = created
+                    conversionError = createError
+                  }
+
                   if (conversionError) {
-                    console.error('❌ Error creating affiliate conversion:', conversionError)
+                    console.error('❌ Error processing affiliate conversion:', conversionError)
                   } else {
                     console.log('✅ Affiliate conversion recorded:', conversion.id)
 
