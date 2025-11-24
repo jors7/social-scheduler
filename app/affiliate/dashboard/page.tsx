@@ -121,12 +121,12 @@ export default function AffiliateDashboard() {
 
       setAffiliateData(affiliate);
 
-      // Get conversions count
+      // Get conversions count (exclude refunded and cancelled)
       const { count: conversionsCount } = await supabase
         .from('affiliate_conversions')
         .select('*', { count: 'exact', head: true })
         .eq('affiliate_id', affiliate.id)
-        .neq('status', 'refunded');
+        .not('status', 'in', '(refunded,cancelled)');
 
       // Get clicks count
       const { count: clicksCount } = await supabase

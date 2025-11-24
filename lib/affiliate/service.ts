@@ -530,6 +530,122 @@ export async function handleRefund(
   }
 }
 
+/**
+ * Handle subscription cancellation - mark conversion as cancelled and deduct commission if still pending
+ *
+ * @param userId - The customer's user_id
+ * @param subscriptionId - The Stripe subscription ID
+ * @param cancellationReason - Reason for cancellation (e.g., "customer_cancelled", "trial_ended")
+ * @returns Promise<void>
+ */
+export async function handleCancellation(
+  userId: string,
+  subscriptionId: string,
+  cancellationReason: string = 'customer_cancelled'
+): Promise<void> {
+  const supabase = getServiceClient();
+
+  try {
+    // Find the conversion for this customer and subscription
+    const { data: conversion, error: conversionError } = await supabase
+      .from('affiliate_conversions')
+      .select('*, affiliate:affiliates(id, user_id, referral_code, pending_balance)')
+      .eq('customer_user_id', userId)
+      .maybeSingle();
+
+    if (conversionError) {
+      console.error('Error finding conversion for cancellation:', conversionError);
+      return;
+    }
+
+    if (!conversion) {
+      console.log('No conversion found for cancelled subscription:', subscriptionId);
+      return;
+    }
+
+    // Only process if conversion is still in 'pending' status (within 30-day window)
+    if (conversion.status !== 'pending') {
+      console.log(`Conversion ${conversion.id} is ${conversion.status}, not deducting commission`);
+
+      // Still mark as cancelled for tracking, but don't deduct commission
+      await supabase
+        .from('affiliate_conversions')
+        .update({
+          status: 'cancelled',
+          cancellation_date: new Date().toISOString(),
+          cancellation_reason: cancellationReason,
+        })
+        .eq('id', conversion.id);
+
+      return;
+    }
+
+    console.log(`Processing cancellation for conversion ${conversion.id} (status: ${conversion.status})`);
+
+    // Mark conversion as cancelled
+    await supabase
+      .from('affiliate_conversions')
+      .update({
+        status: 'cancelled',
+        cancellation_date: new Date().toISOString(),
+        cancellation_reason: cancellationReason,
+      })
+      .eq('id', conversion.id);
+
+    // Deduct commission from affiliate's pending balance
+    const affiliate = (conversion as any).affiliate;
+    if (affiliate && conversion.commission_amount > 0) {
+      const newBalance = Math.max(0, affiliate.pending_balance - conversion.commission_amount);
+
+      await supabase
+        .from('affiliates')
+        .update({
+          pending_balance: newBalance,
+        })
+        .eq('id', affiliate.id);
+
+      console.log(`Deducted $${conversion.commission_amount} from affiliate ${affiliate.id} pending balance`);
+    }
+
+    // Get affiliate user email for notification
+    const { data: affiliateUserData } = await supabase.auth.admin.getUserById(affiliate.user_id);
+
+    if (affiliateUserData?.user?.email) {
+      // Get customer email for the notification
+      const { data: customerData } = await supabase.auth.admin.getUserById(userId);
+
+      // Queue cancellation notification email
+      await supabase.from('pending_emails').insert({
+        user_id: affiliate.user_id,
+        email_to: affiliateUserData.user.email,
+        email_type: 'affiliate_conversion_cancelled',
+        subject: 'Conversion Cancelled - Commission Deducted',
+        template_data: {
+          affiliate_name: affiliateUserData.user.user_metadata?.full_name || affiliateUserData.user.email?.split('@')[0] || 'there',
+          customer_email: customerData?.user?.email || 'customer@example.com',
+          plan_name: conversion.metadata?.plan_name || 'Starter',
+          signup_date: new Date(conversion.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+          cancellation_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+          commission_amount: conversion.commission_amount,
+          was_commission_deducted: conversion.status === 'pending',
+          referral_code: affiliate.referral_code,
+          dashboard_url: `${process.env.NEXT_PUBLIC_APP_URL}/affiliate/dashboard`
+        },
+        metadata: {
+          conversion_id: conversion.id,
+          subscription_id: subscriptionId,
+          affiliate_id: affiliate.id,
+        }
+      });
+
+      console.log('✅ Cancellation notification queued for affiliate:', affiliateUserData.user.email);
+    }
+  } catch (error) {
+    console.error('❌ Error handling cancellation:', error);
+    // Don't throw - cancellation tracking shouldn't break the webhook
+  }
+}
+
 // =====================================================
 // STATISTICS
 // =====================================================

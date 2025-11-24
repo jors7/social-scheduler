@@ -26,10 +26,13 @@ export async function POST(request: NextRequest) {
     }
 
     const { urls } = await request.json();
-    
+
     if (!urls || !Array.isArray(urls)) {
       return NextResponse.json({ error: 'Invalid urls provided' }, { status: 400 });
     }
+
+    console.log(`[CLEANUP] Starting media cleanup for user ${user.id} at ${new Date().toISOString()}`);
+    console.log(`[CLEANUP] URLs to delete: ${urls.length}`, urls);
 
     const deletedFiles = [];
     const errors = [];
@@ -58,8 +61,10 @@ export async function POST(request: NextRequest) {
           .remove([filePath]);
 
         if (error) {
+          console.log(`[CLEANUP] Failed to delete ${filePath}: ${error.message}`);
           errors.push({ url, error: error.message });
         } else {
+          console.log(`[CLEANUP] Successfully deleted ${filePath}`);
           deletedFiles.push(filePath);
         }
       } catch (error) {
@@ -70,7 +75,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ 
+    console.log(`[CLEANUP] Cleanup complete - Deleted: ${deletedFiles.length}, Errors: ${errors.length}`);
+
+    return NextResponse.json({
       success: true,
       deletedFiles,
       errors: errors.length > 0 ? errors : undefined

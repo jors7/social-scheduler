@@ -2604,15 +2604,18 @@ function CreateNewPostPageContent() {
       // Clear form if all successful
       if (failed.length === 0) {
         // Clean up uploaded images from storage
-        // IMPORTANT: Don't cleanup if TikTok or Pinterest was posted
+        // IMPORTANT: Don't cleanup if TikTok, Pinterest, or Bluesky was posted
         // - TikTok needs time to download the video via PULL_FROM_URL
         // - Pinterest needs permanent URLs for thumbnails (Pinterest API URLs expire)
+        // - Bluesky needs time to fetch and process media from URLs
         const postedToTikTok = supportedPlatforms.includes('tiktok');
         const postedToPinterest = supportedPlatforms.includes('pinterest');
-        const shouldSkipCleanup = postedToTikTok || postedToPinterest;
+        const postedToBluesky = supportedPlatforms.includes('bluesky');
+        const shouldSkipCleanup = postedToTikTok || postedToPinterest || postedToBluesky;
 
         if (mediaUrls.length > 0 && !shouldSkipCleanup) {
           try {
+            console.log(`Cleaning up media for platforms: ${supportedPlatforms.join(', ')}`);
             await fetch('/api/upload/cleanup', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -2622,8 +2625,11 @@ function CreateNewPostPageContent() {
             console.error('Failed to cleanup uploaded files:', error)
           }
         } else if (shouldSkipCleanup) {
-          const reason = postedToTikTok ? 'TikTok needs time to download' : 'Pinterest needs permanent URLs';
-          console.log(`Skipping media cleanup - ${reason}`);
+          const reasons = [];
+          if (postedToTikTok) reasons.push('TikTok needs time to download');
+          if (postedToPinterest) reasons.push('Pinterest needs permanent URLs');
+          if (postedToBluesky) reasons.push('Bluesky needs time to fetch media');
+          console.log(`Skipping media cleanup - ${reasons.join(', ')} - Platforms: ${supportedPlatforms.join(', ')}`);
         }
         
         // Delete draft if this was posted from a draft

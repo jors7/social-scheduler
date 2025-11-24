@@ -45,7 +45,8 @@ export type EmailType =
   | 'affiliate_payout_processed'
   | 'affiliate_trial_started'
   | 'affiliate_commission_earned'
-  | 'affiliate_first_commission';
+  | 'affiliate_first_commission'
+  | 'affiliate_conversion_cancelled';
 
 /**
  * Options for idempotency check

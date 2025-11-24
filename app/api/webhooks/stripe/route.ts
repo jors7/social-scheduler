@@ -9,6 +9,7 @@ import {
   queuePlanUpgradedEmail,
   queuePlanDowngradedEmail,
 } from '@/lib/email/send'
+import { handleCancellation } from '@/lib/affiliate/service'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-11-20.acacia' as any,
@@ -377,6 +378,19 @@ export async function POST(request: NextRequest) {
                 })
               }
             }
+          }
+
+          // Handle affiliate conversion cancellation
+          if (userId) {
+            console.log('🔗 Handling affiliate cancellation for user:', userId)
+            await handleCancellation(
+              userId,
+              subscription.id,
+              subscription.status === 'trialing' ? 'trial_ended' : 'customer_cancelled'
+            ).catch(err => {
+              console.error('❌ Error handling affiliate cancellation:', err)
+              // Don't throw - affiliate tracking shouldn't break the webhook
+            })
           }
         }
 
