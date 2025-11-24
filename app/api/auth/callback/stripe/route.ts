@@ -200,6 +200,108 @@ export async function GET(request: NextRequest) {
                 .catch(err => console.error('Error sending subscription email:', err))
               console.log('✅ Subscription email sent')
             }
+
+            // =====================================================
+            // AFFILIATE TRACKING
+            // =====================================================
+            // Handle affiliate tracking for new signups
+            const affiliate_id = metadata?.affiliate_id || subscription.metadata?.affiliate_id
+
+            if (affiliate_id) {
+              console.log('🔗 Processing affiliate tracking for trial signup:', affiliate_id)
+
+              try {
+                // Get affiliate details
+                const { data: affiliate, error: affiliateError } = await supabaseAdmin
+                  .from('affiliates')
+                  .select('id, user_id, referral_code')
+                  .eq('id', affiliate_id)
+                  .eq('status', 'active')
+                  .single()
+
+                if (affiliateError || !affiliate) {
+                  console.log('⚠️ Affiliate not found or inactive:', affiliate_id, affiliateError)
+                } else {
+                  console.log('✅ Affiliate found:', affiliate.referral_code)
+
+                  // Get affiliate user email for notification
+                  const { data: affiliateUserData } = await supabaseAdmin.auth.admin.getUserById(affiliate.user_id)
+
+                  if (affiliateUserData?.user?.email) {
+                    // Queue trial started notification to affiliate
+                    console.log('📧 Queuing trial notification to affiliate:', affiliateUserData.user.email)
+
+                    await supabaseAdmin.from('pending_emails').insert({
+                      user_id: affiliate.user_id,
+                      email_to: affiliateUserData.user.email,
+                      email_type: 'affiliate_trial_started',
+                      subject: 'New Trial Signup via Your Referral Link!',
+                      template_data: {
+                        affiliate_name: affiliateUserData.user.user_metadata?.full_name || affiliateUserData.user.email?.split('@')[0] || 'there',
+                        plan_name: planName,
+                        trial_days: 7,
+                        referral_code: affiliate.referral_code,
+                        dashboard_url: `${process.env.NEXT_PUBLIC_APP_URL}/affiliate/dashboard`
+                      },
+                      metadata: {
+                        session_id: sessionId,
+                        affiliate_id: affiliate.id,
+                        customer_user_id: userId
+                      }
+                    })
+
+                    console.log('✅ Affiliate trial notification queued')
+                  } else {
+                    console.log('⚠️ Affiliate user has no email, skipping notification')
+                  }
+
+                  // Mark the affiliate click as converted for attribution tracking
+                  try {
+                    console.log('🔍 Looking for unconverted click to mark as converted...')
+
+                    // Find the most recent unconverted click for this affiliate (within 30 days)
+                    const thirtyDaysAgo = new Date()
+                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+                    const { data: recentClick, error: clickError } = await supabaseAdmin
+                      .from('affiliate_clicks')
+                      .select('id')
+                      .eq('affiliate_id', affiliate.id)
+                      .eq('converted', false)
+                      .gte('created_at', thirtyDaysAgo.toISOString())
+                      .order('created_at', { ascending: false })
+                      .limit(1)
+                      .single()
+
+                    if (recentClick && !clickError) {
+                      // Update the click record to mark as converted
+                      const { error: updateClickError } = await supabaseAdmin
+                        .from('affiliate_clicks')
+                        .update({ converted: true })
+                        .eq('id', recentClick.id)
+
+                      if (updateClickError) {
+                        console.error('❌ Error updating affiliate click:', updateClickError)
+                      } else {
+                        console.log('✅ Affiliate click marked as converted:', recentClick.id)
+                      }
+                    } else {
+                      console.log('ℹ️ No unconverted click found for this trial (may be direct signup)')
+                    }
+                  } catch (clickAttributionError) {
+                    console.error('❌ Error with click attribution:', clickAttributionError)
+                    // Don't throw - notification is more important than click attribution
+                  }
+                }
+              } catch (affiliateError) {
+                console.error('❌ Error processing affiliate tracking:', affiliateError)
+                // Don't throw - affiliate tracking shouldn't break the signup flow
+              }
+            } else {
+              console.log('ℹ️ No affiliate_id in metadata - direct signup')
+            }
+            // END AFFILIATE TRACKING
+            // =====================================================
           }
         }
       }
