@@ -156,6 +156,76 @@ export async function updateAffiliate(
   return data;
 }
 
+/**
+ * Suspend an affiliate
+ */
+export async function suspendAffiliate(
+  affiliateId: string,
+  reason?: string
+): Promise<Affiliate> {
+  const supabase = getServiceClient();
+
+  const updates: any = {
+    status: 'suspended',
+    updated_at: new Date().toISOString(),
+  };
+
+  // Optionally store suspension reason in metadata
+  if (reason) {
+    const { data: current } = await supabase
+      .from('affiliates')
+      .select('metadata')
+      .eq('id', affiliateId)
+      .single();
+
+    updates.metadata = {
+      ...(current?.metadata || {}),
+      suspension_reason: reason,
+      suspended_at: new Date().toISOString(),
+    };
+  }
+
+  const { data, error } = await supabase
+    .from('affiliates')
+    .update(updates)
+    .eq('id', affiliateId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error suspending affiliate:', error);
+    throw new Error('Failed to suspend affiliate');
+  }
+
+  return data;
+}
+
+/**
+ * Reactivate a suspended affiliate
+ */
+export async function reactivateAffiliate(
+  affiliateId: string
+): Promise<Affiliate> {
+  const supabase = getServiceClient();
+
+  const { data, error } = await supabase
+    .from('affiliates')
+    .update({
+      status: 'active',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', affiliateId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error reactivating affiliate:', error);
+    throw new Error('Failed to reactivate affiliate');
+  }
+
+  return data;
+}
+
 // =====================================================
 // APPLICATION MANAGEMENT
 // =====================================================

@@ -12,7 +12,7 @@ import {
   ChartBarIcon,
 } from '@heroicons/react/24/outline';
 
-type Tab = 'applications' | 'active' | 'payouts' | 'analytics';
+type Tab = 'applications' | 'active' | 'suspended' | 'payouts' | 'analytics';
 
 interface Application {
   id: string;
@@ -42,6 +42,7 @@ interface Affiliate {
   paypal_email: string;
   status: string;
   created_at: string;
+  updated_at?: string;
   conversions_count?: number;
   application?: {
     first_name: string;
@@ -85,6 +86,9 @@ export default function AdminAffiliatesPage() {
   const [affiliates, setAffiliates] = useState<Affiliate[]>([]);
   const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
 
+  // Suspended Affiliates
+  const [suspendedAffiliates, setSuspendedAffiliates] = useState<Affiliate[]>([]);
+
   // Payouts
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [selectedPayouts, setSelectedPayouts] = useState<Set<string>>(new Set());
@@ -109,6 +113,8 @@ export default function AdminAffiliatesPage() {
         await loadApplications();
       } else if (activeTab === 'active') {
         await loadAffiliates();
+      } else if (activeTab === 'suspended') {
+        await loadSuspendedAffiliates();
       } else if (activeTab === 'payouts') {
         await loadPayouts();
       } else if (activeTab === 'analytics') {
@@ -181,6 +187,52 @@ export default function AdminAffiliatesPage() {
     );
 
     setAffiliates(affiliatesWithDetails);
+  }
+
+  async function loadSuspendedAffiliates() {
+    // Get suspended affiliates
+    const { data: affiliates, error } = await supabase
+      .from('affiliates')
+      .select('*')
+      .eq('status', 'suspended')
+      .order('updated_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading suspended affiliates:', error);
+      return;
+    }
+
+    if (!affiliates || affiliates.length === 0) {
+      setSuspendedAffiliates([]);
+      return;
+    }
+
+    // Get application data and conversion counts for each affiliate
+    const affiliatesWithDetails = await Promise.all(
+      affiliates.map(async (affiliate: any) => {
+        // Get application by user_id
+        const { data: application } = await supabase
+          .from('affiliate_applications')
+          .select('first_name, last_name, email, company, website, application_reason, audience_size, primary_platform, promotional_methods, social_media_profiles, affiliate_experience, created_at')
+          .eq('user_id', affiliate.user_id)
+          .single();
+
+        // Get conversion count
+        const { count } = await supabase
+          .from('affiliate_conversions')
+          .select('*', { count: 'exact', head: true })
+          .eq('affiliate_id', affiliate.id)
+          .neq('status', 'refunded');
+
+        return {
+          ...affiliate,
+          application: application || null,
+          conversions_count: count || 0,
+        };
+      })
+    );
+
+    setSuspendedAffiliates(affiliatesWithDetails);
   }
 
   async function loadPayouts() {
@@ -349,6 +401,66 @@ export default function AdminAffiliatesPage() {
     setSelectedPayouts(newSelected);
   }
 
+  async function handleSuspendAffiliate(affiliateId: string) {
+    const reason = prompt('Reason for suspension (optional):');
+    if (reason === null) return; // User cancelled
+
+    const confirmed = confirm('Are you sure you want to suspend this affiliate?');
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch('/api/admin/affiliates/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          affiliate_id: affiliateId,
+          action: 'suspend',
+          reason: reason || undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Affiliate suspended successfully');
+        loadAffiliates();
+      } else {
+        toast.error(data.error || 'Failed to suspend affiliate');
+      }
+    } catch (error) {
+      console.error('Error suspending affiliate:', error);
+      toast.error('Failed to suspend affiliate');
+    }
+  }
+
+  async function handleReactivateAffiliate(affiliateId: string) {
+    const confirmed = confirm('Reactivate this affiliate?');
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch('/api/admin/affiliates/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          affiliate_id: affiliateId,
+          action: 'reactivate',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Affiliate reactivated successfully');
+        loadSuspendedAffiliates();
+      } else {
+        toast.error(data.error || 'Failed to reactivate affiliate');
+      }
+    } catch (error) {
+      console.error('Error reactivating affiliate:', error);
+      toast.error('Failed to reactivate affiliate');
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -390,6 +502,23 @@ export default function AdminAffiliatesPage() {
             >
               <UserGroupIcon className="h-5 w-5" />
               Active Affiliates
+            </button>
+
+            <button
+              onClick={() => setActiveTab('suspended')}
+              className={`${
+                activeTab === 'suspended'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+            >
+              <XCircleIcon className="h-5 w-5" />
+              Suspended
+              {suspendedAffiliates.length > 0 && (
+                <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs">
+                  {suspendedAffiliates.length}
+                </span>
+              )}
             </button>
 
             <button
@@ -578,18 +707,118 @@ export default function AdminAffiliatesPage() {
                             {affiliate.commission_rate}%
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <button
-                              onClick={() => setSelectedAffiliate(affiliate)}
-                              className="text-purple-600 hover:text-purple-900 font-medium"
-                            >
-                              View Details
-                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => setSelectedAffiliate(affiliate)}
+                                className="text-purple-600 hover:text-purple-900 font-medium"
+                              >
+                                View Details
+                              </button>
+                              <button
+                                onClick={() => handleSuspendAffiliate(affiliate.id)}
+                                className="text-red-600 hover:text-red-900 font-medium"
+                              >
+                                Suspend
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
+              </div>
+            )}
+
+            {/* Suspended Affiliates Tab */}
+            {activeTab === 'suspended' && (
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Suspended Affiliates ({suspendedAffiliates.length})
+                  </h2>
+                </div>
+
+                {suspendedAffiliates.length === 0 ? (
+                  <div className="px-6 py-12 text-center text-gray-500">
+                    <XCircleIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <p>No suspended affiliates</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            Name
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            Email
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            Code
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            Total Earnings
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            Conversions
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            Suspended
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {suspendedAffiliates.map((affiliate) => (
+                          <tr key={affiliate.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {affiliate.application
+                                ? `${affiliate.application.first_name} ${affiliate.application.last_name}`
+                                : 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                              {affiliate.application?.email || 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-400">
+                              {affiliate.referral_code}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              ${affiliate.total_earnings.toFixed(2)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {affiliate.conversions_count || 0}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {affiliate.updated_at
+                                ? new Date(affiliate.updated_at).toLocaleDateString()
+                                : 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => setSelectedAffiliate(affiliate)}
+                                  className="text-purple-600 hover:text-purple-900 font-medium"
+                                >
+                                  View Details
+                                </button>
+                                <button
+                                  onClick={() => handleReactivateAffiliate(affiliate.id)}
+                                  className="text-green-600 hover:text-green-900 font-medium"
+                                >
+                                  Reactivate
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 
