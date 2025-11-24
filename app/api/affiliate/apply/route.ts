@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: body.email,
       password: body.password,
-      email_confirm: false, // Require email confirmation
+      email_confirm: true, // Auto-confirm email since admins manually approve affiliates
       user_metadata: {
         user_type: 'affiliate',
         full_name: `${body.first_name} ${body.last_name}`,
