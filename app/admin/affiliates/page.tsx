@@ -138,25 +138,10 @@ export default function AdminAffiliatesPage() {
   }
 
   async function loadAffiliates() {
-    const { data, error } = await supabase
+    // Get active affiliates
+    const { data: affiliates, error } = await supabase
       .from('affiliates')
-      .select(`
-        *,
-        application:affiliate_applications!affiliates_user_id_affiliate_applications_user_id_fkey(
-          first_name,
-          last_name,
-          email,
-          company,
-          website,
-          application_reason,
-          audience_size,
-          primary_platform,
-          promotional_methods,
-          social_media_profiles,
-          affiliate_experience,
-          created_at
-        )
-      `)
+      .select('*')
       .eq('status', 'active')
       .order('total_earnings', { ascending: false });
 
@@ -165,31 +150,37 @@ export default function AdminAffiliatesPage() {
       return;
     }
 
-    // Get conversion counts for each affiliate
-    if (data) {
-      const affiliatesWithCounts = await Promise.all(
-        data.map(async (affiliate: any) => {
-          const { count } = await supabase
-            .from('affiliate_conversions')
-            .select('*', { count: 'exact', head: true })
-            .eq('affiliate_id', affiliate.id)
-            .neq('status', 'refunded');
-
-          // Flatten the application array to a single object (Supabase returns array)
-          const application = affiliate.application && affiliate.application.length > 0
-            ? affiliate.application[0]
-            : null;
-
-          return {
-            ...affiliate,
-            conversions_count: count || 0,
-            application
-          };
-        })
-      );
-
-      setAffiliates(affiliatesWithCounts);
+    if (!affiliates || affiliates.length === 0) {
+      setAffiliates([]);
+      return;
     }
+
+    // Get application data and conversion counts for each affiliate
+    const affiliatesWithDetails = await Promise.all(
+      affiliates.map(async (affiliate: any) => {
+        // Get application by user_id
+        const { data: application } = await supabase
+          .from('affiliate_applications')
+          .select('first_name, last_name, email, company, website, application_reason, audience_size, primary_platform, promotional_methods, social_media_profiles, affiliate_experience, created_at')
+          .eq('user_id', affiliate.user_id)
+          .single();
+
+        // Get conversion count
+        const { count } = await supabase
+          .from('affiliate_conversions')
+          .select('*', { count: 'exact', head: true })
+          .eq('affiliate_id', affiliate.id)
+          .neq('status', 'refunded');
+
+        return {
+          ...affiliate,
+          application: application || null,
+          conversions_count: count || 0,
+        };
+      })
+    );
+
+    setAffiliates(affiliatesWithDetails);
   }
 
   async function loadPayouts() {
