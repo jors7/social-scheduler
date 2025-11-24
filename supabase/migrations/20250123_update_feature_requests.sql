@@ -34,7 +34,8 @@ INSERT INTO feature_requests (title, description, category, status, is_custom, v
 VALUES
   ('Bulk Post Scheduling', 'Upload CSV file to schedule multiple posts at once with drag-and-drop calendar integration', 'posting', 'completed', false, 0, NULL, '2025-10-24 00:00:00+00'),
   ('Content Calendar View', 'Visual drag-and-drop calendar for managing and rescheduling posts across all platforms', 'posting', 'completed', false, 0, NULL, '2025-10-05 00:00:00+00'),
-  ('Post Templates Library', 'Save and reuse post templates with custom placeholders for faster content creation', 'posting', 'completed', false, 0, NULL, '2025-11-02 00:00:00+00')
+  ('Post Templates Library', 'Save and reuse post templates with custom placeholders for faster content creation', 'posting', 'completed', false, 0, NULL, '2025-11-02 00:00:00+00'),
+  ('Affiliate Program', 'Complete referral program with 30% recurring commissions, automatic tracking, affiliate dashboard, and PayPal payout integration for monetizing word-of-mouth growth', 'integration', 'completed', false, 0, NULL, '2025-11-24 00:00:00+00')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================================

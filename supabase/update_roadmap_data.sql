@@ -34,6 +34,12 @@ WHERE title = 'Post Templates Library'
   AND is_custom = false
   AND status = 'completed';
 
+-- Add Affiliate Program (completed November 24, 2025)
+INSERT INTO feature_requests (title, description, category, status, is_custom, vote_count, requested_by, completed_at)
+VALUES
+  ('Affiliate Program', 'Complete referral program with 30% recurring commissions, automatic tracking, affiliate dashboard, and PayPal payout integration for monetizing word-of-mouth growth', 'integration', 'completed', false, 0, NULL, '2025-11-24 00:00:00+00')
+ON CONFLICT DO NOTHING;
+
 -- ============================================================================
 -- STEP 2: Update Mobile App Status to Planned
 -- ============================================================================
