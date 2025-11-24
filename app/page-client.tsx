@@ -342,14 +342,6 @@ function LandingPageContent({ isAuthenticated, userEmail }: LandingPageContentPr
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqData) }}
       />
 
-      {/* Third-party scripts - only loaded on homepage */}
-      <Script
-        src="https://assets.endorsely.com/endorsely.js"
-        data-endorsely="98e926be-27f4-4498-875e-d1e75f8f3427"
-        strategy="lazyOnload"
-        async
-      />
-
       {/* Shared Navbar Component */}
       <Navbar
         isAuthenticated={clientAuth.isChecking ? null : clientAuth.isAuthenticated}
