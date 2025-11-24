@@ -37,6 +37,36 @@ interface Conversion {
   customer_email?: string;
 }
 
+interface Click {
+  id: string;
+  created_at: string;
+  referrer_url: string | null;
+  converted: boolean;
+}
+
+// Helper function to extract domain from URL
+function extractDomain(url: string | null): string {
+  if (!url) return 'Direct';
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname.replace('www.', '');
+  } catch {
+    return 'Direct';
+  }
+}
+
+// Helper function to format date
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
 export default function AffiliateDashboard() {
   const router = useRouter();
   const supabase = createClient();
@@ -44,6 +74,7 @@ export default function AffiliateDashboard() {
   const [affiliateData, setAffiliateData] = useState<AffiliateData | null>(null);
   const [stats, setStats] = useState<Stats>({ total_conversions: 0, total_clicks: 0, conversion_rate: 0 });
   const [conversions, setConversions] = useState<Conversion[]>([]);
+  const [clicks, setClicks] = useState<Click[]>([]);
   const [payoutAmount, setPayoutAmount] = useState('');
   const [requestingPayout, setRequestingPayout] = useState(false);
 
@@ -122,6 +153,16 @@ export default function AffiliateDashboard() {
         .limit(10);
 
       setConversions(conversionsData || []);
+
+      // Get recent clicks
+      const { data: clicksData } = await supabase
+        .from('affiliate_clicks')
+        .select('id, created_at, referrer_url, converted')
+        .eq('affiliate_id', affiliate.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      setClicks(clicksData || []);
 
     } catch (error) {
       console.error('Error loading dashboard:', error);
@@ -233,7 +274,7 @@ export default function AffiliateDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -282,6 +323,21 @@ export default function AffiliateDashboard() {
                 </p>
               </div>
               <ChartBarIcon className="h-10 w-10 text-indigo-500" />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Total Clicks</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.total_clicks}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Link visits
+                </p>
+              </div>
+              <LinkIcon className="h-10 w-10 text-orange-500" />
             </div>
           </div>
         </div>
@@ -378,7 +434,7 @@ export default function AffiliateDashboard() {
         </div>
 
         {/* Recent Conversions */}
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-white rounded-lg shadow mb-8">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">Recent Conversions</h2>
           </div>
@@ -423,6 +479,61 @@ export default function AffiliateDashboard() {
                             : 'bg-gray-100 text-gray-800'
                         }`}>
                           {conversion.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Clicks */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">Recent Clicks</h2>
+            <p className="text-sm text-gray-500 mt-1">Track where your traffic is coming from</p>
+          </div>
+
+          <div className="overflow-x-auto">
+            {clicks.length === 0 ? (
+              <div className="px-6 py-12 text-center text-gray-500">
+                <LinkIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>No clicks yet</p>
+                <p className="text-sm mt-2">Share your referral link to start tracking clicks!</p>
+              </div>
+            ) : (
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date & Time
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Traffic Source
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {clicks.map((click) => (
+                    <tr key={click.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatDate(click.created_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {extractDomain(click.referrer_url)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          click.converted
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {click.converted ? 'Converted' : 'Not converted'}
                         </span>
                       </td>
                     </tr>

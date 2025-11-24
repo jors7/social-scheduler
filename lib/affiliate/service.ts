@@ -163,6 +163,8 @@ export async function suspendAffiliate(
   affiliateId: string,
   reason?: string
 ): Promise<Affiliate> {
+  console.log('🔄 suspendAffiliate called with:', { affiliateId, reason });
+
   const supabase = getServiceClient();
 
   const updates: any = {
@@ -172,18 +174,26 @@ export async function suspendAffiliate(
 
   // Optionally store suspension reason in metadata
   if (reason) {
-    const { data: current } = await supabase
+    console.log('📝 Fetching current metadata...');
+    const { data: current, error: fetchError } = await supabase
       .from('affiliates')
       .select('metadata')
       .eq('id', affiliateId)
       .single();
+
+    if (fetchError) {
+      console.error('❌ Error fetching metadata:', fetchError);
+    }
 
     updates.metadata = {
       ...(current?.metadata || {}),
       suspension_reason: reason,
       suspended_at: new Date().toISOString(),
     };
+    console.log('📝 Metadata to save:', updates.metadata);
   }
+
+  console.log('💾 Attempting to update affiliate with:', updates);
 
   const { data, error } = await supabase
     .from('affiliates')
@@ -193,10 +203,12 @@ export async function suspendAffiliate(
     .single();
 
   if (error) {
-    console.error('Error suspending affiliate:', error);
-    throw new Error('Failed to suspend affiliate');
+    console.error('❌ Error suspending affiliate:', error);
+    console.error('Error details:', JSON.stringify(error, null, 2));
+    throw new Error(`Failed to suspend affiliate: ${error.message || JSON.stringify(error)}`);
   }
 
+  console.log('✅ Affiliate suspended successfully:', data);
   return data;
 }
 
