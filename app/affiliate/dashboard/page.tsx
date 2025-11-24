@@ -32,7 +32,7 @@ interface Stats {
 interface Conversion {
   id: string;
   commission_amount: number;
-  payment_date: string;
+  created_at: string;
   status: string;
   customer_email?: string;
 }
@@ -147,9 +147,9 @@ export default function AffiliateDashboard() {
       // Get recent conversions
       const { data: conversionsData } = await supabase
         .from('affiliate_conversions')
-        .select('id, commission_amount, payment_date, status')
+        .select('id, commission_amount, created_at, status')
         .eq('affiliate_id', affiliate.id)
-        .order('payment_date', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(10);
 
       setConversions(conversionsData || []);
@@ -465,7 +465,7 @@ export default function AffiliateDashboard() {
                   {conversions.map((conversion) => (
                     <tr key={conversion.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(conversion.payment_date).toLocaleDateString()}
+                        {new Date(conversion.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
                         ${conversion.commission_amount.toFixed(2)}
