@@ -531,7 +531,13 @@ export async function handleRefund(
 }
 
 /**
- * Handle subscription cancellation - mark conversion as cancelled and deduct commission if still pending
+ * Handle subscription cancellation - track cancellation and deduct commission if still pending
+ *
+ * Behavior:
+ * - If status is 'pending' (trial cancelled before payment): Mark as 'cancelled' and deduct commission
+ * - If status is 'paid' or 'approved' (paid customer cancelling): Keep status unchanged, only track cancellation date
+ *
+ * This ensures paid customers still count toward conversion rate even after cancelling.
  *
  * @param userId - The customer's user_id
  * @param subscriptionId - The Stripe subscription ID
@@ -567,16 +573,18 @@ export async function handleCancellation(
     if (conversion.status !== 'pending') {
       console.log(`Conversion ${conversion.id} is ${conversion.status}, not deducting commission`);
 
-      // Still mark as cancelled for tracking, but don't deduct commission
+      // For paid/approved conversions, track cancellation WITHOUT changing status
+      // This ensures paid customers still count toward conversion rate even after cancelling
       await supabase
         .from('affiliate_conversions')
         .update({
-          status: 'cancelled',
+          // Don't change status - keep 'paid' or 'approved' to count as conversion
           cancellation_date: new Date().toISOString(),
           cancellation_reason: cancellationReason,
         })
         .eq('id', conversion.id);
 
+      console.log(`✅ Tracked cancellation for ${conversion.status} conversion (status preserved)`);
       return;
     }
 
