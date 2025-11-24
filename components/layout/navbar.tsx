@@ -10,6 +10,7 @@ import { useState, useRef } from 'react'
 interface NavbarProps {
   isAuthenticated: boolean | null
   userEmail: string | null
+  hasSubscription?: boolean
   onSignInClick?: () => void
   onMobileMenuClick?: () => void
   isMobileMenuOpen?: boolean
@@ -175,6 +176,7 @@ const features = [
 export function Navbar({
   isAuthenticated,
   userEmail,
+  hasSubscription = false,
   onSignInClick,
   onMobileMenuClick,
   isMobileMenuOpen = false
@@ -396,7 +398,7 @@ export function Navbar({
             <div className="hidden md:flex items-center space-x-4">
               {isAuthenticated === null ? (
                 <div className="w-48 h-10 animate-pulse bg-gray-100 rounded-lg" />
-              ) : isAuthenticated ? (
+              ) : isAuthenticated && hasSubscription ? (
                 <Button
                   variant="outline"
                   onClick={() => router.push('/dashboard')}

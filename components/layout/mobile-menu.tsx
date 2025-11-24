@@ -13,6 +13,7 @@ interface MobileMenuProps {
   onClose: () => void
   isAuthenticated: boolean | null
   userEmail: string | null
+  hasSubscription?: boolean
   onSignInClick?: () => void
 }
 
@@ -21,6 +22,7 @@ export function MobileMenu({
   onClose,
   isAuthenticated,
   userEmail,
+  hasSubscription = false,
   onSignInClick
 }: MobileMenuProps) {
   const router = useRouter()
@@ -138,8 +140,8 @@ export function MobileMenu({
           )}
           
           <nav className="px-4 pb-8">
-            {isAuthenticated ? (
-              // Authenticated Menu
+            {isAuthenticated && hasSubscription ? (
+              // Authenticated Menu (with subscription)
               <>
                 <div className="space-y-1 mb-6">
                   <Link

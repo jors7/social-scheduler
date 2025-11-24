@@ -14,6 +14,7 @@ import OAuthRedirectHandler from '@/components/landing/oauth-redirect-handler'
 import HomePageWrapper from '@/components/landing/home-page-wrapper'
 import Script from 'next/script'
 import { createClient } from '@/lib/supabase/client'
+import { getClientSubscription } from '@/lib/subscription/client'
 
 // Keep hero non-lazy for immediate display
 import { HeroWithPlatforms } from '@/components/landing/hero-with-platforms'
@@ -182,25 +183,35 @@ function LandingPageContent({ isAuthenticated, userEmail }: LandingPageContentPr
   const [clientAuth, setClientAuth] = useState<{
     isAuthenticated: boolean
     userEmail: string | null
+    hasSubscription: boolean
     isChecking: boolean
   }>({
     isAuthenticated,
     userEmail,
+    hasSubscription: false,
     isChecking: true // Initially checking
   })
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // Check client-side auth state on mount
+  // Check client-side auth state and subscription on mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
 
+        // If user is authenticated, also check subscription status
+        let hasSubscription = false
+        if (user) {
+          const subscription = await getClientSubscription()
+          hasSubscription = subscription?.hasSubscription ?? false
+        }
+
         setClientAuth({
           isAuthenticated: !!user,
           userEmail: user?.email || null,
+          hasSubscription,
           isChecking: false
         })
       } catch (error) {
@@ -208,6 +219,7 @@ function LandingPageContent({ isAuthenticated, userEmail }: LandingPageContentPr
         setClientAuth({
           isAuthenticated: false,
           userEmail: null,
+          hasSubscription: false,
           isChecking: false
         })
       }
@@ -342,6 +354,7 @@ function LandingPageContent({ isAuthenticated, userEmail }: LandingPageContentPr
       <Navbar
         isAuthenticated={clientAuth.isChecking ? null : clientAuth.isAuthenticated}
         userEmail={clientAuth.userEmail}
+        hasSubscription={clientAuth.hasSubscription}
         onSignInClick={() => setSignInOpen(true)}
         onMobileMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         isMobileMenuOpen={isMobileMenuOpen}
@@ -353,6 +366,7 @@ function LandingPageContent({ isAuthenticated, userEmail }: LandingPageContentPr
         onClose={() => setIsMobileMenuOpen(false)}
         isAuthenticated={clientAuth.isAuthenticated}
         userEmail={clientAuth.userEmail}
+        hasSubscription={clientAuth.hasSubscription}
         onSignInClick={() => setSignInOpen(true)}
       />
 
