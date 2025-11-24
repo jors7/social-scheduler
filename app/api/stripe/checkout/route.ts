@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import Stripe from 'stripe'
 import { SUBSCRIPTION_PLANS, PlanId, BillingCycle } from '@/lib/subscription/plans'
 import { validateStripeKeys } from '@/lib/stripe/validation'
+import { createServiceClient } from '@/lib/supabase/service'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-11-20.acacia' as any,
@@ -45,22 +46,35 @@ export async function POST(request: NextRequest) {
     const referralCode = cookieStore.get('socialcal_referral')?.value
 
     if (referralCode) {
-      console.log('🔗 Affiliate referral detected:', referralCode)
+      console.log('🔗 Affiliate referral detected from cookie:', referralCode)
+      console.log('📊 Cookie value length:', referralCode.length, '| Raw value:', JSON.stringify(referralCode))
 
-      // Look up affiliate by referral code
-      const { data: affiliate } = await supabase
+      // Look up affiliate by referral code using SERVICE ROLE CLIENT
+      // This bypasses RLS policies that would otherwise block anonymous lookups
+      const supabaseService = createServiceClient()
+
+      console.log('🔍 Looking up affiliate with referral_code:', referralCode)
+      const { data: affiliate, error: affiliateError } = await supabaseService
         .from('affiliates')
-        .select('id, referral_code')
+        .select('id, referral_code, status')
         .eq('referral_code', referralCode)
         .eq('status', 'active')
         .single()
 
-      if (affiliate) {
+      if (affiliateError) {
+        console.error('❌ Affiliate lookup error:', affiliateError)
+        console.log('⚠️ Affiliate not found for code:', referralCode)
+      } else if (affiliate) {
         affiliateId = affiliate.id
-        console.log('✅ Affiliate found:', affiliate.id)
+        console.log('✅ Affiliate found successfully!')
+        console.log('  - Affiliate ID:', affiliate.id)
+        console.log('  - Referral Code:', affiliate.referral_code)
+        console.log('  - Status:', affiliate.status)
       } else {
         console.log('⚠️ Affiliate not found for code:', referralCode)
       }
+    } else {
+      console.log('ℹ️ No affiliate referral cookie found')
     }
     // END AFFILIATE TRACKING
     // =====================================================
@@ -152,6 +166,11 @@ export async function POST(request: NextRequest) {
         },
         { status: 500 }
       )
+    }
+
+    // Log affiliate metadata attachment
+    if (affiliateId) {
+      console.log('💼 Attaching affiliate to Stripe session metadata:', affiliateId)
     }
 
     // Create Stripe checkout session
