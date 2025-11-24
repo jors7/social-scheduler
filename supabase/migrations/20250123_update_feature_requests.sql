@@ -24,7 +24,7 @@ VALUES
   ('Content Recycling & Evergreen Posts', 'Automatically repost top-performing content at optimal times with customizable intervals for evergreen content strategies', 'automation', 'submitted', false, 0, NULL),
   ('Social Listening & Keyword Monitoring', 'Track brand mentions, keywords, and trending topics across social platforms to inform content strategy', 'analytics', 'submitted', false, 0, NULL),
   ('Automated Reporting & Export', 'Schedule automated PDF/Excel reports with analytics delivered weekly/monthly via email', 'analytics', 'submitted', false, 0, NULL)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (title, is_custom) DO NOTHING;
 
 -- ============================================================================
 -- STEP 3: Insert completed features (for roadmap "Recently Completed" section)
@@ -36,7 +36,7 @@ VALUES
   ('Content Calendar View', 'Visual drag-and-drop calendar for managing and rescheduling posts across all platforms', 'posting', 'completed', false, 0, NULL, '2025-10-05 00:00:00+00'),
   ('Post Templates Library', 'Save and reuse post templates with custom placeholders for faster content creation', 'posting', 'completed', false, 0, NULL, '2025-11-02 00:00:00+00'),
   ('Affiliate Program', 'Complete referral program with 30% recurring commissions, automatic tracking, affiliate dashboard, and PayPal payout integration for monetizing word-of-mouth growth', 'integration', 'completed', false, 0, NULL, '2025-11-24 00:00:00+00')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (title, is_custom) DO NOTHING;
 
 -- ============================================================================
 -- STEP 4: Update Mobile App status to 'planned'
@@ -54,7 +54,7 @@ AND is_custom = false;
 INSERT INTO feature_requests (title, description, category, status, priority, is_custom, vote_count, requested_by)
 VALUES
   ('Social Media Analytics Profile Selection', 'Choose specific profiles under each platform to view targeted analytics. Perfect for agencies and users managing multiple accounts - filter analytics by specific Facebook pages, Instagram accounts, or other platform profiles instead of viewing aggregated data from all accounts.', 'analytics', 'in_progress', 'high', false, 0, NULL)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (title, is_custom) DO NOTHING;
 
 -- ============================================================================
 -- VERIFICATION: Check the results

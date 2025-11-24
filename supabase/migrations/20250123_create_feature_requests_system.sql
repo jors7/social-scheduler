@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS feature_requests (
   estimated_completion_date TIMESTAMP WITH TIME ZONE,
   completed_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  CONSTRAINT unique_feature_title_per_type UNIQUE (title, is_custom)
 );
 
 -- Feature Votes Table (prevent duplicate voting)
@@ -279,7 +280,7 @@ VALUES
   ('Team Approval Workflow', 'Require team member approval before scheduled posts go live with comment threads', 'collaboration', 'submitted', false, 0, NULL),
   ('Dark Mode', 'Full dark mode support across the entire application for better viewing at night', 'ui_ux', 'submitted', false, 0, NULL),
   ('Advanced Analytics Dashboard', 'Detailed insights including engagement trends, best posting times, audience demographics', 'analytics', 'submitted', false, 0, NULL)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (title, is_custom) DO NOTHING;
 
 -- Insert completed features (already implemented in the app)
 INSERT INTO feature_requests (title, description, category, status, is_custom, vote_count, requested_by, completed_at)
@@ -288,13 +289,13 @@ VALUES
   ('Content Calendar View', 'Visual drag-and-drop calendar for managing and rescheduling posts across all platforms', 'posting', 'completed', false, 0, NULL, '2025-10-05 00:00:00+00'),
   ('Post Templates Library', 'Save and reuse post templates with custom placeholders for faster content creation', 'posting', 'completed', false, 0, NULL, '2025-11-02 00:00:00+00'),
   ('Affiliate Program', 'Complete referral program with 30% recurring commissions, automatic tracking, affiliate dashboard, and PayPal payout integration for monetizing word-of-mouth growth', 'integration', 'completed', false, 0, NULL, '2025-11-24 00:00:00+00')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (title, is_custom) DO NOTHING;
 
 -- Insert in-progress features (currently being developed)
 INSERT INTO feature_requests (title, description, category, status, priority, is_custom, vote_count, requested_by)
 VALUES
   ('Social Media Analytics Profile Selection', 'Choose specific profiles under each platform to view targeted analytics. Perfect for agencies and users managing multiple accounts - filter analytics by specific Facebook pages, Instagram accounts, or other platform profiles instead of viewing aggregated data from all accounts.', 'analytics', 'in_progress', 'high', false, 0, NULL)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (title, is_custom) DO NOTHING;
 
 -- ============================================================================
 -- COMMENTS

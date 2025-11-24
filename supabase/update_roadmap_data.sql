@@ -38,7 +38,7 @@ WHERE title = 'Post Templates Library'
 INSERT INTO feature_requests (title, description, category, status, is_custom, vote_count, requested_by, completed_at)
 VALUES
   ('Affiliate Program', 'Complete referral program with 30% recurring commissions, automatic tracking, affiliate dashboard, and PayPal payout integration for monetizing word-of-mouth growth', 'integration', 'completed', false, 0, NULL, '2025-11-24 00:00:00+00')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (title, is_custom) DO NOTHING;
 
 -- ============================================================================
 -- STEP 2: Update Mobile App Status to Planned
@@ -59,7 +59,23 @@ WHERE title = 'Mobile App'
 INSERT INTO feature_requests (title, description, category, status, priority, is_custom, vote_count, requested_by)
 VALUES
   ('Social Media Analytics Profile Selection', 'Choose specific profiles under each platform to view targeted analytics. Perfect for agencies and users managing multiple accounts - filter analytics by specific Facebook pages, Instagram accounts, or other platform profiles instead of viewing aggregated data from all accounts.', 'analytics', 'in_progress', 'high', false, 0, NULL)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (title, is_custom) DO NOTHING;
+
+-- ============================================================================
+-- STEP 4: Add unique constraint to prevent duplicate features
+-- ============================================================================
+
+-- Add constraint if it doesn't exist (prevents duplicate titles per type)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'unique_feature_title_per_type'
+  ) THEN
+    ALTER TABLE feature_requests
+    ADD CONSTRAINT unique_feature_title_per_type
+    UNIQUE (title, is_custom);
+  END IF;
+END $$;
 
 -- ============================================================================
 -- VERIFICATION: Check the results
