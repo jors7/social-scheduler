@@ -50,6 +50,20 @@ export default function AffiliateSignupPage() {
     return errors;
   };
 
+  const normalizeWebsiteUrl = (url: string): string => {
+    if (!url) return '';
+    const trimmed = url.trim();
+    if (!trimmed) return '';
+
+    // If it already has a protocol, return as-is
+    if (/^https?:\/\//i.test(trimmed)) {
+      return trimmed;
+    }
+
+    // Otherwise, prepend https://
+    return `https://${trimmed}`;
+  };
+
   const handlePasswordChange = (password: string) => {
     setFormData({ ...formData, password });
     setPasswordErrors(validatePassword(password));
@@ -299,9 +313,13 @@ export default function AffiliateSignupPage() {
                   id="website"
                   value={formData.website}
                   onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                  onBlur={(e) => setFormData({ ...formData, website: normalizeWebsiteUrl(e.target.value) })}
                   className="w-full px-4 py-2 bg-white/10 border border-gray-300/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="https://example.com"
                 />
+                <p className="mt-1 text-xs text-gray-400">
+                  We&apos;ll automatically add https:// if needed
+                </p>
               </div>
             </div>
 
@@ -427,6 +445,11 @@ export default function AffiliateSignupPage() {
                         onChange={(e) => {
                           const newProfiles = [...formData.social_media_profiles];
                           newProfiles[index].url = e.target.value;
+                          setFormData({ ...formData, social_media_profiles: newProfiles });
+                        }}
+                        onBlur={(e) => {
+                          const newProfiles = [...formData.social_media_profiles];
+                          newProfiles[index].url = normalizeWebsiteUrl(e.target.value);
                           setFormData({ ...formData, social_media_profiles: newProfiles });
                         }}
                         className="w-full px-3 py-2 bg-white/10 border border-gray-300/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
