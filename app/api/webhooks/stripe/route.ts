@@ -648,6 +648,42 @@ export async function POST(request: NextRequest) {
                   } else {
                     console.log('✅ Affiliate conversion recorded:', conversion.id)
 
+                    // Mark the affiliate click as converted for attribution tracking
+                    try {
+                      // Find the most recent unconverted click for this affiliate (within 30 days)
+                      const thirtyDaysAgo = new Date()
+                      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+                      const { data: recentClick, error: clickError } = await supabaseAdmin
+                        .from('affiliate_clicks')
+                        .select('id')
+                        .eq('affiliate_id', affiliate.id)
+                        .eq('converted', false)
+                        .gte('created_at', thirtyDaysAgo.toISOString())
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .single()
+
+                      if (recentClick && !clickError) {
+                        // Update the click record to mark as converted
+                        const { error: updateClickError } = await supabaseAdmin
+                          .from('affiliate_clicks')
+                          .update({ converted: true })
+                          .eq('id', recentClick.id)
+
+                        if (updateClickError) {
+                          console.error('❌ Error updating affiliate click:', updateClickError)
+                        } else {
+                          console.log('✅ Affiliate click marked as converted:', recentClick.id)
+                        }
+                      } else {
+                        console.log('ℹ️ No unconverted click found for this conversion (may be direct signup)')
+                      }
+                    } catch (clickAttributionError) {
+                      console.error('❌ Error with click attribution:', clickAttributionError)
+                      // Don't throw - conversion is recorded, this is just for analytics
+                    }
+
                     // Update affiliate earnings
                     const { error: updateError } = await supabaseAdmin
                       .from('affiliates')
