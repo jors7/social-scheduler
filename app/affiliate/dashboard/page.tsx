@@ -44,6 +44,16 @@ interface Click {
   converted: boolean;
 }
 
+interface PayoutHistory {
+  id: string;
+  amount: number;
+  status: string;
+  payout_method: string;
+  requested_at: string;
+  processed_at: string | null;
+  paypal_batch_id: string | null;
+}
+
 // Helper function to extract domain from URL
 function extractDomain(url: string | null): string {
   if (!url) return 'Direct';
@@ -75,6 +85,7 @@ export default function AffiliateDashboard() {
   const [stats, setStats] = useState<Stats>({ total_conversions: 0, total_clicks: 0, conversion_rate: 0 });
   const [conversions, setConversions] = useState<Conversion[]>([]);
   const [clicks, setClicks] = useState<Click[]>([]);
+  const [payoutHistory, setPayoutHistory] = useState<PayoutHistory[]>([]);
   const [payoutAmount, setPayoutAmount] = useState('');
   const [requestingPayout, setRequestingPayout] = useState(false);
 
@@ -163,6 +174,16 @@ export default function AffiliateDashboard() {
         .limit(20);
 
       setClicks(clicksData || []);
+
+      // Get payout history
+      const { data: payoutData } = await supabase
+        .from('affiliate_payouts')
+        .select('id, amount, status, payout_method, requested_at, processed_at, paypal_batch_id')
+        .eq('affiliate_id', affiliate.id)
+        .order('requested_at', { ascending: false })
+        .limit(10);
+
+      setPayoutHistory(payoutData || []);
 
     } catch (error) {
       console.error('Error loading dashboard:', error);
@@ -535,6 +556,88 @@ export default function AffiliateDashboard() {
                         }`}>
                           {click.converted ? 'Converted' : 'Not converted'}
                         </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        {/* Payout History */}
+        <div className="bg-white rounded-lg shadow mt-8">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">Payout History</h2>
+            <p className="text-sm text-gray-500 mt-1">Track your payout requests and transactions</p>
+          </div>
+
+          <div className="overflow-x-auto">
+            {payoutHistory.length === 0 ? (
+              <div className="px-6 py-12 text-center text-gray-500">
+                <CurrencyDollarIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>No payout requests yet</p>
+                <p className="text-sm mt-2">Request a payout when your pending balance reaches $50</p>
+              </div>
+            ) : (
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date Requested
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Method
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Processed Date
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {payoutHistory.map((payout) => (
+                    <tr key={payout.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {new Date(payout.requested_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        ${payout.amount.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {payout.payout_method === 'paypal' ? 'PayPal' : payout.payout_method}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          payout.status === 'completed'
+                            ? 'bg-green-100 text-green-800'
+                            : payout.status === 'processing'
+                            ? 'bg-blue-100 text-blue-800'
+                            : payout.status === 'pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {payout.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {payout.processed_at
+                          ? new Date(payout.processed_at).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })
+                          : '-'
+                        }
                       </td>
                     </tr>
                   ))}

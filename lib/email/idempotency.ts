@@ -43,6 +43,7 @@ export type EmailType =
   | 'affiliate_application_submitted'
   | 'affiliate_application_rejected'
   | 'affiliate_payout_processed'
+  | 'affiliate_payout_requested'
   | 'affiliate_trial_started'
   | 'affiliate_commission_earned'
   | 'affiliate_first_commission'

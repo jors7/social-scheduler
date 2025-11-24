@@ -405,6 +405,10 @@ async function sendEmailFromQueue(email: any): Promise<{
         const { default: AffiliateConversionCancelledEmail } = await import('./templates/affiliate-conversion-cancelled');
         emailTemplate = AffiliateConversionCancelledEmail(email.template_data);
         break;
+      case 'affiliate_payout_requested':
+        const { default: AffiliatePayoutRequestedEmail } = await import('./templates/affiliate-payout-requested');
+        emailTemplate = AffiliatePayoutRequestedEmail(email.template_data);
+        break;
       default:
         return {
           success: false,
