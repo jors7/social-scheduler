@@ -408,6 +408,8 @@ export default function AdminAffiliatesPage() {
     const confirmed = confirm('Are you sure you want to suspend this affiliate?');
     if (!confirmed) return;
 
+    console.log('Suspending affiliate:', affiliateId);
+
     try {
       const response = await fetch('/api/admin/affiliates/status', {
         method: 'POST',
@@ -419,12 +421,15 @@ export default function AdminAffiliatesPage() {
         }),
       });
 
+      console.log('Response status:', response.status);
       const data = await response.json();
+      console.log('Response data:', data);
 
       if (data.success) {
         toast.success('Affiliate suspended successfully');
-        loadAffiliates();
+        await loadAffiliates();
       } else {
+        console.error('API error:', data.error);
         toast.error(data.error || 'Failed to suspend affiliate');
       }
     } catch (error) {
