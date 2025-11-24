@@ -216,6 +216,56 @@ function LandingPageContent({ isAuthenticated, userEmail }: LandingPageContentPr
     checkAuth()
   }, [])
 
+  // Track affiliate clicks
+  useEffect(() => {
+    const trackAffiliateClick = async () => {
+      try {
+        // Check if we've already tracked this session
+        const hasTracked = sessionStorage.getItem('affiliate_click_tracked')
+        if (hasTracked) {
+          return
+        }
+
+        // Get referral code from cookie
+        const cookies = document.cookie.split(';')
+        let referralCode: string | null = null
+
+        for (const cookie of cookies) {
+          const [name, value] = cookie.trim().split('=')
+          if (name === 'socialcal_referral') {
+            referralCode = value
+            break
+          }
+        }
+
+        // If no referral code, nothing to track
+        if (!referralCode) {
+          return
+        }
+
+        // Call API to record click
+        const response = await fetch('/api/affiliate/track-click', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ referralCode }),
+        })
+
+        if (response.ok) {
+          // Mark as tracked for this session
+          sessionStorage.setItem('affiliate_click_tracked', 'true')
+          console.log('Affiliate click tracked successfully')
+        }
+      } catch (error) {
+        // Silently fail - don't break page load
+        console.error('Error tracking affiliate click:', error)
+      }
+    }
+
+    trackAffiliateClick()
+  }, [])
+
   useEffect(() => {
     // Check URL parameters for modal triggers and scrolling
     const shouldOpenSignIn = searchParams.get('signin') === 'true'
