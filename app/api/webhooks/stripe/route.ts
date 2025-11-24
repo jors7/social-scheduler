@@ -229,6 +229,59 @@ export async function POST(request: NextRequest) {
             } else {
               console.log('Trial start recorded in payment history')
             }
+
+            // Check if this signup came from an affiliate referral
+            const affiliate_id = session.metadata?.affiliate_id || (subscription as any).metadata?.affiliate_id
+
+            if (affiliate_id) {
+              console.log('📧 Trial signup via affiliate, queuing notification:', affiliate_id)
+
+              try {
+                // Get affiliate details
+                const { data: affiliate } = await supabaseAdmin
+                  .from('affiliates')
+                  .select('id, user_id, referral_code')
+                  .eq('id', affiliate_id)
+                  .eq('status', 'active')
+                  .single()
+
+                if (affiliate) {
+                  // Get affiliate user email
+                  const { data: affiliateUserData } = await supabaseAdmin.auth.admin.getUserById(affiliate.user_id)
+
+                  if (affiliateUserData?.user?.email) {
+                    // Queue trial started notification
+                    await supabaseAdmin.from('pending_emails').insert({
+                      user_id: affiliate.user_id,
+                      email_to: affiliateUserData.user.email,
+                      email_type: 'affiliate_trial_started',
+                      subject: 'New Trial Signup via Your Referral Link!',
+                      template_data: {
+                        affiliate_name: affiliateUserData.user.user_metadata?.full_name || affiliateUserData.user.email?.split('@')[0] || 'there',
+                        plan_name: planName,
+                        trial_days: 7,
+                        referral_code: affiliate.referral_code,
+                        dashboard_url: `${process.env.NEXT_PUBLIC_APP_URL}/affiliate/dashboard`
+                      },
+                      metadata: {
+                        session_id: session.id,
+                        affiliate_id: affiliate.id,
+                        customer_user_id: user_id
+                      }
+                    })
+
+                    console.log('✅ Affiliate trial notification queued for:', affiliateUserData.user.email)
+                  } else {
+                    console.log('⚠️ Affiliate user has no email, skipping notification')
+                  }
+                } else {
+                  console.log('⚠️ Affiliate not found or inactive:', affiliate_id)
+                }
+              } catch (affiliateError) {
+                console.error('❌ Error queuing affiliate trial notification:', affiliateError)
+                // Don't throw - trial notification is not critical
+              }
+            }
           }
         }
         break
@@ -611,7 +664,7 @@ export async function POST(request: NextRequest) {
                 // Get affiliate details
                 const { data: affiliate } = await supabaseAdmin
                   .from('affiliates')
-                  .select('id, commission_rate, total_earnings, pending_balance')
+                  .select('id, user_id, commission_rate, total_earnings, pending_balance')
                   .eq('id', affiliate_id)
                   .eq('status', 'active')
                   .single()
@@ -702,7 +755,7 @@ export async function POST(request: NextRequest) {
                         new_pending: affiliate.pending_balance + commissionAmount
                       })
 
-                      // TODO: Queue commission earned email to affiliate
+                      // Queue commission earned email to affiliate
                       // Check if this is their first commission
                       const { count } = await supabaseAdmin
                         .from('affiliate_conversions')
@@ -712,25 +765,42 @@ export async function POST(request: NextRequest) {
 
                       const isFirstCommission = count === 1
 
-                      // Queue email notification
-                      try {
-                        await supabaseAdmin.from('pending_emails').insert({
-                          email_type: isFirstCommission ? 'affiliate_first_commission' : 'affiliate_commission_earned',
-                          to_email: '', // TODO: Get affiliate email from user_id
-                          subject: isFirstCommission
-                            ? '🎉 Your First Commission!'
-                            : `You Earned $${commissionAmount}!`,
-                          email_data: {
-                            affiliate_id: affiliate.id,
-                            commission_amount: commissionAmount,
-                            payment_amount: paymentAmount,
-                            commission_rate: commissionRate,
-                            pending_balance: affiliate.pending_balance + commissionAmount,
-                            is_first_commission: isFirstCommission
-                          }
-                        })
-                      } catch (err) {
-                        console.error('Error queuing affiliate commission email:', err)
+                      // Get affiliate user email
+                      const { data: affiliateUserData } = await supabaseAdmin.auth.admin.getUserById(affiliate.user_id)
+
+                      if (affiliateUserData?.user?.email) {
+                        // Queue email notification
+                        try {
+                          await supabaseAdmin.from('pending_emails').insert({
+                            user_id: affiliate.user_id,
+                            email_to: affiliateUserData.user.email,
+                            email_type: isFirstCommission ? 'affiliate_first_commission' : 'affiliate_commission_earned',
+                            subject: isFirstCommission
+                              ? 'Congratulations on Your First Commission!'
+                              : `You Earned $${commissionAmount.toFixed(2)}!`,
+                            template_data: {
+                              affiliate_name: affiliateUserData.user.user_metadata?.full_name || affiliateUserData.user.email?.split('@')[0] || 'there',
+                              commission_amount: commissionAmount,
+                              payment_amount: paymentAmount,
+                              commission_rate: commissionRate,
+                              pending_balance: affiliate.pending_balance + commissionAmount,
+                              total_earnings: affiliate.total_earnings + commissionAmount,
+                              is_first_commission: isFirstCommission,
+                              dashboard_url: `${process.env.NEXT_PUBLIC_APP_URL}/affiliate/dashboard`
+                            },
+                            metadata: {
+                              affiliate_id: affiliate.id,
+                              invoice_id: invoice.id,
+                              customer_user_id: userId
+                            }
+                          })
+
+                          console.log('✅ Commission email queued for:', affiliateUserData.user.email)
+                        } catch (err) {
+                          console.error('Error queuing affiliate commission email:', err)
+                        }
+                      } else {
+                        console.log('⚠️ Affiliate user has no email, skipping commission notification')
                       }
                     }
                   }

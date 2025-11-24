@@ -392,6 +392,15 @@ async function sendEmailFromQueue(email: any): Promise<{
         const { default: AffiliatePayoutEmail } = await import('./templates/affiliate-payout-processed');
         emailTemplate = AffiliatePayoutEmail(email.template_data);
         break;
+      case 'affiliate_trial_started':
+        const { default: AffiliateTrialStartedEmail } = await import('./templates/affiliate-trial-started');
+        emailTemplate = AffiliateTrialStartedEmail(email.template_data);
+        break;
+      case 'affiliate_commission_earned':
+      case 'affiliate_first_commission':
+        const { default: AffiliateCommissionEarnedEmail } = await import('./templates/affiliate-commission-earned');
+        emailTemplate = AffiliateCommissionEarnedEmail(email.template_data);
+        break;
       default:
         return {
           success: false,
