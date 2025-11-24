@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import {
   getAffiliateIdFromCode,
   collectTrackingData,
@@ -10,6 +10,12 @@ import {
 // =====================================================
 // Records a click when someone visits via a referral link
 // Called by the landing page when it detects a referral cookie
+//
+// SECURITY NOTE: This endpoint uses the service role client because:
+// - Click tracking must work for anonymous (unauthenticated) visitors
+// - RLS policies on affiliate_clicks table require service role to insert
+// - The endpoint is public but validated (requires valid referral code)
+// - IP-based deduplication prevents abuse
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,8 +31,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Initialize Supabase client
-    const supabase = createClient();
+    // Initialize Supabase service client (bypasses RLS for anonymous click tracking)
+    const supabase = createServiceClient();
 
     // Look up affiliate by referral code
     const affiliateId = await getAffiliateIdFromCode(referralCode, supabase);
