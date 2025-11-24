@@ -21,9 +21,11 @@ ORDER BY created_at;
 DELETE FROM feature_requests
 WHERE title = 'Social Media Analytics Profile Selection'
 AND id NOT IN (
-  SELECT MIN(id) FROM feature_requests
+  -- Keep the one with votes, or if both have same votes, keep the oldest
+  SELECT id FROM feature_requests
   WHERE title = 'Social Media Analytics Profile Selection'
-  GROUP BY title
+  ORDER BY vote_count DESC, created_at ASC
+  LIMIT 1
 );
 
 -- ============================================================================
