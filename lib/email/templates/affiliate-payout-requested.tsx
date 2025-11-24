@@ -66,7 +66,7 @@ export default function AffiliatePayoutRequestedEmail({
 
           <Text style={footer}>
             To process this payout, log in to your admin dashboard and navigate to the Payouts tab.
-            Select the pending payout and click "Process Payouts" to send payment via PayPal.
+            Select the pending payout and click &quot;Process Payouts&quot; to send payment via PayPal.
           </Text>
 
           <Text style={footerSmall}>
