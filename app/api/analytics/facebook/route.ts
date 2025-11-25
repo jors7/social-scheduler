@@ -189,6 +189,7 @@ export async function GET(request: NextRequest) {
           
           const postResults = await Promise.all(postPromises);
           let totalVideoViews = 0;
+          let totalPostReach = 0;
           postResults.forEach(postMetrics => {
             if (postMetrics) {
               allMetrics.posts.push(postMetrics);
@@ -198,6 +199,10 @@ export async function GET(request: NextRequest) {
               if (postMetrics.views) {
                 totalVideoViews += postMetrics.views;
                 console.log(`[Facebook Analytics] Added video views from post ${postMetrics.id}: ${postMetrics.views}`);
+              }
+              // Aggregate post-level reach
+              if (postMetrics.reach) {
+                totalPostReach += postMetrics.reach;
               }
             }
           });
@@ -237,15 +242,19 @@ export async function GET(request: NextRequest) {
               console.error(`[Facebook Analytics] Error fetching page_media_view:`, metricError);
             }
 
-            // page_media_view represents unique views (equivalent to old page_impressions_unique)
-            allMetrics.totalReach = pageMediaViews; // Use media views as reach
-            allMetrics.totalImpressions = pageMediaViews + totalVideoViews; // Combine page views + video views
+            // Use post-level reach as primary source (more accurate), fall back to page-level if unavailable
+            // Post-level metrics include both video and non-video content
+            const calculatedReach = totalPostReach > 0 ? totalPostReach : pageMediaViews;
+
+            allMetrics.totalReach = calculatedReach;
+            allMetrics.totalImpressions = calculatedReach;
 
             console.log(`[Facebook Analytics] ============ FINAL TOTALS ============`);
+            console.log(`[Facebook Analytics] Post-Level Reach (aggregated): ${totalPostReach}`);
             console.log(`[Facebook Analytics] Page Media Views (non-video): ${pageMediaViews}`);
             console.log(`[Facebook Analytics] Video Views: ${totalVideoViews}`);
-            console.log(`[Facebook Analytics] Combined Total Views: ${allMetrics.totalImpressions}`);
-            console.log(`[Facebook Analytics] Total Reach: ${allMetrics.totalReach}`);
+            console.log(`[Facebook Analytics] Final Calculated Reach: ${calculatedReach}`);
+            console.log(`[Facebook Analytics] Total Impressions: ${allMetrics.totalImpressions}`);
             console.log(`[Facebook Analytics] =======================================`);
           } catch (pageError) {
             console.error(`[Facebook Analytics] Error fetching page-level metrics:`, pageError);
