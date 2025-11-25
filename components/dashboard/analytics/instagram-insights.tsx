@@ -73,27 +73,30 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
   const fetchInstagramInsights = async (accountId?: string) => {
     try {
       setLoading(true)
-      
+
+      // Declare accountToUse at function level so it's accessible throughout
+      let accountToUse: any = null
+
       // Check if Instagram account is connected
       const accountResponse = await fetch('/api/social-accounts')
       if (accountResponse.ok) {
         const accounts = await accountResponse.json()
         const instagramAccountsList = accounts.filter((acc: any) => acc.platform === 'instagram' && acc.is_active)
-        
+
         if (instagramAccountsList.length === 0) {
           setHasInstagramAccount(false)
           return
         }
-        
+
         setHasInstagramAccount(true)
         setInstagramAccounts(instagramAccountsList)
-        
+
         // Select account to use
-        const accountToUse = accountId 
-          ? instagramAccountsList.find((acc: any) => acc.id === accountId) 
-          : selectedAccount 
+        accountToUse = accountId
+          ? instagramAccountsList.find((acc: any) => acc.id === accountId)
+          : selectedAccount
           || instagramAccountsList[0]
-        
+
         setSelectedAccount(accountToUse)
       } else {
         return
