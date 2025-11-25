@@ -259,7 +259,7 @@ export function TopPosts({ analyticsData, posts }: TopPostsProps) {
                 </div>
                 <div className="flex items-center space-x-1">
                   <Eye className="h-3 w-3" />
-                  <span title={post.reach === null ? "Per-post reach/views data not available for non-video Facebook posts" : (post.platforms.includes('facebook') && post.reach > 0) ? "Video views" : "Reach"}>
+                  <span title={post.reach === null ? "Per-post data not available for Instagram cross-posts due to Facebook API restrictions" : (post.platforms.includes('facebook') && post.reach > 0) ? "Video views" : "Reach"}>
                     {post.reach !== null ? post.reach.toLocaleString() : 'N/A'}
                   </span>
                 </div>

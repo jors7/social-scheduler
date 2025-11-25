@@ -88,11 +88,9 @@ export async function GET(request: NextRequest) {
       if (!account.access_token) continue;
 
       try {
-        // Get posts from the page using /feed endpoint instead of /posts
-        // /feed includes cross-posted content from Instagram which /posts excludes
-        // This should expose engagement data for Instagram cross-posts
-        const postsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/feed?fields=id,message,created_time,permalink_url,likes.summary(true),comments.summary(true),shares,reactions.summary(true)&limit=25&access_token=${account.access_token}`;
-        console.log(`[Facebook Analytics] Fetching posts from: ${account.platform_user_id} using /feed endpoint`);
+        // Get posts from the page
+        const postsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url,likes.summary(true),comments.summary(true),shares,reactions.summary(true)&limit=25&access_token=${account.access_token}`;
+        console.log(`[Facebook Analytics] Fetching posts from: ${account.platform_user_id}`);
         const postsResponse = await fetchWithTimeout(postsUrl, 10000); // 10 second timeout
 
         if (!postsResponse.ok) {
@@ -135,32 +133,12 @@ export async function GET(request: NextRequest) {
         // For videos, we also fetch from /videos endpoint as a fallback/preference
         const postPromises = allPosts.map(async (post: any) => {
             try {
-              // DEBUG: Log the raw post structure to see what Facebook is actually returning
-              console.log(`[Facebook Analytics] DEBUG Post ${post.id}:`, {
-                hasLikes: !!post.likes,
-                likesStructure: post.likes,
-                hasComments: !!post.comments,
-                commentsStructure: post.comments,
-                hasShares: !!post.shares,
-                sharesStructure: post.shares,
-                hasReactions: !!post.reactions,
-                reactionsStructure: post.reactions
-              });
-
               // Extract engagement data directly from post object (already included in the posts API response)
               // This eliminates 25 separate API calls and prevents silent failures
               const likes = post.likes?.summary?.total_count ?? 0;
               const comments = post.comments?.summary?.total_count ?? 0;
               const shares = post.shares?.count ?? 0;
               const reactions = post.reactions?.summary?.total_count ?? 0;
-
-              console.log(`[Facebook Analytics] DEBUG Post ${post.id} engagement extracted:`, {
-                likes,
-                comments,
-                shares,
-                reactions,
-                total: likes + comments + shares + reactions
-              });
 
               // Fetch post-level views using post_media_view metric (Meta's replacement for post_impressions)
               let postViews = null;
