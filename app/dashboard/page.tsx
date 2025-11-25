@@ -489,15 +489,17 @@ function DashboardContent() {
     setFetchingAnalytics(true)
     try {
       // Fetch data from all platforms in parallel (last 7 days for dashboard)
+      // Add cache-busting to ensure fresh data matches Analytics page
       console.log('[Dashboard] Fetching analytics from APIs...')
+      const cacheBust = Date.now();
       const [facebookRes, instagramRes, threadsRes, blueskyRes, pinterestRes, tiktokRes, youtubeRes] = await Promise.all([
-        fetch(`/api/analytics/facebook?days=7`),
-        fetch(`/api/analytics/instagram?days=7`),
-        fetch(`/api/analytics/threads?days=7`),
-        fetch(`/api/analytics/bluesky?days=7`),
-        fetch(`/api/analytics/pinterest?days=7`),
-        fetch(`/api/analytics/tiktok?days=7`),
-        fetch(`/api/analytics/youtube?days=7`)
+        fetch(`/api/analytics/facebook?days=7&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/instagram?days=7&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/threads?days=7&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/bluesky?days=7&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/pinterest?days=7&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/tiktok?days=7&_=${cacheBust}`, { cache: 'no-store' }),
+        fetch(`/api/analytics/youtube?days=7&_=${cacheBust}`, { cache: 'no-store' })
       ])
 
       const [facebookData, instagramData, threadsData, blueskyData, pinterestData, tiktokData, youtubeData] = await Promise.all([

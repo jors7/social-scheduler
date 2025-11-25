@@ -509,32 +509,8 @@ export default function AnalyticsPage() {
       const currentPeriodPosts = allPosts.filter(post => {
         const dateField = post.created_time || post.timestamp || post.createdAt || post.created_at;
         const postDate = new Date(dateField);
-        const isInRange = postDate >= currentPeriodStart && postDate <= new Date();
-
-        // Debug logging for all posts
-        const daysAgo = Math.floor((new Date().getTime() - postDate.getTime()) / (1000 * 60 * 60 * 24));
-        console.log(`[Analytics Filter] ${isInRange ? '✓ Including' : '✗ Excluding'} ${post.platform} post (${daysAgo} days ago):`, {
-          id: post.id,
-          dateField,
-          postDate: postDate.toISOString(),
-          currentPeriodStart: currentPeriodStart.toISOString(),
-          daysAgo,
-          isInRange
-        });
-
-        return isInRange;
+        return postDate >= currentPeriodStart && postDate <= new Date();
       });
-
-      // Debug: Log filtering results by platform
-      const platforms = ['facebook', 'instagram', 'threads', 'bluesky', 'pinterest', 'tiktok', 'youtube'];
-      platforms.forEach(platform => {
-        const beforeFilter = allPosts.filter(p => p.platform === platform).length;
-        const afterFilter = currentPeriodPosts.filter(p => p.platform === platform).length;
-        if (beforeFilter > 0) {
-          console.log(`[Analytics Filter] ${platform}: ${beforeFilter} fetched → ${afterFilter} after filtering`);
-        }
-      });
-      console.log(`[Analytics Filter] TOTAL: ${allPosts.length} fetched → ${currentPeriodPosts.length} after filtering`);
 
       // Recalculate metrics for current period only by counting filtered posts
       // We fetch double the period for trend comparison, so we must filter to get accurate current period totals
