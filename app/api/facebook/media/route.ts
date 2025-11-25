@@ -65,10 +65,10 @@ export async function GET(request: NextRequest) {
 
     while (nextPostsUrl && postsPageCount < maxPages) {
       try {
-        const response = await fetch(nextPostsUrl);
+        const response: Response = await fetch(nextPostsUrl);
 
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData: any = await response.json();
           console.error(`Failed to fetch Facebook posts page ${postsPageCount + 1}:`, errorData);
 
           // Check if it's a token expiration error
