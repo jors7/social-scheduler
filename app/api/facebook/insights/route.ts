@@ -293,65 +293,11 @@ export async function GET(request: NextRequest) {
         insights.page_views = { value: totalPageViews, previous: 0 };
         console.log(`[${account.display_name || account.username}] Set page views: ${totalPageViews}`);
       }
-      
-      // Try to fetch page-level insights FIRST (before applying defaults)
-      const metricsToTry = [
-        'page_impressions',
-        'page_impressions_unique', 
-        'page_engaged_users',
-        'page_views_total'
-      ];
-      
-      let hasPageLevelInsights = false;
-      
-      for (const metric of metricsToTry) {
-        try {
-          const insightsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/insights?metric=${metric}&period=${period}&access_token=${account.access_token}`;
-          const response = await fetch(insightsUrl);
-          
-          if (response.ok) {
-            const data = await response.json();
-            
-            if (data.data && data.data[0] && data.data[0].values?.length > 0) {
-              const metricData = data.data[0];
-              const latestValue = metricData.values[metricData.values.length - 1]?.value || 0;
-              const previousValue = metricData.values[metricData.values.length - 2]?.value || 0;
-              
-              // Only update if we got real data
-              if (latestValue > 0) {
-                hasPageLevelInsights = true;
-                switch(metric) {
-                  case 'page_impressions':
-                    insights.impressions = { value: latestValue, previous: previousValue };
-                    break;
-                  case 'page_impressions_unique':
-                    insights.reach = { value: latestValue, previous: previousValue };
-                    break;
-                  case 'page_engaged_users':
-                    insights.engagement = { value: latestValue, previous: previousValue };
-                    break;
-                  case 'page_views_total':
-                    insights.page_views = { value: latestValue, previous: previousValue };
-                    break;
-                }
-                console.log(`[${account.display_name || account.username}] ✓ Page-level ${metric} succeeded with value:`, latestValue);
-              }
-            }
-          }
-        } catch (error: any) {
-          console.log(`[${account.display_name || account.username}] Error fetching ${metric}:`, error.message || error);
-        }
-      }
-      
-      // IMPORTANT: Don't overwrite calculated values with zeros
-      if (!hasPageLevelInsights) {
-        console.log(`[${account.display_name || account.username}] No page-level insights available, preserving calculated values`);
-        // The calculated values should already be set in the insights object
-        // Don't reset them to zero!
-      } else {
-        console.log(`[${account.display_name || account.username}] Using page-level insights (overriding calculated values)`);
-      }
-      
+
+      // REMOVED: Deprecated metrics section (page_impressions, page_impressions_unique)
+      // Meta deprecated these APIs in November 2025. We now use page_media_view exclusively.
+      // The old code was overwriting our correct reach values with stale/incorrect data.
+
       // Final safety check - only set zero if value is completely missing
       // But DON'T overwrite non-zero calculated values
       if (insights.impressions === undefined) {
