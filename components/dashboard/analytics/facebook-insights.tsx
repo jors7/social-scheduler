@@ -717,17 +717,15 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={async () => {
-                  setLoadingMore(true)
+                onClick={() => {
                   const newLimit = postsLimit + 5
                   setPostsLimit(newLimit)
-                  // Wait for next useEffect to fetch with new limit
-                  setTimeout(() => setLoadingMore(false), 100)
+                  // Let useEffect handle loading state via setLoading()
                 }}
-                disabled={loadingMore}
+                disabled={loading}
                 className="text-gray-600 hover:text-gray-900"
               >
-                {loadingMore ? (
+                {loading ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                     Loading...
