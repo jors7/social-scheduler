@@ -702,7 +702,7 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
                       <div className="text-center">
                         <div className="flex items-center justify-center gap-1 text-green-600 mb-1">
                           <Eye className="h-3 w-3" />
-                          <span className="text-xs font-semibold">{formatNumber(post.metrics?.impressions || 0)}</span>
+                          <span className="text-xs font-semibold">{formatNumber(post.metrics?.reach || 0)}</span>
                         </div>
                         <p className="text-[10px] text-gray-500">Reach</p>
                       </div>

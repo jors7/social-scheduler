@@ -98,17 +98,22 @@ export async function GET(request: NextRequest) {
             }
           } else {
             const errorData = await response.text();
-            console.error(`[${account.display_name || account.username}] Failed to check permissions:`, errorData);
-            
+
             try {
               const errorJson = JSON.parse(errorData);
               if (errorJson.error) {
-                result.errors.push(errorJson.error.message);
-                console.error(`[${account.display_name || account.username}] Permission check error:`, {
-                  code: errorJson.error.code,
-                  message: errorJson.error.message,
-                  type: errorJson.error.type
-                });
+                // Check if it's the expected Page token error (code 100 with Page in message)
+                if (errorJson.error.code === 100 && errorJson.error.message?.includes('Page')) {
+                  console.log(`[${account.display_name || account.username}] Using page token - skipping user permission check, will rely on API tests`);
+                } else {
+                  console.error(`[${account.display_name || account.username}] Failed to check permissions:`, errorData);
+                  result.errors.push(errorJson.error.message);
+                  console.error(`[${account.display_name || account.username}] Permission check error:`, {
+                    code: errorJson.error.code,
+                    message: errorJson.error.message,
+                    type: errorJson.error.type
+                  });
+                }
               }
             } catch (e) {
               result.errors.push('Failed to check permissions');

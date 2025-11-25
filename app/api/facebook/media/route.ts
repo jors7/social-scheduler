@@ -259,30 +259,43 @@ export async function GET(request: NextRequest) {
               metrics.views = post.initial_metrics.views;
               metrics.impressions = post.initial_metrics.views;
               metrics.reach = Math.floor(post.initial_metrics.views * 0.7);
+              console.log(`[${account.display_name || account.username}] Post ${post.id} - Using video views as initial metrics: ${post.initial_metrics.views}`);
             }
-            
+
             // Try to get post insights for impressions and reach
             try {
               const insightsUrl = `https://graph.facebook.com/v21.0/${post.id}/insights?metric=post_impressions,post_impressions_unique&access_token=${account.access_token}`;
               const insightsResponse = await fetch(insightsUrl);
-              
+
               if (insightsResponse.ok) {
                 const insightsData = await insightsResponse.json();
+                console.log(`[${account.display_name || account.username}] Post ${post.id} insights response:`, JSON.stringify(insightsData, null, 2));
                 if (insightsData.data && Array.isArray(insightsData.data)) {
+                  let hadInsights = false;
                   insightsData.data.forEach((metric: any) => {
                     if (metric.name === 'post_impressions' && metric.values?.[0]) {
                       metrics.impressions = metric.values[0].value || metrics.impressions;
                       metrics.views = metric.values[0].value || metrics.views;
+                      hadInsights = true;
+                      console.log(`[${account.display_name || account.username}] Post ${post.id} - Got impressions from API: ${metric.values[0].value}`);
                     }
                     if (metric.name === 'post_impressions_unique' && metric.values?.[0]) {
                       metrics.reach = metric.values[0].value || metrics.reach;
+                      hadInsights = true;
+                      console.log(`[${account.display_name || account.username}] Post ${post.id} - Got reach from API: ${metric.values[0].value}`);
                     }
                   });
+                  if (!hadInsights) {
+                    console.log(`[${account.display_name || account.username}] ⚠️ NO DATA: Post ${post.id} - API returned empty insights data`);
+                  }
                 }
+              } else {
+                const errorText = await insightsResponse.text();
+                console.error(`[${account.display_name || account.username}] ❌ Insights API failed for post ${post.id}. Status: ${insightsResponse.status}, Response:`, errorText);
               }
             } catch (error) {
               // Insights might not be available, continue with existing metrics
-              console.log('Could not fetch insights for post:', post.id);
+              console.error(`[${account.display_name || account.username}] ❌ Exception fetching insights for post ${post.id}:`, error);
             }
           }
           

@@ -254,9 +254,19 @@ export default function AnalyticsPage() {
           impressions: metrics.totalImpressions
         }
         
-        // Add posts with platform tag
+        // Add posts with platform tag and flatten metrics
         metrics.posts.forEach((post: any) => {
-          allPosts.push({ ...post, platform: 'facebook' })
+          allPosts.push({
+            ...post,
+            platform: 'facebook',
+            // Flatten metrics to root level for consistency
+            reach: post.metrics?.reach || post.reach || 0,
+            impressions: post.metrics?.impressions || post.impressions || 0,
+            engagement: post.metrics?.engagement || post.engagement || 0,
+            likes: post.metrics?.likes || post.likes || 0,
+            comments: post.metrics?.comments || post.comments || 0,
+            shares: post.metrics?.shares || post.shares || 0
+          })
         })
       }
 

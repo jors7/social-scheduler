@@ -123,6 +123,7 @@ export async function GET(request: NextRequest) {
               
               if (insightsResponse.ok) {
                 const insightsData = await insightsResponse.json();
+                console.log(`[${account.display_name || account.username}] Post ${post.id} insights API response:`, JSON.stringify(insightsData, null, 2));
                 if (insightsData.data && Array.isArray(insightsData.data)) {
                   let postHasInsights = false;
                   insightsData.data.forEach((metric: any) => {
@@ -139,24 +140,32 @@ export async function GET(request: NextRequest) {
                       postHasInsights = true;
                     }
                   });
-                  
+
                   // If no insights, estimate from engagement
                   if (!postHasInsights && postEngagement > 0) {
                     const estimatedReach = postEngagement * 10; // Rough estimate
                     const estimatedImpressions = estimatedReach * 2;
                     totalReach += estimatedReach;
                     totalImpressions += estimatedImpressions;
-                    console.log(`[${account.display_name || account.username}] Post ${post.id} - Using estimated metrics from engagement (${postEngagement}): reach=${estimatedReach}, impressions=${estimatedImpressions}`);
+                    console.log(`[${account.display_name || account.username}] ⚠️ FALLBACK: Post ${post.id} - Using estimated metrics from engagement (${postEngagement}): reach=${estimatedReach}, impressions=${estimatedImpressions}`);
+                  } else if (!postHasInsights) {
+                    console.log(`[${account.display_name || account.username}] ⚠️ NO DATA: Post ${post.id} - No insights data and no engagement to estimate from`);
                   }
                 }
               } else {
+                // Log API failure details
+                const errorText = await insightsResponse.text();
+                console.error(`[${account.display_name || account.username}] ❌ Insights API failed for post ${post.id}. Status: ${insightsResponse.status}, Response:`, errorText);
+
                 // If insights API fails, use engagement-based estimates
                 if (postEngagement > 0) {
                   const estimatedReach = postEngagement * 10;
                   const estimatedImpressions = estimatedReach * 2;
                   totalReach += estimatedReach;
                   totalImpressions += estimatedImpressions;
-                  console.log(`[${account.display_name || account.username}] Post ${post.id} - Insights API failed, using estimates from engagement: reach=${estimatedReach}`);
+                  console.log(`[${account.display_name || account.username}] ⚠️ FALLBACK: Post ${post.id} - Insights API failed, using estimates from engagement: reach=${estimatedReach}, impressions=${estimatedImpressions}`);
+                } else {
+                  console.log(`[${account.display_name || account.username}] ⚠️ NO DATA: Post ${post.id} - Insights API failed and no engagement to estimate from`);
                 }
               }
             } catch (error: any) {
@@ -209,12 +218,13 @@ export async function GET(request: NextRequest) {
       }
       
       // Log aggregated values for debugging
-      console.log(`[${account.display_name || account.username}] Aggregated metrics from posts:`, {
-        totalEngagement,
-        totalImpressions,
-        totalReach,
-        totalPageViews
-      });
+      console.log(`[${account.display_name || account.username}] ============ AGGREGATED METRICS SUMMARY ============`);
+      console.log(`[${account.display_name || account.username}] Processed ${fetchedPostsCount} posts from Facebook API`);
+      console.log(`[${account.display_name || account.username}] Total Engagement: ${totalEngagement}`);
+      console.log(`[${account.display_name || account.username}] Total Impressions: ${totalImpressions}`);
+      console.log(`[${account.display_name || account.username}] Total Reach: ${totalReach}`);
+      console.log(`[${account.display_name || account.username}] Total Page Views: ${totalPageViews}`);
+      console.log(`[${account.display_name || account.username}] ==================================================`);
       
       // Enhanced fallback: Properly aggregate post-level metrics
       console.log(`[${account.display_name || account.username}] Applying fallback metrics strategy`);
