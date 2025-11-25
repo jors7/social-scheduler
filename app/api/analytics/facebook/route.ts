@@ -246,8 +246,8 @@ export async function GET(request: NextRequest) {
             // Post-level metrics include both video and non-video content
             const calculatedReach = totalPostReach > 0 ? totalPostReach : pageMediaViews;
 
-            allMetrics.totalReach = calculatedReach;
-            allMetrics.totalImpressions = calculatedReach;
+            allMetrics.totalReach += calculatedReach;
+            allMetrics.totalImpressions += calculatedReach;
 
             console.log(`[Facebook Analytics] ============ FINAL TOTALS ============`);
             console.log(`[Facebook Analytics] Post-Level Reach (aggregated): ${totalPostReach}`);
