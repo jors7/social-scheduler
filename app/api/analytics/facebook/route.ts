@@ -124,22 +124,30 @@ export async function GET(request: NextRequest) {
               try {
                 const insightsUrl = `https://graph.facebook.com/v21.0/${post.id}/insights?metric=post_impressions,post_impressions_unique&access_token=${account.access_token}`;
                 const insightsResponse = await fetchWithTimeout(insightsUrl, 3000);
-                
+
                 if (insightsResponse.ok) {
                   const insightsData = await insightsResponse.json();
+                  console.log(`[Facebook Analytics] Post ${post.id} insights response:`, JSON.stringify(insightsData, null, 2));
                   if (insightsData.data && Array.isArray(insightsData.data)) {
                     insightsData.data.forEach((metric: any) => {
                       if (metric.name === 'post_impressions' && metric.values?.[0]) {
                         impressions = metric.values[0].value || 0;
+                        console.log(`[Facebook Analytics] Post ${post.id} impressions: ${impressions}`);
                       }
                       if (metric.name === 'post_impressions_unique' && metric.values?.[0]) {
                         reach = metric.values[0].value || 0;
+                        console.log(`[Facebook Analytics] Post ${post.id} reach: ${reach}`);
                       }
                     });
+                  } else {
+                    console.log(`[Facebook Analytics] ⚠️ NO DATA: Post ${post.id} - insights data is empty or not an array`);
                   }
+                } else {
+                  const errorText = await insightsResponse.text();
+                  console.error(`[Facebook Analytics] ❌ Insights API failed for post ${post.id}. Status: ${insightsResponse.status}, Response:`, errorText);
                 }
               } catch (insightsError) {
-                console.log(`Insights not available for post ${post.id}`);
+                console.log(`[Facebook Analytics] ⚠️ Exception for post ${post.id}:`, insightsError);
               }
 
               return {
@@ -169,8 +177,16 @@ export async function GET(request: NextRequest) {
               allMetrics.totalEngagement += postMetrics.totalEngagement;
               allMetrics.totalReach += postMetrics.reach;
               allMetrics.totalImpressions += postMetrics.impressions;
+              console.log(`[Facebook Analytics] Added post ${postMetrics.id}: reach=${postMetrics.reach}, impressions=${postMetrics.impressions}`);
             }
           });
+
+          console.log(`[Facebook Analytics] ============ FINAL TOTALS FOR ACCOUNT ============`);
+          console.log(`[Facebook Analytics] Total Posts: ${allMetrics.totalPosts}`);
+          console.log(`[Facebook Analytics] Total Engagement: ${allMetrics.totalEngagement}`);
+          console.log(`[Facebook Analytics] Total Reach: ${allMetrics.totalReach}`);
+          console.log(`[Facebook Analytics] Total Impressions: ${allMetrics.totalImpressions}`);
+          console.log(`[Facebook Analytics] ==================================================`);
       } catch (error) {
         console.error(`Error fetching data for Facebook account ${account.id}:`, error);
       }
