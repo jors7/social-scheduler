@@ -490,20 +490,24 @@ function DashboardContent() {
     try {
       // Fetch data from all platforms in parallel (last 7 days for dashboard)
       console.log('[Dashboard] Fetching analytics from APIs...')
-      const [facebookRes, instagramRes, threadsRes, blueskyRes, pinterestRes] = await Promise.all([
+      const [facebookRes, instagramRes, threadsRes, blueskyRes, pinterestRes, tiktokRes, youtubeRes] = await Promise.all([
         fetch(`/api/analytics/facebook?days=7`),
         fetch(`/api/analytics/instagram?days=7`),
         fetch(`/api/analytics/threads?days=7`),
         fetch(`/api/analytics/bluesky?days=7`),
-        fetch(`/api/analytics/pinterest?days=7`)
+        fetch(`/api/analytics/pinterest?days=7`),
+        fetch(`/api/analytics/tiktok?days=7`),
+        fetch(`/api/analytics/youtube?days=7`)
       ])
 
-      const [facebookData, instagramData, threadsData, blueskyData, pinterestData] = await Promise.all([
+      const [facebookData, instagramData, threadsData, blueskyData, pinterestData, tiktokData, youtubeData] = await Promise.all([
         facebookRes.ok ? facebookRes.json() : { metrics: null },
         instagramRes.ok ? instagramRes.json() : { metrics: null },
         threadsRes.ok ? threadsRes.json() : { metrics: null },
         blueskyRes.ok ? blueskyRes.json() : { metrics: null },
-        pinterestRes.ok ? pinterestRes.json() : { metrics: null }
+        pinterestRes.ok ? pinterestRes.json() : { metrics: null },
+        tiktokRes.ok ? tiktokRes.json() : { metrics: null },
+        youtubeRes.ok ? youtubeRes.json() : { metrics: null }
       ])
 
       // Aggregate all metrics
@@ -559,6 +563,26 @@ function DashboardContent() {
         totalReach += metrics.totalImpressions || metrics.totalReach || 0 // Pinterest uses impressions as reach
         totalImpressions += metrics.totalImpressions || 0
         console.log('[Dashboard] Pinterest metrics:', metrics)
+      }
+
+      // Process TikTok data
+      if (tiktokData.metrics) {
+        const metrics = tiktokData.metrics
+        totalPosts += metrics.totalPosts
+        totalEngagement += metrics.totalEngagement
+        totalReach += metrics.totalViews || metrics.totalReach || 0 // TikTok uses views as reach
+        totalImpressions += metrics.totalViews || 0
+        console.log('[Dashboard] TikTok metrics:', metrics)
+      }
+
+      // Process YouTube data
+      if (youtubeData.metrics) {
+        const metrics = youtubeData.metrics
+        totalPosts += metrics.totalPosts
+        totalEngagement += metrics.totalEngagement
+        totalReach += metrics.totalViews || metrics.totalReach || 0 // YouTube uses views
+        totalImpressions += metrics.totalViews || metrics.totalImpressions || 0
+        console.log('[Dashboard] YouTube metrics:', metrics)
       }
 
       const analyticsData = {
