@@ -112,12 +112,12 @@ export function OverviewCards({ analyticsData, trendData, dateRange = '7' }: Ove
       trendKey: 'totalReach' as keyof TrendData
     },
     {
-      title: 'Impressions',
+      title: 'Views',
       value: analyticsData.totalImpressions > 999 ? `${(analyticsData.totalImpressions / 1000).toFixed(1)}k` : analyticsData.totalImpressions.toLocaleString(),
       change: 'Tracking',
       changeType: analyticsData.totalImpressions > 0 ? 'positive' as const : 'neutral' as const,
       icon: Eye,
-      description: 'views',
+      description: 'content views',
       color: '#10b981', // green
       bgColor: 'bg-green-50',
       borderColor: 'border-green-500',

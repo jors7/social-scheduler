@@ -245,27 +245,30 @@ export default function AnalyticsPage() {
         totalPosts += metrics.totalPosts
         totalEngagement += metrics.totalEngagement
         totalReach += metrics.totalReach
-        totalImpressions += metrics.totalImpressions
-        
+        totalImpressions += metrics.totalImpressions // Now includes video views + page impressions
+
         platformStats.facebook = {
           posts: metrics.totalPosts,
           engagement: metrics.totalEngagement,
           reach: metrics.totalReach,
-          impressions: metrics.totalImpressions
+          impressions: metrics.totalImpressions, // This is now views (video views + page impressions)
+          views: metrics.totalImpressions // Track as views for clarity
         }
-        
+
         // Add posts with platform tag and flatten metrics
         metrics.posts.forEach((post: any) => {
           allPosts.push({
             ...post,
             platform: 'facebook',
             // Flatten metrics to root level for consistency
-            reach: post.metrics?.reach || post.reach || 0,
-            impressions: post.metrics?.impressions || post.impressions || 0,
-            engagement: post.metrics?.engagement || post.engagement || 0,
-            likes: post.metrics?.likes || post.likes || 0,
-            comments: post.metrics?.comments || post.comments || 0,
-            shares: post.metrics?.shares || post.shares || 0
+            reach: post.reach ?? null, // May be null for non-video posts
+            impressions: post.impressions ?? post.views ?? null, // Use views as impressions
+            views: post.views ?? post.impressions ?? null, // Video views if available
+            engagement: post.totalEngagement || 0,
+            likes: post.likes || 0,
+            comments: post.comments || 0,
+            shares: post.shares || 0,
+            reactions: post.reactions || 0
           })
         })
       }

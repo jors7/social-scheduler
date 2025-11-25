@@ -111,8 +111,26 @@ export async function GET(request: NextRequest) {
         console.log(`[Facebook Analytics] Found ${allPosts.length} total posts, ${filteredPosts.length} within ${days} day period`);
         allPosts = filteredPosts;
 
+        // Fetch video data separately to get view counts (Meta's replacement for post_impressions)
+        const videosUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/videos?fields=id,title,description,created_time,views&limit=25&access_token=${account.access_token}`;
+        console.log(`[Facebook Analytics] Fetching videos with view counts from: ${account.platform_user_id}`);
+        const videosResponse = await fetchWithTimeout(videosUrl, 10000);
+
+        // Create a map of video IDs to view counts
+        const videoViewsMap = new Map();
+        if (videosResponse.ok) {
+          const videosData = await videosResponse.json();
+          videosData.data?.forEach((video: any) => {
+            videoViewsMap.set(video.id, video.views || 0);
+            console.log(`[Facebook Analytics] Video ${video.id}: ${video.views || 0} views`);
+          });
+          console.log(`[Facebook Analytics] Found ${videoViewsMap.size} videos with view data`);
+        } else {
+          console.log(`[Facebook Analytics] Videos endpoint not accessible (may not have permission or no videos exist)`);
+        }
+
         // Process all posts - NOTE: post_impressions/post_impressions_unique metrics are DEPRECATED by Meta
-        // We can only get engagement data and video views now. Page-level reach/impressions still work.
+        // We now use video views for video content. Page-level reach/impressions still work for regular posts.
         const postPromises = allPosts.map(async (post: any) => {
             try {
               // Get engagement data - this still works fine
@@ -129,9 +147,8 @@ export async function GET(request: NextRequest) {
                 reactions = engagementData.reactions?.summary?.total_count || 0;
               }
 
-              // Per-post reach/impressions are no longer available from Facebook's API
-              // (post_impressions and post_impressions_unique metrics are deprecated)
-              // We return null for these values and rely on page-level metrics instead
+              // Check if this post has video views data (Meta's replacement for post_impressions)
+              const videoViews = videoViewsMap.get(post.id) || null;
 
               return {
                 id: post.id,
@@ -142,8 +159,9 @@ export async function GET(request: NextRequest) {
                 comments,
                 shares,
                 reactions,
-                reach: null, // No longer available per-post
-                impressions: null, // No longer available per-post
+                reach: null, // No longer available for regular posts
+                impressions: videoViews, // Use video views if available, otherwise null
+                views: videoViews, // Track views separately for clarity
                 totalEngagement: likes + comments + shares + reactions
               };
             } catch (error) {
@@ -153,62 +171,65 @@ export async function GET(request: NextRequest) {
           });
           
           const postResults = await Promise.all(postPromises);
+          let totalVideoViews = 0;
           postResults.forEach(postMetrics => {
             if (postMetrics) {
               allMetrics.posts.push(postMetrics);
               allMetrics.totalPosts++;
               allMetrics.totalEngagement += postMetrics.totalEngagement;
-              // Don't aggregate reach/impressions from posts - they're deprecated
-              // We'll get these from page-level metrics instead
+              // Aggregate video views as impressions
+              if (postMetrics.views) {
+                totalVideoViews += postMetrics.views;
+                console.log(`[Facebook Analytics] Added video views from post ${postMetrics.id}: ${postMetrics.views}`);
+              }
             }
           });
 
           console.log(`[Facebook Analytics] ============ POST-LEVEL TOTALS ============`);
           console.log(`[Facebook Analytics] Total Posts: ${allMetrics.totalPosts}`);
           console.log(`[Facebook Analytics] Total Engagement: ${allMetrics.totalEngagement}`);
-          console.log(`[Facebook Analytics] Note: Reach/Impressions no longer available per-post (deprecated by Meta)`);
+          console.log(`[Facebook Analytics] Total Video Views: ${totalVideoViews}`);
           console.log(`[Facebook Analytics] ==============================================`);
 
-          // Fetch page-level metrics for reach/impressions (these still work!)
+          // Fetch page-level metrics using NEW page_media_view API (replaces deprecated page_impressions)
+          // Meta deprecated page_impressions on November 15, 2025 - page_media_view is the official replacement
           try {
-            console.log(`[Facebook Analytics] Fetching page-level metrics for account ${account.platform_user_id}`);
+            console.log(`[Facebook Analytics] Fetching page-level metrics using new page_media_view API (Meta v24.0+)`);
 
-            const pageMetrics = ['page_impressions', 'page_impressions_unique'];
             const period = 'day';
+            let pageMediaViews = 0;
 
-            for (const metric of pageMetrics) {
-              try {
-                const insightsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/insights?metric=${metric}&period=${period}&since=${sinceTimestamp}&access_token=${account.access_token}`;
-                const response = await fetchWithTimeout(insightsUrl, 5000);
+            try {
+              // Use page_media_view (official replacement for page_impressions as of Nov 2025)
+              const mediaViewUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/insights?metric=page_media_view&period=${period}&since=${sinceTimestamp}&access_token=${account.access_token}`;
+              const response = await fetchWithTimeout(mediaViewUrl, 5000);
 
-                if (response.ok) {
-                  const data = await response.json();
+              if (response.ok) {
+                const data = await response.json();
 
-                  if (data.data && data.data[0] && data.data[0].values) {
-                    // Sum up all values in the period
-                    const total = data.data[0].values.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
-
-                    if (metric === 'page_impressions') {
-                      allMetrics.totalImpressions = total;
-                      console.log(`[Facebook Analytics] Page-level impressions: ${total}`);
-                    } else if (metric === 'page_impressions_unique') {
-                      allMetrics.totalReach = total;
-                      console.log(`[Facebook Analytics] Page-level reach: ${total}`);
-                    }
-                  }
-                } else {
-                  const errorText = await response.text();
-                  console.error(`[Facebook Analytics] Failed to fetch ${metric}:`, errorText);
+                if (data.data && data.data[0] && data.data[0].values) {
+                  // Sum up all values in the period
+                  pageMediaViews = data.data[0].values.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
+                  console.log(`[Facebook Analytics] Page media views (non-video content): ${pageMediaViews}`);
                 }
-              } catch (metricError) {
-                console.error(`[Facebook Analytics] Error fetching ${metric}:`, metricError);
+              } else {
+                const errorText = await response.text();
+                console.error(`[Facebook Analytics] Failed to fetch page_media_view:`, errorText);
               }
+            } catch (metricError) {
+              console.error(`[Facebook Analytics] Error fetching page_media_view:`, metricError);
             }
 
-            console.log(`[Facebook Analytics] ============ PAGE-LEVEL TOTALS ============`);
-            console.log(`[Facebook Analytics] Page Reach: ${allMetrics.totalReach}`);
-            console.log(`[Facebook Analytics] Page Impressions: ${allMetrics.totalImpressions}`);
-            console.log(`[Facebook Analytics] ============================================`);
+            // page_media_view represents unique views (equivalent to old page_impressions_unique)
+            allMetrics.totalReach = pageMediaViews; // Use media views as reach
+            allMetrics.totalImpressions = pageMediaViews + totalVideoViews; // Combine page views + video views
+
+            console.log(`[Facebook Analytics] ============ FINAL TOTALS ============`);
+            console.log(`[Facebook Analytics] Page Media Views (non-video): ${pageMediaViews}`);
+            console.log(`[Facebook Analytics] Video Views: ${totalVideoViews}`);
+            console.log(`[Facebook Analytics] Combined Total Views: ${allMetrics.totalImpressions}`);
+            console.log(`[Facebook Analytics] Total Reach: ${allMetrics.totalReach}`);
+            console.log(`[Facebook Analytics] =======================================`);
           } catch (pageError) {
             console.error(`[Facebook Analytics] Error fetching page-level metrics:`, pageError);
           }

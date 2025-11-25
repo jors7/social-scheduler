@@ -437,11 +437,11 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
             </div>
           )}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {/* Impressions */}
+            {/* Views (replaces Impressions) */}
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Eye className="h-4 w-4 text-purple-500" />
-                <span>Impressions</span>
+                <span title="Video views + Page impressions">Views</span>
               </div>
               <p className="text-2xl font-bold">
                 {formatNumber(pageInsights?.impressions?.value || 0)}

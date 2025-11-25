@@ -46,8 +46,17 @@ export function ReachChart({ analyticsData, dateRange = '30' }: ReachChartProps)
     // Handle different data structures from various platforms
     if (post.platform === 'facebook') {
       dateStr = post.created_time || post.timestamp || ''
-      reach = post.reach || 0
-      impressions = post.impressions || reach || 0
+      // Use views if available (for videos), otherwise use reach/impressions (for page-level data)
+      const videoViews = post.views
+      if (videoViews && videoViews > 0) {
+        // Video post - use views as both reach and impressions
+        impressions = videoViews
+        reach = post.reach || Math.floor(videoViews * 0.7) // Estimate reach as 70% of views if not available
+      } else {
+        // Regular post or page-level data
+        reach = post.reach || 0
+        impressions = post.impressions || reach || 0
+      }
     } else if (post.platform === 'instagram') {
       dateStr = post.timestamp || ''
       reach = post.reach || 0
