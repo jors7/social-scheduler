@@ -48,10 +48,13 @@ export async function GET(request: NextRequest) {
       platform_user_id: account.platform_user_id,
       requestedAccountId: accountId
     });
-    
+
+    // Calculate 30 days ago timestamp for date filtering
+    const since = Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60);
+
     // Prepare URLs for parallel fetching - use simpler attachment fields
-    const postsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url,full_picture,attachments,likes.summary(true),comments.summary(true),shares,reactions.summary(true)&limit=${limit}&access_token=${account.access_token}`;
-    const videosUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/videos?fields=id,title,description,created_time,permalink_url,source,thumbnails,length,from,views,likes.summary(true),comments.summary(true)&limit=${limit}&access_token=${account.access_token}`;
+    const postsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url,full_picture,attachments,likes.summary(true),comments.summary(true),shares,reactions.summary(true)&limit=${limit}&since=${since}&access_token=${account.access_token}`;
+    const videosUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/videos?fields=id,title,description,created_time,permalink_url,source,thumbnails,length,from,views,likes.summary(true),comments.summary(true)&limit=${limit}&since=${since}&access_token=${account.access_token}`;
     
     // Fetch both endpoints in parallel
     const [postsResponse, videosResponse] = await Promise.all([
