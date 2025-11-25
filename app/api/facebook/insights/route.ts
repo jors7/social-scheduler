@@ -116,9 +116,9 @@ export async function GET(request: NextRequest) {
             
             totalEngagement += postEngagement;
             
-            // Try to get insights for impressions and reach (use same metrics as media endpoint)
+            // Try to get insights for views (Meta's replacement for deprecated post_impressions as of Nov 2025)
             try {
-              const insightsUrl = `https://graph.facebook.com/v21.0/${post.id}/insights?metric=post_impressions,post_impressions_unique&access_token=${account.access_token}`;
+              const insightsUrl = `https://graph.facebook.com/v21.0/${post.id}/insights?metric=post_media_view&access_token=${account.access_token}`;
               const insightsResponse = await fetch(insightsUrl);
               
               if (insightsResponse.ok) {
@@ -127,16 +127,11 @@ export async function GET(request: NextRequest) {
                 if (insightsData.data && Array.isArray(insightsData.data)) {
                   let postHasInsights = false;
                   insightsData.data.forEach((metric: any) => {
-                    if (metric.name === 'post_impressions' && metric.values?.[0]) {
+                    if (metric.name === 'post_media_view' && metric.values?.[0]) {
                       const value = metric.values[0].value || 0;
                       totalImpressions += value;
-                      console.log(`[${account.display_name || account.username}] Post ${post.id} impressions: ${value}`);
-                      postHasInsights = true;
-                    }
-                    if (metric.name === 'post_impressions_unique' && metric.values?.[0]) {
-                      const value = metric.values[0].value || 0;
-                      totalReach += value;
-                      console.log(`[${account.display_name || account.username}] Post ${post.id} reach (unique impressions): ${value}`);
+                      totalReach += value; // post_media_view represents both views and unique reach
+                      console.log(`[${account.display_name || account.username}] Post ${post.id} views: ${value}`);
                       postHasInsights = true;
                     }
                   });
@@ -403,18 +398,18 @@ export async function GET(request: NextRequest) {
               if (engagementResponse.ok) {
                 const engagementData = await engagementResponse.json();
                 
-                // Try to get insights
-                const insightsUrl = `https://graph.facebook.com/v21.0/${postId}/insights?metric=post_impressions,post_engaged_users&access_token=${account.access_token}`;
+                // Try to get insights (using post_media_view - Meta's replacement for deprecated post_impressions)
+                const insightsUrl = `https://graph.facebook.com/v21.0/${postId}/insights?metric=post_media_view,post_engaged_users&access_token=${account.access_token}`;
                 const insightsResponse = await fetch(insightsUrl);
-                
+
                 let impressions = 0;
                 let reach = 0;
-                
+
                 if (insightsResponse.ok) {
                   const insightsData = await insightsResponse.json();
                   if (insightsData.data && Array.isArray(insightsData.data)) {
                     insightsData.data.forEach((metric: any) => {
-                      if (metric.name === 'post_impressions' && metric.values?.[0]) {
+                      if (metric.name === 'post_media_view' && metric.values?.[0]) {
                         impressions = metric.values[0].value || 0;
                       }
                       if (metric.name === 'post_engaged_users' && metric.values?.[0]) {

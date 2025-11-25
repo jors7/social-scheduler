@@ -70,15 +70,15 @@ export async function POST(request: NextRequest) {
             if (result.platform === 'facebook' && result.success && result.postId) {
               try {
                 console.log('Fetching metrics for Facebook post:', result.postId);
-                
-                // Fetch current metrics from Facebook API
-                const insightsUrl = `https://graph.facebook.com/v21.0/${result.postId}/insights?metric=post_impressions,post_engaged_users,post_clicks,post_reactions_by_type_total&access_token=${account.access_token}`;
+
+                // Fetch current metrics from Facebook API (using post_media_view - Meta's replacement for deprecated post_impressions)
+                const insightsUrl = `https://graph.facebook.com/v21.0/${result.postId}/insights?metric=post_media_view,post_engaged_users,post_clicks,post_reactions_by_type_total&access_token=${account.access_token}`;
                 const insightsResponse = await fetch(insightsUrl);
-                
+
                 if (insightsResponse.ok) {
                   const insightsData = await insightsResponse.json();
                   console.log('Facebook insights data:', insightsData);
-                  
+
                   const metrics: any = {
                     impressions: 0,
                     engagement: 0,
@@ -88,12 +88,12 @@ export async function POST(request: NextRequest) {
                     comments: 0,
                     shares: 0
                   };
-                  
+
                   // Parse insights data
                   if (insightsData.data && Array.isArray(insightsData.data)) {
                     insightsData.data.forEach((metric: any) => {
                       switch(metric.name) {
-                        case 'post_impressions':
+                        case 'post_media_view':
                           metrics.impressions = metric.values?.[0]?.value || 0;
                           break;
                         case 'post_engaged_users':

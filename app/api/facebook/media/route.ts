@@ -262,9 +262,9 @@ export async function GET(request: NextRequest) {
               console.log(`[${account.display_name || account.username}] Post ${post.id} - Using video views as initial metrics: ${post.initial_metrics.views}`);
             }
 
-            // Try to get post insights for impressions and reach
+            // Try to get post insights for views (Meta's replacement for deprecated post_impressions as of Nov 2025)
             try {
-              const insightsUrl = `https://graph.facebook.com/v21.0/${post.id}/insights?metric=post_impressions,post_impressions_unique&access_token=${account.access_token}`;
+              const insightsUrl = `https://graph.facebook.com/v21.0/${post.id}/insights?metric=post_media_view&access_token=${account.access_token}`;
               const insightsResponse = await fetch(insightsUrl);
 
               if (insightsResponse.ok) {
@@ -273,16 +273,13 @@ export async function GET(request: NextRequest) {
                 if (insightsData.data && Array.isArray(insightsData.data)) {
                   let hadInsights = false;
                   insightsData.data.forEach((metric: any) => {
-                    if (metric.name === 'post_impressions' && metric.values?.[0]) {
-                      metrics.impressions = metric.values[0].value || metrics.impressions;
-                      metrics.views = metric.values[0].value || metrics.views;
+                    if (metric.name === 'post_media_view' && metric.values?.[0]) {
+                      const value = metric.values[0].value || 0;
+                      metrics.impressions = value || metrics.impressions;
+                      metrics.views = value || metrics.views;
+                      metrics.reach = value || metrics.reach; // post_media_view represents both views and unique reach
                       hadInsights = true;
-                      console.log(`[${account.display_name || account.username}] Post ${post.id} - Got impressions from API: ${metric.values[0].value}`);
-                    }
-                    if (metric.name === 'post_impressions_unique' && metric.values?.[0]) {
-                      metrics.reach = metric.values[0].value || metrics.reach;
-                      hadInsights = true;
-                      console.log(`[${account.display_name || account.username}] Post ${post.id} - Got reach from API: ${metric.values[0].value}`);
+                      console.log(`[${account.display_name || account.username}] Post ${post.id} - Got views from API: ${value}`);
                     }
                   });
                   if (!hadInsights) {
