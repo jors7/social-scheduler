@@ -262,15 +262,15 @@ export default function AnalyticsPage() {
           allPosts.push({
             ...post,
             platform: 'facebook',
-            // Flatten metrics to root level for consistency
-            reach: post.reach ?? null, // May be null for non-video posts
-            impressions: post.impressions ?? post.views ?? null, // Use views as impressions
-            views: post.views ?? post.impressions ?? null, // Video views if available
-            engagement: post.totalEngagement || 0,
-            likes: post.likes || 0,
-            comments: post.comments || 0,
-            shares: post.shares || 0,
-            reactions: post.reactions || 0
+            // Flatten metrics to root level for consistency (check both nested metrics and direct fields)
+            reach: post.metrics?.reach ?? post.reach ?? null,
+            impressions: post.metrics?.impressions ?? post.impressions ?? post.views ?? null,
+            views: post.metrics?.views ?? post.views ?? post.impressions ?? null,
+            engagement: post.metrics?.engagement ?? post.totalEngagement ?? post.engagement ?? 0,
+            likes: post.metrics?.likes ?? post.likes ?? 0,
+            comments: post.metrics?.comments ?? post.comments ?? 0,
+            shares: post.metrics?.shares ?? post.shares ?? 0,
+            reactions: post.metrics?.reactions ?? post.reactions ?? 0
           })
         })
       }
@@ -297,12 +297,18 @@ export default function AnalyticsPage() {
         }
         console.log('[Frontend] platformStats.instagram:', platformStats.instagram)
 
-        // Add posts with platform tag
+        // Add posts with platform tag and flatten metrics
         metrics.posts.forEach((post: any) => {
           allPosts.push({
             ...post,
             platform: 'instagram',
-            impressions: post.impressions || post.plays || 0 // Use plays (views) as impressions
+            // Flatten metrics to root level (check nested metrics, direct fields, and Instagram-specific names)
+            likes: post.metrics?.likes ?? post.likes ?? post.like_count ?? 0,
+            comments: post.metrics?.comments ?? post.comments ?? post.comments_count ?? 0,
+            saves: post.metrics?.saves ?? post.saves ?? 0,
+            reach: post.metrics?.reach ?? post.reach ?? 0,
+            impressions: post.metrics?.impressions ?? post.impressions ?? post.plays ?? 0,
+            total_interactions: post.metrics?.total_interactions ?? post.total_interactions ?? 0
           })
         })
       }
@@ -322,14 +328,18 @@ export default function AnalyticsPage() {
           impressions: metrics.totalViews
         }
         
-        // Add posts with platform tag
+        // Add posts with platform tag and flatten metrics
         metrics.posts.forEach((post: any) => {
-          allPosts.push({ 
-            ...post, 
+          allPosts.push({
+            ...post,
             platform: 'threads',
-            // Normalize fields for consistency
-            impressions: post.views,
-            reach: post.views
+            // Flatten metrics to root level
+            likes: post.metrics?.likes ?? post.likes ?? 0,
+            comments: post.metrics?.replies ?? post.replies ?? post.comments ?? 0,
+            shares: post.metrics?.reposts ?? post.reposts ?? post.shares ?? 0,
+            quotes: post.metrics?.quotes ?? post.quotes ?? 0,
+            impressions: post.metrics?.views ?? post.views ?? 0,
+            reach: post.metrics?.views ?? post.views ?? 0
           })
         })
       }
@@ -348,11 +358,15 @@ export default function AnalyticsPage() {
           impressions: metrics.totalReach
         }
 
-        // Add posts with platform tag
+        // Add posts with platform tag and flatten metrics
         metrics.posts.forEach((post: any) => {
           allPosts.push({
             ...post,
             platform: 'bluesky',
+            // Flatten metrics to root level
+            likes: post.metrics?.likes ?? post.likes ?? post.likeCount ?? 0,
+            comments: post.metrics?.replies ?? post.replies ?? post.replyCount ?? 0,
+            shares: post.metrics?.reposts ?? post.reposts ?? post.repostCount ?? 0,
             // Bluesky doesn't have real reach/impressions
             impressions: 0,
             reach: 0
@@ -375,17 +389,17 @@ export default function AnalyticsPage() {
           impressions: metrics.totalImpressions
         }
 
-        // Add posts with platform tag
+        // Add posts with platform tag and flatten metrics
         metrics.posts.forEach((post: any) => {
           allPosts.push({
             ...post,
             platform: 'pinterest',
-            // Normalize fields for consistency
-            likes: post.saves || 0,
-            comments: post.pin_clicks || 0,
-            shares: post.outbound_clicks || 0,
-            impressions: post.impressions || 0,
-            reach: post.impressions || 0
+            // Flatten metrics to root level (Pinterest has unique metrics)
+            likes: post.metrics?.saves ?? post.saves ?? 0,
+            comments: post.metrics?.pin_clicks ?? post.pin_clicks ?? 0,
+            shares: post.metrics?.outbound_clicks ?? post.outbound_clicks ?? 0,
+            impressions: post.metrics?.impressions ?? post.impressions ?? 0,
+            reach: post.metrics?.impressions ?? post.impressions ?? 0
           })
         })
       }
@@ -405,17 +419,21 @@ export default function AnalyticsPage() {
           impressions: metrics.totalViews
         }
 
-        // Add posts with platform tag
+        // Add posts with platform tag and flatten metrics
         metrics.posts.forEach((post: any) => {
           allPosts.push({
             ...post,
             platform: 'tiktok',
-            // Normalize fields for consistency
+            // Flatten metrics to root level
             created_time: post.created_time,
             timestamp: post.created_time,
             message: post.title || post.description,
-            impressions: post.views || 0,
-            reach: post.views || 0
+            likes: post.metrics?.likes ?? post.likes ?? 0,
+            comments: post.metrics?.comments ?? post.comments ?? 0,
+            shares: post.metrics?.shares ?? post.shares ?? 0,
+            views: post.metrics?.views ?? post.views ?? 0,
+            impressions: post.metrics?.views ?? post.views ?? 0,
+            reach: post.metrics?.views ?? post.views ?? 0
           })
         })
       }
@@ -435,17 +453,21 @@ export default function AnalyticsPage() {
           impressions: metrics.totalViews
         }
 
-        // Add posts with platform tag
+        // Add posts with platform tag and flatten metrics
         metrics.posts.forEach((post: any) => {
           allPosts.push({
             ...post,
             platform: 'youtube',
-            // Normalize fields for consistency
+            // Flatten metrics to root level
             created_time: post.created_time,
             timestamp: post.created_time,
             message: post.title,
-            impressions: post.views || 0,
-            reach: post.views || 0
+            likes: post.metrics?.likes ?? post.likes ?? 0,
+            comments: post.metrics?.comments ?? post.comments ?? 0,
+            shares: post.metrics?.shares ?? post.shares ?? 0,
+            views: post.metrics?.views ?? post.views ?? 0,
+            impressions: post.metrics?.views ?? post.views ?? 0,
+            reach: post.metrics?.views ?? post.views ?? 0
           })
         })
       }

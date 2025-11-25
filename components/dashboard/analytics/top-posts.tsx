@@ -76,7 +76,7 @@ export function TopPosts({ analyticsData, posts }: TopPostsProps) {
       // Facebook posts
       if (post.platform === 'facebook') {
         content = post.message || ''
-        totalEngagement = (post.likes || 0) + (post.comments || 0) + (post.shares || 0) + (post.reactions || 0)
+        totalEngagement = (post.likes ?? 0) + (post.comments ?? 0) + (post.shares ?? 0) + (post.reactions ?? 0)
         // Use views for video content (Meta's replacement for impressions), fall back to reach for regular posts
         totalReach = post.views ?? post.impressions ?? post.reach ?? null
         posted_at = post.created_time || post.timestamp || ''
@@ -85,48 +85,49 @@ export function TopPosts({ analyticsData, posts }: TopPostsProps) {
       // Instagram posts
       else if (post.platform === 'instagram') {
         content = post.caption || ''
-        totalEngagement = (post.likes || 0) + (post.comments || 0) + (post.saves || 0)
-        totalReach = post.reach || 0
+        // Use total_interactions if available (from API), otherwise calculate
+        totalEngagement = post.total_interactions ?? ((post.likes ?? 0) + (post.comments ?? 0) + (post.saves ?? 0))
+        totalReach = post.reach ?? 0
         posted_at = post.timestamp || ''
         hasMedia = post.media_type === 'IMAGE' || post.media_type === 'VIDEO' || post.media_type === 'CAROUSEL_ALBUM'
       }
       // Threads posts
       else if (post.platform === 'threads') {
         content = post.text || ''
-        totalEngagement = (post.likes || 0) + (post.replies || 0) + (post.reposts || 0) + (post.quotes || 0)
-        totalReach = post.views || 0
+        totalEngagement = (post.likes ?? 0) + (post.replies ?? 0) + (post.reposts ?? 0) + (post.quotes ?? 0)
+        totalReach = post.views ?? 0
         posted_at = post.timestamp || ''
         hasMedia = post.media_type === 'IMAGE' || post.media_type === 'VIDEO'
       }
       // Bluesky posts
       else if (post.platform === 'bluesky') {
         content = post.text || ''
-        totalEngagement = (post.likes || 0) + (post.reposts || 0) + (post.replies || 0) + (post.quotes || 0)
-        totalReach = post.likes + post.reposts // Bluesky doesn't provide view counts
+        totalEngagement = (post.likes ?? 0) + (post.reposts ?? 0) + (post.replies ?? 0) + (post.quotes ?? 0)
+        totalReach = (post.likes ?? 0) + (post.reposts ?? 0) // Bluesky doesn't provide view counts
         posted_at = post.createdAt || ''
         hasMedia = false // Would need to check post.embed for media
       }
       // Pinterest posts
       else if (post.platform === 'pinterest') {
         content = post.title || post.description || ''
-        totalEngagement = (post.saves || 0) + (post.pin_clicks || 0) + (post.outbound_clicks || 0)
-        totalReach = post.impressions || 0
+        totalEngagement = (post.saves ?? 0) + (post.pin_clicks ?? 0) + (post.outbound_clicks ?? 0)
+        totalReach = post.impressions ?? 0
         posted_at = post.created_at || ''
         hasMedia = !!post.media_url || !!post.thumbnail_url
       }
       // TikTok posts
       else if (post.platform === 'tiktok') {
         content = post.title || post.description || ''
-        totalEngagement = (post.likes || 0) + (post.comments || 0) + (post.shares || 0)
-        totalReach = post.views || 0
+        totalEngagement = (post.likes ?? 0) + (post.comments ?? 0) + (post.shares ?? 0)
+        totalReach = post.views ?? 0
         posted_at = post.created_time || ''
         hasMedia = !!post.cover_image_url
       }
       // YouTube posts
       else if (post.platform === 'youtube') {
         content = post.title || post.description || ''
-        totalEngagement = (post.likes || 0) + (post.comments || 0) + (post.shares || 0)
-        totalReach = post.views || 0
+        totalEngagement = (post.likes ?? 0) + (post.comments ?? 0) + (post.shares ?? 0)
+        totalReach = post.views ?? 0
         posted_at = post.created_time || ''
         hasMedia = !!post.thumbnail_url
       }
