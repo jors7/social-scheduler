@@ -88,9 +88,9 @@ export async function GET(request: NextRequest) {
       if (!account.access_token) continue;
 
       try {
-        // Get posts from the page - REMOVE since parameter to match working insights endpoint
-        // The issue: Facebook insights may not be available for posts fetched with date filters
-        const postsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url&limit=25&access_token=${account.access_token}`;
+        // Get posts from the page - include engagement fields in the initial request to avoid 25 separate API calls
+        // This matches the working pattern from /api/facebook/media endpoint
+        const postsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url,likes.summary(true),comments.summary(true),shares,reactions.summary(true)&limit=25&access_token=${account.access_token}`;
         console.log(`[Facebook Analytics] Fetching posts from: ${account.platform_user_id}`);
         const postsResponse = await fetchWithTimeout(postsUrl, 10000); // 10 second timeout
 
@@ -134,19 +134,12 @@ export async function GET(request: NextRequest) {
         // For videos, we also fetch from /videos endpoint as a fallback/preference
         const postPromises = allPosts.map(async (post: any) => {
             try {
-              // Get engagement data - this still works fine
-              const engagementUrl = `https://graph.facebook.com/v21.0/${post.id}?fields=likes.summary(true),comments.summary(true),shares,reactions.summary(true)&access_token=${account.access_token}`;
-              const engagementResponse = await fetchWithTimeout(engagementUrl, 5000);
-
-              let likes = 0, comments = 0, shares = 0, reactions = 0;
-
-              if (engagementResponse.ok) {
-                const engagementData = await engagementResponse.json();
-                likes = engagementData.likes?.summary?.total_count || 0;
-                comments = engagementData.comments?.summary?.total_count || 0;
-                shares = engagementData.shares?.count || 0;
-                reactions = engagementData.reactions?.summary?.total_count || 0;
-              }
+              // Extract engagement data directly from post object (already included in the posts API response)
+              // This eliminates 25 separate API calls and prevents silent failures
+              const likes = post.likes?.summary?.total_count ?? 0;
+              const comments = post.comments?.summary?.total_count ?? 0;
+              const shares = post.shares?.count ?? 0;
+              const reactions = post.reactions?.summary?.total_count ?? 0;
 
               // Fetch post-level views using post_media_view metric (Meta's replacement for post_impressions)
               let postViews = null;
