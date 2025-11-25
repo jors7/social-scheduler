@@ -526,8 +526,6 @@ function DashboardContent() {
         totalReach += metrics.totalReach
         totalImpressions += metrics.totalImpressions
         console.log('[Dashboard] Facebook metrics:', metrics)
-        console.log('[Dashboard] Facebook posts array length:', metrics.posts?.length || 0)
-        console.log('[Dashboard] Facebook post IDs:', metrics.posts?.map((p: any) => p.id) || [])
       }
 
       // Process Instagram data

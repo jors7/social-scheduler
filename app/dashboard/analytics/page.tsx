@@ -244,10 +244,6 @@ export default function AnalyticsPage() {
       // Process Facebook data
       if (facebookData.metrics) {
         const metrics = facebookData.metrics
-        console.log('[Analytics] Facebook API response:', metrics)
-        console.log('[Analytics] Facebook posts array length:', metrics.posts?.length || 0)
-        console.log('[Analytics] Facebook post IDs:', metrics.posts?.map((p: any) => p.id) || [])
-
         totalPosts += metrics.totalPosts
         totalEngagement += metrics.totalEngagement
         totalReach += metrics.totalReach
@@ -506,9 +502,9 @@ export default function AnalyticsPage() {
 
       // Recalculate totals for CURRENT period only (not the entire fetched range)
       // This is needed because we fetch double the period for comparisons
+      // Note: We don't set hours to 0 to match server-side API filtering (current time minus X days)
       const currentPeriodStart = new Date();
       currentPeriodStart.setDate(currentPeriodStart.getDate() - parseInt(dateRange));
-      currentPeriodStart.setHours(0, 0, 0, 0);
 
       const currentPeriodPosts = allPosts.filter(post => {
         const dateField = post.created_time || post.timestamp || post.createdAt || post.created_at;
