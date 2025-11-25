@@ -512,41 +512,12 @@ export default function AnalyticsPage() {
       });
 
       // Recalculate metrics for current period only
-      let currentTotalPosts = currentPeriodPosts.length;
-      let currentTotalEngagement = 0;
-      let currentTotalReach = 0;
-      let currentTotalImpressions = 0;
-
-      currentPeriodPosts.forEach(post => {
-        if (post.platform === 'facebook') {
-          // Use pre-calculated engagement from API (includes likes + comments + shares + reactions)
-          currentTotalEngagement += post.engagement || post.totalEngagement || 0;
-          currentTotalReach += post.reach || 0;
-          currentTotalImpressions += post.impressions || 0;
-        } else if (post.platform === 'instagram') {
-          currentTotalEngagement += (post.likes || 0) + (post.comments || 0) + (post.saves || 0);
-          currentTotalReach += post.reach || 0;
-          currentTotalImpressions += post.impressions || post.plays || 0;
-        } else if (post.platform === 'threads') {
-          currentTotalEngagement += (post.likes || 0) + (post.replies || 0) + (post.reposts || 0) + (post.quotes || 0);
-          currentTotalReach += post.views || 0;
-          currentTotalImpressions += post.views || 0;
-        } else if (post.platform === 'bluesky') {
-          currentTotalEngagement += (post.likes || 0) + (post.replies || 0) + (post.reposts || 0);
-        } else if (post.platform === 'pinterest') {
-          currentTotalEngagement += (post.saves || 0) + (post.pin_clicks || 0) + (post.outbound_clicks || 0);
-          currentTotalReach += post.impressions || 0;
-          currentTotalImpressions += post.impressions || 0;
-        } else if (post.platform === 'tiktok') {
-          currentTotalEngagement += (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
-          currentTotalReach += post.views || 0;
-          currentTotalImpressions += post.views || 0;
-        } else if (post.platform === 'youtube') {
-          currentTotalEngagement += (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
-          currentTotalReach += post.views || 0;
-          currentTotalImpressions += post.views || 0;
-        }
-      });
+      // Use API-provided totals from platformStats instead of recalculating from individual posts
+      // This preserves accurate Facebook metrics where post-level reach is incomplete due to Instagram cross-post API restrictions
+      const currentTotalPosts = Object.values(platformStats).reduce((sum, stats) => sum + (stats.posts || 0), 0);
+      const currentTotalEngagement = Object.values(platformStats).reduce((sum, stats) => sum + (stats.engagement || 0), 0);
+      const currentTotalReach = Object.values(platformStats).reduce((sum, stats) => sum + (stats.reach || 0), 0);
+      const currentTotalImpressions = Object.values(platformStats).reduce((sum, stats) => sum + (stats.impressions || 0), 0);
 
       const currentEngagementRate = currentTotalReach > 0 ? (currentTotalEngagement / currentTotalReach) * 100 : 0;
 
