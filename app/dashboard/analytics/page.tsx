@@ -511,27 +511,30 @@ export default function AnalyticsPage() {
         const postDate = new Date(dateField);
         const isInRange = postDate >= currentPeriodStart && postDate <= new Date();
 
-        // Debug logging for Pinterest posts
-        if (post.platform === 'pinterest') {
-          console.log(`[Analytics Filter] ${isInRange ? 'Including' : 'Excluding'} ${post.platform} post:`, {
-            id: post.id,
-            dateField,
-            postDate: postDate.toISOString(),
-            currentPeriodStart: currentPeriodStart.toISOString(),
-            now: new Date().toISOString(),
-            daysAgo: Math.floor((new Date().getTime() - postDate.getTime()) / (1000 * 60 * 60 * 24)),
-            isInRange
-          });
-        }
+        // Debug logging for all posts
+        const daysAgo = Math.floor((new Date().getTime() - postDate.getTime()) / (1000 * 60 * 60 * 24));
+        console.log(`[Analytics Filter] ${isInRange ? '✓ Including' : '✗ Excluding'} ${post.platform} post (${daysAgo} days ago):`, {
+          id: post.id,
+          dateField,
+          postDate: postDate.toISOString(),
+          currentPeriodStart: currentPeriodStart.toISOString(),
+          daysAgo,
+          isInRange
+        });
 
         return isInRange;
       });
 
-      // Debug: Log filtering results
-      const pinterestPostsBeforeFilter = allPosts.filter(p => p.platform === 'pinterest').length;
-      const pinterestPostsAfterFilter = currentPeriodPosts.filter(p => p.platform === 'pinterest').length;
-      console.log(`[Analytics Filter] Pinterest posts: ${pinterestPostsBeforeFilter} fetched → ${pinterestPostsAfterFilter} after filtering`);
-      console.log(`[Analytics Filter] Total posts: ${allPosts.length} fetched → ${currentPeriodPosts.length} after filtering`);
+      // Debug: Log filtering results by platform
+      const platforms = ['facebook', 'instagram', 'threads', 'bluesky', 'pinterest', 'tiktok', 'youtube'];
+      platforms.forEach(platform => {
+        const beforeFilter = allPosts.filter(p => p.platform === platform).length;
+        const afterFilter = currentPeriodPosts.filter(p => p.platform === platform).length;
+        if (beforeFilter > 0) {
+          console.log(`[Analytics Filter] ${platform}: ${beforeFilter} fetched → ${afterFilter} after filtering`);
+        }
+      });
+      console.log(`[Analytics Filter] TOTAL: ${allPosts.length} fetched → ${currentPeriodPosts.length} after filtering`);
 
       // Recalculate metrics for current period only by counting filtered posts
       // We fetch double the period for trend comparison, so we must filter to get accurate current period totals
