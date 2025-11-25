@@ -564,7 +564,7 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
               {(() => {
                 // Calculate reach for each post
                 const postsWithReach = recentPosts.map(post => {
-                  const reachValue = post.metrics?.reach ?? post.metrics?.impressions ?? post.metrics?.plays ?? 0;
+                  const reachValue = post.metrics?.reach ?? post.metrics?.plays ?? 0;
                   return { ...post, totalReachOrViews: reachValue };
                 });
 
