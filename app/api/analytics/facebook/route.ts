@@ -88,29 +88,38 @@ export async function GET(request: NextRequest) {
       if (!account.access_token) continue;
 
       try {
-        // Get posts from the page
-        const postsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url&since=${sinceTimestamp}&limit=100&access_token=${account.access_token}`;
+        // Get posts from the page - REMOVE since parameter to match working insights endpoint
+        // The issue: Facebook insights may not be available for posts fetched with date filters
+        const postsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url&limit=25&access_token=${account.access_token}`;
+        console.log(`[Facebook Analytics] Fetching posts from: ${account.platform_user_id}`);
         const postsResponse = await fetchWithTimeout(postsUrl, 10000); // 10 second timeout
-        
+
         if (!postsResponse.ok) {
           console.error(`Failed to fetch Facebook posts for account ${account.id}`);
           continue;
         }
 
         const postsData = await postsResponse.json();
-        const allPosts = postsData.data || [];
-        
-        console.log(`[Facebook Analytics] Found ${allPosts.length} posts for ${days} day period`);
+        let allPosts = postsData.data || [];
+
+        // Filter posts by date on our side
+        const filteredPosts = allPosts.filter((post: any) => {
+          const postTime = new Date(post.created_time).getTime() / 1000;
+          return postTime >= sinceTimestamp;
+        });
+
+        console.log(`[Facebook Analytics] Found ${allPosts.length} total posts, ${filteredPosts.length} within ${days} day period`);
+        allPosts = filteredPosts;
 
         // Process all posts with full engagement and insights regardless of date range
         const postPromises = allPosts.map(async (post: any) => {
             try {
-              // Get engagement data
+              // Get engagement data AND insights in the initial fetch to reduce API calls
               const engagementUrl = `https://graph.facebook.com/v21.0/${post.id}?fields=likes.summary(true),comments.summary(true),shares,reactions.summary(true)&access_token=${account.access_token}`;
               const engagementResponse = await fetchWithTimeout(engagementUrl, 5000);
-              
+
               let likes = 0, comments = 0, shares = 0, reactions = 0;
-              
+
               if (engagementResponse.ok) {
                 const engagementData = await engagementResponse.json();
                 likes = engagementData.likes?.summary?.total_count || 0;
@@ -119,7 +128,7 @@ export async function GET(request: NextRequest) {
                 reactions = engagementData.reactions?.summary?.total_count || 0;
               }
 
-              // Get insights for all posts in 7-day range
+              // Try to get insights
               let reach = 0, impressions = 0;
               try {
                 const insightsUrl = `https://graph.facebook.com/v21.0/${post.id}/insights?metric=post_impressions,post_impressions_unique&access_token=${account.access_token}`;
@@ -132,22 +141,20 @@ export async function GET(request: NextRequest) {
                     insightsData.data.forEach((metric: any) => {
                       if (metric.name === 'post_impressions' && metric.values?.[0]) {
                         impressions = metric.values[0].value || 0;
-                        console.log(`[Facebook Analytics] Post ${post.id} impressions: ${impressions}`);
+                        console.log(`[Facebook Analytics] Post ${post.id} - Got impressions: ${impressions}`);
                       }
                       if (metric.name === 'post_impressions_unique' && metric.values?.[0]) {
                         reach = metric.values[0].value || 0;
-                        console.log(`[Facebook Analytics] Post ${post.id} reach: ${reach}`);
+                        console.log(`[Facebook Analytics] Post ${post.id} - Got reach: ${reach}`);
                       }
                     });
-                  } else {
-                    console.log(`[Facebook Analytics] ⚠️ NO DATA: Post ${post.id} - insights data is empty or not an array`);
                   }
                 } else {
                   const errorText = await insightsResponse.text();
-                  console.error(`[Facebook Analytics] ❌ Insights API failed for post ${post.id}. Status: ${insightsResponse.status}, Response:`, errorText);
+                  console.error(`[Facebook Analytics] Insights API failed for post ${post.id}:`, errorText);
                 }
               } catch (insightsError) {
-                console.log(`[Facebook Analytics] ⚠️ Exception for post ${post.id}:`, insightsError);
+                console.error(`[Facebook Analytics] Exception fetching insights for post ${post.id}:`, insightsError);
               }
 
               return {
