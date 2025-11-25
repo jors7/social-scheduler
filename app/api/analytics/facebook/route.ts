@@ -134,12 +134,32 @@ export async function GET(request: NextRequest) {
         // For videos, we also fetch from /videos endpoint as a fallback/preference
         const postPromises = allPosts.map(async (post: any) => {
             try {
+              // DEBUG: Log the raw post structure to see what Facebook is actually returning
+              console.log(`[Facebook Analytics] DEBUG Post ${post.id}:`, {
+                hasLikes: !!post.likes,
+                likesStructure: post.likes,
+                hasComments: !!post.comments,
+                commentsStructure: post.comments,
+                hasShares: !!post.shares,
+                sharesStructure: post.shares,
+                hasReactions: !!post.reactions,
+                reactionsStructure: post.reactions
+              });
+
               // Extract engagement data directly from post object (already included in the posts API response)
               // This eliminates 25 separate API calls and prevents silent failures
               const likes = post.likes?.summary?.total_count ?? 0;
               const comments = post.comments?.summary?.total_count ?? 0;
               const shares = post.shares?.count ?? 0;
               const reactions = post.reactions?.summary?.total_count ?? 0;
+
+              console.log(`[Facebook Analytics] DEBUG Post ${post.id} engagement extracted:`, {
+                likes,
+                comments,
+                shares,
+                reactions,
+                total: likes + comments + shares + reactions
+              });
 
               // Fetch post-level views using post_media_view metric (Meta's replacement for post_impressions)
               let postViews = null;
