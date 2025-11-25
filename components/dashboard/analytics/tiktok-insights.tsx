@@ -543,8 +543,10 @@ export function TikTokInsights({ className }: TikTokInsightsProps) {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-gray-700 line-clamp-2">{video.title || video.description || 'Untitled Video'}</p>
                       <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                        <span>{formatNumber(totalEngagement)} engagements</span>
-                        <span>{formatNumber(video.metrics?.views || 0)} views</span>
+                        <div className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          <span>{formatNumber(video.metrics?.views || 0)}</span>
+                        </div>
                         <span>{formatDate(video.created_time)}</span>
                       </div>
                     </div>
