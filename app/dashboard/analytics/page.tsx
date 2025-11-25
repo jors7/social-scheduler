@@ -244,6 +244,10 @@ export default function AnalyticsPage() {
       // Process Facebook data
       if (facebookData.metrics) {
         const metrics = facebookData.metrics
+        console.log('[Analytics] Facebook API response:', metrics)
+        console.log('[Analytics] Facebook posts array length:', metrics.posts?.length || 0)
+        console.log('[Analytics] Facebook post IDs:', metrics.posts?.map((p: any) => p.id) || [])
+
         totalPosts += metrics.totalPosts
         totalEngagement += metrics.totalEngagement
         totalReach += metrics.totalReach
