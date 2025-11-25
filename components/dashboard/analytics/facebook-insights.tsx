@@ -570,7 +570,10 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-gray-700 line-clamp-2">{post.message}</p>
                         <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                          <span>{formatNumber(post.totalReachOrViews)} views</span>
+                          <div className="flex items-center gap-1">
+                            <Eye className="h-3 w-3" />
+                            <span>{formatNumber(post.totalReachOrViews)}</span>
+                          </div>
                           <span>{formatDate(post.created_time)}</span>
                         </div>
                       </div>
