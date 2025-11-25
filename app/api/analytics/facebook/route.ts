@@ -88,10 +88,11 @@ export async function GET(request: NextRequest) {
       if (!account.access_token) continue;
 
       try {
-        // Get posts from the page - include engagement fields in the initial request to avoid 25 separate API calls
-        // This matches the working pattern from /api/facebook/media endpoint
-        const postsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url,likes.summary(true),comments.summary(true),shares,reactions.summary(true)&limit=25&access_token=${account.access_token}`;
-        console.log(`[Facebook Analytics] Fetching posts from: ${account.platform_user_id}`);
+        // Get posts from the page using /feed endpoint instead of /posts
+        // /feed includes cross-posted content from Instagram which /posts excludes
+        // This should expose engagement data for Instagram cross-posts
+        const postsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/feed?fields=id,message,created_time,permalink_url,likes.summary(true),comments.summary(true),shares,reactions.summary(true)&limit=25&access_token=${account.access_token}`;
+        console.log(`[Facebook Analytics] Fetching posts from: ${account.platform_user_id} using /feed endpoint`);
         const postsResponse = await fetchWithTimeout(postsUrl, 10000); // 10 second timeout
 
         if (!postsResponse.ok) {
