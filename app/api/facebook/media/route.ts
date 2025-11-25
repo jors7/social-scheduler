@@ -52,45 +52,84 @@ export async function GET(request: NextRequest) {
     // Calculate 30 days ago timestamp for date filtering
     const since = Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60);
 
-    // Prepare URLs for parallel fetching - use simpler attachment fields
-    const postsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url,full_picture,attachments,likes.summary(true),comments.summary(true),shares,reactions.summary(true)&limit=${limit}&since=${since}&access_token=${account.access_token}`;
+    // Prepare URLs for fetching - use simpler attachment fields
+    const initialPostsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url,full_picture,attachments,likes.summary(true),comments.summary(true),shares,reactions.summary(true)&limit=${limit}&since=${since}&access_token=${account.access_token}`;
     const videosUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/videos?fields=id,title,description,created_time,permalink_url,source,thumbnails,length,from,views,likes.summary(true),comments.summary(true)&limit=${limit}&since=${since}&access_token=${account.access_token}`;
-    
-    // Fetch both endpoints in parallel
-    const [postsResponse, videosResponse] = await Promise.all([
-      fetch(postsUrl),
-      fetch(videosUrl).catch(err => {
-        console.log('Videos endpoint failed (might not have permission):', err);
-        return null;
-      })
-    ]);
-    
-    // Handle posts response
-    if (!postsResponse.ok) {
-      const errorData = await postsResponse.json();
-      console.error('Failed to fetch Facebook posts:', errorData);
-      
-      // Check if it's a token expiration error
-      if (errorData.error?.code === 190 || errorData.error?.message?.includes('expired')) {
-        return NextResponse.json(
-          { 
-            error: 'Facebook token expired',
-            requiresReconnect: true 
-          },
-          { status: 401 }
-        );
+
+    // Fetch posts with pagination support
+    let allPosts: any[] = [];
+    let nextPostsUrl: string | null = initialPostsUrl;
+    let postsPageCount = 0;
+    const maxPages = 5; // Safety limit to prevent infinite loops
+    let postsError = null;
+
+    while (nextPostsUrl && postsPageCount < maxPages) {
+      try {
+        const response = await fetch(nextPostsUrl);
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error(`Failed to fetch Facebook posts page ${postsPageCount + 1}:`, errorData);
+
+          // Check if it's a token expiration error
+          if (errorData.error?.code === 190 || errorData.error?.message?.includes('expired')) {
+            return NextResponse.json(
+              {
+                error: 'Facebook token expired',
+                requiresReconnect: true
+              },
+              { status: 401 }
+            );
+          }
+
+          postsError = errorData;
+          break;
+        }
+
+        const data = await response.json();
+        const posts = data.data || [];
+        allPosts = allPosts.concat(posts);
+
+        console.log(`Fetched page ${postsPageCount + 1}: ${posts.length} posts (total: ${allPosts.length})`);
+
+        // Check if there's a next page
+        nextPostsUrl = data.paging?.next || null;
+        postsPageCount++;
+
+        // Stop if we've fetched enough posts (30+)
+        if (allPosts.length >= 30) {
+          console.log(`Fetched ${allPosts.length} posts, stopping pagination`);
+          break;
+        }
+      } catch (error) {
+        console.error(`Error fetching posts page ${postsPageCount + 1}:`, error);
+        break;
       }
-      
+    }
+
+    console.log(`Total posts fetched: ${allPosts.length} across ${postsPageCount} pages`);
+
+    // If there was an error and we have no posts, return error
+    if (postsError && allPosts.length === 0) {
       return NextResponse.json(
-        { 
-          error: errorData.error?.message || 'Failed to fetch Facebook posts',
-          details: errorData.error 
+        {
+          error: postsError.error?.message || 'Failed to fetch Facebook posts',
+          details: postsError.error
         },
         { status: 400 }
       );
     }
 
-    const postsData = await postsResponse.json();
+    // Fetch videos (single call)
+    let videosResponse = null;
+    try {
+      videosResponse = await fetch(videosUrl);
+    } catch (err) {
+      console.log('Videos endpoint failed (might not have permission):', err);
+    }
+
+    // Format posts data for existing code
+    const postsData = { data: allPosts };
     
     // Process posts with engagement data
     const posts = postsData.data?.map((post: any) => {
