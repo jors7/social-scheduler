@@ -15,23 +15,27 @@ interface AnalyticsData {
 
 interface EngagementChartProps {
   analyticsData: AnalyticsData | null
+  posts?: any[] // Optional filtered posts array
 }
 
-export function EngagementChart({ analyticsData }: EngagementChartProps) {
+export function EngagementChart({ analyticsData, posts }: EngagementChartProps) {
   if (!analyticsData) {
     return <div className="h-[250px] sm:h-[300px] animate-pulse bg-gray-200 rounded"></div>
   }
   
+  // Use provided posts if available, otherwise fall back to analyticsData.allPosts
+  const postsToShow = posts || analyticsData.allPosts || []
+
   // Generate chart data from all posts - group by date
   const dataMap = new Map<string, any>()
 
   // Debug logging
   console.log('[EngagementChart] Processing posts:', {
-    totalPosts: analyticsData.allPosts.length,
-    platforms: Array.from(new Set(analyticsData.allPosts.map(p => p.platform)))
+    totalPosts: postsToShow.length,
+    platforms: Array.from(new Set(postsToShow.map(p => p.platform)))
   })
 
-  analyticsData.allPosts.forEach(post => {
+  postsToShow.forEach(post => {
     // Get the posted date based on platform
     let dateStr = ''
     let likes = 0

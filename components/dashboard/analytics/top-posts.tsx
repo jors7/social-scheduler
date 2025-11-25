@@ -18,9 +18,10 @@ interface AnalyticsData {
 
 interface TopPostsProps {
   analyticsData: AnalyticsData | null
+  posts?: any[] // Optional filtered posts array
 }
 
-export function TopPosts({ analyticsData }: TopPostsProps) {
+export function TopPosts({ analyticsData, posts }: TopPostsProps) {
   if (!analyticsData) {
     return (
       <div className="space-y-4">
@@ -53,8 +54,11 @@ export function TopPosts({ analyticsData }: TopPostsProps) {
       .trim()
   }
   
+  // Use provided posts if available, otherwise fall back to analyticsData.allPosts
+  const postsToShow = posts || analyticsData.allPosts || []
+
   // Calculate top posts based on engagement
-  const topPosts = analyticsData.allPosts
+  const topPosts = postsToShow
     .map(post => {
       // Handle different data structures from various platform APIs
       let totalEngagement = 0

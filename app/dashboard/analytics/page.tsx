@@ -112,6 +112,7 @@ const MOCK_ANALYTICS_DATA: AnalyticsData = {
     youtube: { posts: 2, engagement: 407, reach: 7120, impressions: 14100 }
   },
   allPosts: generateMockPosts(),
+  currentPeriodPosts: generateMockPosts(),
   postedPosts: generateMockPosts()
 }
 
@@ -141,6 +142,7 @@ interface AnalyticsData {
   topPlatform: string
   platformStats: Record<string, any>
   allPosts: any[]
+  currentPeriodPosts: any[] // Filtered posts for selected date range
   postedPosts: any[]
 }
 
@@ -536,6 +538,7 @@ export default function AnalyticsPage() {
         topPlatform,
         platformStats,
         allPosts,
+        currentPeriodPosts, // Filtered posts for selected date range
         postedPosts: allPosts // Use allPosts for postedPosts as well
       })
 
@@ -1026,7 +1029,10 @@ export default function AnalyticsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="bg-gradient-to-b from-white to-gray-50 p-3 sm:p-6">
-                  <EngagementChart analyticsData={analyticsData} />
+                  <EngagementChart
+                    analyticsData={analyticsData}
+                    posts={analyticsData?.currentPeriodPosts || []}
+                  />
                 </CardContent>
               </Card>
 
@@ -1068,7 +1074,10 @@ export default function AnalyticsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="bg-white/50 backdrop-blur-sm p-3 sm:p-6 flex-1 flex flex-col">
-                  <TopPosts analyticsData={analyticsData} />
+                  <TopPosts
+                    analyticsData={analyticsData}
+                    posts={analyticsData?.currentPeriodPosts || []}
+                  />
                 </CardContent>
               </Card>
             </div>
