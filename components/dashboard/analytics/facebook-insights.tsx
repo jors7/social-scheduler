@@ -509,48 +509,45 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
               Top Performing Posts
             </CardTitle>
             <CardDescription>
-              Your best posts based on engagement
+              Your best posts based on reach/views
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {(() => {
-                // Ensure metrics exist and calculate engagement
-                const postsWithEngagement = recentPosts.map(post => {
-                  const engagement = (post.metrics?.reactions || 0) + 
-                                    (post.metrics?.likes || 0) + 
-                                    (post.metrics?.comments || 0) + 
-                                    (post.metrics?.shares || 0);
-                  return { ...post, totalEngagement: engagement };
+                // Calculate reach/views for each post
+                const postsWithReach = recentPosts.map(post => {
+                  // Facebook: prioritize views > impressions > reach
+                  const reachOrViews = post.metrics?.views ?? post.metrics?.impressions ?? post.metrics?.reach ?? 0;
+                  return { ...post, totalReachOrViews: reachOrViews };
                 });
-                
+
                 // Debug logging
-                console.log('[Facebook] Posts engagement before sorting:', 
-                  postsWithEngagement.map(p => ({
+                console.log('[Facebook] Posts reach/views before sorting:',
+                  postsWithReach.map(p => ({
                     message: p.message?.substring(0, 30),
-                    engagement: p.totalEngagement,
+                    reachOrViews: p.totalReachOrViews,
                     date: p.created_time
                   }))
                 );
-                
-                // Sort by engagement (highest first), then by date if equal
-                const sortedPosts = postsWithEngagement.sort((a, b) => {
-                  // First sort by engagement
-                  if (a.totalEngagement !== b.totalEngagement) {
-                    return b.totalEngagement - a.totalEngagement;
+
+                // Sort by reach/views (highest first), then by date if equal
+                const sortedPosts = postsWithReach.sort((a, b) => {
+                  // First sort by reach/views
+                  if (a.totalReachOrViews !== b.totalReachOrViews) {
+                    return b.totalReachOrViews - a.totalReachOrViews;
                   }
-                  // If engagement is equal, sort by date (newest first)
+                  // If equal, sort by date (newest first)
                   return new Date(b.created_time).getTime() - new Date(a.created_time).getTime();
                 });
                 
                 // Take top 3 posts
                 return sortedPosts.slice(0, 3).map((post, index) => {
-                  const totalEngagement = post.totalEngagement
                   const formatDate = (dateString: string) => {
                     const date = new Date(dateString)
                     const now = new Date()
                     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-                    
+
                     if (diffInHours < 24) {
                       return `${Math.floor(diffInHours)}h ago`
                     } else if (diffInHours < 48) {
@@ -573,8 +570,7 @@ export function FacebookInsights({ className }: FacebookInsightsProps) {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-gray-700 line-clamp-2">{post.message}</p>
                         <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                          <span>{formatNumber(totalEngagement)} engagements</span>
-                          <span>{formatNumber(post.metrics?.views || post.metrics?.impressions || post.metrics?.reach || 0)} views</span>
+                          <span>{formatNumber(post.totalReachOrViews)} views</span>
                           <span>{formatDate(post.created_time)}</span>
                         </div>
                       </div>

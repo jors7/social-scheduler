@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Heart, MessageCircle, Share, Eye, FileText, Image, Video } from 'lucide-react'
+import { MessageCircle, Share, Eye, FileText, Image, Video } from 'lucide-react'
 import Link from 'next/link'
 
 interface AnalyticsData {
@@ -143,9 +143,9 @@ export function TopPosts({ analyticsData, posts }: TopPostsProps) {
       }
     })
     .sort((a, b) => {
-      // Sort by engagement first, then by date for posts with no engagement
-      if (b.engagement !== a.engagement) {
-        return b.engagement - a.engagement
+      // Sort by reach/views first, then by date for ties
+      if (b.reach !== a.reach) {
+        return b.reach - a.reach
       }
       return new Date(b.posted_at).getTime() - new Date(a.posted_at).getTime()
     })
@@ -253,10 +253,6 @@ export function TopPosts({ analyticsData, posts }: TopPostsProps) {
               </p>
               
               <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                <div className="flex items-center space-x-1">
-                  <Heart className="h-3 w-3" />
-                  <span>{post.engagement.toLocaleString()}</span>
-                </div>
                 <div className="flex items-center space-x-1">
                   <Eye className="h-3 w-3" />
                   <span title={post.reach === null ? "Per-post data not available for Instagram cross-posts due to Facebook API restrictions" : (post.platforms.includes('facebook') && post.reach > 0) ? "Video views" : "Reach"}>

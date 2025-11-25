@@ -269,7 +269,7 @@ export function PinterestInsights({ className }: PinterestInsightsProps) {
               Recent Pins Performance
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              Your top performing pins from the last 30 days
+              Your top performing pins based on impressions
             </CardDescription>
           </div>
         </CardHeader>
@@ -283,9 +283,12 @@ export function PinterestInsights({ className }: PinterestInsightsProps) {
             <div className="space-y-4">
               {recentPins
                 .sort((a, b) => {
-                  const aEngagement = (a.saves || 0) + (a.pin_clicks || 0) + (a.outbound_clicks || 0)
-                  const bEngagement = (b.saves || 0) + (b.pin_clicks || 0) + (b.outbound_clicks || 0)
-                  return bEngagement - aEngagement
+                  // Sort by impressions first
+                  if ((b.impressions || 0) !== (a.impressions || 0)) {
+                    return (b.impressions || 0) - (a.impressions || 0)
+                  }
+                  // Then by date if impressions are equal
+                  return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
                 })
                 .slice(0, 10)
                 .map((pin) => {

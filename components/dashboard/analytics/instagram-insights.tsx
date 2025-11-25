@@ -556,47 +556,44 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
               Top Performing Posts
             </CardTitle>
             <CardDescription>
-              Your best posts based on engagement
+              Your best posts based on reach
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {(() => {
-                // Ensure metrics exist and calculate engagement
-                const postsWithEngagement = recentPosts.map(post => {
-                  const engagement = (post.metrics?.likes || 0) + 
-                                    (post.metrics?.comments || 0) + 
-                                    (post.metrics?.saves || 0);
-                  return { ...post, totalEngagement: engagement };
+                // Calculate reach for each post
+                const postsWithReach = recentPosts.map(post => {
+                  const reachValue = post.metrics?.reach ?? post.metrics?.impressions ?? post.metrics?.plays ?? 0;
+                  return { ...post, totalReachOrViews: reachValue };
                 });
-                
+
                 // Debug logging
-                console.log('[Instagram] Posts engagement before sorting:', 
-                  postsWithEngagement.map(p => ({
+                console.log('[Instagram] Posts reach before sorting:',
+                  postsWithReach.map(p => ({
                     caption: p.caption?.substring(0, 30),
-                    engagement: p.totalEngagement,
+                    reach: p.totalReachOrViews,
                     date: p.timestamp
                   }))
                 );
-                
-                // Sort by engagement (highest first), then by date if equal
-                const sortedPosts = postsWithEngagement.sort((a, b) => {
-                  // First sort by engagement
-                  if (a.totalEngagement !== b.totalEngagement) {
-                    return b.totalEngagement - a.totalEngagement;
+
+                // Sort by reach (highest first), then by date if equal
+                const sortedPosts = postsWithReach.sort((a, b) => {
+                  // First sort by reach
+                  if (a.totalReachOrViews !== b.totalReachOrViews) {
+                    return b.totalReachOrViews - a.totalReachOrViews;
                   }
-                  // If engagement is equal, sort by date (newest first)
+                  // If reach is equal, sort by date (newest first)
                   return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
                 });
                 
                 // Take top 3 posts
                 return sortedPosts.slice(0, 3).map((post, index) => {
-                  const totalEngagement = post.totalEngagement
                   const formatDate = (dateString: string) => {
                     const date = new Date(dateString)
                     const now = new Date()
                     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-                    
+
                     if (diffInHours < 24) {
                       return `${Math.floor(diffInHours)}h ago`
                     } else if (diffInHours < 48) {
@@ -619,8 +616,7 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-gray-700 line-clamp-2">{post.caption || 'No caption'}</p>
                         <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                          <span>{formatNumber(totalEngagement)} engagements</span>
-                          <span>{formatNumber(post.metrics?.reach || 0)} reach</span>
+                          <span>{formatNumber(post.totalReachOrViews)} reach</span>
                           <span>{formatDate(post.timestamp)}</span>
                         </div>
                       </div>
