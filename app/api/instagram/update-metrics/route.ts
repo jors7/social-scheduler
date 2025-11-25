@@ -44,18 +44,39 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Instagram account
-    const { data: accounts, error: accountError } = await supabase
+    const searchParams = request.nextUrl.searchParams;
+    const accountId = searchParams.get('accountId');
+
+    let query = supabase
       .from('social_accounts')
       .select('*')
       .eq('user_id', user.id)
       .eq('platform', 'instagram')
       .eq('is_active', true);
 
+    if (accountId) {
+      query = query.eq('id', accountId);
+    }
+
+    const { data: accounts, error: accountError } = await query;
+
     if (accountError || !accounts || accounts.length === 0) {
       return NextResponse.json({ error: 'Instagram account not found' }, { status: 404 });
     }
 
-    const account = accounts[0]; // Use the first active Instagram account
+    // Explicitly select the account
+    const account = accountId
+      ? accounts.find(acc => acc.id === accountId) || accounts[0]
+      : accounts[0];
+
+    if (!account) {
+      return NextResponse.json(
+        { error: 'Selected Instagram account not found' },
+        { status: 404 }
+      );
+    }
+
+    console.log(`[Instagram Update Metrics API] Using account: ${account.username || account.platform_user_id} (ID: ${account.id})`);
 
     let updatedCount = 0;
     const errors: any[] = [];

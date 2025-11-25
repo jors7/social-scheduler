@@ -31,16 +31,27 @@ export async function GET(request: NextRequest) {
     }
     
     const { data: accounts, error: accountError } = await query;
-    
+
     if (accountError || !accounts || accounts.length === 0) {
       return NextResponse.json(
         { error: 'Instagram account not connected' },
         { status: 404 }
       );
     }
-    
-    // Use specified account or first available
-    const account = accounts[0];
+
+    // Explicitly select the account
+    const account = accountId
+      ? accounts.find(acc => acc.id === accountId) || accounts[0]
+      : accounts[0];
+
+    if (!account) {
+      return NextResponse.json(
+        { error: 'Selected Instagram account not found' },
+        { status: 404 }
+      );
+    }
+
+    console.log(`[Instagram Media API] Using account: ${account.username || account.platform_user_id} (ID: ${account.id})`);
 
     // Initialize Instagram client
     const client = new InstagramClient({
