@@ -253,11 +253,31 @@ export async function GET(request: NextRequest) {
         console.log(`[${account.display_name || account.username}] No impressions data available for ${fetchedPostsCount} posts`);
       }
       
-      // For reach, use calculated value or estimate
-      if (totalReach > 0) {
+      // Fetch page-level reach metric as fallback (Meta's new page_media_view API)
+      let pageMediaViews = 0;
+      try {
+        const since = Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60); // Last 30 days
+        const pageMediaViewUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/insights?metric=page_media_view&period=day&since=${since}&access_token=${account.access_token}`;
+        const pageResponse = await fetch(pageMediaViewUrl);
+
+        if (pageResponse.ok) {
+          const pageData = await pageResponse.json();
+          if (pageData.data?.[0]?.values) {
+            pageMediaViews = pageData.data[0].values.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
+            console.log(`[${account.display_name || account.username}] Page-level reach (page_media_view): ${pageMediaViews}`);
+          }
+        }
+      } catch (error) {
+        console.error(`[${account.display_name || account.username}] Error fetching page_media_view:`, error);
+      }
+
+      // For reach, use post-level as primary, page-level as fallback (matching analytics endpoint logic)
+      const calculatedReach = totalReach > 0 ? totalReach : pageMediaViews;
+
+      if (calculatedReach > 0) {
         const oldValue = insights.reach?.value || 0;
-        insights.reach = { value: totalReach, previous: 0 };
-        console.log(`[${account.display_name || account.username}] Updated reach: ${oldValue} -> ${totalReach}`);
+        insights.reach = { value: calculatedReach, previous: 0 };
+        console.log(`[${account.display_name || account.username}] Updated reach: ${oldValue} -> ${calculatedReach} (post-level: ${totalReach}, page-level: ${pageMediaViews})`);
       } else if (totalImpressions > 0) {
         // Estimate reach from impressions if not available
         totalReach = Math.floor(totalImpressions * 0.8);
