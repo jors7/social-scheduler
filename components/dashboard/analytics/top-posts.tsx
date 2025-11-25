@@ -73,7 +73,8 @@ export function TopPosts({ analyticsData }: TopPostsProps) {
       if (post.platform === 'facebook') {
         content = post.message || ''
         totalEngagement = (post.likes || 0) + (post.comments || 0) + (post.shares || 0) + (post.reactions || 0)
-        totalReach = post.reach || post.impressions || 0
+        // Note: Per-post reach/impressions deprecated by Meta - only page-level metrics available
+        totalReach = post.reach ?? post.impressions ?? null
         posted_at = post.created_time || post.timestamp || ''
         hasMedia = post.type === 'photo' || post.type === 'video'
       }
@@ -253,7 +254,9 @@ export function TopPosts({ analyticsData }: TopPostsProps) {
                 </div>
                 <div className="flex items-center space-x-1">
                   <Eye className="h-3 w-3" />
-                  <span>{post.reach.toLocaleString()}</span>
+                  <span title={post.reach === null ? "Per-post reach data no longer available from Facebook API (see page-level metrics)" : undefined}>
+                    {post.reach !== null ? post.reach.toLocaleString() : 'N/A'}
+                  </span>
                 </div>
               </div>
             </div>

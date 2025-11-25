@@ -111,10 +111,11 @@ export async function GET(request: NextRequest) {
         console.log(`[Facebook Analytics] Found ${allPosts.length} total posts, ${filteredPosts.length} within ${days} day period`);
         allPosts = filteredPosts;
 
-        // Process all posts with full engagement and insights regardless of date range
+        // Process all posts - NOTE: post_impressions/post_impressions_unique metrics are DEPRECATED by Meta
+        // We can only get engagement data and video views now. Page-level reach/impressions still work.
         const postPromises = allPosts.map(async (post: any) => {
             try {
-              // Get engagement data AND insights in the initial fetch to reduce API calls
+              // Get engagement data - this still works fine
               const engagementUrl = `https://graph.facebook.com/v21.0/${post.id}?fields=likes.summary(true),comments.summary(true),shares,reactions.summary(true)&access_token=${account.access_token}`;
               const engagementResponse = await fetchWithTimeout(engagementUrl, 5000);
 
@@ -128,34 +129,9 @@ export async function GET(request: NextRequest) {
                 reactions = engagementData.reactions?.summary?.total_count || 0;
               }
 
-              // Try to get insights
-              let reach = 0, impressions = 0;
-              try {
-                const insightsUrl = `https://graph.facebook.com/v21.0/${post.id}/insights?metric=post_impressions,post_impressions_unique&access_token=${account.access_token}`;
-                const insightsResponse = await fetchWithTimeout(insightsUrl, 3000);
-
-                if (insightsResponse.ok) {
-                  const insightsData = await insightsResponse.json();
-                  console.log(`[Facebook Analytics] Post ${post.id} insights response:`, JSON.stringify(insightsData, null, 2));
-                  if (insightsData.data && Array.isArray(insightsData.data)) {
-                    insightsData.data.forEach((metric: any) => {
-                      if (metric.name === 'post_impressions' && metric.values?.[0]) {
-                        impressions = metric.values[0].value || 0;
-                        console.log(`[Facebook Analytics] Post ${post.id} - Got impressions: ${impressions}`);
-                      }
-                      if (metric.name === 'post_impressions_unique' && metric.values?.[0]) {
-                        reach = metric.values[0].value || 0;
-                        console.log(`[Facebook Analytics] Post ${post.id} - Got reach: ${reach}`);
-                      }
-                    });
-                  }
-                } else {
-                  const errorText = await insightsResponse.text();
-                  console.error(`[Facebook Analytics] Insights API failed for post ${post.id}:`, errorText);
-                }
-              } catch (insightsError) {
-                console.error(`[Facebook Analytics] Exception fetching insights for post ${post.id}:`, insightsError);
-              }
+              // Per-post reach/impressions are no longer available from Facebook's API
+              // (post_impressions and post_impressions_unique metrics are deprecated)
+              // We return null for these values and rely on page-level metrics instead
 
               return {
                 id: post.id,
@@ -166,8 +142,8 @@ export async function GET(request: NextRequest) {
                 comments,
                 shares,
                 reactions,
-                reach,
-                impressions,
+                reach: null, // No longer available per-post
+                impressions: null, // No longer available per-post
                 totalEngagement: likes + comments + shares + reactions
               };
             } catch (error) {
@@ -182,18 +158,61 @@ export async function GET(request: NextRequest) {
               allMetrics.posts.push(postMetrics);
               allMetrics.totalPosts++;
               allMetrics.totalEngagement += postMetrics.totalEngagement;
-              allMetrics.totalReach += postMetrics.reach;
-              allMetrics.totalImpressions += postMetrics.impressions;
-              console.log(`[Facebook Analytics] Added post ${postMetrics.id}: reach=${postMetrics.reach}, impressions=${postMetrics.impressions}`);
+              // Don't aggregate reach/impressions from posts - they're deprecated
+              // We'll get these from page-level metrics instead
             }
           });
 
-          console.log(`[Facebook Analytics] ============ FINAL TOTALS FOR ACCOUNT ============`);
+          console.log(`[Facebook Analytics] ============ POST-LEVEL TOTALS ============`);
           console.log(`[Facebook Analytics] Total Posts: ${allMetrics.totalPosts}`);
           console.log(`[Facebook Analytics] Total Engagement: ${allMetrics.totalEngagement}`);
-          console.log(`[Facebook Analytics] Total Reach: ${allMetrics.totalReach}`);
-          console.log(`[Facebook Analytics] Total Impressions: ${allMetrics.totalImpressions}`);
-          console.log(`[Facebook Analytics] ==================================================`);
+          console.log(`[Facebook Analytics] Note: Reach/Impressions no longer available per-post (deprecated by Meta)`);
+          console.log(`[Facebook Analytics] ==============================================`);
+
+          // Fetch page-level metrics for reach/impressions (these still work!)
+          try {
+            console.log(`[Facebook Analytics] Fetching page-level metrics for account ${account.platform_user_id}`);
+
+            const pageMetrics = ['page_impressions', 'page_impressions_unique'];
+            const period = 'day';
+
+            for (const metric of pageMetrics) {
+              try {
+                const insightsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/insights?metric=${metric}&period=${period}&since=${sinceTimestamp}&access_token=${account.access_token}`;
+                const response = await fetchWithTimeout(insightsUrl, 5000);
+
+                if (response.ok) {
+                  const data = await response.json();
+
+                  if (data.data && data.data[0] && data.data[0].values) {
+                    // Sum up all values in the period
+                    const total = data.data[0].values.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
+
+                    if (metric === 'page_impressions') {
+                      allMetrics.totalImpressions = total;
+                      console.log(`[Facebook Analytics] Page-level impressions: ${total}`);
+                    } else if (metric === 'page_impressions_unique') {
+                      allMetrics.totalReach = total;
+                      console.log(`[Facebook Analytics] Page-level reach: ${total}`);
+                    }
+                  }
+                } else {
+                  const errorText = await response.text();
+                  console.error(`[Facebook Analytics] Failed to fetch ${metric}:`, errorText);
+                }
+              } catch (metricError) {
+                console.error(`[Facebook Analytics] Error fetching ${metric}:`, metricError);
+              }
+            }
+
+            console.log(`[Facebook Analytics] ============ PAGE-LEVEL TOTALS ============`);
+            console.log(`[Facebook Analytics] Page Reach: ${allMetrics.totalReach}`);
+            console.log(`[Facebook Analytics] Page Impressions: ${allMetrics.totalImpressions}`);
+            console.log(`[Facebook Analytics] ============================================`);
+          } catch (pageError) {
+            console.error(`[Facebook Analytics] Error fetching page-level metrics:`, pageError);
+          }
+
       } catch (error) {
         console.error(`Error fetching data for Facebook account ${account.id}:`, error);
       }
