@@ -129,8 +129,9 @@ export async function GET(request: NextRequest) {
           console.log(`[Facebook Analytics] Videos endpoint not accessible (may not have permission or no videos exist)`);
         }
 
-        // Process all posts - NOTE: post_impressions/post_impressions_unique metrics are DEPRECATED by Meta
-        // We now use video views for video content. Page-level reach/impressions still work for regular posts.
+        // Process all posts - NOTE: post_impressions/post_impressions_unique metrics are DEPRECATED by Meta as of Nov 2025
+        // We now use post_media_view for ALL posts (Meta's official replacement)
+        // For videos, we also fetch from /videos endpoint as a fallback/preference
         const postPromises = allPosts.map(async (post: any) => {
             try {
               // Get engagement data - this still works fine
@@ -147,8 +148,32 @@ export async function GET(request: NextRequest) {
                 reactions = engagementData.reactions?.summary?.total_count || 0;
               }
 
-              // Check if this post has video views data (Meta's replacement for post_impressions)
+              // Fetch post-level views using post_media_view metric (Meta's replacement for post_impressions)
+              let postViews = null;
+              try {
+                const insightsUrl = `https://graph.facebook.com/v21.0/${post.id}/insights?metric=post_media_view&access_token=${account.access_token}`;
+                const insightsResponse = await fetchWithTimeout(insightsUrl, 5000);
+
+                if (insightsResponse.ok) {
+                  const insightsData = await insightsResponse.json();
+                  if (insightsData.data && insightsData.data[0] && insightsData.data[0].values && insightsData.data[0].values[0]) {
+                    postViews = insightsData.data[0].values[0].value || null;
+                    console.log(`[Facebook Analytics] Post ${post.id} post_media_view: ${postViews}`);
+                  }
+                } else {
+                  const errorText = await insightsResponse.text();
+                  console.log(`[Facebook Analytics] No post_media_view for post ${post.id}: ${errorText.substring(0, 100)}`);
+                }
+              } catch (insightsError) {
+                console.log(`[Facebook Analytics] Error fetching post_media_view for post ${post.id}:`, insightsError);
+              }
+
+              // Check if this post has video views data from /videos endpoint
               const videoViews = videoViewsMap.get(post.id) || null;
+
+              // For videos, prefer video endpoint data; for regular posts, use post_media_view
+              const finalViews = videoViews || postViews;
+              const finalReach = postViews; // post_media_view represents unique views/reach
 
               return {
                 id: post.id,
@@ -159,9 +184,9 @@ export async function GET(request: NextRequest) {
                 comments,
                 shares,
                 reactions,
-                reach: null, // No longer available for regular posts
-                impressions: videoViews, // Use video views if available, otherwise null
-                views: videoViews, // Track views separately for clarity
+                reach: finalReach, // Use post_media_view as reach metric
+                impressions: finalViews, // Use best available views metric (video views or post_media_view)
+                views: finalViews, // Track views separately for clarity
                 totalEngagement: likes + comments + shares + reactions
               };
             } catch (error) {
