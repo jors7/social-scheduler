@@ -511,13 +511,45 @@ export default function AnalyticsPage() {
         return postDate >= currentPeriodStart && postDate <= new Date();
       });
 
-      // Recalculate metrics for current period only
-      // Use API-provided totals from platformStats instead of recalculating from individual posts
-      // This preserves accurate Facebook metrics where post-level reach is incomplete due to Instagram cross-post API restrictions
-      const currentTotalPosts = Object.values(platformStats).reduce((sum, stats) => sum + (stats.posts || 0), 0);
-      const currentTotalEngagement = Object.values(platformStats).reduce((sum, stats) => sum + (stats.engagement || 0), 0);
-      const currentTotalReach = Object.values(platformStats).reduce((sum, stats) => sum + (stats.reach || 0), 0);
-      const currentTotalImpressions = Object.values(platformStats).reduce((sum, stats) => sum + (stats.impressions || 0), 0);
+      // Recalculate metrics for current period only by counting filtered posts
+      // We fetch double the period for trend comparison, so we must filter to get accurate current period totals
+      const currentTotalPosts = currentPeriodPosts.length;
+
+      // Calculate engagement, reach, and impressions from filtered posts
+      let currentTotalEngagement = 0;
+      let currentTotalReach = 0;
+      let currentTotalImpressions = 0;
+
+      currentPeriodPosts.forEach((post: any) => {
+        if (post.platform === 'facebook') {
+          currentTotalEngagement += post.engagement || post.totalEngagement || 0;
+          currentTotalReach += post.reach || 0;
+          currentTotalImpressions += post.impressions || post.views || 0;
+        } else if (post.platform === 'instagram') {
+          currentTotalEngagement += (post.likes || 0) + (post.comments || 0) + (post.saves || 0);
+          currentTotalReach += post.reach || 0;
+          currentTotalImpressions += post.impressions || post.plays || 0;
+        } else if (post.platform === 'threads') {
+          currentTotalEngagement += (post.likes || 0) + (post.replies || post.comments || 0) + (post.reposts || post.shares || 0) + (post.quotes || 0);
+          currentTotalReach += post.views || post.impressions || post.reach || 0;
+          currentTotalImpressions += post.views || post.impressions || 0;
+        } else if (post.platform === 'bluesky') {
+          currentTotalEngagement += (post.likes || 0) + (post.replies || 0) + (post.reposts || 0);
+          currentTotalReach += post.reach || 0;
+        } else if (post.platform === 'pinterest') {
+          currentTotalEngagement += (post.saves || 0) + (post.pin_clicks || 0) + (post.outbound_clicks || 0);
+          currentTotalReach += post.impressions || 0;
+          currentTotalImpressions += post.impressions || 0;
+        } else if (post.platform === 'tiktok') {
+          currentTotalEngagement += (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
+          currentTotalReach += post.views || 0;
+          currentTotalImpressions += post.views || 0;
+        } else if (post.platform === 'youtube') {
+          currentTotalEngagement += (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
+          currentTotalReach += post.views || 0;
+          currentTotalImpressions += post.views || 0;
+        }
+      });
 
       const currentEngagementRate = currentTotalReach > 0 ? (currentTotalEngagement / currentTotalReach) * 100 : 0;
 
