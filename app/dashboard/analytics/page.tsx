@@ -495,7 +495,8 @@ export default function AnalyticsPage() {
 
       currentPeriodPosts.forEach(post => {
         if (post.platform === 'facebook') {
-          currentTotalEngagement += (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
+          // Use pre-calculated engagement from API (includes likes + comments + shares + reactions)
+          currentTotalEngagement += post.engagement || post.totalEngagement || 0;
           currentTotalReach += post.reach || 0;
           currentTotalImpressions += post.impressions || 0;
         } else if (post.platform === 'instagram') {
@@ -568,7 +569,8 @@ export default function AnalyticsPage() {
 
           posts.forEach(post => {
             if (post.platform === 'facebook') {
-              engagement += (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
+              // Use pre-calculated engagement from API (includes likes + comments + shares + reactions)
+              engagement += post.engagement || post.totalEngagement || 0;
               reach += post.reach || 0;
               impressions += post.impressions || 0;
             } else if (post.platform === 'instagram') {
