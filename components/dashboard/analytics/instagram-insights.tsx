@@ -102,7 +102,7 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
       // Fetch recent posts directly from Instagram (user insights will be calculated from post metrics)
       const mediaQueryParams = new URLSearchParams({
         limit: postsLimit.toString(),
-        ...(selectedAccount?.id && { accountId: selectedAccount.id })
+        ...(accountToUse?.id && { accountId: accountToUse.id })
       })
       const mediaResponse = await fetch(`/api/instagram/media?${mediaQueryParams}`)
       if (mediaResponse.ok) {
@@ -136,7 +136,7 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
               // Fetch additional insights that aren't available on media object
               // Pass media type to get the right metrics
               console.log('Fetching insights for post:', post.id, 'type:', post.media_type)
-              const insightsResponse = await fetch(`/api/instagram/insights?mediaId=${post.id}&type=media&mediaType=${post.media_type}&accountId=${selectedAccount?.id || ''}`)
+              const insightsResponse = await fetch(`/api/instagram/insights?mediaId=${post.id}&type=media&mediaType=${post.media_type}&accountId=${accountToUse?.id || ''}`)
               if (insightsResponse.ok) {
                 const { insights } = await insightsResponse.json()
                 // Merge insights with existing metrics
