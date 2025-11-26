@@ -11,7 +11,7 @@ export function BlogLayoutServer({ children }: { children: React.ReactNode }) {
       <main>{children}</main>
 
       {/* Footer - Static server component */}
-      <footer className="bg-gray-900 text-white py-12 px-4 mt-20">
+      <footer className="bg-black text-white py-12 px-4 mt-20">
         <div className="container mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
             <div className="col-span-2 md:col-span-1">

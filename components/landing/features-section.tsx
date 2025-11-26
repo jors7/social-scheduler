@@ -70,14 +70,14 @@ export function FeaturesSection() {
         {/* Feature Cards Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
-            <div 
+            <div
               key={feature.title}
               className="group relative"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               {/* Gradient border effect on hover */}
               <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl opacity-0 group-hover:opacity-100 blur transition duration-500"></div>
-              
+
               {/* Card Content */}
               <div className="relative h-full p-8 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1">
                 {/* Title with Icon and Badge */}
@@ -87,14 +87,14 @@ export function FeaturesSection() {
                     <div className={`p-2.5 rounded-lg ${feature.iconBg} group-hover:scale-110 transition-transform duration-300`}>
                       <feature.icon className={`h-6 w-6 ${feature.iconColor}`} />
                     </div>
-                    
+
                     {/* Title */}
                     <h3 className="text-xl font-bold text-gray-900 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 transition-all duration-300">
                       {feature.title}
                     </h3>
                   </div>
                 </div>
-                
+
                 {/* Description */}
                 <p className="text-gray-600 leading-relaxed text-sm">
                   {feature.description}
@@ -110,7 +110,7 @@ export function FeaturesSection() {
             Ready to transform your social media strategy?
           </p>
           <Link href="/pricing">
-            <Button 
+            <Button
               size="lg"
               className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
             >
