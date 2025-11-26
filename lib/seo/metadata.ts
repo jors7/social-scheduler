@@ -65,7 +65,7 @@ const defaultMetadata: Metadata = {
     description: 'Save 15+ hours weekly. Schedule and manage social media posts across 9+ platforms from one dashboard.',
     images: [
       {
-        url: 'https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard.webp',
+        url: 'https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard-v7.webp',
         width: 1200,
         height: 630,
         alt: 'SocialCal Dashboard',
@@ -76,7 +76,7 @@ const defaultMetadata: Metadata = {
     card: 'summary_large_image',
     title: 'SocialCal - All-in-One Social Media Scheduler',
     description: 'Save 15+ hours weekly. Schedule posts across 9+ social platforms.',
-    images: ['https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard.webp'],
+    images: ['https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard-v7.webp'],
     creator: '@socialcal',
     site: '@socialcal',
   },

@@ -7,7 +7,7 @@ export const R2_IMAGE_URLS: Record<string, string> = {
   "/SocialCal.png": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/SocialCal.png",
   "/SocialCal.webp": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/SocialCal.webp",
   "/hero-dashboard.png": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard.png",
-  "/hero-dashboard.webp": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard.webp",
+  "/hero-dashboard-v7.webp": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard-v7.webp",
   "/apple-icon.png": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/apple-icon.png",
   "/apple-icon.webp": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/apple-icon.webp",
   "/icon.png": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/icon.png",
@@ -22,7 +22,7 @@ export function getR2Url(localPath: string): string {
 // Common images
 export const IMAGES = {
   logo: R2_IMAGE_URLS['/SocialCal.webp'] || '/SocialCal.webp',
-  heroDashboard: R2_IMAGE_URLS['/hero-dashboard.webp'] || '/hero-dashboard.webp',
+  heroDashboard: R2_IMAGE_URLS['/hero-dashboard-v7.webp'] || '/hero-dashboard-v7.webp',
   janOrsula: R2_IMAGE_URLS['/Jan-Orsula.webp'] || '/Jan-Orsula.webp',
   icon: R2_IMAGE_URLS['/icon.webp'] || '/icon.webp',
   appleIcon: R2_IMAGE_URLS['/apple-icon.webp'] || '/apple-icon.webp',

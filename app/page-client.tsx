@@ -36,8 +36,8 @@ const structuredData = {
   "operatingSystem": "Web",
   "description": "All-in-one social media management platform for scheduling posts across 9+ platforms with AI-powered captions and analytics",
   "url": "https://www.socialcal.app",
-  "image": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard.webp",
-  "screenshot": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard.webp",
+  "image": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard-v7.webp",
+  "screenshot": "https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard-v7.webp",
   "creator": {
     "@type": "Organization",
     "name": "SocialCal",

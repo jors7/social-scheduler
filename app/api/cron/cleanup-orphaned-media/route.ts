@@ -73,15 +73,36 @@ export async function GET(request: NextRequest) {
     const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const oldFiles = allFiles.filter(f => f.lastModified < cutoffTime);
 
+    // ⚠️ PROTECT STATIC ASSETS FROM DELETION
+    // Whitelist of protected prefixes that should NEVER be deleted
+    const PROTECTED_PREFIXES = [
+      'static-assets/',  // Application assets (logos, icons, hero images)
+    ];
+
+    /**
+     * Check if a file is protected from cleanup
+     * Protected files include app assets like logos, icons, and hero images
+     */
+    const isProtectedFile = (key: string): boolean => {
+      return PROTECTED_PREFIXES.some(prefix => key.startsWith(prefix));
+    };
+
+    // Filter out protected files from old files
+    const oldFilesUnprotected = oldFiles.filter(f => !isProtectedFile(f.key));
+    const protectedCount = oldFiles.length - oldFilesUnprotected.length;
+
     console.log(`[CLEANUP] Cutoff time: ${cutoffTime.toISOString()}`);
     console.log(`[CLEANUP] Files older than 24h: ${oldFiles.length}`);
+    console.log(`[CLEANUP] Protected files skipped: ${protectedCount}`);
+    console.log(`[CLEANUP] Old files eligible for cleanup: ${oldFilesUnprotected.length}`);
     console.log(`[CLEANUP] Files newer than 24h: ${allFiles.length - oldFiles.length}`);
 
-    if (oldFiles.length === 0) {
+    if (oldFilesUnprotected.length === 0) {
       return NextResponse.json({
-        message: 'No files older than 24 hours',
+        message: 'No unprotected files older than 24 hours to clean up',
         deleted: 0,
         checked: allFiles.length,
+        protectedFilesSkipped: protectedCount,
         dryRun
       });
     }
@@ -193,9 +214,9 @@ export async function GET(request: NextRequest) {
       lastModified: Date;
     }> = [];
 
-    console.log('[CLEANUP] Checking each old file for references...');
+    console.log('[CLEANUP] Checking each old unprotected file for references...');
 
-    for (const file of oldFiles) {
+    for (const file of oldFilesUnprotected) {
       const publicUrl = r2Storage.getPublicUrl(file.key);
       const normalizedUrl = normalizeUrl(publicUrl);
 
@@ -264,6 +285,8 @@ export async function GET(request: NextRequest) {
       dryRun,
       totalFiles: allFiles.length,
       filesOlderThan24h: oldFiles.length,
+      protectedFilesSkipped: protectedCount,
+      eligibleForCleanup: oldFilesUnprotected.length,
       referencedFiles: referencedUrls.size,
       platformExemptedFiles: platformExemptedUrls.size,
       orphanedFiles: orphanedFiles.length,
