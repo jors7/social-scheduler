@@ -478,7 +478,7 @@ export async function POST(request: NextRequest) {
           .update({
             plan_id: 'free',
             status: 'active', // Keep active but on free plan
-            billing_cycle: null,
+            billing_cycle: 'monthly', // Default to monthly for free plan (NOT NULL constraint)
             stripe_subscription_id: null, // Remove Stripe subscription link
             is_active: true, // Keep user logged in with limited access
             canceled_at: new Date().toISOString(),

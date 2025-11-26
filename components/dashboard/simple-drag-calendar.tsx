@@ -17,6 +17,7 @@ interface ScheduledPost {
   created_at: string
   pinterest_title?: string
   pinterest_description?: string
+  platform_media_url?: string  // Platform-fetched media URL for thumbnails
 }
 
 interface DragDropCalendarProps {
@@ -291,6 +292,11 @@ export function SimpleDragCalendar({
   }
 
   const getMediaUrl = (post: ScheduledPost): string | null => {
+    // First check platform_media_url (preferred - fetched from actual platform after posting)
+    if (post.platform_media_url && typeof post.platform_media_url === 'string' && post.platform_media_url.trim() !== '') {
+      return post.platform_media_url.trim()
+    }
+
     // Check the media_urls field
     if (post.media_urls) {
       // Handle different possible formats of media_urls
@@ -304,6 +310,8 @@ export function SimpleDragCalendar({
 
         // If it's an object, try to extract the URL from various possible properties
         if (firstMedia && typeof firstMedia === 'object') {
+          // Prefer thumbnailUrl for videos
+          if (firstMedia.thumbnailUrl && typeof firstMedia.thumbnailUrl === 'string') return firstMedia.thumbnailUrl.trim()
           // Check for various possible property names
           if (firstMedia.url && typeof firstMedia.url === 'string') return firstMedia.url.trim()
           if (firstMedia.media_url && typeof firstMedia.media_url === 'string') return firstMedia.media_url.trim()

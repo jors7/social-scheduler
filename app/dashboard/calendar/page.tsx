@@ -38,13 +38,24 @@ export default function CalendarPage() {
 
   const fetchScheduledPosts = async () => {
     try {
-      const response = await fetch('/api/posts/schedule')
-      if (!response.ok) throw new Error('Failed to fetch')
-      
-      const data = await response.json()
-      const posts = data.posts || []
+      // Fetch pending posts from schedule endpoint
+      const pendingResponse = await fetch('/api/posts/schedule?status=pending,posting,cancelled')
 
-      setScheduledPosts(posts)
+      // Fetch posted/failed posts from posted-with-media endpoint (includes platform API media URLs)
+      const postedResponse = await fetch('/api/posts/posted-with-media?status=posted,failed')
+
+      if (!pendingResponse.ok || !postedResponse.ok) throw new Error('Failed to fetch')
+
+      const pendingData = await pendingResponse.json()
+      const postedData = await postedResponse.json()
+
+      const pendingPosts = pendingData.posts || []
+      const postedPosts = postedData.posts || []
+
+      // Merge both sets of posts
+      const allPosts = [...pendingPosts, ...postedPosts]
+
+      setScheduledPosts(allPosts)
     } catch (error) {
       console.error('Error fetching scheduled posts:', error)
       toast.error('Failed to load scheduled posts')
