@@ -91,24 +91,22 @@ export function ImpactSection() {
           {/* Save Time Metric */}
           <div className="flex flex-col items-start px-4 py-6 sm:py-4 md:border-r border-gray-200 border-b md:border-b-0">
             <div className="mb-3">
-              <span className="text-5xl sm:text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">15x</span>
+              <span className="text-5xl sm:text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">15+</span>
             </div>
-            <h3 className="text-lg font-semibold mb-2 text-gray-900">Save time</h3>
+            <h3 className="text-lg font-semibold mb-2 text-gray-900">Save time weekly</h3>
             <p className="text-gray-600 text-sm sm:text-xs leading-relaxed">
-              Create and schedule your social media <br className="hidden sm:inline" />
-              content 15x faster.
+              Save 15+ hours weekly to focus on creating content
             </p>
           </div>
 
-          {/* Get Answers Faster Metric */}
+          {/* Multi-Platform Metric */}
           <div className="flex flex-col items-start px-4 py-6 sm:py-4 md:border-r border-gray-200 border-b md:border-b-0">
             <div className="mb-3">
-              <span className="text-5xl sm:text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">67%</span>
+              <span className="text-5xl sm:text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">9+</span>
             </div>
-            <h3 className="text-lg font-semibold mb-2 text-gray-900">Manage posts faster</h3>
+            <h3 className="text-lg font-semibold mb-2 text-gray-900">Post everywhere at once</h3>
             <p className="text-gray-600 text-sm sm:text-xs leading-relaxed">
-              Find and manage all your posts <br className="hidden sm:inline" />
-              67% faster.
+              Connect with audiences on 9 platforms, with one click
             </p>
           </div>
 

@@ -375,14 +375,14 @@ function LandingPageContent({ isAuthenticated, userEmail }: LandingPageContentPr
         <CapabilitiesCarousel />
       </Suspense>
 
-      {/* How It Works Section */}
-      <Suspense fallback={<div className="h-96 animate-pulse bg-white" />}>
-        <HowItWorksSection />
-      </Suspense>
-
       {/* Impact Section */}
       <Suspense fallback={<div className="h-96 animate-pulse bg-gray-50" />}>
         <ImpactSection />
+      </Suspense>
+
+      {/* How It Works Section */}
+      <Suspense fallback={<div className="h-96 animate-pulse bg-white" />}>
+        <HowItWorksSection />
       </Suspense>
 
       {/* Features Section */}
