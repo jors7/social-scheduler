@@ -134,6 +134,19 @@ export async function GET(request: NextRequest) {
       console.log(`[CLEANUP] Found ${drafts?.length || 0} drafts with media`);
     }
 
+    // Get all media URLs from media library
+    console.log('[CLEANUP] Fetching media library from database...');
+    const { data: mediaLibrary, error: mediaLibraryError } = await supabase
+      .from('media_library')
+      .select('url, thumbnail_url')
+      .not('url', 'is', null);
+
+    if (mediaLibraryError) {
+      console.error('[CLEANUP] Error fetching media library:', mediaLibraryError);
+    } else {
+      console.log(`[CLEANUP] Found ${mediaLibrary?.length || 0} media library items`);
+    }
+
     // Build set of all referenced URLs and platform-exempted URLs
     const referencedUrls = new Set<string>();
     const platformExemptedUrls = new Set<string>();
@@ -193,6 +206,20 @@ export async function GET(request: NextRequest) {
               }
             }
           }
+        }
+      }
+    }
+
+    // Add URLs from media library
+    if (mediaLibrary) {
+      for (const media of mediaLibrary) {
+        // Add primary URL
+        if (media.url && typeof media.url === 'string' && media.url.trim() !== '') {
+          referencedUrls.add(normalizeUrl(media.url));
+        }
+        // Add thumbnail URL if exists
+        if (media.thumbnail_url && typeof media.thumbnail_url === 'string' && media.thumbnail_url.trim() !== '') {
+          referencedUrls.add(normalizeUrl(media.thumbnail_url));
         }
       }
     }
