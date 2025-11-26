@@ -158,25 +158,23 @@ export default function EditBlogPostPage() {
   const uploadFeaturedImage = async (file: File): Promise<string | null> => {
     try {
       setUploading(true)
-      
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
-      const filePath = `blog-featured/${fileName}`
 
-      const { error: uploadError } = await supabase.storage
-        .from('media')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        })
+      // Use the blog upload API endpoint (supports R2 with Supabase fallback)
+      const formData = new FormData()
+      formData.append('file', file)
 
-      if (uploadError) throw uploadError
+      const response = await fetch('/api/blog/upload', {
+        method: 'POST',
+        body: formData,
+      })
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('media')
-        .getPublicUrl(filePath)
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Upload failed')
+      }
 
-      return publicUrl
+      const data = await response.json()
+      return data.url
     } catch (error) {
       console.error('Error uploading image:', error)
       toast.error('Failed to upload featured image')
