@@ -2,7 +2,7 @@
 
 export function ImpactSection() {
   return (
-    <section className="relative bg-white pt-24 pb-12 px-4 overflow-hidden min-h-[600px] md:min-h-[500px]">
+    <section className="relative bg-white pt-16 pb-12 px-4 overflow-hidden min-h-[600px] md:min-h-[500px]">
       {/* Purple gradient background under the curve - adjusted for mobile */}
       <div className="absolute inset-0 pointer-events-none">
         <svg 
@@ -76,7 +76,7 @@ export function ImpactSection() {
       </div>
 
       {/* Content above the curve - with more padding on mobile */}
-      <div className="container mx-auto max-w-6xl relative z-10 pb-48 md:pb-32 px-4 sm:px-6">
+      <div className="container mx-auto md:ml-20 md:mr-auto max-w-6xl relative z-10 pb-48 md:pb-32 px-4 sm:px-6">
         <div className="text-left mb-6">
           <h2 className="text-3xl lg:text-4xl font-bold mb-3 text-gray-900">
             What&apos;s the SocialCal impact?
@@ -106,7 +106,7 @@ export function ImpactSection() {
             </div>
             <h3 className="text-lg font-semibold mb-2 text-gray-900">Post everywhere at once</h3>
             <p className="text-gray-600 text-sm sm:text-xs leading-relaxed">
-              Connect with audiences on 9 platforms, with one click
+              Connect with audiences on 9 platforms, with <br className="sm:hidden" />one click
             </p>
           </div>
 
