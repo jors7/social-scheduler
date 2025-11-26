@@ -6,6 +6,7 @@ import { TwitterService } from '@/lib/twitter/service';
 import { ThreadsService } from '@/lib/threads/service';
 import { PinterestService, formatPinterestContent } from '@/lib/pinterest/service';
 import { TikTokService } from '@/lib/tiktok/service';
+import { fetchWithTimeout, TIMEOUT } from '@/lib/utils/fetch-with-timeout';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
@@ -39,8 +40,9 @@ async function refreshThreadsTokenCron(account: any, supabase: SupabaseClient): 
     });
 
     console.log('Refreshing token with grant_type: th_refresh_token');
-    const response = await fetch(`${refreshUrl}?${params}`, {
-      method: 'GET'
+    const response = await fetchWithTimeout(`${refreshUrl}?${params}`, {
+      method: 'GET',
+      timeout: TIMEOUT.DEFAULT
     });
 
     const responseText = await response.text();
@@ -573,10 +575,30 @@ export async function postToThreadsDirect(
         } else {
           console.error('Token refresh failed:', error);
           if (isExpired) {
+            // Mark account as inactive so user knows to reconnect
+            if (supabase) {
+              await supabase
+                .from('social_accounts')
+                .update({
+                  is_active: false,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', account.id);
+              console.warn(`Marked Threads account ${account.id} as inactive due to expired token`);
+            }
             throw new Error(`Threads token expired and refresh failed: ${error}. Please reconnect your Threads account in Settings.`);
           }
-          // If not expired yet, try with existing token
-          console.warn('Using existing token despite refresh failure');
+          // If not expired yet, log warning but try with existing token
+          // Also log structured warning for monitoring
+          console.warn(JSON.stringify({
+            event: 'threads_token_refresh_failed',
+            account_id: account.id,
+            username: account.username,
+            expires_at: account.expires_at,
+            days_until_expiry: Math.floor((new Date(account.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+            error: error,
+            action: 'using_existing_token'
+          }));
         }
       }
     }
@@ -791,10 +813,16 @@ export async function postToThreadsDirect(
   }
 }
 
-export async function postToPinterestDirect(content: string, account: any, mediaUrls?: string[]) {
+export async function postToPinterestDirect(
+  content: string,
+  account: any,
+  mediaUrls?: string[],
+  options?: { boardId?: string }
+) {
   console.log('=== DIRECT PINTEREST POST ===');
   console.log('Content:', content);
   console.log('Has media:', !!mediaUrls && mediaUrls.length > 0);
+  console.log('Board ID from options:', options?.boardId || 'not provided');
 
   try {
     if (!mediaUrls || mediaUrls.length === 0) {
@@ -848,17 +876,26 @@ export async function postToPinterestDirect(content: string, account: any, media
     // Format content for Pinterest (title + description)
     const { title, description } = formatPinterestContent(content);
 
-    // Pinterest requires a board_id - we'll use the first/default board
-    // If board_id is stored in account, use that, otherwise fetch boards
-    let boardId = account.board_id;
+    // Pinterest requires a board_id
+    // Priority: 1) passed board ID (from scheduled post), 2) account default
+    // No automatic fallback - user must explicitly select a board
+    const boardId = options?.boardId || account.board_id;
 
     if (!boardId) {
+      // Check if user has any boards to provide helpful error message
       const boards = await pinterestService.getBoards();
       if (boards.length === 0) {
-        throw new Error('No Pinterest boards found. Please create a board first.');
+        throw new Error('No Pinterest boards found. Please create a board on Pinterest first, then try again.');
       }
-      boardId = boards[0].id;
+      // List available boards in error message to help user
+      const boardNames = boards.slice(0, 5).map((b: any) => `"${b.name}"`).join(', ');
+      const moreBoards = boards.length > 5 ? ` and ${boards.length - 5} more` : '';
+      throw new Error(
+        `Pinterest board not selected. Please select a board when creating the post. ` +
+        `Available boards: ${boardNames}${moreBoards}`
+      );
     }
+    console.log(`Pinterest: Using specified board ID: ${boardId}`);
 
     // Check if this is a single video - use two-phase processing to avoid timeouts
     const isSingleVideo = hasVideo && !hasImage && normalizedMediaUrls.length === 1;

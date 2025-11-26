@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSubscriptionContext } from '@/providers/subscription-provider'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,6 +19,51 @@ export function SubscriptionGate({ children, feature = 'premium features', class
   const { subscription, loading, refresh } = useSubscriptionContext()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const pollingRef = useRef(false)
+
+  const handlePaymentSuccess = useCallback(async () => {
+    // Prevent duplicate polling
+    if (pollingRef.current) return
+    pollingRef.current = true
+
+    toast.success('Payment successful! Activating your subscription...')
+
+    // Poll for subscription activation with exponential backoff
+    const maxAttempts = 10
+    const baseDelay = 1000 // Start with 1 second
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      // Exponential backoff: 1s, 2s, 3s, 4s, 5s, 5s, 5s, 5s, 5s, 5s (capped at 5s)
+      const delay = Math.min(baseDelay * attempt, 5000)
+
+      await new Promise(resolve => setTimeout(resolve, delay))
+
+      try {
+        await refresh()
+
+        // Check if subscription is now active
+        const response = await fetch('/api/subscription/status')
+        const data = await response.json()
+
+        if (data.subscription?.isActive || data.subscription?.status === 'trialing') {
+          toast.success('Your subscription is now active!')
+          pollingRef.current = false
+          // Clear the URL param to prevent re-triggering
+          router.replace(window.location.pathname)
+          return
+        }
+
+        console.log(`Subscription check attempt ${attempt}/${maxAttempts}: not active yet`)
+      } catch (error) {
+        console.error(`Subscription check attempt ${attempt} failed:`, error)
+      }
+    }
+
+    // Max attempts reached - still show partial success
+    toast.info('Your subscription is being processed. Please refresh the page in a moment.')
+    pollingRef.current = false
+    router.replace(window.location.pathname)
+  }, [refresh, router])
 
   useEffect(() => {
     // Check if we just returned from a successful payment
@@ -26,18 +71,7 @@ export function SubscriptionGate({ children, feature = 'premium features', class
     if (subscriptionParam === 'success') {
       handlePaymentSuccess()
     }
-  }, [searchParams])
-
-  const handlePaymentSuccess = async () => {
-    toast.success('Payment successful! Activating your subscription...')
-
-    // Wait for webhook to process then refresh
-    // Webhooks typically process within 1-2 seconds
-    setTimeout(async () => {
-      await refresh()
-      toast.success('Your subscription is now active!')
-    }, 3000)
-  }
+  }, [searchParams, handlePaymentSuccess])
 
   const handleSubscribe = () => {
     // Redirect to pricing page

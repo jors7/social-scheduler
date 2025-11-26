@@ -133,6 +133,42 @@ export async function getAuditLogs(
   }
 }
 
+// Common admin actions for affiliate system
+export const ADMIN_ACTIONS = {
+  AFFILIATE_APPROVED: 'affiliate_approved',
+  AFFILIATE_REJECTED: 'affiliate_rejected',
+  AFFILIATE_SUSPENDED: 'affiliate_suspended',
+  AFFILIATE_REACTIVATED: 'affiliate_reactivated',
+  PAYOUT_PROCESSED: 'payout_processed',
+  PAYOUT_CANCELLED: 'payout_cancelled',
+} as const;
+
+/**
+ * Log an admin action for audit trail
+ */
+export async function logAdminAction(
+  adminId: string,
+  action: string,
+  targetResourceType: string,
+  targetResourceId?: string,
+  details?: Record<string, any>
+): Promise<void> {
+  try {
+    const supabase = getServiceSupabase();
+
+    await supabase.from('admin_audit_log').insert({
+      admin_id: adminId,
+      action: action,
+      target_resource: targetResourceType,
+      target_user_id: targetResourceId,
+      details: details,
+    });
+  } catch (error) {
+    // Log but don't fail the request if audit logging fails
+    console.error('Failed to log admin action:', error);
+  }
+}
+
 /**
  * Get audit log statistics
  */

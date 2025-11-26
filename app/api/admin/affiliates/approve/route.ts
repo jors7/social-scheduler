@@ -11,6 +11,8 @@ import {
   approveApplication,
   rejectApplication,
 } from '@/lib/affiliate/service';
+import { isAdminEmail, checkAdminByUserId } from '@/lib/auth/admin';
+import { logAdminAction, ADMIN_ACTIONS } from '@/lib/admin/audit';
 
 function getServiceClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -44,9 +46,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Add admin role check here
-    // For now, any authenticated user can approve
-    // In production, check user.user_metadata.role === 'admin'
+    // Verify user is an admin
+    const supabaseAdmin = getServiceClient();
+    const isAdmin = isAdminEmail(user.email) || await checkAdminByUserId(user.id, supabaseAdmin);
+
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: Admin access required' },
+        { status: 403 }
+      );
+    }
 
     const { application_id, action, rejection_reason } = await request.json();
 
@@ -64,9 +73,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabaseAdmin = getServiceClient();
-
-    // Get the application
+    // Get the application (supabaseAdmin already initialized above for admin check)
     const { data: application, error: appError } = await supabaseAdmin
       .from('affiliate_applications')
       .select('*')
@@ -111,6 +118,18 @@ export async function POST(request: NextRequest) {
         // Don't fail the request if email fails
       }
 
+      // Log audit trail
+      await logAdminAction(
+        user.id,
+        ADMIN_ACTIONS.AFFILIATE_APPROVED,
+        'affiliate_application',
+        application_id,
+        {
+          applicant_email: application.email,
+          referral_code: result.affiliate.referral_code,
+        }
+      );
+
       return NextResponse.json({
         success: true,
         message: 'Application approved successfully',
@@ -141,6 +160,18 @@ export async function POST(request: NextRequest) {
         console.error('Error queuing rejection email:', emailError);
         // Don't fail the request if email fails
       }
+
+      // Log audit trail
+      await logAdminAction(
+        user.id,
+        ADMIN_ACTIONS.AFFILIATE_REJECTED,
+        'affiliate_application',
+        application_id,
+        {
+          applicant_email: application.email,
+          rejection_reason: rejection_reason || 'Application did not meet our requirements',
+        }
+      );
 
       return NextResponse.json({
         success: true,

@@ -60,10 +60,15 @@ export class TikTokService {
   /**
    * Initialize a video upload using PULL_FROM_URL
    * TikTok will download the video from the provided URL
-   * 
+   *
    * @param title - Video title/caption
    * @param videoUrl - Public URL of the video (must be HTTPS)
    * @param privacyLevel - Privacy level (PUBLIC_TO_EVERYONE, MUTUAL_FOLLOW_FRIENDS, SELF_ONLY)
+   *   - PUBLIC_TO_EVERYONE: Video visible to all users (default if not specified)
+   *   - MUTUAL_FOLLOW_FRIENDS: Video visible only to mutual followers
+   *   - SELF_ONLY: Draft mode - video saved to inbox, not published
+   *   NOTE: If no privacy level is passed, defaults to PUBLIC_TO_EVERYONE.
+   *   For unaudited/sandbox apps, this is automatically overridden to SELF_ONLY.
    * @param options - Additional video options
    */
   async createPost(
@@ -84,11 +89,14 @@ export class TikTokService {
     }
   ) {
     try {
+      // Log the privacy level being used (helpful for debugging)
+      console.log(`TikTok createPost: privacy_level=${privacyLevel}`);
+
       // Check if we're in sandbox mode from environment variable
       // OR if the app is unaudited (even with production credentials)
       const isSandbox = process.env.TIKTOK_SANDBOX === 'true';
       const isUnaudited = process.env.TIKTOK_UNAUDITED === 'true';
-      
+
       // IMPORTANT: Sandbox and unaudited apps can only use SELF_ONLY privacy level
       // TikTok requires apps to be audited before they can post publicly
       if ((isSandbox || isUnaudited) && privacyLevel !== 'SELF_ONLY') {

@@ -3,6 +3,7 @@ import { PinterestService } from '@/lib/pinterest/service';
 import { InstagramService } from '@/lib/instagram/service';
 import { createBrowserClient } from '@supabase/ssr';
 import { PostingProgressTracker } from './progress-tracker';
+import { cleanHtmlContent } from '@/lib/utils/html-cleaner';
 
 export interface PostData {
   content: string;
@@ -71,6 +72,75 @@ export interface PostResult {
       reposts?: number;
       quotes?: number;
     };
+  };
+}
+
+// Helper function to safely parse API responses
+async function safeJsonParse(response: Response): Promise<{ data?: any; error?: string }> {
+  const contentType = response.headers.get('content-type');
+
+  try {
+    if (contentType?.includes('application/json')) {
+      const data = await response.json();
+      return { data };
+    } else {
+      // Non-JSON response (likely HTML error page)
+      const text = await response.text();
+      return { error: text.slice(0, 500) || 'Non-JSON response received' };
+    }
+  } catch (parseError) {
+    // JSON parsing failed
+    return { error: `Failed to parse response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}` };
+  }
+}
+
+// Helper function to validate media URLs are accessible
+async function validateMediaUrls(urls: string[]): Promise<{ valid: boolean; invalidUrls: string[]; errors: string[] }> {
+  const invalidUrls: string[] = [];
+  const errors: string[] = [];
+
+  for (const url of urls) {
+    try {
+      // Basic URL format validation
+      const urlObj = new URL(url);
+      if (!['http:', 'https:'].includes(urlObj.protocol)) {
+        invalidUrls.push(url);
+        errors.push(`Invalid protocol for URL: ${url.slice(0, 50)}...`);
+        continue;
+      }
+
+      // HEAD request to check if URL is accessible (with timeout)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      try {
+        const response = await fetch(url, {
+          method: 'HEAD',
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok && response.status !== 403) {
+          // 403 might be expected for some storage providers without public listing
+          invalidUrls.push(url);
+          errors.push(`URL returned ${response.status}: ${url.slice(0, 50)}...`);
+        }
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        // Don't fail on timeout/network errors as URL might still be valid
+        // Some servers don't support HEAD requests
+        console.warn(`Could not verify URL (might still be valid): ${url.slice(0, 50)}...`);
+      }
+    } catch (urlError) {
+      invalidUrls.push(url);
+      errors.push(`Invalid URL format: ${url.slice(0, 50)}...`);
+    }
+  }
+
+  return {
+    valid: invalidUrls.length === 0,
+    invalidUrls,
+    errors
   };
 }
 
@@ -229,7 +299,32 @@ export class PostingService {
     postData?: PostData
   ): Promise<PostResult> {
     // Clean content for text-only platforms
-    const textContent = this.cleanHtmlContent(content);
+    const textContent = cleanHtmlContent(content);
+
+    // Platform-specific character limits
+    const PLATFORM_CHAR_LIMITS: Record<string, number> = {
+      twitter: 280,
+      instagram: 2200,
+      facebook: 63206,
+      linkedin: 3000,
+      youtube: 5000,
+      tiktok: 2200,
+      threads: 500,
+      bluesky: 300,
+      pinterest: 500
+    };
+
+    // Validate character limit before posting
+    const charLimit = PLATFORM_CHAR_LIMITS[platform];
+    if (charLimit && textContent.length > charLimit) {
+      const errorMsg = `Content exceeds ${platform} character limit (${textContent.length}/${charLimit} characters). Please shorten your content.`;
+      console.error(`[PostingService] ${errorMsg}`);
+      return {
+        platform,
+        success: false,
+        error: errorMsg
+      };
+    }
 
     // Normalize mediaUrls - extract URL strings from objects if needed
     const normalizedMediaUrls: string[] | undefined = mediaUrls?.map(item => {
@@ -242,6 +337,19 @@ export class PostingService {
         return '';  // Return empty string for invalid items
       }
     }).filter(url => url !== '');  // Remove any empty strings
+
+    // Validate media URLs if present
+    if (normalizedMediaUrls && normalizedMediaUrls.length > 0) {
+      const validation = await validateMediaUrls(normalizedMediaUrls);
+      if (!validation.valid) {
+        console.error(`[PostingService] Invalid media URLs for ${platform}:`, validation.errors);
+        return {
+          platform,
+          success: false,
+          error: `Media validation failed: ${validation.errors.join('; ')}`
+        };
+      }
+    }
 
     console.log(`Posting to ${platform}:`, {
       originalContent: content,
@@ -353,12 +461,16 @@ export class PostingService {
         }),
       });
 
-      const data = await response.json();
+      const { data, error: parseError } = await safeJsonParse(response);
+
+      if (parseError) {
+        throw new Error(`Facebook API error: ${parseError}`);
+      }
 
       console.log('📥 Facebook API response received:', JSON.stringify(data, null, 2));
 
       if (!response.ok) {
-        throw new Error(data.error || 'Facebook posting failed');
+        throw new Error(data?.error || 'Facebook posting failed');
       }
 
       const result = {
@@ -505,10 +617,14 @@ export class PostingService {
           }),
         });
 
-        const data = await response.json();
+        const { data, error: parseError } = await safeJsonParse(response);
+
+        if (parseError) {
+          throw new Error(`Instagram API error: ${parseError}`);
+        }
 
         if (!response.ok) {
-          throw new Error(data.error || 'Instagram posting failed');
+          throw new Error(data?.error || 'Instagram posting failed');
         }
 
         return {
@@ -556,10 +672,14 @@ export class PostingService {
         }),
       });
 
-      const data = await response.json();
+      const { data, error: parseError } = await safeJsonParse(response);
+
+      if (parseError) {
+        throw new Error(`Bluesky API error: ${parseError}`);
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Bluesky posting failed');
+        throw new Error(data?.error || 'Bluesky posting failed');
       }
 
       return {
@@ -618,18 +738,22 @@ export class PostingService {
         }),
       });
 
-      const data = await response.json();
+      const { data, error: parseError } = await safeJsonParse(response);
+
+      if (parseError) {
+        throw new Error(`Pinterest API error: ${parseError}`);
+      }
 
       if (!response.ok) {
         // Handle Pinterest-specific errors
-        if (data.error?.includes('permission') || data.error?.includes('403')) {
+        if (data?.error?.includes('permission') || data?.error?.includes('403')) {
           return {
             platform: 'pinterest',
             success: false,
             error: 'Pinterest board permissions error. Please check your board settings.'
           };
         }
-        throw new Error(data.error || 'Pinterest posting failed');
+        throw new Error(data?.error || 'Pinterest posting failed');
       }
 
       return {
@@ -737,10 +861,14 @@ export class PostingService {
           }),
         });
 
-        const data = await response.json();
+        const { data, error: parseError } = await safeJsonParse(response);
+
+        if (parseError) {
+          throw new Error(`TikTok API error: ${parseError}`);
+        }
 
         if (!response.ok) {
-          throw new Error(data.error || 'TikTok photo posting failed');
+          throw new Error(data?.error || 'TikTok photo posting failed');
         }
 
         return {
@@ -783,20 +911,24 @@ export class PostingService {
           }),
         });
 
-        const data = await response.json();
+        const { data: videoData, error: videoParseError } = await safeJsonParse(response);
+
+        if (videoParseError) {
+          throw new Error(`TikTok API error: ${videoParseError}`);
+        }
 
         if (!response.ok) {
-          throw new Error(data.error || 'TikTok posting failed');
+          throw new Error(videoData?.error || 'TikTok posting failed');
         }
 
         // Check if this is a draft posting (sandbox/unaudited mode)
-        if (data.sandbox && isDraft) {
+        if (videoData.sandbox && isDraft) {
           return {
             platform: 'tiktok',
             success: true,
-            postId: data.publishId,
+            postId: videoData.publishId,
             data: {
-              id: data.publishId,
+              id: videoData.publishId,
               isDraft: true,
               message: 'Video saved as draft in your TikTok app',
               thumbnailUrl: thumbnailUrl // Include thumbnail URL
@@ -807,9 +939,9 @@ export class PostingService {
         return {
           platform: 'tiktok',
           success: true,
-          postId: data.publishId,
+          postId: videoData.publishId,
           data: {
-            id: data.publishId,
+            id: videoData.publishId,
             thumbnailUrl: thumbnailUrl // Include thumbnail URL
           }
         };
@@ -821,59 +953,6 @@ export class PostingService {
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
-  }
-
-  private cleanHtmlContent(content: string): string {
-    // Handle null/undefined content
-    if (!content || typeof content !== 'string') {
-      return '';
-    }
-    
-    let cleaned = content;
-    
-    // First, decode any HTML entities that might have been double-encoded
-    // This handles cases like &lt;p&gt;text&lt;/p&gt; -> <p>text</p>
-    cleaned = cleaned
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'");
-    
-    // Now convert HTML tags to line breaks
-    cleaned = cleaned
-      .replace(/<\/p>/gi, '\n\n') // End of paragraph gets double line break
-      .replace(/<br\s*\/?>/gi, '\n') // Line breaks get single line break
-      .replace(/<\/div>/gi, '\n') // Divs often act as line breaks
-      .replace(/<\/li>/gi, '\n') // List items get line breaks
-      
-    // Replace remaining HTML entities
-    cleaned = cleaned
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&ldquo;/g, '"')
-      .replace(/&rdquo;/g, '"')
-      .replace(/&lsquo;/g, "'")
-      .replace(/&rsquo;/g, "'")
-      .replace(/&mdash;/g, '—')
-      .replace(/&ndash;/g, '–');
-
-    // Remove remaining HTML tags
-    cleaned = cleaned.replace(/<[^>]*>/g, '');
-    
-    // Clean up excessive line breaks (more than 2 in a row)
-    cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
-    
-    // Replace multiple spaces with single space (but preserve line breaks)
-    cleaned = cleaned.replace(/[^\S\n]+/g, ' ');
-    
-    // Trim whitespace from start and end, and from each line
-    cleaned = cleaned
-      .split('\n')
-      .map(line => line.trim())
-      .join('\n')
-      .trim();
-    
-    return cleaned;
   }
 
   private async postToLinkedIn(content: string, account: any, mediaUrls?: string[]): Promise<PostResult> {
@@ -898,10 +977,14 @@ export class PostingService {
         }),
       });
 
-      const data = await response.json();
+      const { data, error: parseError } = await safeJsonParse(response);
+
+      if (parseError) {
+        throw new Error(`LinkedIn API error: ${parseError}`);
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'LinkedIn posting failed');
+        throw new Error(data?.error || 'LinkedIn posting failed');
       }
 
       return {
@@ -940,12 +1023,16 @@ export class PostingService {
         }),
       });
 
-      const data = await response.json();
+      const { data, error: parseError } = await safeJsonParse(response);
       console.log('Threads API response:', data);
+
+      if (parseError) {
+        throw new Error(`Threads API error: ${parseError}`);
+      }
 
       if (!response.ok) {
         console.error('Threads posting failed:', data);
-        throw new Error(data.error || 'Threads posting failed');
+        throw new Error(data?.error || 'Threads posting failed');
       }
 
       console.log('Threads post successful:', {
@@ -967,10 +1054,10 @@ export class PostingService {
         });
 
         if (statusResponse.ok) {
-          const statusData = await statusResponse.json();
+          const { data: statusData } = await safeJsonParse(statusResponse);
           console.log('Threads post status:', statusData);
-          
-          if (statusData.permalink) {
+
+          if (statusData?.permalink) {
             console.log('View your post at:', statusData.permalink);
           }
         }
@@ -1026,10 +1113,14 @@ export class PostingService {
         }),
       });
 
-      const data = await response.json();
+      const { data, error: parseError } = await safeJsonParse(response);
+
+      if (parseError) {
+        throw new Error(`Twitter API error: ${parseError}`);
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Twitter posting failed');
+        throw new Error(data?.error || 'Twitter posting failed');
       }
 
       return {
@@ -1107,10 +1198,14 @@ export class PostingService {
         }),
       });
 
-      const data = await response.json();
+      const { data, error: parseError } = await safeJsonParse(response);
+
+      if (parseError) {
+        throw new Error(`YouTube API error: ${parseError}`);
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'YouTube posting failed');
+        throw new Error(data?.error || 'YouTube posting failed');
       }
 
       return {

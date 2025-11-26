@@ -16,9 +16,69 @@ import {
 // - RLS policies on affiliate_clicks table require service role to insert
 // - The endpoint is public but validated (requires valid referral code)
 // - IP-based deduplication prevents abuse
+// - Rate limiting prevents referral code enumeration attacks
+
+// Simple in-memory rate limiter
+// In production, consider using Redis or a dedicated rate limiting service
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
+const RATE_LIMIT_MAX_REQUESTS = 10; // Max 10 requests per minute per IP
+
+function cleanupRateLimiter() {
+  const now = Date.now();
+  const entries = Array.from(rateLimitMap.entries());
+  for (const [key, value] of entries) {
+    if (now > value.resetTime) {
+      rateLimitMap.delete(key);
+    }
+  }
+}
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number; resetIn: number } {
+  // Cleanup old entries periodically
+  if (Math.random() < 0.1) cleanupRateLimiter();
+
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+
+  if (!entry || now > entry.resetTime) {
+    // New window
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1, resetIn: RATE_LIMIT_WINDOW_MS };
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) {
+    // Rate limited
+    return { allowed: false, remaining: 0, resetIn: entry.resetTime - now };
+  }
+
+  // Increment count
+  entry.count++;
+  return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - entry.count, resetIn: entry.resetTime - now };
+}
 
 export async function POST(request: NextRequest) {
   try {
+    // Get client IP for rate limiting
+    const forwardedFor = request.headers.get('x-forwarded-for');
+    const clientIp = forwardedFor ? forwardedFor.split(',')[0].trim() : 'unknown';
+
+    // Check rate limit
+    const rateLimit = checkRateLimit(clientIp);
+    if (!rateLimit.allowed) {
+      console.warn(`Rate limited IP ${clientIp} on click tracking`);
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': Math.ceil(rateLimit.resetIn / 1000).toString(),
+            'X-RateLimit-Remaining': '0',
+          }
+        }
+      );
+    }
+
     // Parse request body
     const body = await request.json();
     const { referralCode } = body;

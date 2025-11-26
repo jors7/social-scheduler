@@ -8,6 +8,8 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { createBatchPayout } from '@/lib/paypal/service';
+import { isAdminEmail, checkAdminByUserId } from '@/lib/auth/admin';
+import { logAdminAction, ADMIN_ACTIONS } from '@/lib/admin/audit';
 
 function getServiceClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -41,9 +43,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Add admin role check here
-    // For now, any authenticated user can process payouts
-    // In production, check user.user_metadata.role === 'admin'
+    // Verify user is an admin
+    const supabaseAdmin = getServiceClient();
+    const isAdmin = isAdminEmail(user.email) || await checkAdminByUserId(user.id, supabaseAdmin);
+
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: Admin access required' },
+        { status: 403 }
+      );
+    }
 
     const { payout_ids, method } = await request.json();
 
@@ -61,9 +70,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabaseAdmin = getServiceClient();
-
-    // Get all pending payouts with affiliate details
+    // Get all pending payouts with affiliate details (supabaseAdmin already initialized above)
     const { data: payouts, error: payoutsError} = await supabaseAdmin
       .from('affiliate_payouts')
       .select(`
@@ -154,18 +161,48 @@ export async function POST(request: NextRequest) {
       // Don't fail - PayPal was already charged
     }
 
-    // Update affiliate balances (move from pending to paid)
+    // Update affiliate balances atomically using RPC function
+    // This prevents race conditions when concurrent payout requests occur
     const balanceUpdates = payouts.map(async (payout: any) => {
-      const { error: balanceError } = await supabaseAdmin
-        .from('affiliates')
-        .update({
-          pending_balance: payout.affiliates.pending_balance - payout.amount,
-          paid_balance: (payout.affiliates.paid_balance || 0) + payout.amount,
-        })
-        .eq('id', payout.affiliate_id);
+      // Use atomic balance update via RPC function
+      // Falls back to re-fetch + conditional update if RPC not available
+      try {
+        const { error: rpcError } = await supabaseAdmin.rpc('process_affiliate_payout', {
+          p_affiliate_id: payout.affiliate_id,
+          p_amount: parseFloat(payout.amount)
+        });
 
-      if (balanceError) {
-        console.error(`Error updating balance for affiliate ${payout.affiliate_id}:`, balanceError);
+        if (rpcError) {
+          // Fallback: Re-fetch current balance and do conditional update
+          console.warn(`RPC not available, using fallback for affiliate ${payout.affiliate_id}`);
+
+          const { data: currentAffiliate } = await supabaseAdmin
+            .from('affiliates')
+            .select('pending_balance, paid_balance')
+            .eq('id', payout.affiliate_id)
+            .single();
+
+          if (currentAffiliate) {
+            const newPendingBalance = Math.max(0, (currentAffiliate.pending_balance || 0) - parseFloat(payout.amount));
+            const newPaidBalance = (currentAffiliate.paid_balance || 0) + parseFloat(payout.amount);
+
+            const { error: updateError } = await supabaseAdmin
+              .from('affiliates')
+              .update({
+                pending_balance: newPendingBalance,
+                paid_balance: newPaidBalance,
+              })
+              .eq('id', payout.affiliate_id)
+              // Optimistic lock: only update if balance hasn't changed
+              .eq('pending_balance', currentAffiliate.pending_balance);
+
+            if (updateError) {
+              console.error(`Error updating balance for affiliate ${payout.affiliate_id}:`, updateError);
+            }
+          }
+        }
+      } catch (err) {
+        console.error(`Error in atomic balance update for affiliate ${payout.affiliate_id}:`, err);
       }
 
       // Queue payout confirmation email
@@ -190,12 +227,26 @@ export async function POST(request: NextRequest) {
 
     await Promise.all(balanceUpdates);
 
+    // Log audit trail
+    const totalAmount = payouts.reduce((sum: number, p: any) => sum + parseFloat(p.amount), 0);
+    await logAdminAction(
+      user.id,
+      ADMIN_ACTIONS.PAYOUT_PROCESSED,
+      'affiliate_payouts',
+      paypalBatchId,
+      {
+        payout_count: payouts.length,
+        total_amount: totalAmount,
+        affiliate_ids: payouts.map((p: any) => p.affiliate_id),
+      }
+    );
+
     return NextResponse.json({
       success: true,
       message: `Successfully processed ${payouts.length} payout(s) via PayPal`,
       batch_id: paypalBatchId,
       payout_count: payouts.length,
-      total_amount: payouts.reduce((sum: number, p: any) => sum + p.amount, 0),
+      total_amount: totalAmount,
     });
 
   } catch (error) {

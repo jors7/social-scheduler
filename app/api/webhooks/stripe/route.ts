@@ -60,24 +60,48 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
-  // Log webhook event to database for monitoring
+  // Check for duplicate events (idempotency)
   let webhookEventId: string | null = null
   try {
-    const { data: webhookLog } = await supabaseAdmin
+    // First, check if this event has already been processed
+    const { data: existingEvent } = await supabaseAdmin
       .from('webhook_events')
-      .insert({
-        stripe_event_id: event.id,
-        event_type: event.type,
-        status: 'processing',
-        event_data: event as any,
-        created_at: new Date().toISOString()
-      })
-      .select()
+      .select('id, status')
+      .eq('stripe_event_id', event.id)
       .single()
 
-    webhookEventId = webhookLog?.id || null
+    if (existingEvent) {
+      if (existingEvent.status === 'completed') {
+        console.log('⚠️ Duplicate webhook event detected, already processed:', event.id)
+        return NextResponse.json({
+          received: true,
+          message: 'Event already processed',
+          duplicate: true,
+          event: event.type
+        })
+      }
+      // Event exists but wasn't completed - might be a retry, update and continue
+      webhookEventId = existingEvent.id
+      console.log('🔄 Retrying previously failed webhook event:', event.id)
+    } else {
+      // New event - insert it
+      const { data: webhookLog } = await supabaseAdmin
+        .from('webhook_events')
+        .insert({
+          stripe_event_id: event.id,
+          event_type: event.type,
+          status: 'processing',
+          event_data: event as any,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+      webhookEventId = webhookLog?.id || null
+    }
   } catch (logError) {
-    console.error('⚠️ Failed to log webhook event (non-blocking):', logError)
+    console.error('⚠️ Failed to check/log webhook event (non-blocking):', logError)
+    // Continue processing even if logging fails
   }
 
   try {
@@ -114,13 +138,24 @@ export async function POST(request: NextRequest) {
 
           if (!user_id || user_id === 'pending') {
             // Last resort: Look up by email in Supabase (callback might have created it)
+            // Use direct query instead of listUsers() for efficiency
             if (actualEmail) {
               console.log('🔍 Looking up user by email:', actualEmail)
-              const { data: users } = await supabaseAdmin.auth.admin.listUsers()
-              const matchedUser = users.users.find(u => u.email === actualEmail)
-              if (matchedUser) {
-                user_id = matchedUser.id
+              // Query users table directly by email - much more efficient than listUsers()
+              const { data: userRecord, error: userLookupError } = await supabaseAdmin
+                .from('users')
+                .select('id')
+                .eq('email', actualEmail)
+                .single()
+
+              if (userRecord && !userLookupError) {
+                user_id = userRecord.id
                 console.log('✅ Found user_id by email lookup:', user_id)
+              } else {
+                // Log warning but don't use inefficient listUsers() fallback
+                // The callback endpoint should handle user creation
+                console.warn('User not found in users table by email:', actualEmail)
+                console.warn('User lookup error:', userLookupError?.message)
               }
             }
           }
@@ -163,7 +198,31 @@ export async function POST(request: NextRequest) {
             status: (subscription as any).status
           })
           
-          // Mark any existing active subscriptions as inactive first
+          // Check if this subscription already exists and is active (avoid race condition)
+          const { data: existingActiveSub } = await supabaseAdmin
+            .from('user_subscriptions')
+            .select('id, is_active, status')
+            .eq('stripe_subscription_id', (subscription as any).id)
+            .eq('is_active', true)
+            .single()
+
+          if (existingActiveSub) {
+            console.log('⚠️ Subscription already exists and is active, skipping creation:', existingActiveSub.id)
+            // Just update the status if different
+            if (existingActiveSub.status !== (subscription as any).status) {
+              await supabaseAdmin
+                .from('user_subscriptions')
+                .update({
+                  status: (subscription as any).status,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', existingActiveSub.id)
+            }
+            break // Exit the checkout.session.completed case early
+          }
+
+          // Mark any existing active subscriptions for this user as inactive first
+          // (other subscriptions, not the one we're creating)
           await supabaseAdmin
             .from('user_subscriptions')
             .update({
@@ -175,7 +234,7 @@ export async function POST(request: NextRequest) {
             .eq('user_id', user_id)
             .eq('is_active', true)
             .neq('stripe_subscription_id', (subscription as any).id)
-          
+
           // Create or update subscription in database
           const { data, error } = await supabaseAdmin
             .from('user_subscriptions')
@@ -196,7 +255,7 @@ export async function POST(request: NextRequest) {
             })
             .select()
             .single()
-            
+
           if (error) {
             console.error('Error updating subscription:', error)
             throw error
@@ -1087,8 +1146,41 @@ export async function POST(request: NextRequest) {
       id: event?.id,
       stack: error instanceof Error ? error.stack : undefined
     })
+
+    // Determine if error is retryable
+    // Non-retryable errors: return 200 to prevent Stripe retries
+    // Retryable errors: return 500 so Stripe will retry
+    const nonRetryablePatterns = [
+      'user not found',
+      'invalid user',
+      'already processed',
+      'duplicate',
+      'no subscription',
+      'missing metadata',
+      'invalid metadata',
+      'plan not found',
+      'price not found'
+    ]
+
+    const isNonRetryable = nonRetryablePatterns.some(pattern =>
+      errorMessage.toLowerCase().includes(pattern)
+    )
+
+    if (isNonRetryable) {
+      // Return 200 to acknowledge receipt but log the error
+      // This prevents Stripe from retrying an error that won't be fixed
+      console.warn(`⚠️ Non-retryable webhook error (returning 200): ${errorMessage}`)
+      return NextResponse.json({
+        received: true,
+        error: errorMessage,
+        retryable: false,
+        event: event?.type
+      })
+    }
+
+    // Return 500 for transient errors that should be retried
     return NextResponse.json(
-      { error: 'Webhook handler failed', details: errorMessage },
+      { error: 'Webhook handler failed', details: errorMessage, retryable: true },
       { status: 500 }
     )
   }

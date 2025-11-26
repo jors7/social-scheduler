@@ -6,7 +6,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { suspendAffiliate, reactivateAffiliate } from '@/lib/affiliate/service';
+import { isAdminEmail, checkAdminByUserId } from '@/lib/auth/admin';
+import { logAdminAction, ADMIN_ACTIONS } from '@/lib/admin/audit';
+
+function getServiceClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
 
 // =====================================================
 // POST /api/admin/affiliates/status
@@ -64,6 +73,20 @@ export async function POST(request: NextRequest) {
 
     console.log('✓ User authenticated:', user.id);
 
+    // Verify user is an admin
+    const supabaseAdmin = getServiceClient();
+    const isAdmin = isAdminEmail(user.email) || await checkAdminByUserId(user.id, supabaseAdmin);
+
+    if (!isAdmin) {
+      console.log('❌ User is not an admin');
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    console.log('✓ Admin access verified');
+
     // Perform the action
     let affiliate;
     if (action === 'suspend') {
@@ -75,6 +98,18 @@ export async function POST(request: NextRequest) {
       affiliate = await reactivateAffiliate(affiliate_id);
       console.log('✓ Affiliate reactivated:', affiliate);
     }
+
+    // Log audit trail
+    await logAdminAction(
+      user.id,
+      action === 'suspend' ? ADMIN_ACTIONS.AFFILIATE_SUSPENDED : ADMIN_ACTIONS.AFFILIATE_REACTIVATED,
+      'affiliate',
+      affiliate_id,
+      {
+        reason: reason || null,
+        new_status: action === 'suspend' ? 'suspended' : 'active',
+      }
+    );
 
     return NextResponse.json({
       success: true,

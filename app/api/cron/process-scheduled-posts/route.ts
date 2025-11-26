@@ -4,6 +4,19 @@ import { PostingService } from '@/lib/posting/service';
 import { Receiver } from '@upstash/qstash';
 import { r2Storage } from '@/lib/r2/storage';
 import { R2_PUBLIC_URL } from '@/lib/r2/client';
+import { cleanHtmlContent } from '@/lib/utils/html-cleaner';
+import {
+  checkPostAttempt,
+  recordPostAttempt,
+  markPostAttemptSuccess,
+  markPostAttemptFailed,
+  getSuccessfulAttempts,
+} from '@/lib/posting/idempotency';
+import {
+  sanitizeErrorMessage,
+  combineErrorMessages,
+  extractErrorMessage,
+} from '@/lib/utils/error-sanitizer';
 import {
   postToFacebookDirect,
   postToBlueskyDirect,
@@ -141,18 +154,78 @@ async function processScheduledPosts(request: NextRequest) {
         console.log(`Found ${stuckPosts.length} posts stuck in 'posting' status`);
 
         for (const post of stuckPosts) {
+          // Check for partial success using idempotency tracking
+          const successfulAttempts = await getSuccessfulAttempts(post.id);
+          const successfulPlatforms = successfulAttempts.map(a => a.platform);
+
+          let errorMessage: string;
+          let postResults: any[] | null = null;
+          let finalStatus: 'failed' | 'posted' = 'failed';
+
+          if (successfulAttempts.length > 0) {
+            // Some platforms succeeded
+            const failedPlatforms = post.platforms.filter((p: string) => !successfulPlatforms.includes(p));
+
+            if (failedPlatforms.length === 0) {
+              // All platforms actually succeeded! Mark as posted
+              finalStatus = 'posted';
+              errorMessage = ''; // No error
+              postResults = successfulAttempts.map(a => ({
+                platform: a.platform,
+                success: true,
+                postId: a.platform_post_id,
+                recoveredFromStuck: true
+              }));
+              console.log(`✅ Post ${post.id} was actually successful on all platforms: ${successfulPlatforms.join(', ')}`);
+            } else {
+              // Partial success
+              errorMessage = `Post timed out. Successfully posted to: ${successfulPlatforms.join(', ')}. Failed/incomplete: ${failedPlatforms.join(', ')}. Do NOT retry this post - check the successful platforms first.`;
+              postResults = [
+                ...successfulAttempts.map(a => ({
+                  platform: a.platform,
+                  success: true,
+                  postId: a.platform_post_id,
+                  recoveredFromStuck: true
+                })),
+                ...failedPlatforms.map((p: string) => ({
+                  platform: p,
+                  success: false,
+                  error: 'Timed out during posting',
+                  recoveredFromStuck: true
+                }))
+              ];
+              console.log(`⚠️ Post ${post.id} partially succeeded: ${successfulPlatforms.join(', ')}, failed: ${failedPlatforms.join(', ')}`);
+            }
+          } else {
+            // No platforms succeeded
+            errorMessage = 'Post processing timed out after 10 minutes. No platforms were confirmed as posted. Please check your social media accounts before retrying.';
+            console.log(`❌ Post ${post.id} had no confirmed successful platforms`);
+          }
+
+          const updateData: any = {
+            status: finalStatus,
+            updated_at: new Date().toISOString()
+          };
+
+          if (finalStatus === 'failed') {
+            updateData.error_message = errorMessage;
+          } else {
+            updateData.posted_at = new Date().toISOString();
+          }
+
+          if (postResults) {
+            updateData.post_results = postResults;
+          }
+
           const { error: resetError } = await supabase
             .from('scheduled_posts')
-            .update({
-              status: 'failed',
-              error_message: 'Post processing timed out after 10 minutes. The post may have been partially published - please check your social media accounts and try again.'
-            })
+            .update(updateData)
             .eq('id', post.id);
 
           if (resetError) {
             console.error(`Failed to reset stuck post ${post.id}:`, resetError);
           } else {
-            console.log(`✅ Marked stuck post ${post.id} as failed`);
+            console.log(`✅ Updated stuck post ${post.id} to status: ${finalStatus}`);
           }
         }
       } else {
@@ -211,11 +284,26 @@ async function processScheduledPosts(request: NextRequest) {
 
         for (const post of processingPosts) {
           try {
-            const processingState = post.processing_state;
+            // Try to acquire lock by updating timestamp (optimistic locking)
+            // Only proceed if we successfully update and status is still 'processing'
+            const { data: lockedPost, error: lockError } = await supabase
+              .from('scheduled_posts')
+              .update({ updated_at: new Date().toISOString() })
+              .eq('id', post.id)
+              .eq('status', 'processing')
+              .select('processing_state, status, posted_at')
+              .single();
+
+            if (lockError || !lockedPost) {
+              console.log(`Post ${post.id} already being handled by another instance, skipping`);
+              continue;
+            }
+
+            const processingState = lockedPost.processing_state;
 
             // Skip posts that are actually already posted (race condition protection)
             // This can happen with async queue processing for Threads threads
-            if (post.status === 'posted' || post.posted_at) {
+            if (lockedPost.status === 'posted' || lockedPost.posted_at) {
               console.log(`Post ${post.id} is already posted, skipping processing validation`);
               continue;
             }
@@ -508,6 +596,31 @@ async function processScheduledPosts(request: NextRequest) {
               appSecret: process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET
             });
 
+            // Check for expired containers (Instagram containers expire after 24 hours)
+            const containerCreatedAt = processingState.created_at ? new Date(processingState.created_at) : null;
+            const containerAgeHours = containerCreatedAt
+              ? (Date.now() - containerCreatedAt.getTime()) / (1000 * 60 * 60)
+              : 0;
+
+            if (containerAgeHours > 24) {
+              console.warn(`Post ${post.id}: Instagram containers expired (${containerAgeHours.toFixed(1)}h old)`);
+              console.warn(`Orphaned container IDs: ${processingState.container_ids.join(', ')}`);
+
+              await supabase
+                .from('scheduled_posts')
+                .update({
+                  status: 'failed',
+                  error_message: `Instagram containers expired after ${containerAgeHours.toFixed(1)} hours. Please reschedule the post.`,
+                  processing_state: {
+                    ...processingState,
+                    orphaned: true,
+                    expired_at: new Date().toISOString()
+                  }
+                })
+                .eq('id', post.id);
+              continue;
+            }
+
             // Check if containers are ready
             const { allReady, statuses } = await instagramClient.checkCarouselContainersReady(
               processingState.container_ids
@@ -567,12 +680,21 @@ async function processScheduledPosts(request: NextRequest) {
 
               if (attempts >= maxAttempts) {
                 console.log(`Post ${post.id}: Max attempts reached, marking as failed`);
+                // Log orphaned containers for tracking (Instagram containers cannot be deleted via API)
+                if (processingState.container_ids?.length > 0) {
+                  console.warn(`Orphaned Instagram container IDs (post ${post.id}): ${processingState.container_ids.join(', ')}`);
+                }
                 await supabase
                   .from('scheduled_posts')
                   .update({
                     status: 'failed',
                     error_message: 'Instagram video processing timed out after 30 minutes',
-                    processing_state: null
+                    processing_state: {
+                      ...processingState,
+                      orphaned: true,
+                      failed_at: new Date().toISOString(),
+                      failure_reason: 'timeout'
+                    }
                   })
                   .eq('id', post.id);
               } else {
@@ -595,12 +717,29 @@ async function processScheduledPosts(request: NextRequest) {
           } catch (error) {
             console.error(`Error processing post ${post.id}:`, error);
             const errorMsg = error instanceof Error ? error.message : 'Processing error';
+
+            // Get processing state from post for orphan tracking
+            const postProcessingState = post.processing_state as any;
+
+            // Log orphaned containers for tracking (Instagram containers cannot be deleted via API)
+            if (postProcessingState?.container_ids?.length > 0) {
+              console.warn(`Orphaned Instagram container IDs (post ${post.id}): ${postProcessingState.container_ids.join(', ')}`);
+            }
+
             const { error: updateError } = await supabase
               .from('scheduled_posts')
               .update({
                 status: 'failed',
                 error_message: errorMsg,
-                processing_state: null
+                processing_state: postProcessingState?.container_ids?.length > 0
+                  ? {
+                      ...postProcessingState,
+                      orphaned: true,
+                      failed_at: new Date().toISOString(),
+                      failure_reason: 'error',
+                      error_details: errorMsg
+                    }
+                  : null
               })
               .eq('id', post.id);
 
@@ -735,20 +874,22 @@ async function processScheduledPosts(request: NextRequest) {
       }
       
       try {
-        // Mark as posting to prevent duplicate processing
-        const { error: postingError } = await supabase
+        // Mark as posting with optimistic locking to prevent duplicate processing
+        // Only update if status is still 'pending' (atomic check-and-set)
+        const { data: lockedPost, error: postingError } = await supabase
           .from('scheduled_posts')
-          .update({ status: 'posting' })
-          .eq('id', post.id);
+          .update({
+            status: 'posting',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', post.id)
+          .eq('status', 'pending') // Optimistic lock - only update if still pending
+          .select()
+          .single();
 
-        if (postingError) {
-          console.error(`Failed to mark post ${post.id} as posting:`, postingError);
-          // Skip this post if we can't update its status
-          results.push({
-            postId: post.id,
-            success: false,
-            error: `Database error: ${postingError.message}`
-          });
+        if (postingError || !lockedPost) {
+          // Another process already claimed this post, skip it
+          console.log(`Post ${post.id} already being processed by another instance, skipping`);
           continue;
         }
 
@@ -816,6 +957,30 @@ async function processScheduledPosts(request: NextRequest) {
             const platformLabel = account.account_label || account.username || platform;
 
           try {
+            // TOCTOU: Re-verify account is still active before posting
+            const { data: freshAccount, error: accountVerifyError } = await supabase
+              .from('social_accounts')
+              .select('id, is_active, access_token')
+              .eq('id', account.id)
+              .eq('is_active', true)
+              .single();
+
+            if (accountVerifyError || !freshAccount) {
+              console.log(`Account ${account.id} is no longer active or was deleted, skipping`);
+              postResults.push({
+                platform,
+                success: false,
+                error: `${platformLabel} account is no longer connected or was deactivated`
+              });
+              continue;
+            }
+
+            // Use fresh token if it was updated
+            if (freshAccount.access_token !== account.access_token) {
+              console.log(`Account ${account.id} token was refreshed, using fresh token`);
+              account.access_token = freshAccount.access_token;
+            }
+
             const rawContent = post.platform_content?.[platform] || post.content;
             const content = cleanHtmlContent(rawContent);
 
@@ -824,6 +989,32 @@ async function processScheduledPosts(request: NextRequest) {
             console.log('Cleaned content:', JSON.stringify(content));
             console.log('Content length:', content.length);
             console.log('First 10 chars:', JSON.stringify(content.substring(0, 10)));
+
+            // Idempotency check: Check if this post was already sent to this platform/account
+            const existingAttempt = await checkPostAttempt(post.id, platform, account.id);
+            if (existingAttempt && existingAttempt.status === 'posted') {
+              console.log(`Post ${post.id} already sent to ${platform}/${account.id}, skipping (idempotency)`);
+              postResults.push({
+                platform: platformLabel,
+                success: true,
+                postId: existingAttempt.platform_post_id,
+                message: 'Already posted (idempotency check)'
+              });
+              continue;
+            }
+
+            // Record this posting attempt
+            const { isNew: isNewAttempt, existingRecord } = await recordPostAttempt(post.id, platform, account.id);
+            if (!isNewAttempt && existingRecord?.status === 'posted') {
+              console.log(`Post ${post.id} already sent to ${platform}/${account.id} (race condition), skipping`);
+              postResults.push({
+                platform: platformLabel,
+                success: true,
+                postId: existingRecord.platform_post_id,
+                message: 'Already posted (idempotency check)'
+              });
+              continue;
+            }
 
             let result;
 
@@ -871,7 +1062,9 @@ async function processScheduledPosts(request: NextRequest) {
                 break;
 
               case 'pinterest':
-                result = await postToPinterestDirect(content, account, post.media_urls);
+                result = await postToPinterestDirect(content, account, post.media_urls, {
+                  boardId: post.pinterest_board_id
+                });
                 break;
 
               case 'tiktok':
@@ -1014,10 +1207,14 @@ async function processScheduledPosts(request: NextRequest) {
               break;
             }
 
+            // Mark idempotency record as successful
+            const platformPostId = (result as any).postId || (result as any).id || (result as any).uri;
+            await markPostAttemptSuccess(post.id, platform, account.id, platformPostId);
+
             postResults.push({
               platform: platformLabel,
               success: true,
-              postId: (result as any).postId || (result as any).id || (result as any).uri,
+              postId: platformPostId,
               data: result
             });
 
@@ -1030,6 +1227,9 @@ async function processScheduledPosts(request: NextRequest) {
               : 'Using localhost';
             
             const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+
+            // Mark idempotency record as failed
+            await markPostAttemptFailed(post.id, platform, account.id, errorMsg);
 
             postResults.push({
               platform: platformLabel,
@@ -1118,7 +1318,11 @@ async function processScheduledPosts(request: NextRequest) {
 
           if (post.media_urls && post.media_urls.length > 0 && !shouldSkipCleanup) {
             try {
-              await cleanupMediaFiles(post.media_urls);
+              const { failures } = await cleanupMediaFiles(post.media_urls, post.id);
+              if (failures.length > 0) {
+                // Log but don't fail - media cleanup is non-critical
+                console.warn(`Post ${post.id}: ${failures.length} media file(s) failed cleanup`);
+              }
             } catch (cleanupError) {
               console.error('Media cleanup error:', cleanupError);
             }
@@ -1132,7 +1336,10 @@ async function processScheduledPosts(request: NextRequest) {
 
         } else {
           // Some or all failed - mark as failed
-          const errorMessage = failed.map(f => `${f.platform}: ${f.error}`).join('; ');
+          // Use error sanitizer to ensure messages are not too long
+          const errorMessage = combineErrorMessages(
+            failed.map(f => ({ platform: f.platform, error: f.error || 'Unknown error' }))
+          );
           const { error: failedError } = await supabase
             .from('scheduled_posts')
             .update({
@@ -1159,8 +1366,8 @@ async function processScheduledPosts(request: NextRequest) {
       } catch (error) {
         console.error(`Error processing post ${post.id}:`, error);
 
-        // Mark as failed
-        const errorMsg = error instanceof Error ? error.message : 'Processing error';
+        // Mark as failed - sanitize error message to avoid storing huge error pages
+        const errorMsg = extractErrorMessage(error);
         const { error: failedError } = await supabase
           .from('scheduled_posts')
           .update({
@@ -1201,56 +1408,21 @@ async function processScheduledPosts(request: NextRequest) {
 }
 
 // Helper functions section removed - now using direct function calls from cron-service.ts
+// cleanHtmlContent imported from @/lib/utils/html-cleaner
 
-// Helper function to clean HTML content (same as PostingService)
-function cleanHtmlContent(content: string): string {
-  // Handle null/undefined content
-  if (!content || typeof content !== 'string') {
-    return '';
-  }
-  
-  let cleaned = content;
-  
-  // First, decode any HTML entities that might have been double-encoded
-  // This handles cases like &lt;p&gt;text&lt;/p&gt; -> <p>text</p>
-  cleaned = cleaned
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
-  
-  // Now convert HTML tags to line breaks
-  cleaned = cleaned
-    .replace(/<\/p>/gi, '\n\n') // End of paragraph gets double line break
-    .replace(/<br\s*\/?>/gi, '\n') // Line breaks get single line break
-    .replace(/<\/div>/gi, '\n') // Divs often act as line breaks
-    .replace(/<\/li>/gi, '\n') // List items get line breaks
-    
-  // Replace remaining HTML entities
-  cleaned = cleaned
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&ldquo;/g, '"')
-    .replace(/&rdquo;/g, '"')
-    .replace(/&lsquo;/g, "'")
-    .replace(/&rsquo;/g, "'")
-    .replace(/&mdash;/g, '—')
-    .replace(/&ndash;/g, '–');
-
-  // Remove remaining HTML tags
-  cleaned = cleaned.replace(/<[^>]*>/g, '');
-  
-  // Clean up extra whitespace
-  cleaned = cleaned
-    .replace(/\n\s*\n\s*\n/g, '\n\n') // Max double line breaks
-    .replace(/^\s+|\s+$/g, '') // Trim start/end
-    .replace(/[ \t]+/g, ' '); // Normalize spaces
-
-  return cleaned;
+// Track failed media cleanups for monitoring and retry
+interface CleanupFailure {
+  url: string;
+  error: string;
+  timestamp: string;
 }
 
+const cleanupFailures: CleanupFailure[] = [];
+
 // Helper function to clean up media files after successful posting
-async function cleanupMediaFiles(mediaUrls: any[]) {
+async function cleanupMediaFiles(mediaUrls: any[], postId?: string) {
+  const failures: CleanupFailure[] = [];
+
   for (const mediaItem of mediaUrls) {
     try {
       // Extract URL string from object if needed
@@ -1271,9 +1443,31 @@ async function cleanupMediaFiles(mediaUrls: any[]) {
 
       await cleanupSingleUrl(url);
     } catch (error) {
-      console.error('Error cleaning up file:', mediaItem, error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      const failure: CleanupFailure = {
+        url: typeof mediaItem === 'string' ? mediaItem : mediaItem?.url || 'unknown',
+        error: errorMsg,
+        timestamp: new Date().toISOString()
+      };
+      failures.push(failure);
+      cleanupFailures.push(failure);
+
+      // Structured log for monitoring - easy to search in production
+      console.error(JSON.stringify({
+        event: 'media_cleanup_failed',
+        postId: postId || 'unknown',
+        url: failure.url,
+        error: errorMsg,
+        timestamp: failure.timestamp
+      }));
     }
   }
+
+  if (failures.length > 0) {
+    console.warn(`Media cleanup: ${failures.length} file(s) failed to delete for post ${postId || 'unknown'}`);
+  }
+
+  return { failures };
 }
 
 // Helper to cleanup a single URL

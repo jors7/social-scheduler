@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 import Link from 'next/link';
 
 // Force dynamic rendering for this page due to useSearchParams
@@ -41,19 +41,30 @@ function AffiliateLoginForm() {
       }
 
       if (data.user) {
-        // Check user type from metadata
-        const userType = data.user.user_metadata?.user_type;
+        // Check if user has an affiliate record in the database
+        const { data: affiliateData } = await supabase
+          .from('affiliates')
+          .select('id, status')
+          .eq('user_id', data.user.id)
+          .single();
 
-        if (userType === 'affiliate' || userType === 'both') {
-          // Redirect to affiliate dashboard
+        if (affiliateData && affiliateData.status === 'active') {
+          // User is an active affiliate, redirect to affiliate dashboard
           router.push('/affiliate/dashboard');
-        } else if (userType === 'member') {
-          // Member trying to log in to affiliate portal
-          toast.error('This is the affiliate login. Please use the main login for members.');
+        } else if (affiliateData && affiliateData.status === 'suspended') {
+          toast.error('Your affiliate account has been suspended. Please contact support.');
           await supabase.auth.signOut();
         } else {
-          // No user type set, default to member dashboard
-          router.push('/dashboard');
+          // Check user type from metadata as fallback
+          const userType = data.user.user_metadata?.user_type;
+
+          if (userType === 'affiliate' || userType === 'both') {
+            router.push('/affiliate/dashboard');
+          } else {
+            // Not an affiliate
+            toast.error('No affiliate account found. Please apply to become an affiliate first.');
+            await supabase.auth.signOut();
+          }
         }
       }
     } catch (error) {

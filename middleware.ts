@@ -115,10 +115,20 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isAffiliateRoute && user) {
-    const userType = user.user_metadata?.user_type
-    if (userType !== 'affiliate' && userType !== 'both') {
-      // User is a member but not an affiliate
-      return NextResponse.redirect(new URL('/dashboard?error=affiliate-only', request.url))
+    // Check if user has an active affiliate record in the database
+    const { data: affiliateData } = await supabase
+      .from('affiliates')
+      .select('id, status')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!affiliateData || affiliateData.status !== 'active') {
+      // Also check user metadata as fallback
+      const userType = user.user_metadata?.user_type
+      if (userType !== 'affiliate' && userType !== 'both') {
+        // User is not an affiliate
+        return NextResponse.redirect(new URL('/dashboard?error=affiliate-only', request.url))
+      }
     }
   }
 

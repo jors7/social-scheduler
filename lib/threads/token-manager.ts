@@ -118,12 +118,29 @@ export async function refreshThreadsToken(account: any): Promise<{
         console.error('Error details:', errorData);
         
         // If error indicates invalid token, we need to reconnect
-        if (errorData.error?.code === 190 || 
+        // Mark the account as inactive to prevent further posting attempts
+        if (errorData.error?.code === 190 ||
             errorData.error?.message?.includes('Invalid OAuth') ||
             errorData.error?.message?.includes('Error validating access token')) {
-          return { 
-            success: false, 
-            error: 'Token is invalid. Please reconnect your Threads account.' 
+
+          // Mark account as needing reconnection (set is_active to false)
+          try {
+            const supabase = await createClient();
+            await supabase
+              .from('social_accounts')
+              .update({
+                is_active: false,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', account.id);
+            console.warn(`Marked Threads account ${account.id} as inactive due to expired token`);
+          } catch (dbError) {
+            console.error('Failed to mark account as inactive:', dbError);
+          }
+
+          return {
+            success: false,
+            error: 'Token is expired. Please reconnect your Threads account.'
           };
         }
       } catch (e) {

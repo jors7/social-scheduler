@@ -72,8 +72,9 @@ export const SUBSCRIPTION_PLANS: Record<PlanId, SubscriptionPlan> = {
       ai_suggestions_per_month: 50,
       storage_mb: 0,
     },
-    stripe_price_id_monthly: process.env.STRIPE_STARTER_MONTHLY_PRICE_ID || 'price_1SLQMoPLQW61h4VJvsZIMO2Y',
-    stripe_price_id_yearly: process.env.STRIPE_STARTER_YEARLY_PRICE_ID || 'price_1SLQMoPLQW61h4VJRli4O7di',
+    // Required environment variables - no hardcoded fallbacks
+    stripe_price_id_monthly: process.env.STRIPE_STARTER_MONTHLY_PRICE_ID,
+    stripe_price_id_yearly: process.env.STRIPE_STARTER_YEARLY_PRICE_ID,
   },
   professional: {
     id: 'professional',
@@ -94,8 +95,9 @@ export const SUBSCRIPTION_PLANS: Record<PlanId, SubscriptionPlan> = {
       ai_suggestions_per_month: 150,
       storage_mb: 250,
     },
-    stripe_price_id_monthly: process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID || 'price_1SLQMkPLQW61h4VJw17m4L77',
-    stripe_price_id_yearly: process.env.STRIPE_PROFESSIONAL_YEARLY_PRICE_ID || 'price_1SLQMkPLQW61h4VJipryKVw3',
+    // Required environment variables - no hardcoded fallbacks
+    stripe_price_id_monthly: process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID,
+    stripe_price_id_yearly: process.env.STRIPE_PROFESSIONAL_YEARLY_PRICE_ID,
   },
   enterprise: {
     id: 'enterprise',
@@ -119,10 +121,56 @@ export const SUBSCRIPTION_PLANS: Record<PlanId, SubscriptionPlan> = {
       ai_suggestions_per_month: 300,
       storage_mb: 500,
     },
-    stripe_price_id_monthly: process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID || 'price_1SLQMfPLQW61h4VJzUlqCdLA',
-    stripe_price_id_yearly: process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID || 'price_1SLQMfPLQW61h4VJRrQMbYKn',
+    // Required environment variables - no hardcoded fallbacks
+    stripe_price_id_monthly: process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID,
+    stripe_price_id_yearly: process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID,
   },
 };
+
+/**
+ * Validate that all required Stripe price IDs are configured
+ * Call this at app startup or before checkout
+ */
+export function validateStripePriceIds(): { valid: boolean; missing: string[] } {
+  const missing: string[] = [];
+  const plans: PlanId[] = ['starter', 'professional', 'enterprise'];
+
+  for (const planId of plans) {
+    const plan = SUBSCRIPTION_PLANS[planId];
+    if (!plan.stripe_price_id_monthly) {
+      missing.push(`STRIPE_${planId.toUpperCase()}_MONTHLY_PRICE_ID`);
+    }
+    if (!plan.stripe_price_id_yearly) {
+      missing.push(`STRIPE_${planId.toUpperCase()}_YEARLY_PRICE_ID`);
+    }
+  }
+
+  return { valid: missing.length === 0, missing };
+}
+
+/**
+ * Get the Stripe price ID for a plan, throwing if not configured
+ */
+export function getStripePriceId(planId: PlanId, billingCycle: BillingCycle): string {
+  if (planId === 'free') {
+    throw new Error('Free plan does not have a Stripe price ID');
+  }
+
+  const plan = SUBSCRIPTION_PLANS[planId];
+  const priceId = billingCycle === 'monthly'
+    ? plan.stripe_price_id_monthly
+    : plan.stripe_price_id_yearly;
+
+  if (!priceId) {
+    const envVar = `STRIPE_${planId.toUpperCase()}_${billingCycle.toUpperCase()}_PRICE_ID`;
+    throw new Error(
+      `Stripe price ID not configured for ${planId} (${billingCycle}). ` +
+      `Please set the ${envVar} environment variable.`
+    );
+  }
+
+  return priceId;
+}
 
 export function getPlanById(planId: PlanId): SubscriptionPlan {
   return SUBSCRIPTION_PLANS[planId];

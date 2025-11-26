@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 import {
   CurrencyDollarIcon,
   ChartBarIcon,
@@ -105,15 +105,7 @@ export default function AffiliateDashboard() {
         return;
       }
 
-      // Check if user is approved affiliate
-      const userType = user.user_metadata?.user_type;
-      if (userType !== 'affiliate' && userType !== 'both') {
-        toast.error('Your affiliate application is pending approval');
-        router.push('/affiliate/login');
-        return;
-      }
-
-      // Get affiliate data
+      // Get affiliate data (check database first, not just metadata)
       const { data: affiliate, error: affiliateError } = await supabase
         .from('affiliates')
         .select('*')

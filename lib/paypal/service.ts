@@ -11,6 +11,7 @@ import type {
   PayPalPayoutStatus,
   PayPalPayoutItem,
 } from '@/types/affiliate';
+import { fetchWithTimeout, TIMEOUT } from '@/lib/utils/fetch-with-timeout';
 
 // =====================================================
 // CONFIGURATION
@@ -39,13 +40,14 @@ export async function getPayPalAccessToken(): Promise<string> {
       `${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`
     ).toString('base64');
 
-    const response = await fetch(`${PAYPAL_API_BASE_URL}/v1/oauth2/token`, {
+    const response = await fetchWithTimeout(`${PAYPAL_API_BASE_URL}/v1/oauth2/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         Authorization: `Basic ${auth}`,
       },
       body: 'grant_type=client_credentials',
+      timeout: TIMEOUT.DEFAULT,
     });
 
     if (!response.ok) {
@@ -107,13 +109,14 @@ export async function createBatchPayout(
       items,
     };
 
-    const response = await fetch(`${PAYPAL_API_BASE_URL}/v1/payments/payouts`, {
+    const response = await fetchWithTimeout(`${PAYPAL_API_BASE_URL}/v1/payments/payouts`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(payoutRequest),
+      timeout: TIMEOUT.LONG, // Payouts may take longer
     });
 
     if (!response.ok) {
@@ -162,7 +165,7 @@ export async function getPayoutStatus(
   try {
     const accessToken = await getPayPalAccessToken();
 
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `${PAYPAL_API_BASE_URL}/v1/payments/payouts/${batchId}`,
       {
         method: 'GET',
@@ -170,6 +173,7 @@ export async function getPayoutStatus(
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
+        timeout: TIMEOUT.DEFAULT,
       }
     );
 
@@ -195,7 +199,7 @@ export async function getPayoutItemStatus(itemId: string): Promise<any> {
   try {
     const accessToken = await getPayPalAccessToken();
 
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `${PAYPAL_API_BASE_URL}/v1/payments/payouts-item/${itemId}`,
       {
         method: 'GET',
@@ -203,6 +207,7 @@ export async function getPayoutItemStatus(itemId: string): Promise<any> {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
+        timeout: TIMEOUT.DEFAULT,
       }
     );
 
