@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { PlatformIcon } from '@/components/ui/platform-icon'
 import {
   BarChart3,
   Calendar,
@@ -81,17 +82,6 @@ interface UsageData {
   connected_accounts_limit: number
 }
 
-const platformIcons: Record<string, string> = {
-  twitter: '𝕏',
-  instagram: '📷',
-  facebook: 'f',
-  linkedin: 'in',
-  youtube: '▶',
-  tiktok: '♪',
-  threads: '@',
-  bluesky: '🦋',
-  pinterest: 'P',
-}
 
 // Component to handle auth success notification
 function AuthSuccessHandler() {
@@ -1811,10 +1801,10 @@ function DashboardContent() {
                             return uniquePlatforms.map((platform) => (
                               <div
                                 key={platform}
-                                className={hasMany ? "w-5 h-5 sm:w-6 sm:h-6 bg-white rounded flex items-center justify-center text-[10px] sm:text-xs border border-indigo-200" : "w-6 h-6 bg-white rounded flex items-center justify-center text-xs border border-indigo-200"}
+                                className={hasMany ? "w-5 h-5 sm:w-6 sm:h-6 bg-white rounded flex items-center justify-center border border-indigo-200 p-0.5" : "w-6 h-6 bg-white rounded flex items-center justify-center border border-indigo-200 p-0.5"}
                                 title={platform}
                               >
-                                {platformIcons[platform] || platform[0].toUpperCase()}
+                                <PlatformIcon platform={platform} size="sm" />
                               </div>
                             ))
                           })()}
