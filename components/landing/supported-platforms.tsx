@@ -95,7 +95,7 @@ const platforms = [
 
 export function SupportedPlatforms() {
   return (
-    <section id="platforms" className="py-16 px-4 bg-gray-50 scroll-mt-20 overflow-x-hidden">
+    <section id="platforms" className="py-16 px-4 bg-gradient-to-b from-white via-purple-50 to-white scroll-mt-20 overflow-x-hidden">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6">
         {/* Section Header */}
         <div className="text-center mb-16">
