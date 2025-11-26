@@ -11,6 +11,8 @@ import { toast } from 'sonner'
 import { AuthModals } from '@/components/auth/auth-modals'
 import { MobileMenu } from '@/components/layout/mobile-menu'
 import { Navbar } from '@/components/layout/navbar'
+import GradientCTA from '@/components/landing/gradient-cta'
+
 export default function AboutPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
@@ -195,25 +197,13 @@ export default function AboutPage() {
             </div>
           </section>
         </div>
-
-        {/* CTA Section - Same style as homepage */}
-        <div className="text-center mt-20 pt-16 border-t border-gray-200">
-          <p className="text-gray-600 mb-6">
-            Ready to transform your social media strategy?
-          </p>
-          <Link href="/pricing">
-            <Button 
-              size="lg"
-              className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
-            >
-              Get Started Free
-            </Button>
-          </Link>
-        </div>
       </div>
 
+      {/* CTA Section */}
+      <GradientCTA />
+
       {/* Footer - Same as homepage */}
-      <footer className="bg-black text-white py-12 px-4 mt-20">
+      <footer className="bg-black text-white py-12 px-4">
         <div className="container mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
             <div className="col-span-2 md:col-span-1">

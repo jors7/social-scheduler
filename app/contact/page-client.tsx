@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { AuthModals } from '@/components/auth/auth-modals'
 import { MobileMenu } from '@/components/layout/mobile-menu'
 import { Navbar } from '@/components/layout/navbar'
+import GradientCTA from '@/components/landing/gradient-cta'
 
 export default function ContactPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -156,28 +157,14 @@ export default function ContactPage() {
               </div>
             </div>
           </section>
-
-          {/* CTA Section */}
-          <section className="text-center py-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', fontWeight: 700 }}>
-              Ready to Get Started?
-            </h2>
-            <p className="text-xl text-gray-600 mb-8" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', fontWeight: 400 }}>
-              Join thousands of creators who are saving time and growing their audience with SocialCal.
-            </p>
-            <Button 
-              onClick={() => router.push('/pricing')}
-              size="lg"
-              className="text-lg font-medium bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 px-8 py-4"
-            >
-              Start Your Free Trial
-            </Button>
-          </section>
         </div>
       </div>
 
+      {/* CTA Section */}
+      <GradientCTA />
+
       {/* Footer - Same as homepage */}
-      <footer className="bg-black text-white py-12 px-4 mt-20">
+      <footer className="bg-black text-white py-12 px-4">
         <div className="container mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
             <div className="col-span-2 md:col-span-1">

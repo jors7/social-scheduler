@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 const GradientCTA = () => {
   return (
     <div 
-      className="w-full bg-gradient-to-r from-blue-600 via-teal-500 to-indigo-600 flex items-center justify-center" 
+      className="w-full bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-400 flex items-center justify-center" 
       style={{ minHeight: '460px' }}
     >
       <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
