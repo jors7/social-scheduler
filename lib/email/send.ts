@@ -201,6 +201,36 @@ export async function sendPaymentRequiredEmail(
   });
 }
 
+export async function sendContactFormToAdmin(
+  userName: string,
+  userEmail: string,
+  subject: string,
+  message: string
+) {
+  const { default: ContactFormAdminEmail } = await import('./templates/contact-form-admin');
+
+  return sendEmail({
+    to: 'jan@socialcal.app',
+    subject: `New Contact Form: ${subject}`,
+    react: ContactFormAdminEmail({ userName, userEmail, subject, message }),
+    replyTo: userEmail, // Allow direct reply to user
+  });
+}
+
+export async function sendContactFormConfirmation(
+  userEmail: string,
+  userName: string,
+  subject: string
+) {
+  const { default: ContactFormConfirmationEmail } = await import('./templates/contact-form-confirmation');
+
+  return sendEmail({
+    to: userEmail,
+    subject: 'Thank you for contacting SocialCal',
+    react: ContactFormConfirmationEmail({ userName, subject }),
+  });
+}
+
 // =====================================================
 // QUEUED EMAIL FUNCTIONS (recommended for webhooks)
 // =====================================================
