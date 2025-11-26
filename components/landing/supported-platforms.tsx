@@ -95,40 +95,46 @@ const platforms = [
 
 export function SupportedPlatforms() {
   return (
-    <section id="platforms" className="py-16 px-4 bg-gradient-to-b from-white via-purple-50 to-white scroll-mt-20 overflow-x-hidden">
-      <div className="container mx-auto max-w-7xl px-4 sm:px-6">
+    <section id="platforms" className="py-16 px-4 bg-gradient-to-b from-white via-purple-50 to-white scroll-mt-20 overflow-x-hidden relative">
+      {/* Subtle Dot Pattern Background */}
+      <div
+        className="absolute inset-0 opacity-50"
+        style={{
+          backgroundImage: `radial-gradient(circle, rgb(190, 190, 200) 1px, transparent 1px)`,
+          backgroundSize: '24px 24px'
+        }}
+      />
+
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 relative z-10">
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 text-gray-900">
             Supported Platforms
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Use SocialCal to schedule and post your content across all of these social media 
+            Use SocialCal to schedule and post your content across all of these social media
             platforms at the same time - all from one place.
           </p>
         </div>
 
         {/* Platforms Grid - Single Row */}
-        <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-9 gap-4 md:gap-6 max-w-[1200px] mx-auto">
-          {platforms.map((platform, index) => (
-            <div
-              key={platform.name}
-              className="group relative"
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              <div className="relative aspect-square rounded-lg bg-white shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 flex flex-col items-center justify-center p-2 gap-1.5">
-                {/* Platform Icon - No Background */}
-                <div className="w-[37px] h-[37px] flex items-center justify-center transition-all duration-300 group-hover:scale-110">
-                  {platform.icon}
+        <div className="relative max-w-[1200px] mx-auto">
+          <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-9 gap-4 md:gap-6">
+            {platforms.map((platform, index) => (
+              <div
+                key={platform.name}
+                className="group relative flex items-center justify-center"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div className="relative aspect-square rounded-lg bg-white shadow-md hover:shadow-[0_20px_50px_rgba(147,51,234,0.3)] transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 flex items-center justify-center p-2 w-full sm:w-[88%] z-20">
+                  {/* Platform Icon */}
+                  <div className="w-[38px] h-[38px] sm:w-[42px] sm:h-[42px] flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+                    {platform.icon}
+                  </div>
                 </div>
-                
-                {/* Platform Name */}
-                <h3 className="text-[10px] lg:text-xs font-medium text-center text-gray-700">
-                  {platform.name}
-                </h3>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>
