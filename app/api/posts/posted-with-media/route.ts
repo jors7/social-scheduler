@@ -63,6 +63,18 @@ export async function GET(request: NextRequest) {
       accountMap.set(acc.platform, acc);
     });
 
+    // Create a map of account ID to account info for enriching posts
+    const accountIdMap = new Map(
+      accounts.map(acc => [
+        acc.id,
+        {
+          id: acc.id,
+          username: acc.account_username || acc.username || acc.account_name || 'Unknown',
+          label: acc.account_label || null
+        }
+      ])
+    );
+
     // Enhance posts with media URLs from platforms
     const enhancedPosts = await Promise.all(
       posts.map(async (post) => {
@@ -222,11 +234,25 @@ export async function GET(request: NextRequest) {
           }
         }
 
+        // Build account_info from selected_accounts
+        const accountInfo: Record<string, Array<{id: string, username: string, label: string | null}>> = {};
+
+        if (post.selected_accounts && typeof post.selected_accounts === 'object') {
+          for (const [platform, accountIds] of Object.entries(post.selected_accounts)) {
+            if (Array.isArray(accountIds)) {
+              accountInfo[platform] = accountIds
+                .map(id => accountIdMap.get(id))
+                .filter((acc): acc is {id: string, username: string, label: string | null} => acc !== undefined);
+            }
+          }
+        }
+
         return {
           ...post,
           platform_media_url: platformMediaUrl, // Add the platform media URL
           pinterest_title: pinterestTitle,
-          pinterest_description: pinterestDescription
+          pinterest_description: pinterestDescription,
+          account_info: accountInfo
         };
       })
     );

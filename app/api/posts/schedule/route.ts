@@ -340,17 +340,30 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Enhance posts with platform_media_url if missing (for backward compatibility with old posts)
+    // Fetch user's social accounts for enriching posts with account info
+    const { data: socialAccounts } = await supabase
+      .from('social_accounts')
+      .select('id, platform, account_username, account_name, account_label, username')
+      .eq('user_id', user.id);
+
+    // Create lookup map of account ID to account info
+    const accountMap = new Map(
+      (socialAccounts || []).map(acc => [
+        acc.id,
+        {
+          id: acc.id,
+          username: acc.account_username || acc.username || acc.account_name || 'Unknown',
+          label: acc.account_label || null
+        }
+      ])
+    );
+
+    // Enhance posts with platform_media_url and account_info
     const enhancedPosts = posts.map(post => {
-      // If platform_media_url is already set, use it
-      if (post.platform_media_url) {
-        return post;
-      }
+      // Extract platform_media_url if missing (for backward compatibility with old posts)
+      let platformMediaUrl = post.platform_media_url;
 
-      // Otherwise, extract from media_urls for backward compatibility
-      let platformMediaUrl = null;
-
-      if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
+      if (!platformMediaUrl && post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
         const firstMedia = post.media_urls[0];
 
         if (typeof firstMedia === 'string') {
@@ -361,9 +374,23 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // Build account_info from selected_accounts
+      const accountInfo: Record<string, Array<{id: string, username: string, label: string | null}>> = {};
+
+      if (post.selected_accounts && typeof post.selected_accounts === 'object') {
+        for (const [platform, accountIds] of Object.entries(post.selected_accounts)) {
+          if (Array.isArray(accountIds)) {
+            accountInfo[platform] = accountIds
+              .map(id => accountMap.get(id))
+              .filter((acc): acc is {id: string, username: string, label: string | null} => acc !== undefined);
+          }
+        }
+      }
+
       return {
         ...post,
-        platform_media_url: platformMediaUrl
+        platform_media_url: platformMediaUrl,
+        account_info: accountInfo
       };
     });
 

@@ -2,7 +2,8 @@
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { 
+import { AccountBadge } from '@/components/ui/account-badge'
+import {
   Edit,
   Clock,
   Calendar,
@@ -19,12 +20,19 @@ import { getMediaUrl, getMediaThumbnail, isVideoUrl } from '@/lib/utils/media'
 
 type PostVariant = 'posted' | 'scheduled' | 'draft'
 
+interface AccountInfo {
+  id: string
+  username: string
+  label?: string | null
+}
+
 interface BasePost {
   id: string
   content: string
   platforms: string[]
   media_urls?: string[]
   created_at: string
+  account_info?: Record<string, AccountInfo[]>
 }
 
 interface PostedPost extends BasePost {
@@ -387,18 +395,15 @@ export function PostCard({
           </div>
         </div>
 
-        {/* Platform badges */}
-        <div className="flex flex-wrap gap-1 mb-3">
+        {/* Platform badges with account info */}
+        <div className="flex flex-wrap gap-2 mb-3">
           {(Array.isArray(post.platforms) ? post.platforms : []).map(platform => (
-            <span
+            <AccountBadge
               key={platform}
-              className={cn(
-                "px-2 py-0.5 text-xs font-medium rounded",
-                platformColors[platform] || 'bg-gray-200 text-gray-700'
-              )}
-            >
-              {platform.charAt(0).toUpperCase() + platform.slice(1)}
-            </span>
+              platform={platform}
+              accounts={post.account_info?.[platform]}
+              variant="solid"
+            />
           ))}
         </div>
 

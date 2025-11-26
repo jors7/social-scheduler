@@ -24,6 +24,13 @@ import { getMediaUrl as extractMediaUrl, isVideoUrl } from '@/lib/utils/media'
 import { toast } from 'sonner'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 import { Pagination } from '@/components/ui/pagination'
+import { AccountBadge } from '@/components/ui/account-badge'
+
+interface AccountInfo {
+  id: string
+  username: string
+  label?: string | null
+}
 
 interface PostedPost {
   id: string
@@ -41,6 +48,7 @@ interface PostedPost {
   pinterest_media_url?: string  // Deprecated, use platform_media_url
   pinterest_title?: string
   pinterest_description?: string
+  account_info?: Record<string, AccountInfo[]>  // Account info per platform
   // Format flags
   instagram_as_story?: boolean
   instagram_as_reel?: boolean
@@ -775,26 +783,14 @@ export default function PostedPostsPage() {
                             </span>
                           </div>
                           
-                          <div className="flex gap-1 mt-2 flex-wrap">
+                          <div className="flex gap-2 mt-2 flex-wrap">
                             {(Array.isArray(post.platforms) ? post.platforms : []).map(platform => (
-                              <span
+                              <AccountBadge
                                 key={platform}
-                                className={cn(
-                                  "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
-                                  platform === 'facebook' && 'bg-[#1877F2]/10 text-[#1877F2]',
-                                  platform === 'instagram' && 'bg-purple-500/10 text-purple-600',
-                                  platform === 'twitter' && 'bg-black/10 text-gray-900',
-                                  platform === 'linkedin' && 'bg-[#0A66C2]/10 text-[#0A66C2]',
-                                  platform === 'threads' && 'bg-black/10 text-gray-900',
-                                  platform === 'bluesky' && 'bg-[#00A8E8]/10 text-[#00A8E8]',
-                                  platform === 'youtube' && 'bg-[#FF0000]/10 text-[#FF0000]',
-                                  platform === 'tiktok' && 'bg-black/10 text-gray-900',
-                                  platform === 'pinterest' && 'bg-[#E60023]/10 text-[#E60023]',
-                                  !['facebook', 'instagram', 'twitter', 'linkedin', 'threads', 'bluesky', 'youtube', 'tiktok', 'pinterest'].includes(platform) && 'bg-gray-500/10 text-gray-700'
-                                )}
-                              >
-                                {platform.charAt(0).toUpperCase() + platform.slice(1)}
-                              </span>
+                                platform={platform}
+                                accounts={post.account_info?.[platform]}
+                                variant="light"
+                              />
                             ))}
                           </div>
                           

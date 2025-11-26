@@ -3,9 +3,16 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { AccountBadge } from '@/components/ui/account-badge'
 import { ChevronLeft, ChevronRight, Edit, Trash2, X, Clock, Image, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+
+interface AccountInfo {
+  id: string
+  username: string
+  label?: string | null
+}
 
 interface ScheduledPost {
   id: string
@@ -18,6 +25,7 @@ interface ScheduledPost {
   pinterest_title?: string
   pinterest_description?: string
   platform_media_url?: string  // Platform-fetched media URL for thumbnails
+  account_info?: Record<string, AccountInfo[]>  // Account info per platform
 }
 
 interface DragDropCalendarProps {
@@ -1037,15 +1045,16 @@ export function SimpleDragCalendar({
                                   ? post.pinterest_title
                                   : stripHtml(post.content).slice(0, 100) + '...'}
                               </div>
-                              {/* Platform badge */}
-                              <div className="flex flex-wrap gap-1">
+                              {/* Platform badge with account info */}
+                              <div className="flex flex-wrap gap-1.5">
                                 {(Array.isArray(post.platforms) ? post.platforms : []).map(platform => (
-                                  <span
+                                  <AccountBadge
                                     key={platform}
-                                    className="text-[9px] bg-gray-900/20 text-gray-900 px-1.5 py-0.5 rounded"
-                                  >
-                                    {platform}
-                                  </span>
+                                    platform={platform}
+                                    accounts={post.account_info?.[platform]}
+                                    compact={true}
+                                    variant="light"
+                                  />
                                 ))}
                               </div>
                             </div>
@@ -1155,15 +1164,15 @@ export function SimpleDragCalendar({
                                   ? post.pinterest_title
                                   : stripHtml(post.content).slice(0, 150) + '...'}
                               </div>
-                              {/* Platform badges */}
-                              <div className="flex flex-wrap gap-1 text-xs">
+                              {/* Platform badges with account info */}
+                              <div className="flex flex-wrap gap-2">
                                 {(Array.isArray(post.platforms) ? post.platforms : []).map(platform => (
-                                  <span
+                                  <AccountBadge
                                     key={platform}
-                                    className="bg-gray-900/20 text-gray-900 px-2 py-1 rounded"
-                                  >
-                                    {platform}
-                                  </span>
+                                    platform={platform}
+                                    accounts={post.account_info?.[platform]}
+                                    variant="light"
+                                  />
                                 ))}
                               </div>
                             </div>
