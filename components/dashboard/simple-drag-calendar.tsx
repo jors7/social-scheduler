@@ -418,7 +418,14 @@ export function SimpleDragCalendar({
       console.log('Same date, not updating')
       return
     }
-    
+
+    // Don't allow rescheduling to a past date
+    const now = new Date()
+    if (newDateTime <= now) {
+      toast.error('Cannot reschedule to a past date')
+      return
+    }
+
     try {
       console.log('Calling onPostUpdate with:', post.id, newDateTime.toISOString())
       await onPostUpdate(post.id, newDateTime)

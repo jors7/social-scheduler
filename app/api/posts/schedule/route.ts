@@ -446,6 +446,18 @@ export async function PATCH(request: NextRequest) {
     
     if (scheduledFor !== undefined) {
       const scheduledDate = new Date(scheduledFor);
+
+      // Validate scheduled time is in the future (allow 5 minutes tolerance)
+      const now = new Date();
+      const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+
+      if (scheduledDate <= fiveMinutesAgo) {
+        return NextResponse.json({
+          error: 'Scheduled time must be in the future',
+          message: 'Cannot reschedule a post to a past date'
+        }, { status: 400 });
+      }
+
       console.log('Updating scheduled_for to:', scheduledDate.toISOString());
       updateData.scheduled_for = scheduledDate.toISOString();
     }
