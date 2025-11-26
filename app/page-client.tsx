@@ -427,6 +427,7 @@ function LandingPageContent({ isAuthenticated, userEmail }: LandingPageContentPr
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="/about" scroll={false} className="hover:text-white">About</Link></li>
                 <li><Link href="/blog" scroll={false} className="hover:text-white">Blog</Link></li>
+                <li><Link href="/contact" scroll={false} className="hover:text-white">Contact</Link></li>
               </ul>
             </div>
             <div>
@@ -445,7 +446,6 @@ function LandingPageContent({ isAuthenticated, userEmail }: LandingPageContentPr
                     Privacy Policy
                   </Link>
                 </li>
-                <li><Link href="/contact" scroll={false} className="hover:text-white transition-colors">Contact</Link></li>
               </ul>
             </div>
           </div>
