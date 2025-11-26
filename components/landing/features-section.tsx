@@ -51,7 +51,7 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="pt-20 pb-16 px-4 bg-gradient-to-b from-white via-gray-50/50 to-white scroll-mt-20 overflow-x-hidden">
+    <section id="features" className="pt-10 md:pt-20 pb-16 px-4 bg-gradient-to-b from-white via-gray-50/50 to-white scroll-mt-20 overflow-x-hidden">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6">
         {/* Section Header */}
         <div className="text-center mb-16">
