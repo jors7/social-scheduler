@@ -77,11 +77,12 @@ export async function GET(request: NextRequest) {
     // Whitelist of protected prefixes that should NEVER be deleted
     const PROTECTED_PREFIXES = [
       'static-assets/',  // Application assets (logos, icons, hero images)
+      'blog-images/',    // Blog post content images, featured images
     ];
 
     /**
      * Check if a file is protected from cleanup
-     * Protected files include app assets like logos, icons, and hero images
+     * Protected files include app assets (logos, icons, hero images) and blog images
      */
     const isProtectedFile = (key: string): boolean => {
       return PROTECTED_PREFIXES.some(prefix => key.startsWith(prefix));
