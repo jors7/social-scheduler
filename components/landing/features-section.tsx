@@ -51,7 +51,7 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="pt-32 pb-16 px-4 bg-gradient-to-b from-white via-gray-50/50 to-white scroll-mt-20 overflow-x-hidden">
+    <section id="features" className="pt-20 pb-16 px-4 bg-gradient-to-b from-white via-gray-50/50 to-white scroll-mt-20 overflow-x-hidden">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6">
         {/* Section Header */}
         <div className="text-center mb-16">
@@ -75,9 +75,6 @@ export function FeaturesSection() {
               className="group relative"
               style={{ animationDelay: `${index * 100}ms` }}
             >
-              {/* Gradient border effect on hover */}
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl opacity-0 group-hover:opacity-100 blur transition duration-500"></div>
-
               {/* Card Content */}
               <div className="relative h-full p-8 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1">
                 {/* Title with Icon and Badge */}
