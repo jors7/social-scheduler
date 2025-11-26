@@ -105,7 +105,7 @@ export function ImpactSection() {
             <div className="mb-3">
               <span className="text-5xl sm:text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">67%</span>
             </div>
-            <h3 className="text-lg font-semibold mb-2 text-gray-900">Get answers faster</h3>
+            <h3 className="text-lg font-semibold mb-2 text-gray-900">Manage posts faster</h3>
             <p className="text-gray-600 text-sm sm:text-xs leading-relaxed">
               Find and manage all your posts <br className="hidden sm:inline" />
               67% faster.
