@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import {
   UserGroupIcon,
@@ -644,6 +645,53 @@ export default function AffiliateSignupPage() {
         </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-black text-white py-12 px-4 mt-20">
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+            <div className="col-span-2 md:col-span-1">
+              <h3 className="text-2xl font-bold mb-4">SocialCal</h3>
+              <p className="text-gray-400">
+                The all-in-one social media scheduler
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Product</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link href="/" className="hover:text-white">Home</Link></li>
+                <li><Link href="/pricing" className="hover:text-white">Pricing</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Company</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link href="/about" className="hover:text-white">About</Link></li>
+                <li><Link href="/blog" className="hover:text-white">Blog</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Partners</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link href="/affiliate" className="hover:text-white">Affiliate Program</Link></li>
+                <li><Link href="/affiliate/login" className="hover:text-white">Affiliate Login</Link></li>
+                <li><Link href="/affiliate/terms" className="hover:text-white">Affiliate Terms</Link></li>
+              </ul>
+            </div>
+            <div className="md:col-span-1">
+              <h4 className="font-semibold mb-4">Legal</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link href="/terms" className="hover:text-white">Terms of Service</Link></li>
+                <li><Link href="/privacy" className="hover:text-white">Privacy Policy</Link></li>
+                <li><Link href="/contact" className="hover:text-white">Contact</Link></li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
+            <p>&copy; 2025 SocialCal. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
 
       {/* Auth Modals */}
       <AuthModals
