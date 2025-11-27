@@ -52,7 +52,8 @@ export function ImpactSection() {
           </g>
           <defs>
             <linearGradient id="purpleGradientFill" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#f3e8ff" stopOpacity="0.3" />
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
+              <stop offset="15%" stopColor="#f3e8ff" stopOpacity="0.3" />
               <stop offset="50%" stopColor="#e9d5ff" stopOpacity="0.5" />
               <stop offset="100%" stopColor="#f3e8ff" stopOpacity="0.3" />
             </linearGradient>
@@ -62,7 +63,8 @@ export function ImpactSection() {
               <stop offset="100%" stopColor="#9333ea" stopOpacity="0.5" />
             </linearGradient>
             <linearGradient id="purpleGradientFillMobile" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#f3e8ff" stopOpacity="0.3" />
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
+              <stop offset="15%" stopColor="#f3e8ff" stopOpacity="0.3" />
               <stop offset="50%" stopColor="#e9d5ff" stopOpacity="0.5" />
               <stop offset="100%" stopColor="#f3e8ff" stopOpacity="0.3" />
             </linearGradient>
