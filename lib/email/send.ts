@@ -231,6 +231,35 @@ export async function sendContactFormConfirmation(
   });
 }
 
+export async function sendNewUserNotificationToAdmin(
+  userEmail: string,
+  planName: string,
+  billingCycle: string,
+  isTrial: boolean
+) {
+  const { default: NewUserAdminEmail } = await import('./templates/new-user-admin');
+
+  return sendEmail({
+    to: 'jan.orsula1@gmail.com',
+    subject: `New Signup: ${userEmail}`,
+    react: NewUserAdminEmail({
+      userEmail,
+      planName,
+      billingCycle,
+      isTrial,
+      signupDate: new Date().toLocaleString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short'
+      }),
+    }),
+  });
+}
+
 // =====================================================
 // QUEUED EMAIL FUNCTIONS (recommended for webhooks)
 // =====================================================

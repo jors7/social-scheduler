@@ -5,6 +5,7 @@ import {
   sendWelcomeEmail,
   sendTrialStartedEmail,
   sendSubscriptionCreatedEmail,
+  sendNewUserNotificationToAdmin,
 } from '@/lib/email/send'
 import { addContactToAudience } from '@/lib/email/audience'
 
@@ -200,6 +201,12 @@ export async function GET(request: NextRequest) {
                 .catch(err => console.error('Error sending subscription email:', err))
               console.log('✅ Subscription email sent')
             }
+
+            // Send admin notification about new signup
+            const isTrial = subscription.status === 'trialing'
+            await sendNewUserNotificationToAdmin(customerEmail, planName, billingCycle, isTrial)
+              .catch(err => console.error('Error sending admin notification:', err))
+            console.log('✅ Admin notification sent')
 
             // =====================================================
             // AFFILIATE TRACKING
