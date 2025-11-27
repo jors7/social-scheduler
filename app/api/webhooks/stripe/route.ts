@@ -743,16 +743,23 @@ export async function POST(request: NextRequest) {
                   .single()
 
                 if (affiliate) {
-                  // Calculate commission (amount is in cents, convert to dollars)
-                  const paymentAmount = invoice.amount_paid / 100
-                  const commissionRate = affiliate.commission_rate || 30
-                  const commissionAmount = parseFloat((paymentAmount * (commissionRate / 100)).toFixed(2))
+                  // SELF-REFERRAL PREVENTION: Don't pay commission if affiliate is the customer
+                  if (affiliate.user_id === userId) {
+                    console.warn('🚫 Self-referral detected in webhook! Affiliate user_id matches customer user_id')
+                    console.warn('   Affiliate ID:', affiliate.id, '| User ID:', userId)
+                    console.warn('   Skipping commission payment')
+                    // Don't process commission - exit the affiliate block
+                  } else {
+                    // Calculate commission (amount is in cents, convert to dollars)
+                    const paymentAmount = invoice.amount_paid / 100
+                    const commissionRate = affiliate.commission_rate || 30
+                    const commissionAmount = parseFloat((paymentAmount * (commissionRate / 100)).toFixed(2))
 
-                  console.log('💵 Commission calculated:', {
-                    payment: paymentAmount,
-                    rate: commissionRate + '%',
-                    commission: commissionAmount
-                  })
+                    console.log('💵 Commission calculated:', {
+                      payment: paymentAmount,
+                      rate: commissionRate + '%',
+                      commission: commissionAmount
+                    })
 
                   // Check if trial conversion already exists (created during signup)
                   const { data: existingConversion } = await supabaseAdmin
@@ -914,6 +921,7 @@ export async function POST(request: NextRequest) {
                       }
                     }
                   }
+                  } // Close the self-referral else block
                 } else {
                   console.log('⚠️ Affiliate not found or inactive:', affiliate_id)
                 }

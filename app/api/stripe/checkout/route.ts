@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       console.log('🔍 Looking up affiliate with referral_code:', referralCode)
       const { data: affiliate, error: affiliateError } = await supabaseService
         .from('affiliates')
-        .select('id, referral_code, status')
+        .select('id, user_id, referral_code, status')
         .eq('referral_code', referralCode)
         .eq('status', 'active')
         .single()
@@ -65,11 +65,18 @@ export async function POST(request: NextRequest) {
         console.error('❌ Affiliate lookup error:', affiliateError)
         console.log('⚠️ Affiliate not found for code:', referralCode)
       } else if (affiliate) {
-        affiliateId = affiliate.id
-        console.log('✅ Affiliate found successfully!')
-        console.log('  - Affiliate ID:', affiliate.id)
-        console.log('  - Referral Code:', affiliate.referral_code)
-        console.log('  - Status:', affiliate.status)
+        // SELF-REFERRAL PREVENTION: Check if the user is trying to use their own referral link
+        if (user && affiliate.user_id === user.id) {
+          console.warn('🚫 Self-referral detected! User', user.id, 'tried to use their own affiliate link')
+          console.warn('   Affiliate ID:', affiliate.id, '| Referral code:', affiliate.referral_code)
+          // Don't set affiliateId - this signup will not generate a commission
+        } else {
+          affiliateId = affiliate.id
+          console.log('✅ Affiliate found successfully!')
+          console.log('  - Affiliate ID:', affiliate.id)
+          console.log('  - Referral Code:', affiliate.referral_code)
+          console.log('  - Status:', affiliate.status)
+        }
       } else {
         console.log('⚠️ Affiliate not found for code:', referralCode)
       }
