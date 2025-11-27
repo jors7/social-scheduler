@@ -926,15 +926,21 @@ async function processScheduledPosts(request: NextRequest) {
           // Find accounts for this platform, respecting selected_accounts if specified
           let accountsToPost;
           if (post.selected_accounts && post.selected_accounts[platform]) {
-            // User selected specific account(s) - use all selected accounts
+            // User selected specific account(s) - use only those accounts
             const selectedIds = post.selected_accounts[platform];
             accountsToPost = accounts.filter(acc =>
               acc.platform === platform && selectedIds.includes(acc.id)
             );
+            // Do NOT fallback to other accounts - fail if selected accounts are disconnected
+            // This prevents posting to unintended accounts (e.g., personal instead of business)
             if (accountsToPost.length === 0) {
-              console.log(`Selected accounts not found for ${platform}, falling back to first available`);
-              const fallbackAccount = accounts.find(acc => acc.platform === platform);
-              accountsToPost = fallbackAccount ? [fallbackAccount] : [];
+              console.log(`Selected ${platform} account(s) no longer connected, failing post`);
+              postResults.push({
+                platform,
+                success: false,
+                error: `The ${platform} account selected for this post is no longer connected. Please reconnect it or reschedule to a different account.`
+              });
+              continue;
             }
           } else {
             // No specific selection - use primary account or first available
