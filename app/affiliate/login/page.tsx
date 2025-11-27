@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { Navbar } from '@/components/layout/navbar';
+import { MobileMenu } from '@/components/layout/mobile-menu';
+import { AuthModals } from '@/components/auth/auth-modals';
 
 // Force dynamic rendering for this page due to useSearchParams
 export const dynamic = 'force-dynamic';
@@ -15,6 +18,10 @@ function AffiliateLoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [signInOpen, setSignInOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -23,7 +30,15 @@ function AffiliateLoginForm() {
     if (message) {
       toast.success(message);
     }
-  }, [searchParams]);
+
+    // Check auth status for navbar
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsAuthenticated(!!user);
+      setUserEmail(user?.email || null);
+    };
+    checkAuth();
+  }, [searchParams, supabase.auth]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,16 +91,35 @@ function AffiliateLoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-            Affiliate Login
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-300">
-            Access your affiliate dashboard
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+      {/* Shared Navbar Component */}
+      <Navbar
+        isAuthenticated={isAuthenticated}
+        userEmail={userEmail}
+        onSignInClick={() => setSignInOpen(true)}
+        onMobileMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        isMobileMenuOpen={isMobileMenuOpen}
+      />
+
+      {/* Mobile Menu */}
+      <MobileMenu
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        isAuthenticated={isAuthenticated}
+        userEmail={userEmail}
+        onSignInClick={() => setSignInOpen(true)}
+      />
+
+      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-64px)]">
+        <div className="max-w-md w-full space-y-8">
+          <div>
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
+              Affiliate Login
+            </h2>
+            <p className="mt-2 text-center text-sm text-gray-300">
+              Access your affiliate dashboard
+            </p>
+          </div>
 
         <div className="bg-white/10 backdrop-blur-lg rounded-lg p-8">
           <form className="space-y-6" onSubmit={handleLogin}>
@@ -179,7 +213,14 @@ function AffiliateLoginForm() {
             You can then use your credentials to log in here.
           </p>
         </div>
+        </div>
       </div>
+
+      {/* Auth Modals */}
+      <AuthModals
+        signInOpen={signInOpen}
+        onSignInOpenChange={setSignInOpen}
+      />
     </div>
   );
 }

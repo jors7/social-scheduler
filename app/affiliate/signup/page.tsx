@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -10,10 +10,29 @@ import {
   SparklesIcon,
 } from '@heroicons/react/24/outline';
 import type { AffiliateApplicationForm } from '@/types/affiliate';
+import { Navbar } from '@/components/layout/navbar';
+import { MobileMenu } from '@/components/layout/mobile-menu';
+import { AuthModals } from '@/components/auth/auth-modals';
+import { createClient } from '@/lib/supabase/client';
 
 export default function AffiliateSignupPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [signInOpen, setSignInOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsAuthenticated(!!user);
+      setUserEmail(user?.email || null);
+    };
+    checkAuth();
+  }, [supabase.auth]);
+
   const [formData, setFormData] = useState<AffiliateApplicationForm>({
     first_name: '',
     last_name: '',
@@ -156,17 +175,36 @@ export default function AffiliateSignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">
-            Join the SocialCal Affiliate Program
-          </h1>
-          <p className="text-xl text-gray-300">
-            Earn 30% lifetime recurring commission on every referral
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+      {/* Shared Navbar Component */}
+      <Navbar
+        isAuthenticated={isAuthenticated}
+        userEmail={userEmail}
+        onSignInClick={() => setSignInOpen(true)}
+        onMobileMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        isMobileMenuOpen={isMobileMenuOpen}
+      />
+
+      {/* Mobile Menu */}
+      <MobileMenu
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        isAuthenticated={isAuthenticated}
+        userEmail={userEmail}
+        onSignInClick={() => setSignInOpen(true)}
+      />
+
+      <div className="py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold text-white mb-4">
+              Join the SocialCal Affiliate Program
+            </h1>
+            <p className="text-xl text-gray-300">
+              Earn 30% lifetime recurring commission on every referral
+            </p>
+          </div>
 
         {/* Benefits */}
         <div className="grid md:grid-cols-3 gap-6 mb-12">
@@ -604,7 +642,14 @@ export default function AffiliateSignupPage() {
             </button>
           </form>
         </div>
+        </div>
       </div>
+
+      {/* Auth Modals */}
+      <AuthModals
+        signInOpen={signInOpen}
+        onSignInOpenChange={setSignInOpen}
+      />
     </div>
   );
 }

@@ -359,6 +359,7 @@ export default function ContactPage() {
               <h4 className="font-semibold mb-4">Partners</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="/affiliate" className="hover:text-white">Affiliate Program</Link></li>
+                <li><Link href="/affiliate/login" className="hover:text-white">Affiliate Login</Link></li>
                 <li><Link href="/affiliate/terms" className="hover:text-white">Affiliate Terms</Link></li>
               </ul>
             </div>

@@ -434,6 +434,7 @@ function LandingPageContent({ isAuthenticated, userEmail }: LandingPageContentPr
               <h4 className="font-semibold mb-4">Partners</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="/affiliate" scroll={false} className="hover:text-white">Affiliate Program</Link></li>
+                <li><Link href="/affiliate/login" scroll={false} className="hover:text-white">Affiliate Login</Link></li>
                 <li><Link href="/affiliate/terms" scroll={false} className="hover:text-white">Affiliate Terms</Link></li>
               </ul>
             </div>
