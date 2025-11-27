@@ -119,8 +119,9 @@ export function MobileMenu({
 
       {/* Full-width Menu Panel - positioned below the header */}
       {isOpen && (
-        <div 
-          className="fixed top-16 left-0 right-0 max-h-[calc(100vh-4rem)] bg-white z-30 transform translate-y-0 transition-transform duration-300 ease-out md:hidden shadow-2xl overflow-y-auto"
+        <div
+          className="fixed top-16 left-0 right-0 bottom-0 bg-white z-30 transform translate-y-0 transition-transform duration-300 ease-out md:hidden shadow-2xl overflow-y-auto"
+          style={{ maxHeight: 'calc(100dvh - 4rem)' }}
         >
         {/* Menu Content */}
         <div className="flex flex-col">
@@ -139,7 +140,7 @@ export function MobileMenu({
             </div>
           )}
           
-          <nav className="px-4 pb-8">
+          <nav className="px-4" style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}>
             {isAuthenticated && hasSubscription ? (
               // Authenticated Menu (with subscription)
               <>
