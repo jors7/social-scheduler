@@ -106,7 +106,7 @@ export function ImpactSection() {
             </div>
             <h3 className="text-lg font-semibold mb-2 text-gray-900">Post everywhere at once</h3>
             <p className="text-gray-600 text-sm sm:text-xs leading-relaxed">
-              Connect with audiences on 9 platforms, with <br className="sm:hidden" />one click
+              Connect with audiences on 9 platforms,<br className="sm:hidden" /> with one click
             </p>
           </div>
 
