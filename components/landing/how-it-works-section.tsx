@@ -6,7 +6,7 @@ const HowItWorksSection = () => {
     <section
       className="py-20 pb-24 overflow-x-hidden"
       style={{
-        background: 'linear-gradient(to bottom, transparent 0%, white 100%), linear-gradient(to right, rgb(250, 245, 255) 0%, rgb(250, 245, 255) 30%, rgb(243, 232, 255) 70%, rgb(243, 232, 255) 100%)'
+        background: 'linear-gradient(to bottom, transparent 0%, white 100%), linear-gradient(to right, rgb(250, 245, 255) 0%, rgb(250, 245, 255) 40%, rgb(247, 240, 255) 100%)'
       }}
     >
       <div className="container mx-auto max-w-[68rem] px-6 sm:px-6 lg:px-8">
