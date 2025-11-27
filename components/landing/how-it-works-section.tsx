@@ -3,7 +3,12 @@ import { motion } from 'framer-motion';
 
 const HowItWorksSection = () => {
   return (
-    <section className="py-20 pb-24 bg-gradient-to-b from-purple-50 via-purple-50/50 to-white overflow-x-hidden">
+    <section
+      className="py-20 pb-24 overflow-x-hidden"
+      style={{
+        background: 'linear-gradient(to bottom, transparent 0%, white 100%), linear-gradient(to right, rgb(250, 245, 255) 0%, rgb(250, 245, 255) 30%, white 70%, white 100%)'
+      }}
+    >
       <div className="container mx-auto max-w-[68rem] px-6 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
