@@ -321,9 +321,9 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl p-0 overflow-hidden gap-0 border-0 [&>button]:hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] p-0 gap-0 border-0 [&>button]:hidden flex flex-col overflow-hidden">
         {/* Gradient Header */}
-        <div className="bg-gradient-to-r from-purple-600 via-violet-600 to-blue-600 px-6 md:px-8 py-5 md:py-6 relative">
+        <div className="bg-gradient-to-r from-purple-600 via-violet-600 to-blue-600 px-6 md:px-8 py-5 md:py-6 relative flex-shrink-0">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
@@ -360,7 +360,7 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
         </div>
 
         {/* Content Area */}
-        <div className="p-5 md:p-8 bg-white">
+        <div className="p-5 md:p-8 bg-white flex-1 overflow-y-auto">
           <div className="flex flex-col md:flex-row gap-5 md:gap-8 items-center">
             {/* Left Side - Text Content */}
             <div className="flex-1 space-y-3 md:space-y-4 w-full">
@@ -387,7 +387,7 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
         </div>
 
         {/* Footer */}
-        <div className="px-5 md:px-8 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+        <div className="px-5 md:px-8 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-4">
             {!isFirstStep && (
               <Button
