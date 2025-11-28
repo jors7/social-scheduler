@@ -321,9 +321,9 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] p-0 gap-0 border-0 [&>button]:hidden flex flex-col overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] p-0 gap-0 border-0 [&>button]:hidden overflow-y-auto">
         {/* Gradient Header */}
-        <div className="bg-gradient-to-r from-purple-600 via-violet-600 to-blue-600 px-6 md:px-8 py-5 md:py-6 relative flex-shrink-0">
+        <div className="bg-gradient-to-r from-purple-600 via-violet-600 to-blue-600 px-6 md:px-8 py-5 md:py-6 relative">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
@@ -359,10 +359,8 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
           </div>
         </div>
 
-        {/* Scrollable Content + Footer */}
-        <div className="flex-1 overflow-y-auto">
-          {/* Content Area */}
-          <div className="p-5 md:p-8 bg-white">
+        {/* Content Area */}
+        <div className="p-5 md:p-8 bg-white">
             <div className="flex flex-col md:flex-row gap-5 md:gap-8 items-center">
               {/* Left Side - Text Content */}
               <div className="flex-1 space-y-3 md:space-y-4 w-full">
@@ -415,7 +413,6 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
             {isLastStep ? 'Get Started' : 'Next Step'}
             <ChevronRight className="h-4 w-4" />
           </Button>
-          </div>
         </div>
       </DialogContent>
     </Dialog>
