@@ -428,6 +428,15 @@ function CreateNewPostPageContent() {
     };
   }, [filePreviewUrls])
 
+  // Auto-show preview when media is uploaded (required by TikTok UX guidelines Point 5a)
+  // "API Clients should display a preview of the to-be-posted content"
+  useEffect(() => {
+    const hasMedia = uploadedMediaUrls.length > 0 || selectedFiles.length > 0
+    if (hasMedia && !showPreview) {
+      setShowPreview(true)
+    }
+  }, [uploadedMediaUrls.length, selectedFiles.length])
+
   // Fetch connected accounts on mount
   useEffect(() => {
     async function fetchAccounts() {
