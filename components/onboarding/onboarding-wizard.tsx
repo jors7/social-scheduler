@@ -359,35 +359,37 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="p-5 md:p-8 bg-white flex-1 overflow-y-auto">
-          <div className="flex flex-col md:flex-row gap-5 md:gap-8 items-center">
-            {/* Left Side - Text Content */}
-            <div className="flex-1 space-y-3 md:space-y-4 w-full">
-              <h3 className="text-xl md:text-2xl font-bold text-gray-900">
-                {currentStepData.title}
-              </h3>
-              <p className="text-sm md:text-base text-gray-600 leading-relaxed">
-                {currentStepData.description}
-              </p>
-              <Button
-                onClick={handleNext}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white gap-2 mt-2 w-full md:w-auto"
-              >
-                <currentStepData.icon className="h-4 w-4" />
-                {currentStepData.actionLabel}
-              </Button>
-            </div>
+        {/* Scrollable Content + Footer */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Content Area */}
+          <div className="p-5 md:p-8 bg-white">
+            <div className="flex flex-col md:flex-row gap-5 md:gap-8 items-center">
+              {/* Left Side - Text Content */}
+              <div className="flex-1 space-y-3 md:space-y-4 w-full">
+                <h3 className="text-xl md:text-2xl font-bold text-gray-900">
+                  {currentStepData.title}
+                </h3>
+                <p className="text-sm md:text-base text-gray-600 leading-relaxed">
+                  {currentStepData.description}
+                </p>
+                <Button
+                  onClick={handleNext}
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white gap-2 mt-2 w-full md:w-auto"
+                >
+                  <currentStepData.icon className="h-4 w-4" />
+                  {currentStepData.actionLabel}
+                </Button>
+              </div>
 
-            {/* Right Side - Visual */}
-            <div className="flex-1 w-full max-w-[280px] md:max-w-none mx-auto md:mx-0">
-              {currentStepData.visualContent}
+              {/* Right Side - Visual */}
+              <div className="flex-1 w-full max-w-[280px] md:max-w-none mx-auto md:mx-0">
+                {currentStepData.visualContent}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Footer */}
-        <div className="px-5 md:px-8 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between flex-shrink-0">
+          {/* Footer */}
+          <div className="px-5 md:px-8 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-4">
             {!isFirstStep && (
               <Button
@@ -413,6 +415,7 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
             {isLastStep ? 'Get Started' : 'Next Step'}
             <ChevronRight className="h-4 w-4" />
           </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
