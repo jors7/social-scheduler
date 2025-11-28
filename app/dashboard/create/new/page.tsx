@@ -4771,6 +4771,7 @@ function CreateNewPostPageContent() {
               pinterestDescription={pinterestDescription}
               pinterestBoard={pinterestBoards.find(b => b.id === selectedPinterestBoard)?.name}
               threadPosts={threadPosts}
+              tiktokTitle={tiktokTitle}
               onClose={() => setShowPreview(false)}
               />
             </div>

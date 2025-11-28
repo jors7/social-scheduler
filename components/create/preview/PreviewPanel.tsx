@@ -29,6 +29,7 @@ interface PreviewPanelProps {
   pinterestDescription?: string
   pinterestBoard?: string
   threadPosts?: string[]
+  tiktokTitle?: string
   onClose: () => void
 }
 
@@ -138,6 +139,7 @@ export function PreviewPanel({
   pinterestDescription,
   pinterestBoard,
   threadPosts,
+  tiktokTitle,
   onClose
 }: PreviewPanelProps) {
   // Normalize mediaUrls to strings for most preview components
@@ -254,6 +256,12 @@ export function PreviewPanel({
               content={platformContentToUse}
               mediaUrls={mediaUrls}
               threadPosts={threadPosts}
+            />
+          ) : activePlatform === 'tiktok' ? (
+            <TikTokPreview
+              content={platformContentToUse}
+              mediaUrls={normalizedMediaUrls}
+              tiktokTitle={tiktokTitle}
             />
           ) : (
             <ActivePreviewComponent

@@ -5,10 +5,14 @@ import { stripHtml, truncateText, isVideoUrl } from './preview-utils'
 interface TikTokPreviewProps {
   content: string
   mediaUrls?: string[]
+  /** TikTok-specific caption/title (for videos this IS the caption, max 2200 chars) */
+  tiktokTitle?: string
 }
 
-export function TikTokPreview({ content, mediaUrls = [] }: TikTokPreviewProps) {
-  const plainText = stripHtml(content)
+export function TikTokPreview({ content, mediaUrls = [], tiktokTitle }: TikTokPreviewProps) {
+  // Use tiktokTitle if provided, otherwise fall back to content
+  const displayContent = tiktokTitle || content
+  const plainText = stripHtml(displayContent)
   const { text } = truncateText(plainText, 2200, 'soft')
 
   return (

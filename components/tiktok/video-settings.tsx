@@ -156,11 +156,11 @@ export function TikTokVideoSettings({
           />
         ) : null}
 
-        {/* Title Field */}
+        {/* Caption/Title Field */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="tiktok-title">
-              Title {!isPhotoPost && '(Optional)'}
+              {isPhotoPost ? 'Title' : 'Caption'} {!isPhotoPost && '(Optional)'}
             </Label>
             <span className={`text-xs ${titleCharCount > titleMaxChars ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
               {titleCharCount} / {titleMaxChars}
@@ -170,14 +170,14 @@ export function TikTokVideoSettings({
             id="tiktok-title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder={isPhotoPost ? "Add a catchy title..." : "Add an optional title..."}
+            placeholder={isPhotoPost ? "Add a title that describes your photo..." : "Add a title that describes your video..."}
             maxLength={titleMaxChars}
             className={titleCharCount > titleMaxChars ? 'border-red-500' : ''}
           />
           <p className="text-xs text-gray-600">
             {isPhotoPost
-              ? 'A short, attention-grabbing title for your photo post'
-              : 'An optional title separate from your video caption'
+              ? 'A short, attention-grabbing title for your photo post (max 150 characters)'
+              : 'The caption that appears with your video (max 2,200 characters)'
             }
           </p>
         </div>
