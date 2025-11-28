@@ -1,10 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import {
   X,
   ChevronLeft,
@@ -16,7 +14,9 @@ import {
   PlusCircle,
   Wand2,
   CheckCircle2,
-  ArrowRight
+  Rocket,
+  Share2,
+  Check
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -25,9 +25,8 @@ export interface OnboardingStep {
   title: string
   description: string
   icon: any
-  content: React.ReactNode
-  targetElement?: string // CSS selector for spotlight
-  position?: 'center' | 'top' | 'bottom' | 'left' | 'right'
+  actionLabel?: string
+  visualContent: React.ReactNode
 }
 
 interface OnboardingWizardProps {
@@ -39,333 +38,259 @@ interface OnboardingWizardProps {
 
 export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: OnboardingWizardProps) {
   const [currentStep, setCurrentStep] = useState(0)
-  const [direction, setDirection] = useState<'forward' | 'backward'>('forward')
+
+  // Reset to first step when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentStep(0)
+    }
+  }, [isOpen])
+
+  // Visual card component for the right side
+  const VisualCard = ({ icon: Icon, title, items, colors }: {
+    icon: any,
+    title: string,
+    items: { label: string, color: string, width: string }[],
+    colors: { bg: string, iconBg: string, iconColor: string }
+  }) => (
+    <div className={cn("rounded-2xl p-6 shadow-lg border border-gray-100", colors.bg)}>
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-3 h-3 rounded-full bg-red-400" />
+        <div className="w-3 h-3 rounded-full bg-yellow-400" />
+        <div className="w-3 h-3 rounded-full bg-green-400" />
+        <span className="ml-2 text-sm font-medium text-gray-700">{title}</span>
+      </div>
+      <div className="space-y-4">
+        {items.map((item, i) => (
+          <div key={i} className="space-y-1.5">
+            <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+              <div className={cn("h-full rounded-full", item.color)} style={{ width: item.width }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 
   const steps: OnboardingStep[] = [
     {
       id: 'welcome',
-      title: 'Welcome to SocialCal! 🎉',
-      description: "Let's take a quick tour of your new social media command center",
+      title: 'Welcome to SocialCal',
+      description: 'SocialCal helps you manage all your social media accounts in one place. Post to multiple platforms, schedule content, and track your performance.',
       icon: Sparkles,
-      position: 'center',
-      content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            SocialCal helps you manage all your social media accounts in one place.
-            Post to multiple platforms, schedule content, and track your performance.
-          </p>
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <p className="text-sm text-purple-900 font-medium flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              This quick tour will show you everything you need to get started
-            </p>
+      actionLabel: 'Get Started',
+      visualContent: (
+        <VisualCard
+          icon={Sparkles}
+          title="Dashboard Overview"
+          items={[
+            { label: 'Posts', color: 'bg-emerald-500', width: '85%' },
+            { label: 'Engagement', color: 'bg-blue-500', width: '70%' },
+            { label: 'Growth', color: 'bg-amber-500', width: '60%' },
+          ]}
+          colors={{ bg: 'bg-gradient-to-br from-emerald-50 to-white', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' }}
+        />
+      ),
+    },
+    {
+      id: 'connect-accounts',
+      title: 'Connect Your Accounts',
+      description: 'Link your social media profiles to post across all platforms with a single click. We support Facebook, Instagram, Threads, Bluesky, and more.',
+      icon: Users,
+      actionLabel: 'Connect Accounts',
+      visualContent: (
+        <div className="rounded-2xl p-6 shadow-lg border border-gray-100 bg-gradient-to-br from-blue-50 to-white">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-3 h-3 rounded-full bg-red-400" />
+            <div className="w-3 h-3 rounded-full bg-yellow-400" />
+            <div className="w-3 h-3 rounded-full bg-green-400" />
+            <span className="ml-2 text-sm font-medium text-gray-700">Connected Accounts</span>
           </div>
-          <div className="grid grid-cols-2 gap-3 mt-4">
-            <div className="flex items-center gap-2 text-sm">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>Multi-platform posting</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>AI-powered captions</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>Content scheduling</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>Analytics & insights</span>
-            </div>
+          <div className="space-y-3">
+            {[
+              { name: 'Facebook', color: 'bg-[#1877F2]', icon: 'f' },
+              { name: 'Instagram', color: 'bg-gradient-to-br from-purple-500 to-pink-500', icon: '📷' },
+              { name: 'Bluesky', color: 'bg-[#00A8E8]', icon: '🦋' },
+            ].map((platform, i) => (
+              <div key={i} className="flex items-center gap-3 p-2 bg-white rounded-lg border border-gray-100">
+                <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold", platform.color)}>
+                  {platform.icon}
+                </div>
+                <span className="text-sm font-medium text-gray-700">{platform.name}</span>
+                <CheckCircle2 className="h-4 w-4 text-green-500 ml-auto" />
+              </div>
+            ))}
           </div>
         </div>
       ),
     },
     {
-      id: 'connect-accounts',
-      title: 'Connect Your Social Accounts',
-      description: 'Link your social media profiles to start posting',
-      icon: Users,
-      position: 'center',
-      content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Connect your social media accounts to post across all platforms with one click.
-          </p>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="w-10 h-10 bg-[#1877F2] rounded-lg flex items-center justify-center text-white font-bold">
-                f
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-sm">Facebook Pages</p>
-                <p className="text-xs text-gray-500">Post to your business page</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white">
-                📷
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-sm">Instagram</p>
-                <p className="text-xs text-gray-500">Share photos and stories</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center text-white">
-                @
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-sm">Threads</p>
-                <p className="text-xs text-gray-500">Join the conversation</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="w-10 h-10 bg-[#00A8E8] rounded-lg flex items-center justify-center text-white">
-                🦋
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-sm">Bluesky</p>
-                <p className="text-xs text-gray-500">Decentralized social network</p>
-              </div>
-            </div>
+      id: 'post-everywhere',
+      title: 'Post Everywhere at Once',
+      description: 'Write once, publish everywhere. Select multiple platforms and share your content across all of them with a single click - no more copying and pasting between apps.',
+      icon: Share2,
+      actionLabel: 'See How It Works',
+      visualContent: (
+        <div className="rounded-2xl p-6 shadow-lg border border-gray-100 bg-gradient-to-br from-indigo-50 to-white">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-3 h-3 rounded-full bg-red-400" />
+            <div className="w-3 h-3 rounded-full bg-yellow-400" />
+            <div className="w-3 h-3 rounded-full bg-green-400" />
+            <span className="ml-2 text-sm font-medium text-gray-700">Select Platforms</span>
           </div>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-xs text-blue-900">
-              💡 You can connect accounts anytime from Settings → Social Accounts
-            </p>
+          <div className="space-y-2">
+            {[
+              { name: 'Facebook', color: 'bg-[#1877F2]', icon: 'f', checked: true },
+              { name: 'Instagram', color: 'bg-gradient-to-br from-purple-500 to-pink-500', icon: '📷', checked: true },
+              { name: 'Threads', color: 'bg-black', icon: '@', checked: true },
+              { name: 'Bluesky', color: 'bg-[#00A8E8]', icon: '🦋', checked: false },
+            ].map((platform, i) => (
+              <div key={i} className="flex items-center gap-3 p-2 bg-white rounded-lg border border-gray-100">
+                <div className={cn(
+                  "w-5 h-5 rounded border-2 flex items-center justify-center",
+                  platform.checked ? "bg-indigo-500 border-indigo-500" : "border-gray-300"
+                )}>
+                  {platform.checked && <Check className="h-3 w-3 text-white" />}
+                </div>
+                <div className={cn("w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold", platform.color)}>
+                  {platform.icon}
+                </div>
+                <span className="text-sm font-medium text-gray-700">{platform.name}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-100">
+            <div className="text-xs text-center text-indigo-600 font-medium">3 platforms selected</div>
           </div>
         </div>
       ),
     },
     {
       id: 'create-post',
-      title: 'Create Your First Post',
-      description: 'Compose and publish content across all your platforms',
+      title: 'Create Engaging Content',
+      description: 'Use our powerful editor to craft beautiful posts. Add images, format text, and customize your message for each platform.',
       icon: PlusCircle,
-      position: 'center',
-      content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Our powerful editor makes it easy to create engaging content for all your social media accounts.
-          </p>
-          <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-4 border border-purple-200">
-            <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-              <PlusCircle className="h-4 w-4 text-purple-600" />
-              What you can do:
-            </h4>
-            <ul className="space-y-2 text-sm text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="text-purple-600 font-bold">•</span>
-                <span><strong>Rich text editing:</strong> Format your content with bold, italic, links, and more</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-purple-600 font-bold">•</span>
-                <span><strong>Upload media:</strong> Add images and videos to your posts</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-purple-600 font-bold">•</span>
-                <span><strong>Platform-specific content:</strong> Customize your message for each platform</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-purple-600 font-bold">•</span>
-                <span><strong>Save as draft:</strong> Come back to finish your post later</span>
-              </li>
-            </ul>
+      actionLabel: 'Create Post',
+      visualContent: (
+        <div className="rounded-2xl p-6 shadow-lg border border-gray-100 bg-gradient-to-br from-purple-50 to-white">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-3 h-3 rounded-full bg-red-400" />
+            <div className="w-3 h-3 rounded-full bg-yellow-400" />
+            <div className="w-3 h-3 rounded-full bg-green-400" />
+            <span className="ml-2 text-sm font-medium text-gray-700">Post Editor</span>
           </div>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <p className="text-xs text-green-900 flex items-center gap-2">
-              <ArrowRight className="h-3 w-3" />
-              Click &quot;Create Post&quot; in the top section to get started!
-            </p>
+          <div className="space-y-3">
+            <div className="h-3 bg-gray-200 rounded w-3/4" />
+            <div className="h-3 bg-gray-200 rounded w-full" />
+            <div className="h-3 bg-gray-200 rounded w-5/6" />
+            <div className="h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg mt-4" />
           </div>
         </div>
       ),
     },
     {
       id: 'ai-features',
-      title: 'AI-Powered Caption Suggestions',
-      description: 'Let AI help you write engaging content',
+      title: 'AI-Powered Captions',
+      description: 'Let AI help you write engaging content. Generate captions in different tones - professional, casual, funny, or inspirational.',
       icon: Wand2,
-      position: 'center',
-      content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Stuck on what to write? Our AI can generate engaging captions for you in seconds.
-          </p>
-          <div className="bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg p-4 border border-purple-300">
-            <div className="flex items-center gap-2 mb-3">
-              <Wand2 className="h-5 w-5 text-purple-600" />
-              <h4 className="font-semibold text-sm">Choose your tone:</h4>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-white/80 rounded p-2 text-center">
-                <p className="text-xs font-medium">🎯 Professional</p>
-              </div>
-              <div className="bg-white/80 rounded p-2 text-center">
-                <p className="text-xs font-medium">😊 Casual</p>
-              </div>
-              <div className="bg-white/80 rounded p-2 text-center">
-                <p className="text-xs font-medium">😂 Funny</p>
-              </div>
-              <div className="bg-white/80 rounded p-2 text-center">
-                <p className="text-xs font-medium">✨ Inspirational</p>
-              </div>
-            </div>
+      actionLabel: 'Try AI Captions',
+      visualContent: (
+        <div className="rounded-2xl p-6 shadow-lg border border-gray-100 bg-gradient-to-br from-violet-50 to-white">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-3 h-3 rounded-full bg-red-400" />
+            <div className="w-3 h-3 rounded-full bg-yellow-400" />
+            <div className="w-3 h-3 rounded-full bg-green-400" />
+            <span className="ml-2 text-sm font-medium text-gray-700">AI Suggestions</span>
           </div>
-          <div className="space-y-2 text-sm">
-            <p className="flex items-start gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5" />
-              <span>AI analyzes your content and generates platform-optimized captions</span>
-            </p>
-            <p className="flex items-start gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5" />
-              <span>Automatically suggests relevant hashtags</span>
-            </p>
-            <p className="flex items-start gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5" />
-              <span>Edit and customize the suggestions to match your voice</span>
-            </p>
+          <div className="grid grid-cols-2 gap-2">
+            {['Professional', 'Casual', 'Funny', 'Inspirational'].map((tone, i) => (
+              <div key={i} className={cn(
+                "p-3 rounded-lg text-center text-xs font-medium",
+                i === 0 ? "bg-violet-100 text-violet-700 ring-2 ring-violet-300" : "bg-white border border-gray-200 text-gray-600"
+              )}>
+                {tone}
+              </div>
+            ))}
           </div>
         </div>
       ),
     },
     {
       id: 'schedule-posts',
-      title: 'Schedule Posts in Advance',
-      description: 'Plan your content calendar and post automatically',
+      title: 'Schedule in Advance',
+      description: 'Plan your content calendar and let posts go live automatically. Schedule for optimal engagement times, even when you are away.',
       icon: Calendar,
-      position: 'center',
-      content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Schedule your posts to go live at the perfect time, even when you&apos;re away.
-          </p>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Calendar className="h-5 w-5 text-green-600" />
-              <h4 className="font-semibold text-sm">Scheduling Features:</h4>
-            </div>
-            <ul className="space-y-2 text-sm text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="text-green-600">📅</span>
-                <span><strong>Calendar view:</strong> Visualize your content pipeline</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600">⏰</span>
-                <span><strong>Optimal timing:</strong> Schedule for peak engagement hours</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600">🔄</span>
-                <span><strong>Recurring posts:</strong> Set up repeating content</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600">📊</span>
-                <span><strong>Batch scheduling:</strong> Plan weeks of content in one session</span>
-              </li>
-            </ul>
+      actionLabel: 'View Calendar',
+      visualContent: (
+        <div className="rounded-2xl p-6 shadow-lg border border-gray-100 bg-gradient-to-br from-green-50 to-white">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-3 h-3 rounded-full bg-red-400" />
+            <div className="w-3 h-3 rounded-full bg-yellow-400" />
+            <div className="w-3 h-3 rounded-full bg-green-400" />
+            <span className="ml-2 text-sm font-medium text-gray-700">Content Calendar</span>
           </div>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-xs text-blue-900">
-              💡 Pro tip: Post during 9-10 AM or 7-9 PM for maximum engagement!
-            </p>
+          <div className="grid grid-cols-7 gap-1">
+            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
+              <div key={i} className="text-center text-xs text-gray-400 font-medium pb-1">{day}</div>
+            ))}
+            {Array.from({ length: 14 }, (_, i) => (
+              <div key={i} className={cn(
+                "aspect-square rounded flex items-center justify-center text-xs",
+                [2, 5, 8, 11].includes(i) ? "bg-green-500 text-white font-medium" : "bg-gray-100 text-gray-500"
+              )}>
+                {i + 1}
+              </div>
+            ))}
           </div>
         </div>
       ),
     },
     {
       id: 'analytics',
-      title: 'Track Your Performance',
-      description: 'Monitor engagement and grow your audience',
+      title: 'Track Performance',
+      description: 'Monitor your engagement, reach, and growth across all platforms. Understand what content resonates with your audience.',
       icon: BarChart3,
-      position: 'center',
-      content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Understand what&apos;s working with detailed analytics and insights across all your platforms.
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-              <div className="text-2xl font-bold text-purple-600 mb-1">2.3K</div>
-              <div className="text-xs text-gray-600">Total Reach</div>
-            </div>
-            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-              <div className="text-2xl font-bold text-blue-600 mb-1">8.5%</div>
-              <div className="text-xs text-gray-600">Engagement Rate</div>
-            </div>
-            <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-              <div className="text-2xl font-bold text-green-600 mb-1">156</div>
-              <div className="text-xs text-gray-600">Total Posts</div>
-            </div>
-            <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
-              <div className="text-2xl font-bold text-orange-600 mb-1">42</div>
-              <div className="text-xs text-gray-600">Scheduled</div>
-            </div>
-          </div>
-          <div className="space-y-2 text-sm">
-            <p className="flex items-start gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5" />
-              <span>Real-time data from all connected platforms</span>
-            </p>
-            <p className="flex items-start gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5" />
-              <span>Track likes, comments, shares, and impressions</span>
-            </p>
-            <p className="flex items-start gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5" />
-              <span>Identify your best-performing content</span>
-            </p>
-          </div>
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-            <p className="text-xs text-orange-900 flex items-center gap-2">
-              <BarChart3 className="h-3 w-3" />
-              Visit Analytics page to see detailed performance metrics
-            </p>
-          </div>
-        </div>
+      actionLabel: 'View Analytics',
+      visualContent: (
+        <VisualCard
+          icon={BarChart3}
+          title="Performance Metrics"
+          items={[
+            { label: 'Reach', color: 'bg-purple-500', width: '90%' },
+            { label: 'Engagement', color: 'bg-blue-500', width: '75%' },
+            { label: 'Followers', color: 'bg-orange-500', width: '65%' },
+          ]}
+          colors={{ bg: 'bg-gradient-to-br from-orange-50 to-white', iconBg: 'bg-orange-100', iconColor: 'text-orange-600' }}
+        />
       ),
     },
     {
       id: 'complete',
-      title: "You're All Set! 🚀",
-      description: 'Start creating amazing content for your audience',
-      icon: CheckCircle2,
-      position: 'center',
-      content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            You now know the basics of SocialCal. Time to start creating and growing your social media presence!
-          </p>
-          <div className="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 rounded-lg p-6 border border-purple-200">
-            <h4 className="font-bold text-lg mb-4 text-center">Quick Start Checklist</h4>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-white/80 rounded-lg">
-                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                  <Users className="h-4 w-4 text-purple-600" />
-                </div>
-                <span className="text-sm font-medium">Connect your social accounts</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-white/80 rounded-lg">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <PlusCircle className="h-4 w-4 text-blue-600" />
-                </div>
-                <span className="text-sm font-medium">Create your first post</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-white/80 rounded-lg">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <Calendar className="h-4 w-4 text-green-600" />
-                </div>
-                <span className="text-sm font-medium">Schedule content for the week</span>
-              </div>
-            </div>
+      title: 'You\'re All Set!',
+      description: 'You now know the basics of SocialCal. Start by connecting your accounts and creating your first post. Let\'s grow your social presence!',
+      icon: Rocket,
+      actionLabel: 'Start Creating',
+      visualContent: (
+        <div className="rounded-2xl p-6 shadow-lg border border-gray-100 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-3 h-3 rounded-full bg-red-400" />
+            <div className="w-3 h-3 rounded-full bg-yellow-400" />
+            <div className="w-3 h-3 rounded-full bg-green-400" />
+            <span className="ml-2 text-sm font-medium text-gray-700">Quick Start</span>
           </div>
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
-            <p className="text-sm text-purple-900 font-medium mb-2">
-              Need help? You can restart this tour anytime!
-            </p>
-            <p className="text-xs text-purple-700">
-              Click the &quot;Tour&quot; button at the top of your dashboard
-            </p>
+          <div className="space-y-3">
+            {[
+              { icon: Users, label: 'Connect accounts', color: 'text-purple-600 bg-purple-100' },
+              { icon: PlusCircle, label: 'Create first post', color: 'text-blue-600 bg-blue-100' },
+              { icon: Calendar, label: 'Schedule content', color: 'text-green-600 bg-green-100' },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-3 p-2 bg-white rounded-lg border border-gray-100">
+                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", item.color)}>
+                  <item.icon className="h-4 w-4" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">{item.label}</span>
+              </div>
+            ))}
           </div>
         </div>
       ),
@@ -375,19 +300,16 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
   const currentStepData = steps[currentStep]
   const progress = ((currentStep + 1) / steps.length) * 100
   const isLastStep = currentStep === steps.length - 1
-  const isFirstStep = currentStep === 0
 
   const handleNext = () => {
     if (isLastStep) {
       onComplete()
     } else {
-      setDirection('forward')
       setCurrentStep(prev => Math.min(prev + 1, steps.length - 1))
     }
   }
 
   const handleBack = () => {
-    setDirection('backward')
     setCurrentStep(prev => Math.max(prev - 1, 0))
   }
 
@@ -395,106 +317,102 @@ export function OnboardingWizard({ isOpen, onClose, onComplete, onSkip }: Onboar
     onSkip()
   }
 
+  const isFirstStep = currentStep === 0
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <DialogHeader>
-          <div className="flex items-start">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg">
-                  <currentStepData.icon className="h-6 w-6 text-purple-600" />
-                </div>
-                <Badge variant="outline" className="text-xs">
-                  Step {currentStep + 1} of {steps.length}
-                </Badge>
-              </div>
-              <DialogTitle className="text-2xl mb-2">{currentStepData.title}</DialogTitle>
-              <DialogDescription className="text-base">
-                {currentStepData.description}
-              </DialogDescription>
+      <DialogContent className="max-w-3xl p-0 overflow-hidden gap-0 border-0 [&>button]:hidden">
+        {/* Gradient Header */}
+        <div className="bg-gradient-to-r from-purple-600 via-violet-600 to-blue-600 px-6 md:px-8 py-5 md:py-6 relative">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+
+          {/* Mobile Header */}
+          <h2 className="text-xl font-bold text-white mb-1 md:hidden">
+            Welcome!
+          </h2>
+
+          {/* Desktop Header */}
+          <h2 className="text-xl font-bold text-white mb-1 hidden md:block">
+            Master Your Social Media Workflow
+          </h2>
+          <p className="text-white/80 text-sm hidden md:block">
+            Plan, schedule, manage, and analyze your social media posts
+          </p>
+
+          {/* Progress Section */}
+          <div className="mt-4 md:mt-5">
+            <div className="flex items-center justify-between text-sm text-white/80 mb-2">
+              <span>Step {currentStep + 1} of {steps.length}</span>
+              <span>{Math.round(progress)}% Complete</span>
+            </div>
+            <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-white rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
             </div>
           </div>
-        </DialogHeader>
+        </div>
 
-        {/* Progress Bar */}
-        <div className="space-y-2">
-          <Progress value={progress} className="h-2" />
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>{currentStep + 1} of {steps.length} completed</span>
-            <span>{Math.round(progress)}%</span>
+        {/* Content Area */}
+        <div className="p-5 md:p-8 bg-white">
+          <div className="flex flex-col md:flex-row gap-5 md:gap-8 items-center">
+            {/* Left Side - Text Content */}
+            <div className="flex-1 space-y-3 md:space-y-4 w-full">
+              <h3 className="text-xl md:text-2xl font-bold text-gray-900">
+                {currentStepData.title}
+              </h3>
+              <p className="text-sm md:text-base text-gray-600 leading-relaxed">
+                {currentStepData.description}
+              </p>
+              <Button
+                onClick={handleNext}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white gap-2 mt-2 w-full md:w-auto"
+              >
+                <currentStepData.icon className="h-4 w-4" />
+                {currentStepData.actionLabel}
+              </Button>
+            </div>
+
+            {/* Right Side - Visual */}
+            <div className="flex-1 w-full max-w-[280px] md:max-w-none mx-auto md:mx-0">
+              {currentStepData.visualContent}
+            </div>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="py-4">
-          {currentStepData.content}
-        </div>
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            disabled={isFirstStep}
-            className={cn(
-              "gap-2",
-              isFirstStep && "invisible"
+        {/* Footer */}
+        <div className="px-5 md:px-8 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {!isFirstStep && (
+              <Button
+                variant="ghost"
+                onClick={handleBack}
+                className="text-gray-600 hover:text-gray-900 gap-1"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
             )}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Back
-          </Button>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              onClick={handleSkip}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              Skip tour
-            </Button>
-            <Button
-              variant="gradient"
-              onClick={handleNext}
-              className="gap-2 min-w-[120px]"
-            >
-              {isLastStep ? (
-                <>
-                  Get Started
-                  <CheckCircle2 className="h-4 w-4" />
-                </>
-              ) : (
-                <>
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-
-        {/* Step Indicators */}
-        <div className="flex items-center justify-center gap-2 pt-4">
-          {steps.map((step, index) => (
             <button
-              key={step.id}
-              onClick={() => {
-                setDirection(index > currentStep ? 'forward' : 'backward')
-                setCurrentStep(index)
-              }}
-              className={cn(
-                "h-2 rounded-full transition-all",
-                index === currentStep
-                  ? "w-8 bg-purple-600"
-                  : index < currentStep
-                  ? "w-2 bg-green-500"
-                  : "w-2 bg-gray-300"
-              )}
-              aria-label={`Go to step ${index + 1}: ${step.title}`}
-            />
-          ))}
+              onClick={handleSkip}
+              className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              Skip Tour
+            </button>
+          </div>
+          <Button
+            onClick={handleNext}
+            className="bg-violet-600 hover:bg-violet-700 text-white gap-2"
+          >
+            {isLastStep ? 'Get Started' : 'Next Step'}
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { Loader2, Send, Lightbulb, Vote, Filter, ArrowUpDown } from 'lucide-react'
+import { Loader2, Send, Lightbulb, Vote, Filter, ArrowUpDown, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { FeatureRequestCard } from './FeatureRequestCard'
 import type {
@@ -178,112 +178,122 @@ export function FeatureRequestModal({ open, onOpenChange }: FeatureRequestModalP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-            <Lightbulb className="h-6 w-6 text-yellow-500" />
-            Request a Feature
-          </DialogTitle>
-          <DialogDescription>
-            Help us build what matters to you. Vote on existing ideas or suggest new ones.
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* Tabs */}
-        <div className="flex gap-2 border-b">
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col p-0 gap-0 border-0 [&>button]:hidden">
+        {/* Gradient Header */}
+        <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 px-8 py-6 relative">
           <button
-            onClick={() => setActiveTab('browse')}
-            className={cn(
-              "px-4 py-2 font-medium text-sm transition-colors border-b-2 -mb-px",
-              activeTab === 'browse'
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-600 hover:text-gray-900"
-            )}
+            onClick={() => onOpenChange(false)}
+            className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
           >
-            <span className="flex items-center gap-2">
+            <X className="h-5 w-5" />
+          </button>
+
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-white/20 rounded-xl">
+              <Lightbulb className="h-6 w-6 text-white" />
+            </div>
+            <h2 className="text-xl font-bold text-white">
+              Request a Feature
+            </h2>
+          </div>
+          <p className="text-white/80 text-sm">
+            Help us build what matters to you. Vote on existing ideas or suggest new ones.
+          </p>
+
+          {/* Pill Tabs */}
+          <div className="flex gap-2 mt-5">
+            <button
+              onClick={() => setActiveTab('browse')}
+              className={cn(
+                "px-4 py-2 rounded-full font-medium text-sm transition-all flex items-center gap-2",
+                activeTab === 'browse'
+                  ? "bg-white text-orange-600 shadow-md"
+                  : "bg-white/20 text-white hover:bg-white/30"
+              )}
+            >
               <Vote className="h-4 w-4" />
               Browse & Vote
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab('submit')}
-            className={cn(
-              "px-4 py-2 font-medium text-sm transition-colors border-b-2 -mb-px",
-              activeTab === 'submit'
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-600 hover:text-gray-900"
-            )}
-          >
-            <span className="flex items-center gap-2">
+            </button>
+            <button
+              onClick={() => setActiveTab('submit')}
+              className={cn(
+                "px-4 py-2 rounded-full font-medium text-sm transition-all flex items-center gap-2",
+                activeTab === 'submit'
+                  ? "bg-white text-orange-600 shadow-md"
+                  : "bg-white/20 text-white hover:bg-white/30"
+              )}
+            >
               <Send className="h-4 w-4" />
               Submit New
-            </span>
-          </button>
+            </button>
+          </div>
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto mt-4">
+        <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
           {activeTab === 'browse' ? (
             <div className="space-y-4">
-              {/* Filters */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                {/* Category Filter */}
-                <div className="flex-1">
-                  <Label className="text-xs text-gray-600 flex items-center gap-1 mb-1.5">
-                    <Filter className="h-3 w-3" />
-                    Category
-                  </Label>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value as FeatureCategory | 'all')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="all">All Categories</option>
-                    {FEATURE_CATEGORIES.map(cat => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.icon} {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              {/* Filters - Hidden on mobile */}
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hidden md:block">
+                <div className="flex gap-3">
+                  {/* Category Filter */}
+                  <div className="flex-1">
+                    <Label className="text-xs text-gray-500 flex items-center gap-1 mb-1.5 font-medium">
+                      <Filter className="h-3 w-3" />
+                      Category
+                    </Label>
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value as FeatureCategory | 'all')}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    >
+                      <option value="all">All Categories</option>
+                      {FEATURE_CATEGORIES.map(cat => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.icon} {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                {/* Status Filter */}
-                <div className="flex-1">
-                  <Label className="text-xs text-gray-600 flex items-center gap-1 mb-1.5">
-                    <Filter className="h-3 w-3" />
-                    Status
-                  </Label>
-                  <select
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value as FeatureStatus | 'all')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="all">All Status</option>
-                    {Object.values(STATUS_CONFIG).map(status => (
-                      <option key={status.id} value={status.id}>
-                        {status.icon} {status.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  {/* Status Filter */}
+                  <div className="flex-1">
+                    <Label className="text-xs text-gray-500 flex items-center gap-1 mb-1.5 font-medium">
+                      <Filter className="h-3 w-3" />
+                      Status
+                    </Label>
+                    <select
+                      value={selectedStatus}
+                      onChange={(e) => setSelectedStatus(e.target.value as FeatureStatus | 'all')}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    >
+                      <option value="all">All Status</option>
+                      {Object.values(STATUS_CONFIG).map(status => (
+                        <option key={status.id} value={status.id}>
+                          {status.icon} {status.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                {/* Sort */}
-                <div className="flex-1">
-                  <Label className="text-xs text-gray-600 flex items-center gap-1 mb-1.5">
-                    <ArrowUpDown className="h-3 w-3" />
-                    Sort By
-                  </Label>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {SORT_OPTIONS.map(option => (
-                      <option key={option.id} value={option.id}>
-                        {option.icon} {option.label}
-                      </option>
-                    ))}
-                  </select>
+                  {/* Sort */}
+                  <div className="flex-1">
+                    <Label className="text-xs text-gray-500 flex items-center gap-1 mb-1.5 font-medium">
+                      <ArrowUpDown className="h-3 w-3" />
+                      Sort By
+                    </Label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as SortOption)}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    >
+                      {SORT_OPTIONS.map(option => (
+                        <option key={option.id} value={option.id}>
+                          {option.icon} {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -394,109 +404,113 @@ export function FeatureRequestModal({ open, onOpenChange }: FeatureRequestModalP
             </div>
           ) : (
             // Submit Tab
-            <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl mx-auto">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <p className="text-sm text-blue-800">
-                  <strong>💡 Tip:</strong> Be specific about what you need and why it would be valuable.
-                  This helps us understand and prioritize your request.
-                </p>
-              </div>
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4 mb-6">
+                  <p className="text-sm text-amber-800">
+                    <strong>Tip:</strong> Be specific about what you need and why it would be valuable.
+                    This helps us understand and prioritize your request.
+                  </p>
+                </div>
 
-              {/* Title */}
-              <div>
-                <Label htmlFor="title" className="text-sm font-medium text-gray-700">
-                  Feature Title <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="e.g., Bulk post scheduling from CSV"
-                  maxLength={VALIDATION.TITLE_MAX_LENGTH}
-                  disabled={submitting}
-                  className="mt-1.5"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.title.length}/{VALIDATION.TITLE_MAX_LENGTH} characters
-                </p>
-              </div>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  {/* Title */}
+                  <div>
+                    <Label htmlFor="title" className="text-sm font-medium text-gray-700">
+                      Feature Title <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="e.g., Bulk post scheduling from CSV"
+                      maxLength={VALIDATION.TITLE_MAX_LENGTH}
+                      disabled={submitting}
+                      className="mt-1.5 bg-gray-50 border-gray-200 focus:ring-orange-500 focus:border-orange-500"
+                      required
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      {formData.title.length}/{VALIDATION.TITLE_MAX_LENGTH} characters
+                    </p>
+                  </div>
 
-              {/* Description */}
-              <div>
-                <Label htmlFor="description" className="text-sm font-medium text-gray-700">
-                  Description (Optional)
-                </Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe your feature request in detail. What problem does it solve? How would you use it?"
-                  maxLength={VALIDATION.DESCRIPTION_MAX_LENGTH}
-                  disabled={submitting}
-                  className="mt-1.5 min-h-[100px]"
-                  rows={4}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.description.length}/{VALIDATION.DESCRIPTION_MAX_LENGTH} characters
-                </p>
-              </div>
+                  {/* Description */}
+                  <div>
+                    <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+                      Description (Optional)
+                    </Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="Describe your feature request in detail. What problem does it solve? How would you use it?"
+                      maxLength={VALIDATION.DESCRIPTION_MAX_LENGTH}
+                      disabled={submitting}
+                      className="mt-1.5 min-h-[100px] bg-gray-50 border-gray-200 focus:ring-orange-500 focus:border-orange-500"
+                      rows={4}
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      {formData.description.length}/{VALIDATION.DESCRIPTION_MAX_LENGTH} characters
+                    </p>
+                  </div>
 
-              {/* Category */}
-              <div>
-                <Label htmlFor="category" className="text-sm font-medium text-gray-700">
-                  Category <span className="text-red-500">*</span>
-                </Label>
-                <select
-                  id="category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value as FeatureCategory })}
-                  disabled={submitting}
-                  className="mt-1.5 w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  {FEATURE_CATEGORIES.map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.icon} {cat.name} - {cat.description}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  {/* Category */}
+                  <div>
+                    <Label htmlFor="category" className="text-sm font-medium text-gray-700">
+                      Category <span className="text-red-500">*</span>
+                    </Label>
+                    <select
+                      id="category"
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value as FeatureCategory })}
+                      disabled={submitting}
+                      className="mt-1.5 w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      required
+                    >
+                      {FEATURE_CATEGORIES.map(cat => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.icon} {cat.name} - {cat.description}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              {/* Submit Button */}
-              <div className="flex gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setActiveTab('browse')}
-                  disabled={submitting}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={submitting || !formData.title.trim()}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" />
-                      Submit Request
-                    </>
-                  )}
-                </Button>
-              </div>
+                  {/* Submit Button */}
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setActiveTab('browse')}
+                      disabled={submitting}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={submitting || !formData.title.trim()}
+                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                    >
+                      {submitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          Submit Request
+                        </>
+                      )}
+                    </Button>
+                  </div>
 
-              <p className="text-xs text-gray-500 text-center pt-2">
-                Your request will be reviewed by our team. You&apos;ll automatically vote for your own feature.
-              </p>
-            </form>
+                  <p className="text-xs text-gray-400 text-center pt-2">
+                    Your request will be reviewed by our team. You&apos;ll automatically vote for your own feature.
+                  </p>
+                </form>
+              </div>
+            </div>
           )}
         </div>
       </DialogContent>
