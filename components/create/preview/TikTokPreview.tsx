@@ -5,15 +5,20 @@ import { stripHtml, truncateText, isVideoUrl } from './preview-utils'
 interface TikTokPreviewProps {
   content: string
   mediaUrls?: string[]
-  /** TikTok-specific caption/title (for videos this IS the caption, max 2200 chars) */
+  /** TikTok-specific title (only used for photo posts, max 150 chars) */
   tiktokTitle?: string
 }
 
 export function TikTokPreview({ content, mediaUrls = [], tiktokTitle }: TikTokPreviewProps) {
-  // Use tiktokTitle if provided, otherwise fall back to content
-  const displayContent = tiktokTitle || content
+  // Detect if this is a photo or video post
+  const isPhotoPost = mediaUrls.length > 0 && !mediaUrls.some(url => isVideoUrl(url))
+
+  // For videos: always use main content as caption (max 2200)
+  // For photos: use tiktokTitle if provided, otherwise content (max 150 for title display)
+  const displayContent = isPhotoPost ? (tiktokTitle || content) : content
+  const maxChars = isPhotoPost ? 150 : 2200
   const plainText = stripHtml(displayContent)
-  const { text } = truncateText(plainText, 2200, 'soft')
+  const { text } = truncateText(plainText, maxChars, 'soft')
 
   return (
     <div className="bg-black max-w-xs mx-auto rounded-3xl overflow-hidden shadow-2xl">
@@ -246,10 +251,10 @@ export function TikTokPreview({ content, mediaUrls = [], tiktokTitle }: TikTokPr
       </div>
 
       {/* Character count */}
-      {plainText.length > 2200 && (
+      {plainText.length > maxChars && (
         <div className="p-3 bg-gray-900 border-t border-gray-800">
           <p className="text-red-500 text-xs text-center">
-            Exceeds 2,200 character limit
+            Exceeds {maxChars.toLocaleString()} character limit
           </p>
         </div>
       )}

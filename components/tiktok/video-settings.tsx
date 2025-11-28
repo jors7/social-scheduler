@@ -156,31 +156,30 @@ export function TikTokVideoSettings({
           />
         ) : null}
 
-        {/* Caption/Title Field */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="tiktok-title">
-              {isPhotoPost ? 'Title' : 'Caption'} {!isPhotoPost && '(Optional)'}
-            </Label>
-            <span className={`text-xs ${titleCharCount > titleMaxChars ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
-              {titleCharCount} / {titleMaxChars}
-            </span>
+        {/* Title Field - Only shown for photo posts */}
+        {/* For videos, the main editor content is used as the caption */}
+        {isPhotoPost && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="tiktok-title">Title *</Label>
+              <span className={`text-xs ${titleCharCount > titleMaxChars ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                {titleCharCount} / {titleMaxChars}
+              </span>
+            </div>
+            <Input
+              id="tiktok-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Add a title that describes your photo..."
+              maxLength={titleMaxChars}
+              className={titleCharCount > titleMaxChars ? 'border-red-500' : ''}
+            />
+            <p className="text-xs text-gray-600">
+              A short, attention-grabbing title for your photo post (max 150 characters).
+              The main caption will be used as the description.
+            </p>
           </div>
-          <Input
-            id="tiktok-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={isPhotoPost ? "Add a title that describes your photo..." : "Add a title that describes your video..."}
-            maxLength={titleMaxChars}
-            className={titleCharCount > titleMaxChars ? 'border-red-500' : ''}
-          />
-          <p className="text-xs text-gray-600">
-            {isPhotoPost
-              ? 'A short, attention-grabbing title for your photo post (max 150 characters)'
-              : 'The caption that appears with your video (max 2,200 characters)'
-            }
-          </p>
-        </div>
+        )}
 
         {/* Privacy Level Selector - NO DEFAULT VALUE */}
         <div className="space-y-2">
