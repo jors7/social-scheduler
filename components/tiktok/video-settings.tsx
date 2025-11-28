@@ -198,11 +198,11 @@ export function TikTokVideoSettings({
             onValueChange={(value) => {
               setPrivacyLevel(value as PrivacyLevel)
 
-              // Auto-uncheck commercial content if private is selected
-              // (Commercial content is not allowed for private posts)
+              // Only uncheck branded content if private is selected
+              // (TikTok requirement: Branded content visibility cannot be private)
+              // Your Brand (promotional content) is still allowed for private posts
               if (value === 'SELF_ONLY') {
                 if (brandedContent) setBrandedContent(false)
-                if (promotionalContent) setPromotionalContent(false)
               }
             }}
           >
@@ -212,13 +212,32 @@ export function TikTokVideoSettings({
             <SelectContent>
               {creatorInfo?.privacy_level_options.map((level) => {
                 const info = PRIVACY_LEVEL_LABELS[level]
+                // TikTok requirement: Branded content visibility cannot be private
+                const isDisabledForBrandedContent = level === 'SELF_ONLY' && brandedContent
                 return (
-                  <SelectItem key={level} value={level}>
-                    <div>
-                      <div className="font-medium">{info.label}</div>
-                      <div className="text-xs text-gray-600">{info.description}</div>
-                    </div>
-                  </SelectItem>
+                  <div key={level} className="group relative">
+                    <SelectItem
+                      value={level}
+                      disabled={isDisabledForBrandedContent}
+                      className={isDisabledForBrandedContent ? 'opacity-50 cursor-not-allowed' : ''}
+                    >
+                      <div>
+                        <div className="font-medium">{info.label}</div>
+                        <div className="text-xs text-gray-600">
+                          {isDisabledForBrandedContent
+                            ? 'Branded content visibility cannot be set to private'
+                            : info.description
+                          }
+                        </div>
+                      </div>
+                    </SelectItem>
+                    {/* Tooltip for disabled private option - TikTok UX requirement */}
+                    {isDisabledForBrandedContent && (
+                      <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:block w-56 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-50">
+                        Branded content visibility cannot be set to private.
+                      </div>
+                    )}
+                  </div>
                 )
               })}
             </SelectContent>
@@ -258,6 +277,7 @@ export function TikTokVideoSettings({
           brandedContent={brandedContent}
           onBrandedChange={setBrandedContent}
           privacyLevel={privacyLevel}
+          isPhotoPost={isPhotoPost}
         />
 
         {/* Legal Declarations */}

@@ -2587,14 +2587,26 @@ function CreateNewPostPageContent() {
         // TikTok sandbox responses are marked as failed with a sandbox message
         // We don't show the old misleading success message
       }
-      
+
       // Check if TikTok failed due to sandbox mode
       const tiktokResult = results.find(r => r.platform === 'tiktok' || r.platform.startsWith('tiktok'))
       if (tiktokResult && !tiktokResult.success && tiktokResult.error?.includes('sandbox')) {
         toast.info(
-          '📱 TikTok Sandbox Mode: API test successful. Actual posting requires app approval from TikTok.', 
+          '📱 TikTok Sandbox Mode: API test successful. Actual posting requires app approval from TikTok.',
           {
             duration: 10000 // Show for 10 seconds
+          }
+        )
+      }
+
+      // TikTok processing notification - Required by TikTok UX Guidelines (Point 5d)
+      // "API Clients must clearly notify users that after they finish publishing their content,
+      // it may take a few minutes for the content to process and be visible on their profile."
+      if (tiktokResult && tiktokResult.success) {
+        toast.info(
+          '⏳ Your TikTok content is being processed. It may take a few minutes to be visible on your profile.',
+          {
+            duration: 8000 // Show for 8 seconds
           }
         )
       }
@@ -4629,74 +4641,94 @@ function CreateNewPostPageContent() {
               <CardDescription className="text-sm sm:text-base text-gray-600">Publish or save your post</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              {scheduledDate && scheduledTime ? (
-                <>
-                  <Button
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
-                    disabled={
-                      selectedPlatforms.length === 0 ||
-                      isPosting ||
-                      loadingDraft ||
-                      (selectedPlatforms.includes('tiktok') && tiktokContentDisclosure && !tiktokPromotionalContent && !tiktokBrandedContent) ||
-                      (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) &&
-                        !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()) &&
-                        !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
-                        !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(media => {
-                          const url = getMediaUrl(media)
-                          return url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')
-                        }))) &&
-                        !(selectedPlatforms.includes('instagram') && instagramAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
-                        !(selectedPlatforms.includes('facebook') && facebookAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
-                        !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && facebookAsReel && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
-                        !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && !facebookAsStory && !facebookAsReel && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
-                        !(selectedPlatforms.includes('threads') && threadPosts.some(p => p.trim())))
+              {/* TikTok disclosure validation for tooltip */}
+              {(() => {
+                const tiktokDisclosureInvalid = selectedPlatforms.includes('tiktok') && tiktokContentDisclosure && !tiktokPromotionalContent && !tiktokBrandedContent;
+                return scheduledDate && scheduledTime ? (
+                  <>
+                    <div className={`flex-1 group relative ${tiktokDisclosureInvalid ? 'cursor-not-allowed' : ''}`}>
+                      <Button
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
+                        disabled={
+                          selectedPlatforms.length === 0 ||
+                          isPosting ||
+                          loadingDraft ||
+                          tiktokDisclosureInvalid ||
+                          (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) &&
+                            !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()) &&
+                            !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
+                            !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(media => {
+                              const url = getMediaUrl(media)
+                              return url.includes('.mp4') || url.includes('.mov') || url.includes('.avi')
+                            }))) &&
+                            !(selectedPlatforms.includes('instagram') && instagramAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
+                            !(selectedPlatforms.includes('facebook') && facebookAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
+                            !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && facebookAsReel && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
+                            !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && !facebookAsStory && !facebookAsReel && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
+                            !(selectedPlatforms.includes('threads') && threadPosts.some(p => p.trim())))
 
-                    }
-                    onClick={handleSchedulePost}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {isPosting ? (editingScheduledPost ? 'Updating...' : 'Scheduling...') : (editingScheduledPost ? 'Update Scheduled Post' : 'Schedule Post')}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setScheduledDate('')
-                      setScheduledTime('')
-                    }}
-                    className="hover:bg-red-50 hover:border-red-300"
-                  >
-                    <X className="mr-2 h-4 w-4" />
-                    Clear Schedule
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
-                  disabled={
-                    selectedPlatforms.length === 0 ||
-                    isPosting ||
-                    loadingDraft ||
-                    (selectedPlatforms.includes('tiktok') && tiktokContentDisclosure && !tiktokPromotionalContent && !tiktokBrandedContent) ||
-                    (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) &&
-                      !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()) &&
-                      !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
-                      !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(media => {
-                        const url = getMediaUrl(media)
-                        return url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.avi'))
-                      }))) &&
-                      !(selectedPlatforms.includes('instagram') && instagramAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
-                      !(selectedPlatforms.includes('facebook') && facebookAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
-                      !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && facebookAsReel && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
-                      !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && !facebookAsStory && !facebookAsReel && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
-                      !(selectedPlatforms.includes('threads') && threadPosts.some(p => p.trim())) &&
-                      !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'twitter' && twitterMode === 'thread' && twitterThreadPosts.some(p => p.trim())))
-                  }
-                  onClick={handlePostNow}
-                >
-                  <Send className="mr-2 h-4 w-4" />
-                  {isPosting ? 'Posting...' : 'Post Now'}
-                </Button>
-              )}
+                        }
+                        onClick={handleSchedulePost}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {isPosting ? (editingScheduledPost ? 'Updating...' : 'Scheduling...') : (editingScheduledPost ? 'Update Scheduled Post' : 'Schedule Post')}
+                      </Button>
+                      {/* TikTok disclosure tooltip - required by TikTok UX guidelines */}
+                      {tiktokDisclosureInvalid && (
+                        <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-50">
+                          You need to indicate if your content promotes yourself, a third party, or both.
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setScheduledDate('')
+                        setScheduledTime('')
+                      }}
+                      className="hover:bg-red-50 hover:border-red-300"
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Clear Schedule
+                    </Button>
+                  </>
+                ) : (
+                  <div className={`flex-1 group relative ${tiktokDisclosureInvalid ? 'cursor-not-allowed' : ''}`}>
+                    <Button
+                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
+                      disabled={
+                        selectedPlatforms.length === 0 ||
+                        isPosting ||
+                        loadingDraft ||
+                        tiktokDisclosureInvalid ||
+                        (!postContent.trim() && !selectedPlatforms.some(p => platformContent[p]?.trim()) &&
+                          !(selectedPlatforms.includes('youtube') && youtubeVideoFile && youtubeTitle.trim()) &&
+                          !(selectedPlatforms.includes('pinterest') && selectedPinterestBoard && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
+                          !(selectedPlatforms.includes('tiktok') && (selectedFiles.some(f => f.type.startsWith('video/')) || uploadedMediaUrls.some(media => {
+                            const url = getMediaUrl(media)
+                            return url && (url.includes('.mp4') || url.includes('.mov') || url.includes('.avi'))
+                          }))) &&
+                          !(selectedPlatforms.includes('instagram') && instagramAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
+                          !(selectedPlatforms.includes('facebook') && facebookAsStory && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
+                          !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && facebookAsReel && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
+                          !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'facebook' && !facebookAsStory && !facebookAsReel && (selectedFiles.length > 0 || uploadedMediaUrls.length > 0)) &&
+                          !(selectedPlatforms.includes('threads') && threadPosts.some(p => p.trim())) &&
+                          !(selectedPlatforms.length === 1 && selectedPlatforms[0] === 'twitter' && twitterMode === 'thread' && twitterThreadPosts.some(p => p.trim())))
+                      }
+                      onClick={handlePostNow}
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      {isPosting ? 'Posting...' : 'Post Now'}
+                    </Button>
+                    {/* TikTok disclosure tooltip - required by TikTok UX guidelines */}
+                    {tiktokDisclosureInvalid && (
+                      <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-50">
+                        You need to indicate if your content promotes yourself, a third party, or both.
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               <Button 
                 variant="outline" 
                 className="flex-1 hover:bg-orange-50 hover:border-orange-300" 
