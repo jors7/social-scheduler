@@ -153,10 +153,10 @@ export async function POST(request: NextRequest) {
       // Don't fail the request if email fails
     }
 
-    // TODO: Send notification to admin
+    // Send notification to admin
     try {
-      // Get admin email from settings or use default
-      const adminEmail = process.env.EMAIL_REPLY_TO || 'support@socialcal.app';
+      // Send to primary admin email
+      const adminEmail = 'jan.orsula1@gmail.com';
 
       await supabase.from('pending_emails').insert({
         user_id: authData.user.id,

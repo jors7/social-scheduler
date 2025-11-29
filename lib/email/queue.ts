@@ -409,6 +409,10 @@ async function sendEmailFromQueue(email: any): Promise<{
         const { default: AffiliatePayoutRequestedEmail } = await import('./templates/affiliate-payout-requested');
         emailTemplate = AffiliatePayoutRequestedEmail(email.template_data);
         break;
+      case 'affiliate_application_admin_notification':
+        const { default: AffiliateApplicationAdminEmail } = await import('./templates/affiliate-application-admin');
+        emailTemplate = AffiliateApplicationAdminEmail(email.template_data);
+        break;
       default:
         return {
           success: false,
