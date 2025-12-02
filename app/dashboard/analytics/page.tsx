@@ -554,6 +554,55 @@ export default function AnalyticsPage() {
 
       const currentEngagementRate = currentTotalReach > 0 ? (currentTotalEngagement / currentTotalReach) * 100 : 0;
 
+      // Recalculate platformStats for current period only (not the 2x fetched period)
+      const currentPlatformStats: Record<string, any> = {};
+      currentPeriodPosts.forEach((post: any) => {
+        const platform = post.platform;
+        if (!currentPlatformStats[platform]) {
+          currentPlatformStats[platform] = { posts: 0, engagement: 0, reach: 0, impressions: 0 };
+        }
+        currentPlatformStats[platform].posts += 1;
+
+        if (platform === 'facebook') {
+          currentPlatformStats[platform].engagement += post.engagement || post.totalEngagement || 0;
+          currentPlatformStats[platform].reach += post.reach || 0;
+          currentPlatformStats[platform].impressions += post.impressions || post.views || 0;
+        } else if (platform === 'instagram') {
+          currentPlatformStats[platform].engagement += (post.likes || 0) + (post.comments || 0) + (post.saves || 0);
+          currentPlatformStats[platform].reach += post.reach || 0;
+          currentPlatformStats[platform].impressions += post.impressions || post.plays || 0;
+        } else if (platform === 'threads') {
+          currentPlatformStats[platform].engagement += (post.likes || 0) + (post.replies || post.comments || 0) + (post.reposts || post.shares || 0) + (post.quotes || 0);
+          currentPlatformStats[platform].reach += post.views || post.impressions || post.reach || 0;
+          currentPlatformStats[platform].impressions += post.views || post.impressions || 0;
+        } else if (platform === 'bluesky') {
+          currentPlatformStats[platform].engagement += (post.likes || 0) + (post.replies || 0) + (post.reposts || 0);
+          currentPlatformStats[platform].reach += post.reach || 0;
+        } else if (platform === 'pinterest') {
+          currentPlatformStats[platform].engagement += (post.saves || 0) + (post.pin_clicks || 0) + (post.outbound_clicks || 0);
+          currentPlatformStats[platform].reach += post.impressions || 0;
+          currentPlatformStats[platform].impressions += post.impressions || 0;
+        } else if (platform === 'tiktok') {
+          currentPlatformStats[platform].engagement += (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
+          currentPlatformStats[platform].reach += post.views || 0;
+          currentPlatformStats[platform].impressions += post.views || 0;
+        } else if (platform === 'youtube') {
+          currentPlatformStats[platform].engagement += (post.likes || 0) + (post.comments || 0) + (post.shares || 0);
+          currentPlatformStats[platform].reach += post.views || 0;
+          currentPlatformStats[platform].impressions += post.views || 0;
+        }
+      });
+
+      // Recalculate top platform based on current period stats
+      let currentTopPlatform = 'N/A';
+      let currentMaxEngagement = 0;
+      Object.entries(currentPlatformStats).forEach(([platform, stats]) => {
+        if (stats.engagement > currentMaxEngagement) {
+          currentMaxEngagement = stats.engagement;
+          currentTopPlatform = platform.charAt(0).toUpperCase() + platform.slice(1);
+        }
+      });
+
       // Set analytics data with current period metrics
       setAnalyticsData({
         totalPosts: currentTotalPosts,
@@ -561,8 +610,8 @@ export default function AnalyticsPage() {
         totalReach: currentTotalReach,
         totalImpressions: currentTotalImpressions,
         engagementRate: currentEngagementRate,
-        topPlatform,
-        platformStats,
+        topPlatform: currentTopPlatform,
+        platformStats: currentPlatformStats,
         allPosts,
         currentPeriodPosts, // Filtered posts for selected date range
         postedPosts: allPosts // Use allPosts for postedPosts as well
