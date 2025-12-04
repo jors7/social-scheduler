@@ -6,6 +6,7 @@ import { ArticleView } from './views/article-view'
 import { ContactView } from './views/contact-view'
 import { SearchResultsView } from './views/search-results-view'
 import { MessagesView } from './views/messages-view'
+import { ConversationView } from './views/conversation-view'
 import { cn } from '@/lib/utils'
 
 export function HelpCenterWidget() {
@@ -23,6 +24,8 @@ export function HelpCenterWidget() {
         return <SearchResultsView />
       case 'messages':
         return <MessagesView />
+      case 'conversation':
+        return <ConversationView />
       default:
         return <HomeView />
     }

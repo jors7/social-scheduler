@@ -3,18 +3,20 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react'
 import { FAQArticle } from '@/lib/help-center/articles'
 
-export type HelpCenterView = 'home' | 'article' | 'contact' | 'search' | 'messages'
+export type HelpCenterView = 'home' | 'article' | 'contact' | 'search' | 'messages' | 'conversation'
 
 interface HelpCenterContextType {
   isOpen: boolean
   currentView: HelpCenterView
   selectedArticle: FAQArticle | null
+  selectedConversationId: string | null
   searchQuery: string
   openWidget: () => void
   closeWidget: () => void
   toggleWidget: () => void
   navigateTo: (view: HelpCenterView) => void
   selectArticle: (article: FAQArticle) => void
+  selectConversation: (conversationId: string) => void
   setSearchQuery: (query: string) => void
   goBack: () => void
 }
@@ -37,6 +39,7 @@ export function HelpCenterProvider({ children }: HelpCenterProviderProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [currentView, setCurrentView] = useState<HelpCenterView>('home')
   const [selectedArticle, setSelectedArticle] = useState<FAQArticle | null>(null)
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [viewHistory, setViewHistory] = useState<HelpCenterView[]>(['home'])
 
@@ -50,6 +53,7 @@ export function HelpCenterProvider({ children }: HelpCenterProviderProps) {
     setTimeout(() => {
       setCurrentView('home')
       setSelectedArticle(null)
+      setSelectedConversationId(null)
       setSearchQuery('')
       setViewHistory(['home'])
     }, 300) // Wait for close animation
@@ -73,6 +77,11 @@ export function HelpCenterProvider({ children }: HelpCenterProviderProps) {
     navigateTo('article')
   }, [navigateTo])
 
+  const selectConversation = useCallback((conversationId: string) => {
+    setSelectedConversationId(conversationId)
+    navigateTo('conversation')
+  }, [navigateTo])
+
   const goBack = useCallback(() => {
     setViewHistory(prev => {
       if (prev.length <= 1) return prev
@@ -82,6 +91,9 @@ export function HelpCenterProvider({ children }: HelpCenterProviderProps) {
       if (previousView !== 'article') {
         setSelectedArticle(null)
       }
+      if (previousView !== 'conversation') {
+        setSelectedConversationId(null)
+      }
       return newHistory
     })
   }, [])
@@ -90,12 +102,14 @@ export function HelpCenterProvider({ children }: HelpCenterProviderProps) {
     isOpen,
     currentView,
     selectedArticle,
+    selectedConversationId,
     searchQuery,
     openWidget,
     closeWidget,
     toggleWidget,
     navigateTo,
     selectArticle,
+    selectConversation,
     setSearchQuery,
     goBack,
   }
