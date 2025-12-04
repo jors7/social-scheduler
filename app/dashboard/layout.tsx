@@ -4,6 +4,8 @@ import { OnboardingProvider } from '@/providers/onboarding-provider'
 import { ThreadsTokenRefresher } from '@/components/dashboard/threads-token-refresher'
 import { HelpCenterProvider } from '@/components/help-center/help-center-provider'
 import { HelpCenterWidget } from '@/components/help-center/help-center-widget'
+import { SidebarProvider } from '@/contexts/sidebar-context'
+import { DashboardContent } from '@/components/dashboard/dashboard-content'
 
 export default function DashboardLayout({
   children,
@@ -13,18 +15,18 @@ export default function DashboardLayout({
   return (
     <SubscriptionProvider>
       <OnboardingProvider>
-        <HelpCenterProvider>
-          <div className="min-h-screen bg-gray-50">
-            <Sidebar />
-            <ThreadsTokenRefresher />
-            <HelpCenterWidget />
-            <div className="lg:pl-64">
-              <main className="py-6 px-4 sm:px-6 lg:px-8">
+        <SidebarProvider>
+          <HelpCenterProvider>
+            <div className="min-h-screen bg-gray-50">
+              <Sidebar />
+              <ThreadsTokenRefresher />
+              <HelpCenterWidget />
+              <DashboardContent>
                 {children}
-              </main>
+              </DashboardContent>
             </div>
-          </div>
-        </HelpCenterProvider>
+          </HelpCenterProvider>
+        </SidebarProvider>
       </OnboardingProvider>
     </SubscriptionProvider>
   )

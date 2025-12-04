@@ -896,7 +896,7 @@ function DashboardContent() {
             
             {/* Quick Tip Section - Now full width with rotation */}
             {showTip && (
-              <div className="hidden md:block bg-white/80 backdrop-blur-sm rounded-lg p-3 border border-purple-100 mt-4">
+              <div className="hidden md:block bg-white/80 backdrop-blur-sm rounded-lg p-3 border border-purple-100 mt-4 relative z-0">
                 <div className="flex items-start gap-3">
                   <div className="p-1.5 bg-purple-100 rounded-lg flex-shrink-0">
                     <Lightbulb className="h-4 w-4 text-purple-600" />
