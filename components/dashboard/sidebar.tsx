@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { useHelpCenter } from '@/components/help-center/help-center-provider'
 import {
   LayoutDashboard,
   PenSquare,
@@ -108,6 +109,7 @@ export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  const { openWidget: openHelpCenter } = useHelpCenter()
   const [expandedItems, setExpandedItems] = useState<string[]>(['Create', 'Posts', 'Blog', 'Admin'])
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
@@ -408,16 +410,18 @@ export function Sidebar() {
               </div>
               Subscription
             </Link>
-            <Link
-              href="/support"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            <button
+              onClick={() => {
+                setIsMobileMenuOpen(false)
+                openHelpCenter()
+              }}
+              className="w-full flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
             >
               <div className="p-1.5 bg-gray-100 rounded-lg mr-3">
                 <LifeBuoy className="h-3.5 w-3.5 text-gray-600" />
               </div>
               Help & Support
-            </Link>
+            </button>
             <div className="pt-2 mt-2 border-t">
               <button
                 onClick={handleLogout}
