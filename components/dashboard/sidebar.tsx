@@ -262,22 +262,32 @@ export function Sidebar() {
       )}>
         {/* Create Post Button */}
         <div className={cn("py-4 transition-all duration-300", collapsed ? "px-2" : "px-4")}>
-          <Link href="/dashboard/create/new" onClick={() => setIsMobileMenuOpen(false)}>
-            {collapsed ? (
-              <Button
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 p-2"
-                size="icon"
-                title="Create New Post"
-              >
-                <Sparkles className="h-5 w-5" />
-              </Button>
-            ) : (
+          {collapsed ? (
+            <div className="relative group/create hover:z-[100]">
+              <Link href="/dashboard/create/new" onClick={() => setIsMobileMenuOpen(false)}>
+                <Button
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 p-2"
+                  size="icon"
+                >
+                  <Sparkles className="h-5 w-5" />
+                </Button>
+              </Link>
+              {/* Tooltip */}
+              <div className="absolute left-full top-1/2 -translate-y-1/2 pl-2 opacity-0 invisible group-hover/create:opacity-100 group-hover/create:visible transition-all duration-200 z-[100]">
+                <div className="absolute left-0 top-0 w-2 h-full" />
+                <div className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-lg whitespace-nowrap">
+                  Create New Post
+                </div>
+              </div>
+            </div>
+          ) : (
+            <Link href="/dashboard/create/new" onClick={() => setIsMobileMenuOpen(false)}>
               <Button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200" size="lg">
                 <Sparkles className="mr-2 h-5 w-5" />
                 Create New Post
               </Button>
-            )}
-          </Link>
+            </Link>
+          )}
         </div>
 
         {/* Navigation */}
