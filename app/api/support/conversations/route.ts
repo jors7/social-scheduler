@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { sendSupportTicketToAdmin } from '@/lib/email/send'
 
 // GET - List user's conversations
 export async function GET() {
@@ -108,11 +109,12 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    // Create conversation
+    // Create conversation with user email for admin visibility
     const { data: conversation, error: convError } = await supabase
       .from('support_conversations')
       .insert({
         user_id: user.id,
+        user_email: user.email,
         subject: subject.trim()
       })
       .select()
@@ -146,6 +148,16 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+
+    // Send email notification to admin (non-blocking)
+    sendSupportTicketToAdmin(
+      user.email || 'Unknown',
+      subject.trim(),
+      message.trim(),
+      conversation.id
+    ).catch(err => {
+      console.error('Failed to send support ticket email to admin:', err)
+    })
 
     return NextResponse.json({
       conversation: {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { sendSupportReplyToUser } from '@/lib/email/send'
 
 // POST - Admin reply to a conversation
 export async function POST(
@@ -42,10 +43,10 @@ export async function POST(
       )
     }
 
-    // Verify conversation exists
+    // Verify conversation exists and get user info for email
     const { data: conversation, error: convError } = await supabase
       .from('support_conversations')
-      .select('id, user_id, status')
+      .select('id, user_id, user_email, subject, status')
       .eq('id', id)
       .single()
 
@@ -90,6 +91,20 @@ export async function POST(
         .from('support_conversations')
         .update({ status: 'open' })
         .eq('id', id)
+    }
+
+    // Send email notification to user (non-blocking)
+    if (conversation.user_email) {
+      const userName = conversation.user_email.split('@')[0] || 'there'
+      sendSupportReplyToUser(
+        conversation.user_email,
+        userName,
+        conversation.subject,
+        content.trim(),
+        profile?.full_name || 'Support Team'
+      ).catch(err => {
+        console.error('Failed to send support reply email to user:', err)
+      })
     }
 
     return NextResponse.json({

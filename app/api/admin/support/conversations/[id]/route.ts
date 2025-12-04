@@ -33,12 +33,13 @@ export async function GET(
       )
     }
 
-    // Get conversation
+    // Get conversation with stored user_email
     const { data: conversation, error: convError } = await supabase
       .from('support_conversations')
       .select(`
         id,
         user_id,
+        user_email,
         subject,
         status,
         created_at,
@@ -53,10 +54,6 @@ export async function GET(
         { status: 404 }
       )
     }
-
-    // Get user info
-    const { data: { users } } = await supabase.auth.admin.listUsers()
-    const convUser = users?.find(u => u.id === conversation.user_id)
 
     // Get messages
     const { data: messages, error: msgError } = await supabase
@@ -93,7 +90,7 @@ export async function GET(
       conversation: {
         id: conversation.id,
         userId: conversation.user_id,
-        userEmail: convUser?.email || 'Unknown',
+        userEmail: conversation.user_email || 'Unknown',
         subject: conversation.subject,
         status: conversation.status,
         createdAt: conversation.created_at,

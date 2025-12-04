@@ -33,12 +33,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') || 'all'
 
-    // Build query
+    // Build query - include user_email from the conversation
     let query = supabase
       .from('support_conversations')
       .select(`
         id,
         user_id,
+        user_email,
         subject,
         status,
         last_message_at,
@@ -68,13 +69,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get user emails for the conversations
-    const userIds = Array.from(new Set(conversations?.map(c => c.user_id) || []))
-    const { data: users } = await supabase.auth.admin.listUsers()
-
-    const userMap = new Map(users?.users?.map(u => [u.id, u.email]) || [])
-
-    // Process conversations
+    // Process conversations - use stored user_email
     const processedConversations = conversations?.map(conv => {
       const messages = conv.support_messages || []
       const lastMessage = messages.sort((a: any, b: any) =>
@@ -87,7 +82,7 @@ export async function GET(request: NextRequest) {
       return {
         id: conv.id,
         userId: conv.user_id,
-        userEmail: userMap.get(conv.user_id) || 'Unknown',
+        userEmail: conv.user_email || 'Unknown',
         subject: conv.subject,
         status: conv.status,
         lastMessageAt: conv.last_message_at,

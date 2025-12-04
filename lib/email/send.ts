@@ -365,3 +365,45 @@ export async function queueSubscriptionCancelledEmail(
     metadata: { subscription_id: subscriptionId, end_date: endDate.toISOString() }
   });
 }
+
+// =====================================================
+// SUPPORT TICKET EMAILS
+// =====================================================
+
+/**
+ * Send notification to admin when a new support ticket is created
+ */
+export async function sendSupportTicketToAdmin(
+  userEmail: string,
+  subject: string,
+  message: string,
+  conversationId: string
+) {
+  const { default: SupportTicketAdminEmail } = await import('./templates/support-ticket-admin');
+
+  return sendEmail({
+    to: 'jan@socialcal.app',
+    subject: `New Support Ticket: ${subject}`,
+    react: SupportTicketAdminEmail({ userEmail, subject, message, conversationId }),
+    replyTo: userEmail,
+  });
+}
+
+/**
+ * Send notification to user when admin replies to their support ticket
+ */
+export async function sendSupportReplyToUser(
+  userEmail: string,
+  userName: string,
+  subject: string,
+  replyMessage: string,
+  adminName: string
+) {
+  const { default: SupportReplyUserEmail } = await import('./templates/support-reply-user');
+
+  return sendEmail({
+    to: userEmail,
+    subject: `Re: ${subject} - SocialCal Support`,
+    react: SupportReplyUserEmail({ userName, subject, replyMessage, adminName }),
+  });
+}
