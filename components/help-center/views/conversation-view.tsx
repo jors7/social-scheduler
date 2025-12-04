@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Send, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Send, CheckCircle2, Trash2 } from 'lucide-react'
 import { WidgetTabs } from '../components/widget-tabs'
 import { WidgetHeader } from '../components/widget-header'
 import { useHelpCenter } from '../help-center-provider'
@@ -22,12 +22,14 @@ interface Conversation {
 }
 
 export function ConversationView() {
-  const { selectedConversationId, goBack } = useHelpCenter()
+  const { selectedConversationId, goBack, navigateTo } = useHelpCenter()
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -88,6 +90,30 @@ export function ConversationView() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
+    }
+  }
+
+  const handleDelete = async () => {
+    if (deleting) return
+
+    setDeleting(true)
+    try {
+      const response = await fetch(`/api/support/conversations/${selectedConversationId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        // Navigate back to messages list
+        navigateTo('messages')
+      } else {
+        const data = await response.json()
+        console.error('Failed to delete:', data.error)
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error)
+    } finally {
+      setDeleting(false)
+      setShowDeleteConfirm(false)
     }
   }
 
@@ -154,12 +180,43 @@ export function ConversationView() {
             <span className="text-sm font-medium">Back</span>
           </button>
           {conversation?.status === 'closed' && (
-            <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
-              <CheckCircle2 className="w-3 h-3" />
-              Resolved
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                <CheckCircle2 className="w-3 h-3" />
+                Resolved
+              </span>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex items-center gap-1 text-xs text-red-600 hover:bg-red-50 px-2 py-1 rounded-full transition-colors"
+                title="Delete conversation"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
           )}
         </div>
+
+        {/* Delete confirmation */}
+        {showDeleteConfirm && (
+          <div className="px-4 py-3 bg-red-50 border-b border-red-100">
+            <p className="text-sm text-red-700 mb-2">Delete this conversation?</p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? 'Deleting...' : 'Yes, delete'}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
