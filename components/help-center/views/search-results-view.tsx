@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Sparkles, Search, X, ArrowRight, BookOpen } from 'lucide-react'
+import { Sparkles, Search, ArrowRight, BookOpen } from 'lucide-react'
 import { useHelpCenter } from '../help-center-provider'
 import { FAQList } from '../components/faq-list'
-import { CollectionsList } from '../components/collections-list'
 import { WidgetTabs } from '../components/widget-tabs'
+import { WidgetHeader } from '../components/widget-header'
 import { searchArticles, FAQArticle, faqArticles } from '@/lib/help-center/articles'
+import { createClient } from '@/lib/supabase/client'
 
 interface AIResponse {
   answer: string
@@ -16,7 +17,7 @@ interface AIResponse {
 }
 
 export function SearchResultsView() {
-  const { searchQuery, setSearchQuery, closeWidget, selectArticle } = useHelpCenter()
+  const { searchQuery, setSearchQuery, selectArticle } = useHelpCenter()
   const [isLoading, setIsLoading] = useState(false)
   const [aiResponse, setAiResponse] = useState<AIResponse | null>(null)
   const [localResults, setLocalResults] = useState<FAQArticle[]>([])
@@ -46,10 +47,17 @@ export function SearchResultsView() {
     const fetchAIResponse = async () => {
       setIsLoading(true)
       try {
+        // Get current user ID for logging
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
         const response = await fetch('/api/help-center/search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: searchQuery }),
+          body: JSON.stringify({
+            query: searchQuery,
+            userId: user?.id || null
+          }),
         })
 
         if (response.ok) {
@@ -74,18 +82,8 @@ export function SearchResultsView() {
 
   return (
     <>
+      <WidgetHeader />
       <div className="flex-1 overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 z-10 flex items-center justify-between">
-          <h1 className="text-lg font-bold text-gray-900">Help</h1>
-          <button
-            onClick={closeWidget}
-            className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
-
         {/* Search input */}
         <div className="px-4 py-3">
           <form onSubmit={handleSearch}>
@@ -102,9 +100,9 @@ export function SearchResultsView() {
           </form>
         </div>
 
-        {/* Show collections when no search, or search results when searching */}
+        {/* Show popular articles when no search, or search results when searching */}
         {!hasSearchQuery ? (
-          <CollectionsList />
+          <FAQList showCategories={true} />
         ) : (
           <>
             {/* AI Response */}

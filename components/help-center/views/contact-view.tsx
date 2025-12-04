@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ArrowLeft, Send, CheckCircle2 } from 'lucide-react'
 import { useHelpCenter } from '../help-center-provider'
 import { WidgetTabs } from '../components/widget-tabs'
+import { WidgetHeader } from '../components/widget-header'
 
 export function ContactView() {
   const { goBack } = useHelpCenter()
@@ -45,6 +46,7 @@ export function ContactView() {
   if (isSubmitted) {
     return (
       <>
+        <WidgetHeader />
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
           <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
             <CheckCircle2 className="w-8 h-8 text-green-600" />
@@ -67,9 +69,10 @@ export function ContactView() {
 
   return (
     <>
+      <WidgetHeader />
       <div className="flex-1 overflow-y-auto">
         {/* Back button */}
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 z-10">
+        <div className="px-4 py-3 border-b border-gray-100">
           <button
             onClick={goBack}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"

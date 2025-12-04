@@ -2,6 +2,7 @@
 
 import { MessageCircle } from 'lucide-react'
 import { WidgetTabs } from '../components/widget-tabs'
+import { WidgetHeader } from '../components/widget-header'
 import { useHelpCenter } from '../help-center-provider'
 
 export function MessagesView() {
@@ -9,12 +10,8 @@ export function MessagesView() {
 
   return (
     <>
+      <WidgetHeader />
       <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="px-4 py-4 border-b border-gray-100">
-          <h1 className="text-xl font-bold text-gray-900">Messages</h1>
-        </div>
-
         {/* Empty state */}
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
           <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">

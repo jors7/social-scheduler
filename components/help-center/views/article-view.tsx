@@ -5,6 +5,7 @@ import { useHelpCenter } from '../help-center-provider'
 import { ArticleContent } from '../components/article-content'
 import { TocDropdown } from '../components/toc-dropdown'
 import { WidgetTabs } from '../components/widget-tabs'
+import { WidgetHeader } from '../components/widget-header'
 import { getRelativeTime } from '@/lib/help-center/articles'
 
 export function ArticleView() {
@@ -20,9 +21,10 @@ export function ArticleView() {
 
   return (
     <>
+      <WidgetHeader />
       <div className="flex-1 overflow-y-auto">
         {/* Back button */}
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 z-10">
+        <div className="px-4 py-3 border-b border-gray-100">
           <button
             onClick={goBack}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"

@@ -1,4 +1,4 @@
-export type FAQCategory = 'platform-connections' | 'posting-scheduling' | 'billing-subscription' | 'analytics'
+export type FAQCategory = 'getting-started' | 'platform-connections' | 'posting-scheduling' | 'billing-subscription' | 'analytics'
 
 export interface TocItem {
   id: string
@@ -24,6 +24,7 @@ export interface FAQCategoryInfo {
 }
 
 export const faqCategories: FAQCategoryInfo[] = [
+  { id: 'getting-started', name: 'Getting Started', icon: 'Rocket' },
   { id: 'platform-connections', name: 'Platform Connections', icon: 'Link' },
   { id: 'posting-scheduling', name: 'Posting & Scheduling', icon: 'Calendar' },
   { id: 'analytics', name: 'Analytics', icon: 'BarChart3' },
@@ -31,6 +32,115 @@ export const faqCategories: FAQCategoryInfo[] = [
 ]
 
 export const faqArticles: FAQArticle[] = [
+  // ============================================
+  // GETTING STARTED
+  // ============================================
+  {
+    id: 'getting-started',
+    slug: 'getting-started',
+    category: 'getting-started',
+    title: 'Getting Started with SocialCal',
+    description: 'Learn where to find everything in your SocialCal dashboard',
+    updatedAt: new Date('2025-01-15'),
+    keywords: ['getting started', 'dashboard', 'navigation', 'where', 'find', 'sidebar', 'menu', 'layout', 'overview', 'begin', 'start', 'how to use'],
+    content: `
+## Welcome to SocialCal!
+
+This guide will help you find your way around the dashboard and get started with scheduling your social media posts.
+
+## Dashboard Navigation
+
+Your SocialCal dashboard has a **sidebar menu** on the left side. Here's where to find everything:
+
+### Main Sections
+
+| Menu Item | What It Does |
+|-----------|-------------|
+| **Dashboard** | Your home screen with overview stats and quick actions |
+| **Create New Post** | Write and publish or schedule new content |
+| **Calendar** | Visual calendar view of all your scheduled posts |
+| **Posts** | Manage your scheduled, posted, and draft content |
+| **Analytics** | View performance metrics for all your platforms |
+| **Media** | Browse and manage your uploaded images and videos |
+| **Settings** | Connect accounts, manage billing, and configure preferences |
+
+### Posts Submenu
+
+Click **Posts** in the sidebar to access:
+- **Scheduled** - View and manage upcoming posts
+- **Posted** - See your published content history
+- **Drafts** - Access saved drafts to finish later
+
+### Settings Submenu
+
+Click **Settings** in the sidebar to access:
+- **Social Accounts** - Connect and manage your social media platforms
+- **Billing** - View your plan, usage, and payment history
+- **Account** - Update your profile and preferences
+
+## Quick Start Guide
+
+1. **Connect your accounts** - Go to Settings > Social Accounts
+2. **Create your first post** - Click Create New Post in the sidebar
+3. **Schedule or post** - Choose to post now or schedule for later
+4. **Track performance** - Check Analytics to see how your posts perform
+
+## Need Help Finding Something?
+
+If you're looking for a specific feature, use the **search bar** at the top of this Help Center. You can also browse articles by category or contact our support team.
+    `.trim()
+  },
+  {
+    id: 'dashboard-overview',
+    slug: 'dashboard-overview',
+    category: 'getting-started',
+    title: 'Dashboard Overview',
+    description: 'Understanding your SocialCal dashboard home screen',
+    updatedAt: new Date('2025-01-15'),
+    keywords: ['dashboard', 'home', 'overview', 'stats', 'quick actions', 'where', 'find'],
+    content: `
+## Your Dashboard
+
+When you log in to SocialCal, you land on your **Dashboard** - your home base for managing social media.
+
+## What You'll See
+
+### Quick Stats
+At the top, you'll see key metrics:
+- Posts scheduled this week
+- Posts published recently
+- Connected accounts status
+
+### Quick Actions
+Buttons to quickly:
+- Create a new post
+- View your calendar
+- Check analytics
+
+### Recent Activity
+A feed showing your latest:
+- Published posts
+- Scheduled posts coming up
+- Draft posts to finish
+
+## Getting Around
+
+From the dashboard, you can navigate to any section using the **sidebar on the left**:
+
+- **Create New Post** - Start writing content
+- **Calendar** - See your content schedule
+- **Posts** - Manage all your posts
+- **Analytics** - Track performance
+- **Settings** - Manage accounts and billing
+
+## Tips
+
+- Use keyboard shortcut **N** to quickly create a new post
+- Click on any stat card to see more details
+- The sidebar can be collapsed on smaller screens
+    `.trim()
+  },
+
   // ============================================
   // PLATFORM CONNECTIONS
   // ============================================
@@ -548,7 +658,7 @@ When creating a post, you can select which specific accounts to post to:
     title: 'How to Create a Post',
     description: 'Learn how to create and publish posts to multiple platforms',
     updatedAt: new Date('2025-01-15'),
-    keywords: ['create', 'post', 'publish', 'content', 'write'],
+    keywords: ['create', 'post', 'publish', 'content', 'write', 'new', 'how', 'where', 'find', 'sidebar'],
     content: `
 ## Creating Your First Post
 
@@ -705,7 +815,7 @@ Each platform preview shows platform-specific elements:
     title: 'How to Schedule Posts',
     description: 'Schedule posts to publish automatically at a specific time',
     updatedAt: new Date('2025-01-15'),
-    keywords: ['schedule', 'time', 'date', 'automatic', 'queue'],
+    keywords: ['schedule', 'time', 'date', 'automatic', 'queue', 'where', 'find', 'scheduled', 'upcoming', 'sidebar'],
     content: `
 ## Scheduling a Post
 
@@ -751,7 +861,7 @@ All SocialCal plans (Starter, Professional, and Enterprise) include **unlimited 
     title: 'How to Use Drafts',
     description: 'Save posts as drafts to finish and publish later',
     updatedAt: new Date('2025-01-15'),
-    keywords: ['drafts', 'save', 'later', 'unfinished'],
+    keywords: ['drafts', 'save', 'later', 'unfinished', 'where', 'find', 'sidebar', 'posts'],
     content: `
 ## Saving a Draft
 
@@ -790,7 +900,7 @@ Use the search bar to find drafts by content or title.
     title: 'How to Use the Calendar',
     description: 'View and manage your content calendar',
     updatedAt: new Date('2025-01-15'),
-    keywords: ['calendar', 'view', 'schedule', 'overview', 'plan'],
+    keywords: ['calendar', 'view', 'schedule', 'overview', 'plan', 'where', 'find', 'sidebar', 'content'],
     content: `
 ## The Calendar View
 
@@ -943,7 +1053,7 @@ The SocialCal editor shows live character counts for each selected platform. Red
     title: 'Analytics Overview',
     description: 'Understanding your social media performance metrics',
     updatedAt: new Date('2025-01-15'),
-    keywords: ['analytics', 'metrics', 'performance', 'stats', 'data'],
+    keywords: ['analytics', 'metrics', 'performance', 'stats', 'data', 'find', 'where', 'sidebar', 'dashboard', 'insights'],
     content: `
 ## Analytics Dashboard
 
@@ -1235,12 +1345,43 @@ export function getArticleBySlug(slug: string): FAQArticle | undefined {
 
 export function searchArticles(query: string): FAQArticle[] {
   const lowerQuery = query.toLowerCase()
-  return faqArticles.filter(article =>
-    article.title.toLowerCase().includes(lowerQuery) ||
-    article.description.toLowerCase().includes(lowerQuery) ||
-    article.keywords.some(keyword => keyword.toLowerCase().includes(lowerQuery)) ||
-    article.content.toLowerCase().includes(lowerQuery)
-  )
+
+  // Split query into words and filter out common words
+  const stopWords = ['is', 'the', 'a', 'an', 'to', 'do', 'i', 'how', 'what', 'where', 'can', 'my', 'in', 'on', 'for', 'of', 'and', 'or']
+  const queryWords = lowerQuery
+    .split(/\s+/)
+    .filter(word => word.length > 1 && !stopWords.includes(word))
+
+  // Score each article based on how many query words match
+  const scoredArticles = faqArticles.map(article => {
+    const titleLower = article.title.toLowerCase()
+    const descLower = article.description.toLowerCase()
+    const contentLower = article.content.toLowerCase()
+    const keywordsLower = article.keywords.map(k => k.toLowerCase())
+
+    let score = 0
+
+    // Check for full query match (highest priority)
+    if (titleLower.includes(lowerQuery)) score += 100
+    if (descLower.includes(lowerQuery)) score += 50
+    if (contentLower.includes(lowerQuery)) score += 25
+
+    // Check for individual word matches
+    for (const word of queryWords) {
+      if (titleLower.includes(word)) score += 10
+      if (descLower.includes(word)) score += 5
+      if (keywordsLower.some(k => k.includes(word))) score += 8
+      if (contentLower.includes(word)) score += 2
+    }
+
+    return { article, score }
+  })
+
+  // Return articles with score > 0, sorted by score
+  return scoredArticles
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(item => item.article)
 }
 
 export function getRelativeTime(date: Date): string {

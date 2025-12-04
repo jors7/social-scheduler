@@ -1,10 +1,11 @@
 'use client'
 
-import { ChevronRight, Link, Calendar, CreditCard, BarChart3 } from 'lucide-react'
+import { ChevronRight, Link, Calendar, CreditCard, BarChart3, Rocket } from 'lucide-react'
 import { useHelpCenter } from '../help-center-provider'
 import { FAQArticle, faqCategories, getArticlesByCategory, FAQCategory } from '@/lib/help-center/articles'
 
 const categoryIcons = {
+  'getting-started': Rocket,
   'platform-connections': Link,
   'posting-scheduling': Calendar,
   'analytics': BarChart3,

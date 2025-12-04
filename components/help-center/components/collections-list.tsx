@@ -1,11 +1,12 @@
 'use client'
 
-import { ChevronRight, Link, Calendar, CreditCard, BarChart3 } from 'lucide-react'
+import { ChevronRight, Link, Calendar, CreditCard, BarChart3, Rocket } from 'lucide-react'
 import { faqCategories, getArticlesByCategory, FAQCategory, faqArticles } from '@/lib/help-center/articles'
 import { useHelpCenter } from '../help-center-provider'
 import { useState } from 'react'
 
 const categoryIcons = {
+  'getting-started': Rocket,
   'platform-connections': Link,
   'posting-scheduling': Calendar,
   'analytics': BarChart3,
@@ -56,7 +57,17 @@ function CollectionArticles({ category, onBack }: CollectionArticlesProps) {
   )
 }
 
+// IDs of the 5 most important/popular articles
+const popularArticleIds = [
+  'create-post',
+  'schedule-posts',
+  'connect-instagram',
+  'multi-platform-posting',
+  'plans-pricing',
+]
+
 export function CollectionsList() {
+  const { selectArticle } = useHelpCenter()
   const [selectedCategory, setSelectedCategory] = useState<FAQCategory | null>(null)
 
   if (selectedCategory) {
@@ -68,14 +79,16 @@ export function CollectionsList() {
     )
   }
 
-  const totalArticles = faqArticles.length
+  const popularArticles = popularArticleIds
+    .map(id => faqArticles.find(a => a.id === id))
+    .filter(Boolean)
 
   return (
     <div>
-      {/* Collections count */}
+      {/* Collections header */}
       <div className="px-4 py-3 border-b border-gray-100">
         <p className="text-sm font-semibold text-gray-900">
-          {faqCategories.length} collections
+          Browse by Category
         </p>
       </div>
 
@@ -104,6 +117,25 @@ export function CollectionsList() {
             </button>
           )
         })}
+      </div>
+
+      {/* Popular Articles */}
+      <div className="px-4 py-3 border-t border-gray-100 mt-2">
+        <p className="text-sm font-semibold text-gray-900">
+          Popular Articles
+        </p>
+      </div>
+      <div className="divide-y divide-gray-100">
+        {popularArticles.map((article) => article && (
+          <button
+            key={article.id}
+            onClick={() => selectArticle(article)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+          >
+            <span className="text-sm text-gray-700 pr-2">{article.title}</span>
+            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          </button>
+        ))}
       </div>
     </div>
   )

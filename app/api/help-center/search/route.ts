@@ -1,10 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { createClient } from '@supabase/supabase-js'
 import { searchArticles, FAQArticle } from '@/lib/help-center/articles'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
+
+// Create a Supabase client with service role for logging searches
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+// Log search query to database (non-blocking)
+async function logSearchQuery(
+  query: string,
+  resultsCount: number,
+  hadAiAnswer: boolean,
+  sourceArticleId: string | null,
+  userId: string | null
+) {
+  try {
+    await supabaseAdmin.from('help_center_searches').insert({
+      query,
+      results_count: resultsCount,
+      had_ai_answer: hadAiAnswer,
+      source_article_id: sourceArticleId,
+      user_id: userId,
+    })
+  } catch (error) {
+    // Don't fail the request if logging fails
+    console.error('Failed to log help center search:', error)
+  }
+}
 
 // Build context from only the most relevant articles
 function buildRelevantContext(articles: FAQArticle[]): string {
@@ -18,7 +47,7 @@ function buildRelevantContext(articles: FAQArticle[]): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const { query } = await request.json()
+    const { query, userId } = await request.json()
 
     if (!query || typeof query !== 'string') {
       return NextResponse.json(
@@ -101,6 +130,18 @@ ${faqContext || 'No relevant articles found for this query.'}`
         followUpQuestions: []
       }
     }
+
+    const hadAiAnswer = !!(parsedResponse.answer &&
+      !parsedResponse.answer.includes("I don't have specific information"))
+
+    // Log the search query (non-blocking)
+    logSearchQuery(
+      query,
+      matchingArticles.length,
+      hadAiAnswer,
+      parsedResponse.sourceArticleId || null,
+      userId || null
+    )
 
     return NextResponse.json({
       answer: parsedResponse.answer || null,
