@@ -505,91 +505,139 @@ export function Sidebar() {
         "bg-white border-t mt-auto relative transition-all duration-300",
         collapsed ? "p-2" : "p-3"
       )}>
-        <button
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            if (collapsed) {
-              // When collapsed, expand the sidebar first
-              setIsCollapsed(false)
-              setIsAccountMenuOpen(true)
-            } else {
-              setIsAccountMenuOpen(!isAccountMenuOpen)
-            }
-          }}
-          className={cn(
-            "w-full flex items-center rounded-xl hover:bg-gray-50 transition-all duration-200 relative z-10",
-            collapsed ? "justify-center p-2" : "justify-between px-3 py-2"
-          )}
-          title={collapsed ? "My Account" : undefined}
-        >
-          <div className="flex items-center">
-            <div className="relative">
-              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center text-white font-semibold shadow-md text-sm">
-                {user?.email?.[0]?.toUpperCase() || 'U'}
+        {collapsed ? (
+          // Collapsed: show hover flyout
+          <div className="relative group/account hover:z-[100]">
+            <div className="w-full flex items-center justify-center rounded-xl p-2 hover:bg-gray-50 transition-all duration-200 cursor-pointer">
+              <div className="relative">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center text-white font-semibold shadow-md text-sm">
+                  {user?.email?.[0]?.toUpperCase() || 'U'}
+                </div>
+                <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white"></div>
               </div>
-              <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white"></div>
             </div>
-            {!collapsed && (
-              <div className="ml-3 text-left">
-                <p className="text-sm font-semibold text-gray-900">My Account</p>
+            {/* Flyout menu */}
+            <div className="absolute left-full bottom-0 pl-2 opacity-0 invisible group-hover/account:opacity-100 group-hover/account:visible transition-all duration-200 z-[100]">
+              {/* Invisible bridge to maintain hover */}
+              <div className="absolute left-0 top-0 w-2 h-full" />
+              <div className="py-2 px-1 bg-white rounded-xl shadow-lg border border-gray-100 min-w-[180px]">
+                <div className="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  My Account
+                </div>
+                <Link
+                  href="/dashboard/profile"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors mx-1"
+                >
+                  <User className="mr-2 h-3.5 w-3.5 text-gray-500" />
+                  Profile Settings
+                </Link>
+                <Link
+                  href="/dashboard/billing"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors mx-1"
+                >
+                  <Crown className="mr-2 h-3.5 w-3.5 text-gray-500" />
+                  Subscription
+                </Link>
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false)
+                    openHelpCenter()
+                  }}
+                  className="w-full flex items-center rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors mx-1"
+                >
+                  <LifeBuoy className="mr-2 h-3.5 w-3.5 text-gray-500" />
+                  Help & Support
+                </button>
+                <div className="border-t border-gray-100 mt-1 pt-1 mx-1">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut className="mr-2 h-3.5 w-3.5" />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          // Expanded: show click-to-expand menu
+          <>
+            <button
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setIsAccountMenuOpen(!isAccountMenuOpen)
+              }}
+              className="w-full flex items-center justify-between rounded-xl px-3 py-2 hover:bg-gray-50 transition-all duration-200 relative z-10"
+            >
+              <div className="flex items-center">
+                <div className="relative">
+                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center text-white font-semibold shadow-md text-sm">
+                    {user?.email?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white"></div>
+                </div>
+                <div className="ml-3 text-left">
+                  <p className="text-sm font-semibold text-gray-900">My Account</p>
+                </div>
+              </div>
+              <ChevronRight className={cn(
+                'h-4 w-4 text-gray-400 transition-transform',
+                isAccountMenuOpen && 'rotate-90'
+              )} />
+            </button>
+
+            {isAccountMenuOpen && (
+              <div className="mt-2 space-y-0.5 relative z-20">
+                <Link
+                  href="/dashboard/profile"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="p-1.5 bg-gray-100 rounded-lg mr-3">
+                    <User className="h-3.5 w-3.5 text-gray-600" />
+                  </div>
+                  Profile Settings
+                </Link>
+                <Link
+                  href="/dashboard/billing"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="p-1.5 bg-gray-100 rounded-lg mr-3">
+                    <Crown className="h-3.5 w-3.5 text-gray-600" />
+                  </div>
+                  Subscription
+                </Link>
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false)
+                    openHelpCenter()
+                  }}
+                  className="w-full flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="p-1.5 bg-gray-100 rounded-lg mr-3">
+                    <LifeBuoy className="h-3.5 w-3.5 text-gray-600" />
+                  </div>
+                  Help & Support
+                </button>
+                <div className="pt-2 mt-2 border-t">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center rounded-lg px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <div className="p-1.5 bg-red-100 rounded-lg mr-3">
+                      <LogOut className="h-3.5 w-3.5 text-red-600" />
+                    </div>
+                    Sign Out
+                  </button>
+                </div>
               </div>
             )}
-          </div>
-          {!collapsed && (
-            <ChevronRight className={cn(
-              'h-4 w-4 text-gray-400 transition-transform',
-              isAccountMenuOpen && 'rotate-90'
-            )} />
-          )}
-        </button>
-
-        {isAccountMenuOpen && !collapsed && (
-          <div className="mt-2 space-y-0.5 relative z-20">
-            <Link
-              href="/dashboard/profile"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <div className="p-1.5 bg-gray-100 rounded-lg mr-3">
-                <User className="h-3.5 w-3.5 text-gray-600" />
-              </div>
-              Profile Settings
-            </Link>
-            <Link
-              href="/dashboard/billing"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <div className="p-1.5 bg-gray-100 rounded-lg mr-3">
-                <Crown className="h-3.5 w-3.5 text-gray-600" />
-              </div>
-              Subscription
-            </Link>
-            <button
-              onClick={() => {
-                setIsMobileMenuOpen(false)
-                openHelpCenter()
-              }}
-              className="w-full flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <div className="p-1.5 bg-gray-100 rounded-lg mr-3">
-                <LifeBuoy className="h-3.5 w-3.5 text-gray-600" />
-              </div>
-              Help & Support
-            </button>
-            <div className="pt-2 mt-2 border-t">
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center rounded-lg px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <div className="p-1.5 bg-red-100 rounded-lg mr-3">
-                  <LogOut className="h-3.5 w-3.5 text-red-600" />
-                </div>
-                Sign Out
-              </button>
-            </div>
-          </div>
+          </>
         )}
       </div>
     </div>
