@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -50,17 +50,44 @@ export function TikTokInsights({ className }: TikTokInsightsProps) {
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [userInsights, setUserInsights] = useState<any>(null)
-  const [recentVideos, setRecentVideos] = useState<TikTokVideo[]>([])
+  const [allVideos, setAllVideos] = useState<TikTokVideo[]>([]) // All fetched videos
+  const [displayLimit, setDisplayLimit] = useState(5) // How many to show in Recent Videos
   const [hasTikTokAccount, setHasTikTokAccount] = useState(false)
   const [tiktokAccounts, setTikTokAccounts] = useState<any[]>([])
   const [selectedAccount, setSelectedAccount] = useState<any>(null)
-  const [videosLimit, setVideosLimit] = useState(5)
-  const [hasMoreVideos, setHasMoreVideos] = useState(false)
-  const [loadingMore, setLoadingMore] = useState(false)
   const [tokenExpired, setTokenExpired] = useState(false)
   const [scopeError, setScopeError] = useState(false)
   const [switchingAccount, setSwitchingAccount] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState('')
+
+  // Derived state: videos to display (sliced from allVideos)
+  const recentVideos = useMemo(() => allVideos.slice(0, displayLimit), [allVideos, displayLimit])
+  const hasMoreVideos = displayLimit < allVideos.length
+
+  // Derived state: top performing videos (sorted by views)
+  const topVideos = useMemo(() => {
+    if (allVideos.length === 0) return []
+
+    const sorted = [...allVideos].sort((a, b) => {
+      const aViews = a.metrics?.views ?? 0
+      const bViews = b.metrics?.views ?? 0
+      if (aViews !== bViews) return bViews - aViews
+      // If views are equal, sort by date (newest first)
+      return new Date(b.created_time).getTime() - new Date(a.created_time).getTime()
+    })
+
+    return sorted.slice(0, 3)
+  }, [allVideos])
+
+  // Calculate total views and engagement from ALL videos (not just displayed ones)
+  const totalViews = useMemo(() =>
+    allVideos.reduce((sum, video) => sum + (video.metrics?.views || 0), 0),
+    [allVideos]
+  )
+  const totalEngagement = useMemo(() =>
+    allVideos.reduce((sum, video) => sum + video.totalEngagement, 0),
+    [allVideos]
+  )
 
   const fetchTikTokInsights = async (accountId?: string) => {
     try {
@@ -118,9 +145,9 @@ export function TikTokInsights({ className }: TikTokInsightsProps) {
         }
       }
 
-      // Fetch recent videos
+      // Fetch recent videos - fetch 30 to ensure Top Performing shows data from last 30 days
       const mediaQueryParams = new URLSearchParams({
-        limit: videosLimit.toString(),
+        limit: '30',
         ...(accountToUse?.id && { accountId: accountToUse.id })
       })
 
@@ -133,17 +160,16 @@ export function TikTokInsights({ className }: TikTokInsightsProps) {
       const mediaResponse = await fetch(`/api/tiktok/media?${mediaQueryParams}`)
       if (mediaResponse.ok) {
         const data = await mediaResponse.json()
-        const { media, has_more } = data
+        const { media } = data
         console.log(`[TikTok Insights] Response for ${accountToUse.username}:`, {
           mediaCount: media?.length || 0,
-          hasMore: has_more,
           firstVideo: media?.[0] ? {
             title: media[0].title?.substring(0, 30),
             created_time: media[0].created_time
           } : null
         })
-        setRecentVideos(media || [])
-        setHasMoreVideos(has_more || false)
+        setAllVideos(media || [])
+        setDisplayLimit(5) // Reset display limit on new fetch
         setTokenExpired(false)
         setScopeError(false)
       } else {
@@ -155,8 +181,7 @@ export function TikTokInsights({ className }: TikTokInsightsProps) {
         if (errorData.scopeError) {
           setScopeError(true)
         }
-        setRecentVideos([])
-        setHasMoreVideos(false)
+        setAllVideos([])
       }
     } catch (error) {
       console.error('Error fetching TikTok insights:', error)
@@ -175,7 +200,7 @@ export function TikTokInsights({ className }: TikTokInsightsProps) {
 
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videosLimit])
+  }, [])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -326,10 +351,6 @@ export function TikTokInsights({ className }: TikTokInsightsProps) {
     }
     return null
   }
-
-  // Calculate total views and engagement from videos
-  const totalViews = recentVideos.reduce((sum, video) => sum + (video.metrics?.views || 0), 0)
-  const totalEngagement = recentVideos.reduce((sum, video) => sum + video.totalEngagement, 0)
 
   return (
     <div className={cn("space-y-6", className)}>
@@ -501,7 +522,7 @@ export function TikTokInsights({ className }: TikTokInsightsProps) {
       </Card>
 
       {/* Top Performing Videos */}
-      {recentVideos.length > 0 && (
+      {topVideos.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -509,12 +530,12 @@ export function TikTokInsights({ className }: TikTokInsightsProps) {
               Top Performing Videos
             </CardTitle>
             <CardDescription>
-              Your best videos based on engagement
+              Your best videos from the last 30 days based on views
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentVideos.slice(0, 3).map((video, index) => {
+              {topVideos.map((video, index) => {
                 const totalEngagement = video.totalEngagement
                 const formatDate = (dateString: string) => {
                   const date = new Date(dateString)
@@ -686,25 +707,11 @@ export function TikTokInsights({ className }: TikTokInsightsProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  const newLimit = videosLimit + 5
-                  setVideosLimit(newLimit)
-                  // Let useEffect handle loading state via setLoading()
-                }}
-                disabled={loading}
+                onClick={() => setDisplayLimit(prev => prev + 5)}
                 className="text-gray-600 hover:text-gray-900"
               >
-                {loading ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-4 w-4 mr-2" />
-                    Load More Videos
-                  </>
-                )}
+                <ChevronDown className="h-4 w-4 mr-2" />
+                Show More Videos
               </Button>
             </div>
           )}

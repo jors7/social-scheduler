@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -59,16 +59,33 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [userInsights, setUserInsights] = useState<any>(null)
-  const [recentPosts, setRecentPosts] = useState<InstagramPost[]>([])
+  const [allPosts, setAllPosts] = useState<InstagramPost[]>([]) // All fetched posts
+  const [displayLimit, setDisplayLimit] = useState(5) // How many to show in Recent Posts
   const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'days_28'>('week')
   const [hasInstagramAccount, setHasInstagramAccount] = useState(false)
   const [instagramAccounts, setInstagramAccounts] = useState<any[]>([])
   const [selectedAccount, setSelectedAccount] = useState<any>(null)
-  const [postsLimit, setPostsLimit] = useState(5)
-  const [hasMorePosts, setHasMorePosts] = useState(false)
-  const [loadingMore, setLoadingMore] = useState(false)
   const [tokenExpired, setTokenExpired] = useState(false)
   const [accountInfo, setAccountInfo] = useState<any>(null)
+
+  // Derived state: posts to display (sliced from allPosts)
+  const recentPosts = useMemo(() => allPosts.slice(0, displayLimit), [allPosts, displayLimit])
+  const hasMorePosts = displayLimit < allPosts.length
+
+  // Derived state: top performing posts (sorted by reach)
+  const topPosts = useMemo(() => {
+    if (allPosts.length === 0) return []
+
+    const sorted = [...allPosts].sort((a, b) => {
+      const aReach = a.metrics?.reach ?? a.metrics?.plays ?? 0
+      const bReach = b.metrics?.reach ?? b.metrics?.plays ?? 0
+      if (aReach !== bReach) return bReach - aReach
+      // If reach is equal, sort by date (newest first)
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    })
+
+    return sorted.slice(0, 3)
+  }, [allPosts])
 
   const fetchInstagramInsights = async (accountId?: string) => {
     try {
@@ -103,8 +120,9 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
       }
 
       // Fetch recent posts directly from Instagram (user insights will be calculated from post metrics)
+      // Fetch 30 posts to ensure Top Performing Posts shows data from last 30 days
       const mediaQueryParams = new URLSearchParams({
-        limit: postsLimit.toString(),
+        limit: '30',
         ...(accountToUse?.id && { accountId: accountToUse.id })
       })
       const mediaResponse = await fetch(`/api/instagram/media?${mediaQueryParams}`)
@@ -113,10 +131,8 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
 
         // Store account info for displaying limitations
         setAccountInfo(fetchedAccountInfo)
-
-        // Check if there might be more posts available
-        setHasMorePosts(media.length === postsLimit)
         setTokenExpired(false)
+        setDisplayLimit(5) // Reset display limit on new fetch
         
         // Fetch insights for each Instagram post
         const postsWithInsights = await Promise.all(
@@ -194,7 +210,7 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
           })
         )
 
-        setRecentPosts(postsWithInsights.filter(Boolean))
+        setAllPosts(postsWithInsights.filter(Boolean))
 
         // Calculate profile overview from post metrics instead of user insights API
         const profileMetrics = postsWithInsights.reduce((acc, post) => {
@@ -242,9 +258,10 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
     const timer = setTimeout(() => {
       fetchInstagramInsights()
     }, 100)
-    
+
     return () => clearTimeout(timer)
-  }, [selectedPeriod, postsLimit])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPeriod])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -548,7 +565,7 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
       )}
 
       {/* Top Performing Posts */}
-      {recentPosts.length > 0 && (
+      {topPosts.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -556,77 +573,51 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
               Top Performing Posts
             </CardTitle>
             <CardDescription>
-              Your best posts based on reach
+              Your best posts from the last 30 days based on reach
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {(() => {
-                // Calculate reach for each post
-                const postsWithReach = recentPosts.map(post => {
-                  const reachValue = post.metrics?.reach ?? post.metrics?.plays ?? 0;
-                  return { ...post, totalReachOrViews: reachValue };
-                });
+              {topPosts.map((post, index) => {
+                const reachValue = post.metrics?.reach ?? post.metrics?.plays ?? 0
 
-                // Debug logging
-                console.log('[Instagram] Posts reach before sorting:',
-                  postsWithReach.map(p => ({
-                    caption: p.caption?.substring(0, 30),
-                    reach: p.totalReachOrViews,
-                    date: p.timestamp
-                  }))
-                );
+                const formatDate = (dateString: string) => {
+                  const date = new Date(dateString)
+                  const now = new Date()
+                  const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
 
-                // Sort by reach (highest first), then by date if equal
-                const sortedPosts = postsWithReach.sort((a, b) => {
-                  // First sort by reach
-                  if (a.totalReachOrViews !== b.totalReachOrViews) {
-                    return b.totalReachOrViews - a.totalReachOrViews;
+                  if (diffInHours < 24) {
+                    return `${Math.floor(diffInHours)}h ago`
+                  } else if (diffInHours < 48) {
+                    return 'Yesterday'
+                  } else {
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                   }
-                  // If reach is equal, sort by date (newest first)
-                  return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-                });
-                
-                // Take top 3 posts
-                return sortedPosts.slice(0, 3).map((post, index) => {
-                  const formatDate = (dateString: string) => {
-                    const date = new Date(dateString)
-                    const now = new Date()
-                    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+                }
 
-                    if (diffInHours < 24) {
-                      return `${Math.floor(diffInHours)}h ago`
-                    } else if (diffInHours < 48) {
-                      return 'Yesterday'
-                    } else {
-                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                    }
-                  }
-
-                  return (
-                    <div key={post.id} className="flex items-start gap-3">
-                      <div className={cn(
-                        "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm",
-                        index === 0 && "bg-gradient-to-r from-yellow-400 to-orange-400",
-                        index === 1 && "bg-gradient-to-r from-gray-400 to-gray-500",
-                        index === 2 && "bg-gradient-to-r from-orange-400 to-orange-500"
-                      )}>
-                        {index + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-700 line-clamp-2">{post.caption || 'No caption'}</p>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Eye className="h-3 w-3" />
-                            <span>{formatNumber(post.totalReachOrViews)}</span>
-                          </div>
-                          <span>{formatDate(post.timestamp)}</span>
+                return (
+                  <div key={post.id} className="flex items-start gap-3">
+                    <div className={cn(
+                      "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm",
+                      index === 0 && "bg-gradient-to-r from-yellow-400 to-orange-400",
+                      index === 1 && "bg-gradient-to-r from-gray-400 to-gray-500",
+                      index === 2 && "bg-gradient-to-r from-orange-400 to-orange-500"
+                    )}>
+                      {index + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-700 line-clamp-2">{post.caption || 'No caption'}</p>
+                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          <span>{formatNumber(reachValue)}</span>
                         </div>
+                        <span>{formatDate(post.timestamp)}</span>
                       </div>
                     </div>
-                  )
-                })
-              })()}
+                  </div>
+                )
+              })}
             </div>
           </CardContent>
         </Card>
@@ -770,25 +761,11 @@ export function InstagramInsights({ className }: InstagramInsightsProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  const newLimit = postsLimit + 5
-                  setPostsLimit(newLimit)
-                  // Let useEffect handle loading state via setLoading()
-                }}
-                disabled={loading}
+                onClick={() => setDisplayLimit(prev => Math.min(prev + 5, allPosts.length))}
                 className="text-gray-600 hover:text-gray-900"
               >
-                {loading ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-4 w-4 mr-2" />
-                    Load More Posts
-                  </>
-                )}
+                <ChevronDown className="h-4 w-4 mr-2" />
+                Show More ({allPosts.length - displayLimit} remaining)
               </Button>
             </div>
           )}

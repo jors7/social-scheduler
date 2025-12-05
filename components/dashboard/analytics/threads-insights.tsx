@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -53,15 +53,42 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [userInsights, setUserInsights] = useState<any>(null)
-  const [recentPosts, setRecentPosts] = useState<ThreadsPost[]>([])
+  const [allPosts, setAllPosts] = useState<ThreadsPost[]>([]) // All fetched posts
+  const [displayLimit, setDisplayLimit] = useState(5) // How many to show in Recent Posts
   const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'days_28'>('week')
   const [hasThreadsAccount, setHasThreadsAccount] = useState(false)
   const [threadsAccounts, setThreadsAccounts] = useState<any[]>([])
   const [selectedAccount, setSelectedAccount] = useState<any>(null)
-  const [postsLimit, setPostsLimit] = useState(5)
-  const [hasMorePosts, setHasMorePosts] = useState(false)
-  const [loadingMore, setLoadingMore] = useState(false)
   const [historicalMetrics, setHistoricalMetrics] = useState<any>(null)
+
+  // Derived state: posts to display (sliced from allPosts)
+  const recentPosts = useMemo(() => allPosts.slice(0, displayLimit), [allPosts, displayLimit])
+  const hasMorePosts = displayLimit < allPosts.length
+
+  // Derived state: top performing posts (sorted by views)
+  const topPosts = useMemo(() => {
+    if (allPosts.length === 0) return []
+
+    const sorted = [...allPosts].sort((a, b) => {
+      const aViews = a.metrics?.views ?? 0
+      const bViews = b.metrics?.views ?? 0
+      if (aViews !== bViews) return bViews - aViews
+      // If views are equal, sort by date (newest first)
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    })
+
+    return sorted.slice(0, 3)
+  }, [allPosts])
+
+  // Calculate total metrics from all posts (not just displayed ones)
+  const totalMetrics = useMemo(() => allPosts.reduce((acc, post) => ({
+    views: acc.views + (post.metrics?.views || 0),
+    likes: acc.likes + (post.metrics?.likes || 0),
+    replies: acc.replies + (post.metrics?.replies || 0),
+    reposts: acc.reposts + (post.metrics?.reposts || 0),
+    quotes: acc.quotes + (post.metrics?.quotes || 0),
+    shares: acc.shares + (post.metrics?.shares || 0)
+  }), { views: 0, likes: 0, replies: 0, reposts: 0, quotes: 0, shares: 0 }), [allPosts])
 
   const fetchThreadsInsights = async (accountId?: string, forceRefresh: boolean = false) => {
     try {
@@ -102,16 +129,16 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
       }
 
       // Fetch recent posts directly from Threads API (like Instagram does)
-      // This ensures deleted posts don't show up
+      // Fetch 30 posts to ensure Top Performing Posts shows data from last 30 days
       const selectedAccountId = accountToUse.id
       const mediaQueryParams = new URLSearchParams({
-        limit: postsLimit.toString(),
+        limit: '30',
         ...(selectedAccountId && { accountId: selectedAccountId })
       })
       const mediaResponse = await fetch(`/api/threads/media?${mediaQueryParams}`)
       if (mediaResponse.ok) {
         const data = await mediaResponse.json()
-        
+
         // Check if the response indicates a token issue
         if (data.needsReconnect) {
           toast.error('Threads token expired. Please reconnect your account.')
@@ -120,11 +147,9 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
           }, 2000)
           return
         }
-        
+
         const { media } = data
-        
-        // Check if there might be more posts available
-        setHasMorePosts(media && media.length === postsLimit)
+        setDisplayLimit(5) // Reset display limit on new fetch
         
         // Convert API response to ThreadsPost format
         const threadsPostsData: ThreadsPost[] = media.map((post: any) => ({
@@ -145,7 +170,7 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
           }
         }))
         
-        setRecentPosts(threadsPostsData)
+        setAllPosts(threadsPostsData)
       } else {
         const errorData = await mediaResponse.json()
         if (errorData.needsReconnect) {
@@ -211,9 +236,10 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
     const timer = setTimeout(() => {
       fetchThreadsInsights()
     }, 100)
-    
+
     return () => clearTimeout(timer)
-  }, [selectedPeriod, postsLimit])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPeriod])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -400,16 +426,6 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
     return null
   }
 
-  // Calculate total metrics from recent posts
-  const totalMetrics = recentPosts.reduce((acc, post) => ({
-    views: acc.views + (post.metrics?.views || 0),
-    likes: acc.likes + (post.metrics?.likes || 0),
-    replies: acc.replies + (post.metrics?.replies || 0),
-    reposts: acc.reposts + (post.metrics?.reposts || 0),
-    quotes: acc.quotes + (post.metrics?.quotes || 0),
-    shares: acc.shares + (post.metrics?.shares || 0)
-  }), { views: 0, likes: 0, replies: 0, reposts: 0, quotes: 0, shares: 0 })
-
   return (
     <div className={cn("space-y-6", className)}>
       {/* Profile Overview */}
@@ -554,7 +570,7 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
       </Card>
 
       {/* Top Performing Posts */}
-      {recentPosts.length > 0 && (
+      {topPosts.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -562,77 +578,51 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
               Top Performing Posts
             </CardTitle>
             <CardDescription>
-              Your best posts based on views
+              Your best posts from the last 30 days based on views
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {(() => {
-                // Calculate views for each post
-                const postsWithViews = recentPosts.map(post => {
-                  const viewsValue = post.metrics?.views ?? 0;
-                  return { ...post, totalReachOrViews: viewsValue };
-                });
+              {topPosts.map((post, index) => {
+                const viewsValue = post.metrics?.views ?? 0
 
-                // Debug logging
-                console.log('[Threads] Posts views before sorting:',
-                  postsWithViews.map(p => ({
-                    text: p.text?.substring(0, 30),
-                    views: p.totalReachOrViews,
-                    date: p.timestamp
-                  }))
-                );
+                const formatDate = (dateString: string) => {
+                  const date = new Date(dateString)
+                  const now = new Date()
+                  const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
 
-                // Sort by views (highest first), then by date if equal
-                const sortedPosts = postsWithViews.sort((a, b) => {
-                  // First sort by views
-                  if (a.totalReachOrViews !== b.totalReachOrViews) {
-                    return b.totalReachOrViews - a.totalReachOrViews;
+                  if (diffInHours < 24) {
+                    return `${Math.floor(diffInHours)}h ago`
+                  } else if (diffInHours < 48) {
+                    return 'Yesterday'
+                  } else {
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                   }
-                  // If views are equal, sort by date (newest first)
-                  return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-                });
-                
-                // Take top 3 posts
-                return sortedPosts.slice(0, 3).map((post, index) => {
-                  const formatDate = (dateString: string) => {
-                    const date = new Date(dateString)
-                    const now = new Date()
-                    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+                }
 
-                    if (diffInHours < 24) {
-                      return `${Math.floor(diffInHours)}h ago`
-                    } else if (diffInHours < 48) {
-                      return 'Yesterday'
-                    } else {
-                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                    }
-                  }
-
-                  return (
-                    <div key={post.id} className="flex items-start gap-3">
-                      <div className={cn(
-                        "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm",
-                        index === 0 && "bg-gradient-to-r from-yellow-400 to-orange-400",
-                        index === 1 && "bg-gradient-to-r from-gray-400 to-gray-500",
-                        index === 2 && "bg-gradient-to-r from-orange-400 to-orange-500"
-                      )}>
-                        {index + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-700 line-clamp-2">{post.text || 'No text'}</p>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Eye className="h-3 w-3" />
-                            <span>{formatNumber(post.totalReachOrViews)}</span>
-                          </div>
-                          <span>{formatDate(post.timestamp)}</span>
+                return (
+                  <div key={post.id} className="flex items-start gap-3">
+                    <div className={cn(
+                      "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm",
+                      index === 0 && "bg-gradient-to-r from-yellow-400 to-orange-400",
+                      index === 1 && "bg-gradient-to-r from-gray-400 to-gray-500",
+                      index === 2 && "bg-gradient-to-r from-orange-400 to-orange-500"
+                    )}>
+                      {index + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-700 line-clamp-2">{post.text || 'No text'}</p>
+                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          <span>{formatNumber(viewsValue)}</span>
                         </div>
+                        <span>{formatDate(post.timestamp)}</span>
                       </div>
                     </div>
-                  )
-                })
-              })()}
+                  </div>
+                )
+              })}
             </div>
           </CardContent>
         </Card>
@@ -776,25 +766,11 @@ export function ThreadsInsights({ className }: ThreadsInsightsProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  const newLimit = postsLimit + 5
-                  setPostsLimit(newLimit)
-                  // Let useEffect handle loading state via setLoading()
-                }}
-                disabled={loading}
+                onClick={() => setDisplayLimit(prev => Math.min(prev + 5, allPosts.length))}
                 className="text-gray-600 hover:text-gray-900"
               >
-                {loading ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-4 w-4 mr-2" />
-                    Load More Posts
-                  </>
-                )}
+                <ChevronDown className="h-4 w-4 mr-2" />
+                Show More ({allPosts.length - displayLimit} remaining)
               </Button>
             </div>
           )}
