@@ -230,8 +230,8 @@ export function Sidebar() {
     <div className={cn("flex flex-col h-full", collapsed && "overflow-visible")}>
       {/* Logo Section */}
       <div className={cn(
-        "h-16 flex items-center bg-white border-b transition-all duration-300",
-        collapsed ? "px-3 justify-center" : "px-4 justify-between"
+        "flex bg-white border-b transition-all duration-300",
+        collapsed ? "flex-col items-center px-3 py-3" : "flex-row items-center justify-between h-16 px-4"
       )}>
         <Link href="/" className="flex items-center gap-2">
           <Image
@@ -257,7 +257,10 @@ export function Sidebar() {
         {!isMobileMenuOpen && (
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden lg:flex p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+            className={cn(
+              "hidden lg:flex p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200",
+              collapsed && "mt-2"
+            )}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <ChevronsLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
