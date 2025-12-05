@@ -27,6 +27,7 @@ import {
   LogOut,
   ChevronRight,
   ChevronLeft,
+  ChevronsLeft,
   Menu,
   X,
   Upload,
@@ -44,9 +45,7 @@ import {
   FileCode,
   Bell,
   Mail,
-  LucideIcon,
-  PanelLeftClose,
-  PanelLeft
+  LucideIcon
 } from 'lucide-react'
 
 type NavigationItem = {
@@ -232,7 +231,7 @@ export function Sidebar() {
       {/* Logo Section */}
       <div className={cn(
         "h-16 flex items-center bg-white border-b transition-all duration-300",
-        collapsed ? "px-3 justify-center" : "px-6"
+        collapsed ? "px-3 justify-center" : "px-4 justify-between"
       )}>
         <Link href="/" className="flex items-center gap-2">
           <Image
@@ -254,6 +253,16 @@ export function Sidebar() {
             </span>
           )}
         </Link>
+        {/* Collapse toggle - desktop only */}
+        {!isMobileMenuOpen && (
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="hidden lg:flex p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <ChevronsLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
+          </button>
+        )}
       </div>
 
       <div className={cn(
@@ -486,29 +495,6 @@ export function Sidebar() {
           )})}
         </nav>
       </div>
-
-      {/* Collapse Toggle Button (Desktop only) */}
-      {!isMobileMenuOpen && (
-        <div className={cn("hidden lg:block px-3 py-2 bg-gray-50 border-t border-gray-100", collapsed && "px-2")}>
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className={cn(
-              "flex items-center rounded-lg text-sm text-gray-500 hover:text-gray-700 hover:bg-white transition-all duration-200",
-              collapsed ? "w-full justify-center p-2.5" : "w-full px-3 py-2"
-            )}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? (
-              <PanelLeft className="h-4 w-4" />
-            ) : (
-              <>
-                <PanelLeftClose className="h-4 w-4 mr-2" />
-                Collapse
-              </>
-            )}
-          </button>
-        </div>
-      )}
 
       {/* Account Section */}
       <div className={cn(
