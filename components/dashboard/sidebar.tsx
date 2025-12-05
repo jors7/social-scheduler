@@ -257,8 +257,8 @@ export function Sidebar() {
     <div className={cn("flex flex-col h-full", collapsed && "overflow-visible")}>
       {/* Logo Section */}
       <div className={cn(
-        "flex bg-white border-b transition-all duration-300",
-        collapsed ? "flex-col items-center px-3 py-3" : "flex-row items-center justify-between h-16 px-4"
+        "flex bg-white border-b transition-all duration-300 shrink-0",
+        collapsed ? "flex-col items-center px-3 py-3" : "flex-row items-center justify-between min-h-[64px] h-16 px-4"
       )}>
         <Link href="/" className="flex items-center gap-2">
           <Image
@@ -295,7 +295,10 @@ export function Sidebar() {
         )}
       </div>
 
-      <div className="flex-1 relative bg-gray-50">
+      <div className={cn(
+        "flex-1 relative bg-gray-50 min-h-0",
+        collapsed ? "overflow-visible" : "overflow-hidden"
+      )}>
         {/* Top fade indicator */}
         {!collapsed && showTopFade && (
           <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-gray-50 to-transparent z-10 pointer-events-none" />
@@ -307,10 +310,8 @@ export function Sidebar() {
         <div
           ref={!collapsed ? scrollRef : undefined}
           className={cn(
-            "h-full",
-            collapsed ? "overflow-visible" : "overflow-y-auto scrollbar-hide"
+            collapsed ? "overflow-visible" : "absolute inset-0 overflow-y-auto scrollbar-hide"
           )}
-          style={!collapsed ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
         >
         {/* Create Post Button */}
         <div className={cn("py-4 transition-all duration-300", collapsed ? "px-2" : "px-4")}>
