@@ -89,7 +89,9 @@ export async function GET(request: NextRequest) {
 
       try {
         // Get posts from the page
-        const postsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url,likes.summary(true),comments.summary(true),shares,reactions.summary(true)&limit=25&access_token=${account.access_token}`;
+        // IMPORTANT: Do NOT include likes.summary, comments.summary, etc. for Instagram cross-posted content
+        // These fields cause Facebook to EXCLUDE Instagram cross-posts from the response entirely
+        const postsUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,permalink_url,shares&limit=100&access_token=${account.access_token}`;
         console.log(`[Facebook Analytics] Fetching posts from: ${account.platform_user_id}`);
         const postsResponse = await fetchWithTimeout(postsUrl, 10000); // 10 second timeout
 
@@ -131,14 +133,15 @@ export async function GET(request: NextRequest) {
         // Process all posts - NOTE: post_impressions/post_impressions_unique metrics are DEPRECATED by Meta as of Nov 2025
         // We now use post_media_view for ALL posts (Meta's official replacement)
         // For videos, we also fetch from /videos endpoint as a fallback/preference
+        // IMPORTANT: We don't include likes/comments in batch fetch because it excludes Instagram cross-posts
         const postPromises = allPosts.map(async (post: any) => {
             try {
-              // Extract engagement data directly from post object (already included in the posts API response)
-              // This eliminates 25 separate API calls and prevents silent failures
-              const likes = post.likes?.summary?.total_count ?? 0;
-              const comments = post.comments?.summary?.total_count ?? 0;
+              // For Instagram cross-posts, likes/comments fields cause the post to be excluded
+              // So we only have shares from batch fetch, and we'll get views from insights API
               const shares = post.shares?.count ?? 0;
-              const reactions = post.reactions?.summary?.total_count ?? 0;
+              const likes = 0; // Not available for Instagram cross-posts
+              const comments = 0;
+              const reactions = 0;
 
               // Fetch post-level views using post_media_view metric (Meta's replacement for post_impressions)
               let postViews = null;

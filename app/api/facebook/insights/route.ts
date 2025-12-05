@@ -90,123 +90,152 @@ export async function GET(request: NextRequest) {
       let totalEngagement = 0;
       let totalPageViews = 0;
       let fetchedPostsCount = 0;
-      
-      try {
-        // Fetch both posts and videos in parallel (videos include reels with view counts)
-        const [postsResponse, videosResponse] = await Promise.all([
-          fetch(`https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,full_picture,attachments,likes.summary(true),comments.summary(true),shares,reactions.summary(true)&limit=25&access_token=${account.access_token}`),
-          fetch(`https://graph.facebook.com/v21.0/${account.platform_user_id}/videos?fields=id,title,description,created_time,views,likes.summary(true),comments.summary(true)&limit=25&access_token=${account.access_token}`).catch(() => null)
-        ]);
-        
-        if (postsResponse.ok) {
-          const postsData = await postsResponse.json();
-          const posts = postsData.data || [];
-          fetchedPostsCount = posts.length;
-          
-          console.log(`[${account.display_name || account.username}] Fetched ${posts.length} posts from Facebook API`);
-          
-          // Process each post
-          for (const post of posts) {
-            // Calculate engagement from the data we already have
-            const postEngagement = 
-              (post.likes?.summary?.total_count || 0) +
-              (post.comments?.summary?.total_count || 0) +
-              (post.shares?.count || 0) +
-              (post.reactions?.summary?.total_count || 0);
-            
-            totalEngagement += postEngagement;
-            
-            // Try to get insights for views (Meta's replacement for deprecated post_impressions as of Nov 2025)
-            try {
-              const insightsUrl = `https://graph.facebook.com/v21.0/${post.id}/insights?metric=post_media_view&access_token=${account.access_token}`;
-              const insightsResponse = await fetch(insightsUrl);
-              
-              if (insightsResponse.ok) {
-                const insightsData = await insightsResponse.json();
-                console.log(`[${account.display_name || account.username}] Post ${post.id} insights API response:`, JSON.stringify(insightsData, null, 2));
-                if (insightsData.data && Array.isArray(insightsData.data)) {
-                  let postHasInsights = false;
-                  insightsData.data.forEach((metric: any) => {
-                    if (metric.name === 'post_media_view' && metric.values?.[0]) {
-                      const value = metric.values[0].value || 0;
-                      totalImpressions += value;
-                      totalReach += value; // post_media_view represents both views and unique reach
-                      console.log(`[${account.display_name || account.username}] Post ${post.id} views: ${value}`);
-                      postHasInsights = true;
-                    }
-                  });
 
-                  // If no insights, estimate from engagement
-                  if (!postHasInsights && postEngagement > 0) {
-                    const estimatedReach = postEngagement * 10; // Rough estimate
-                    const estimatedImpressions = estimatedReach * 2;
-                    totalReach += estimatedReach;
-                    totalImpressions += estimatedImpressions;
-                    console.log(`[${account.display_name || account.username}] ⚠️ FALLBACK: Post ${post.id} - Using estimated metrics from engagement (${postEngagement}): reach=${estimatedReach}, impressions=${estimatedImpressions}`);
-                  } else if (!postHasInsights) {
-                    console.log(`[${account.display_name || account.username}] ⚠️ NO DATA: Post ${post.id} - No insights data and no engagement to estimate from`);
+      try {
+        // IMPORTANT: Do NOT include full_picture, attachments, or likes.summary for Instagram cross-posted content
+        // These fields cause Facebook to EXCLUDE Instagram cross-posts from the response entirely
+        const startTime = Date.now();
+
+        // Calculate 30 days ago timestamp for date filtering
+        const since30Days = Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60);
+
+        // Fetch ALL posts with pagination (not just first 100)
+        let allPosts: any[] = [];
+        let nextUrl: string | null = `https://graph.facebook.com/v21.0/${account.platform_user_id}/posts?fields=id,message,created_time,shares&limit=100&since=${since30Days}&access_token=${account.access_token}`;
+        let pageCount = 0;
+        const maxPages = 5; // Safety limit
+
+        while (nextUrl && pageCount < maxPages) {
+          const response: Response = await fetch(nextUrl);
+          if (!response.ok) break;
+
+          const data = await response.json();
+          const posts = data.data || [];
+          allPosts = allPosts.concat(posts);
+
+          pageCount++;
+          nextUrl = data.paging?.next || null;
+
+          console.log(`[${account.display_name || account.username}] Fetched page ${pageCount}: ${posts.length} posts (total: ${allPosts.length})`);
+
+          // Stop if we have enough posts
+          if (allPosts.length >= 200) break;
+        }
+
+        // Also fetch videos in parallel (they have view counts)
+        const videosResponse = await fetch(`https://graph.facebook.com/v21.0/${account.platform_user_id}/videos?fields=id,title,description,created_time,views&limit=50&since=${since30Days}&access_token=${account.access_token}`).catch(() => null);
+
+        const posts = allPosts;
+        fetchedPostsCount = posts.length;
+
+        console.log(`[${account.display_name || account.username}] Total: ${posts.length} posts fetched in ${Date.now() - startTime}ms across ${pageCount} pages`);
+
+        if (posts.length > 0) {
+
+          // Use Facebook Batch API to fetch metrics for all posts at once
+          // Facebook allows max 50 requests per batch call
+          // Since we make 2 requests per post (engagement + insights), max 25 posts per batch
+          const BATCH_SIZE = 25;
+          for (let i = 0; i < posts.length; i += BATCH_SIZE) {
+            const batch = posts.slice(i, i + BATCH_SIZE);
+
+            // Build batch requests for both engagement AND insights
+            const batchRequests = batch.flatMap((post: any) => [
+              // Request 1: Engagement (may fail for Instagram cross-posts)
+              {
+                method: 'GET',
+                relative_url: `${post.id}?fields=likes.summary(true),comments.summary(true),shares`
+              },
+              // Request 2: Insights for views
+              {
+                method: 'GET',
+                relative_url: `${post.id}/insights?metric=post_media_view`
+              }
+            ]);
+
+            try {
+              const batchStartTime = Date.now();
+              const batchResponse = await fetch(
+                `https://graph.facebook.com/v21.0/?batch=${encodeURIComponent(JSON.stringify(batchRequests))}&access_token=${account.access_token}`,
+                { method: 'POST' }
+              );
+
+              if (batchResponse.ok) {
+                const batchResults = await batchResponse.json();
+                console.log(`[${account.display_name || account.username}] Batch API returned ${batchResults?.length || 0} results in ${Date.now() - batchStartTime}ms`);
+
+                // Process batch results - each post has 2 responses
+                for (let j = 0; j < batch.length; j++) {
+                  const post = batch[j];
+                  const engagementResult = batchResults[j * 2];
+                  const insightsResult = batchResults[j * 2 + 1];
+
+                  // Process engagement (may be error for Instagram cross-posts)
+                  if (engagementResult?.code === 200 && engagementResult?.body) {
+                    try {
+                      const engagementData = JSON.parse(engagementResult.body);
+                      const postLikes = engagementData.likes?.summary?.total_count || 0;
+                      const postComments = engagementData.comments?.summary?.total_count || 0;
+                      const postShares = engagementData.shares?.count || post.shares?.count || 0;
+                      totalEngagement += postLikes + postComments + postShares;
+                    } catch (e) {
+                      // Parse error, use shares from initial fetch
+                      totalEngagement += post.shares?.count || 0;
+                    }
+                  } else {
+                    // Engagement failed (likely Instagram cross-post), use shares from initial fetch
+                    totalEngagement += post.shares?.count || 0;
+                  }
+
+                  // Process insights (should work for all posts)
+                  if (insightsResult?.code === 200 && insightsResult?.body) {
+                    try {
+                      const insightsData = JSON.parse(insightsResult.body);
+                      if (insightsData.data && Array.isArray(insightsData.data)) {
+                        insightsData.data.forEach((metric: any) => {
+                          if (metric.name === 'post_media_view' && metric.values?.[0]) {
+                            const value = metric.values[0].value || 0;
+                            totalImpressions += value;
+                            totalReach += value;
+                          }
+                        });
+                      }
+                    } catch (e) {
+                      // Parse error, continue
+                    }
                   }
                 }
               } else {
-                // Log API failure details
-                const errorText = await insightsResponse.text();
-                console.error(`[${account.display_name || account.username}] ❌ Insights API failed for post ${post.id}. Status: ${insightsResponse.status}, Response:`, errorText);
-
-                // If insights API fails, use engagement-based estimates
-                if (postEngagement > 0) {
-                  const estimatedReach = postEngagement * 10;
-                  const estimatedImpressions = estimatedReach * 2;
-                  totalReach += estimatedReach;
-                  totalImpressions += estimatedImpressions;
-                  console.log(`[${account.display_name || account.username}] ⚠️ FALLBACK: Post ${post.id} - Insights API failed, using estimates from engagement: reach=${estimatedReach}, impressions=${estimatedImpressions}`);
-                } else {
-                  console.log(`[${account.display_name || account.username}] ⚠️ NO DATA: Post ${post.id} - Insights API failed and no engagement to estimate from`);
-                }
+                console.error(`[${account.display_name || account.username}] Batch API failed with status ${batchResponse.status}`);
               }
-            } catch (error: any) {
-              // Log specific error for debugging
-              console.log(`[${account.display_name || account.username}] Post insights error for ${post.id}:`, error.message || error);
-              // Use engagement-based fallback
-              if (postEngagement > 0) {
-                const estimatedReach = postEngagement * 10;
-                const estimatedImpressions = estimatedReach * 2;
-                totalReach += estimatedReach;
-                totalImpressions += estimatedImpressions;
-                console.log(`[${account.display_name || account.username}] Post ${post.id} - Error fetching insights, using estimates`);
-              }
+            } catch (batchError: any) {
+              console.error(`[${account.display_name || account.username}] Batch API error:`, batchError.message);
             }
           }
         }
-        
+
         // Also process videos if available (they often have view counts)
         if (videosResponse && videosResponse.ok) {
           const videosData = await videosResponse.json();
           const videos = videosData.data || [];
-          
+
           console.log(`[${account.display_name || account.username}] Fetched ${videos.length} videos from Facebook API`);
-          
+
           for (const video of videos) {
             // Videos have direct view counts
             if (video.views) {
               totalImpressions += video.views;
-              totalReach += Math.floor(video.views * 0.7); // Estimate reach from views
-              console.log(`[${account.display_name || account.username}] Video ${video.id} views: ${video.views}`);
+              totalReach += Math.floor(video.views * 0.7);
             }
-            
-            // Add video engagement
-            const videoEngagement = 
-              (video.likes?.summary?.total_count || 0) +
-              (video.comments?.summary?.total_count || 0);
-            
-            totalEngagement += videoEngagement;
           }
         }
-        
+
+        console.log(`[${account.display_name || account.username}] Total processing time: ${Date.now() - startTime}ms`);
+
         // Use impressions as proxy for page views
         totalPageViews = Math.floor(totalImpressions * 0.3);
       } catch (error: any) {
         console.error(`[${account.display_name || account.username}] Error fetching Facebook posts:`, error.message || error);
-        // Check if it's a permission error
         if (error.message?.includes('permission') || error.message?.includes('OAuthException')) {
           console.error(`[${account.display_name || account.username}] Likely missing permissions for insights`);
         }
