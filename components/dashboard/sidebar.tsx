@@ -144,12 +144,8 @@ export function Sidebar() {
       scrollElement.addEventListener('scroll', checkScroll)
       window.addEventListener('resize', checkScroll)
 
-      // Also check periodically for content changes
-      const intervalId = setInterval(checkScroll, 500)
-
       return () => {
         clearTimeout(timeoutId)
-        clearInterval(intervalId)
         scrollElement.removeEventListener('scroll', checkScroll)
         window.removeEventListener('resize', checkScroll)
       }
