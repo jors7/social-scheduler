@@ -129,24 +129,32 @@ export function Sidebar() {
   const checkScroll = useCallback(() => {
     if (scrollRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = scrollRef.current
+      const hasOverflow = scrollHeight > clientHeight
       setShowTopFade(scrollTop > 10)
-      setShowBottomFade(scrollTop < scrollHeight - clientHeight - 10)
+      setShowBottomFade(hasOverflow && scrollTop < scrollHeight - clientHeight - 10)
     }
   }, [])
 
   useEffect(() => {
     const scrollElement = scrollRef.current
-    if (scrollElement) {
-      checkScroll()
+    if (scrollElement && !isCollapsed) {
+      // Initial check with delay to ensure content is rendered
+      const timeoutId = setTimeout(checkScroll, 100)
+
       scrollElement.addEventListener('scroll', checkScroll)
-      // Also check on resize
       window.addEventListener('resize', checkScroll)
+
+      // Also check periodically for content changes
+      const intervalId = setInterval(checkScroll, 500)
+
       return () => {
+        clearTimeout(timeoutId)
+        clearInterval(intervalId)
         scrollElement.removeEventListener('scroll', checkScroll)
         window.removeEventListener('resize', checkScroll)
       }
     }
-  }, [checkScroll, isCollapsed])
+  }, [checkScroll, isCollapsed, navigationItems])
   
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
