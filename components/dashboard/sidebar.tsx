@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
@@ -120,6 +120,33 @@ export function Sidebar() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [navigationItems, setNavigationItems] = useState<NavigationItem[]>(navigation)
+
+  // Scroll fade indicators
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [showTopFade, setShowTopFade] = useState(false)
+  const [showBottomFade, setShowBottomFade] = useState(false)
+
+  const checkScroll = useCallback(() => {
+    if (scrollRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current
+      setShowTopFade(scrollTop > 10)
+      setShowBottomFade(scrollTop < scrollHeight - clientHeight - 10)
+    }
+  }, [])
+
+  useEffect(() => {
+    const scrollElement = scrollRef.current
+    if (scrollElement) {
+      checkScroll()
+      scrollElement.addEventListener('scroll', checkScroll)
+      // Also check on resize
+      window.addEventListener('resize', checkScroll)
+      return () => {
+        scrollElement.removeEventListener('scroll', checkScroll)
+        window.removeEventListener('resize', checkScroll)
+      }
+    }
+  }, [checkScroll, isCollapsed])
   
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
@@ -268,10 +295,23 @@ export function Sidebar() {
         )}
       </div>
 
-      <div className={cn(
-        "flex-1 bg-gray-50",
-        collapsed ? "overflow-visible" : "overflow-y-auto"
-      )}>
+      <div className="flex-1 relative bg-gray-50">
+        {/* Top fade indicator */}
+        {!collapsed && showTopFade && (
+          <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-gray-50 to-transparent z-10 pointer-events-none" />
+        )}
+        {/* Bottom fade indicator */}
+        {!collapsed && showBottomFade && (
+          <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-gray-50 to-transparent z-10 pointer-events-none" />
+        )}
+        <div
+          ref={!collapsed ? scrollRef : undefined}
+          className={cn(
+            "h-full",
+            collapsed ? "overflow-visible" : "overflow-y-auto scrollbar-hide"
+          )}
+          style={!collapsed ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : undefined}
+        >
         {/* Create Post Button */}
         <div className={cn("py-4 transition-all duration-300", collapsed ? "px-2" : "px-4")}>
           {collapsed ? (
@@ -497,6 +537,7 @@ export function Sidebar() {
             </div>
           )})}
         </nav>
+        </div>
       </div>
 
       {/* Account Section */}
