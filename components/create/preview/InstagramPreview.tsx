@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { stripHtml, truncateText, getAllEntities, isVideoUrl } from './preview-utils'
 
 interface InstagramPreviewProps {
@@ -9,10 +11,20 @@ interface InstagramPreviewProps {
 }
 
 export function InstagramPreview({ content, mediaUrls = [], format = 'feed-portrait' }: InstagramPreviewProps) {
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
+
   const plainText = stripHtml(content)
   // Instagram shows ~125 chars then "...more"
   const { text, truncated } = truncateText(plainText, 125, 'soft')
   const entities = getAllEntities(text)
+
+  const handlePrevMedia = () => {
+    setCurrentMediaIndex((prev) => (prev > 0 ? prev - 1 : mediaUrls.length - 1))
+  }
+
+  const handleNextMedia = () => {
+    setCurrentMediaIndex((prev) => (prev < mediaUrls.length - 1 ? prev + 1 : 0))
+  }
 
   // Determine aspect ratio based on format
   const getAspectRatio = () => {
@@ -74,19 +86,39 @@ export function InstagramPreview({ content, mediaUrls = [], format = 'feed-portr
         {/* Story/Reel container - 9:16 aspect ratio */}
         {mediaUrls && mediaUrls.length > 0 ? (
           <div className={`relative bg-gray-900 ${getAspectRatio()}`}>
-            {isVideoUrl(mediaUrls[0]) ? (
+            {isVideoUrl(mediaUrls[currentMediaIndex]) ? (
               <video
-                src={mediaUrls[0]}
+                src={mediaUrls[currentMediaIndex]}
                 className="w-full h-full object-cover"
                 muted
                 preload="metadata"
               />
             ) : (
               <img
-                src={mediaUrls[0]}
+                src={mediaUrls[currentMediaIndex]}
                 alt=""
                 className="w-full h-full object-cover"
               />
+            )}
+
+            {/* Navigation arrows (only show if multiple media) */}
+            {mediaUrls.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrevMedia}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors"
+                  aria-label="Previous media"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleNextMedia}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors"
+                  aria-label="Next media"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </>
             )}
 
             {/* Top header */}
@@ -96,6 +128,19 @@ export function InstagramPreview({ content, mediaUrls = [], format = 'feed-portr
                 <span className="text-white font-semibold text-sm">your_username</span>
                 <span className="text-white/80 text-xs">1m</span>
               </div>
+              {/* Carousel indicators */}
+              {mediaUrls.length > 1 && (
+                <div className="flex gap-1 mt-3">
+                  {mediaUrls.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`h-0.5 flex-1 rounded-full transition-colors ${
+                        index === currentMediaIndex ? 'bg-white' : 'bg-white/40'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Bottom caption area (if there's content) */}
@@ -151,25 +196,61 @@ export function InstagramPreview({ content, mediaUrls = [], format = 'feed-portr
       {/* Image - Dynamic aspect ratio based on format */}
       {mediaUrls && mediaUrls.length > 0 ? (
         <div className={`relative bg-gray-100 ${getAspectRatio()}`}>
-          {isVideoUrl(mediaUrls[0]) ? (
+          {isVideoUrl(mediaUrls[currentMediaIndex]) ? (
             <video
-              src={mediaUrls[0]}
+              src={mediaUrls[currentMediaIndex]}
               className="w-full h-full object-cover"
               muted
               preload="metadata"
             />
           ) : (
             <img
-              src={mediaUrls[0]}
+              src={mediaUrls[currentMediaIndex]}
               alt=""
               className="w-full h-full object-cover"
             />
           )}
+
+          {/* Navigation arrows (only show if multiple media) */}
+          {mediaUrls.length > 1 && (
+            <>
+              <button
+                onClick={handlePrevMedia}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors"
+                aria-label="Previous media"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleNextMedia}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors"
+                aria-label="Next media"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </>
+          )}
+
           {/* Carousel indicator if multiple images */}
           {mediaUrls.length > 1 && (
-            <div className="absolute top-3 right-3 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
-              1/{mediaUrls.length}
-            </div>
+            <>
+              <div className="absolute top-3 right-3 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+                {currentMediaIndex + 1}/{mediaUrls.length}
+              </div>
+              {/* Dot indicators */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                {mediaUrls.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentMediaIndex(index)}
+                    className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                      index === currentMediaIndex ? 'bg-blue-500' : 'bg-gray-400'
+                    }`}
+                    aria-label={`Go to media ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </div>
       ) : (

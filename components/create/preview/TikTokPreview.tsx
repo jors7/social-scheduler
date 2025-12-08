@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { stripHtml, truncateText, isVideoUrl } from './preview-utils'
 
 interface TikTokPreviewProps {
@@ -10,6 +12,8 @@ interface TikTokPreviewProps {
 }
 
 export function TikTokPreview({ content, mediaUrls = [], tiktokTitle }: TikTokPreviewProps) {
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
+
   // Detect if this is a photo or video post
   const isPhotoPost = mediaUrls.length > 0 && !mediaUrls.some(url => isVideoUrl(url))
 
@@ -20,6 +24,14 @@ export function TikTokPreview({ content, mediaUrls = [], tiktokTitle }: TikTokPr
   const plainText = stripHtml(displayContent)
   const { text } = truncateText(plainText, maxChars, 'soft')
 
+  const handlePrevMedia = () => {
+    setCurrentMediaIndex((prev) => (prev > 0 ? prev - 1 : mediaUrls.length - 1))
+  }
+
+  const handleNextMedia = () => {
+    setCurrentMediaIndex((prev) => (prev < mediaUrls.length - 1 ? prev + 1 : 0))
+  }
+
   return (
     <div className="bg-black max-w-xs mx-auto rounded-3xl overflow-hidden shadow-2xl">
       {/* TikTok mobile UI mockup */}
@@ -29,33 +41,68 @@ export function TikTokPreview({ content, mediaUrls = [], tiktokTitle }: TikTokPr
           <div className="flex flex-col">
             {/* Video area - true 9:16 */}
             <div className="relative bg-gray-900 aspect-[9/16] overflow-hidden">
-              {isVideoUrl(mediaUrls[0]) ? (
+              {isVideoUrl(mediaUrls[currentMediaIndex]) ? (
                 <video
-                  src={mediaUrls[0]}
+                  src={mediaUrls[currentMediaIndex]}
                   className="w-full h-full object-cover"
                   muted
                   preload="metadata"
                 />
               ) : (
                 <img
-                  src={mediaUrls[0]}
+                  src={mediaUrls[currentMediaIndex]}
                   alt=""
                   className="w-full h-full object-cover"
                 />
               )}
 
+              {/* Navigation arrows (only show if multiple media) */}
+              {mediaUrls.length > 1 && (
+                <>
+                  <button
+                    onClick={handlePrevMedia}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors z-10"
+                    aria-label="Previous media"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={handleNextMedia}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors z-10"
+                    aria-label="Next media"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
+
               {/* Top navigation bar */}
-              <div className="absolute top-0 left-0 right-0 px-4 pt-3 pb-2 flex items-center justify-between">
-                <span className="text-white text-xs font-semibold opacity-70">LIVE</span>
-                <div className="flex items-center gap-4">
-                  <span className="text-white text-sm opacity-70">Explore</span>
-                  <span className="text-white text-sm opacity-70">Following</span>
-                  <span className="text-white text-sm font-semibold border-b-2 border-white pb-0.5">For You</span>
+              <div className="absolute top-0 left-0 right-0 px-4 pt-3 pb-2 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-white text-xs font-semibold opacity-70">LIVE</span>
+                  <div className="flex items-center gap-4">
+                    <span className="text-white text-sm opacity-70">Explore</span>
+                    <span className="text-white text-sm opacity-70">Following</span>
+                    <span className="text-white text-sm font-semibold border-b-2 border-white pb-0.5">For You</span>
+                  </div>
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="M21 21l-4.35-4.35"></path>
+                  </svg>
                 </div>
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <path d="M21 21l-4.35-4.35"></path>
-                </svg>
+                {/* Carousel indicators */}
+                {mediaUrls.length > 1 && (
+                  <div className="flex gap-1">
+                    {mediaUrls.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`h-0.5 flex-1 rounded-full transition-colors ${
+                          index === currentMediaIndex ? 'bg-white' : 'bg-white/40'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Right sidebar */}

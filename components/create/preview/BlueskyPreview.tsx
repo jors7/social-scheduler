@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { stripHtml, truncateText, getAllEntities, getCharacterStatus, isVideoUrl } from './preview-utils'
 
 interface BlueskyPreviewProps {
@@ -8,10 +10,20 @@ interface BlueskyPreviewProps {
 }
 
 export function BlueskyPreview({ content, mediaUrls = [] }: BlueskyPreviewProps) {
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
+
   const plainText = stripHtml(content)
   const { text, truncated } = truncateText(plainText, 300, 'hard')
   const charStatus = getCharacterStatus(plainText.length, 300)
   const entities = getAllEntities(text)
+
+  const handlePrevMedia = () => {
+    setCurrentMediaIndex((prev) => (prev > 0 ? prev - 1 : mediaUrls.length - 1))
+  }
+
+  const handleNextMedia = () => {
+    setCurrentMediaIndex((prev) => (prev < mediaUrls.length - 1 ? prev + 1 : 0))
+  }
 
   const renderContent = () => {
     if (entities.length === 0) {
@@ -65,58 +77,59 @@ export function BlueskyPreview({ content, mediaUrls = [] }: BlueskyPreviewProps)
             {renderContent()}
           </div>
 
-          {/* Media - up to 4 images (single image natural, grid for multiple) */}
+          {/* Media - up to 4 images with carousel navigation */}
           {mediaUrls && mediaUrls.length > 0 && (
-            <div className="mt-3 rounded-xl overflow-hidden border border-gray-200">
-              {mediaUrls.length === 1 ? (
-                <div className="relative bg-gray-200 max-h-[500px]">
-                  {isVideoUrl(mediaUrls[0]) ? (
-                    <video
-                      src={mediaUrls[0]}
-                      className="w-full h-full object-contain"
-                      muted
-                      preload="metadata"
-                    />
-                  ) : (
-                    <img
-                      src={mediaUrls[0]}
-                      alt=""
-                      className="w-full h-full object-contain"
-                    />
-                  )}
-                </div>
+            <div className="mt-3 rounded-xl overflow-hidden border border-gray-200 relative bg-gray-200 max-h-[500px]">
+              {isVideoUrl(mediaUrls[currentMediaIndex]) ? (
+                <video
+                  src={mediaUrls[currentMediaIndex]}
+                  className="w-full h-full object-contain"
+                  muted
+                  preload="metadata"
+                />
               ) : (
-                <div
-                  className={`grid gap-0.5 ${
-                    mediaUrls.length === 2
-                      ? 'grid-cols-2'
-                      : mediaUrls.length === 3
-                      ? 'grid-cols-3'
-                      : 'grid-cols-2'
-                  }`}
-                >
-                  {mediaUrls.slice(0, 4).map((url, index) => (
-                    <div
-                      key={index}
-                      className="relative bg-gray-200 aspect-square"
-                    >
-                      {isVideoUrl(url) ? (
-                        <video
-                          src={url}
-                          className="w-full h-full object-cover"
-                          muted
-                          preload="metadata"
-                        />
-                      ) : (
-                        <img
-                          src={url}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <img
+                  src={mediaUrls[currentMediaIndex]}
+                  alt=""
+                  className="w-full h-full object-contain"
+                />
+              )}
+
+              {/* Navigation arrows (only show if multiple media) */}
+              {mediaUrls.length > 1 && (
+                <>
+                  <button
+                    onClick={handlePrevMedia}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                    aria-label="Previous media"
+                  >
+                    <ChevronLeft className="w-6 h-6" />
+                  </button>
+                  <button
+                    onClick={handleNextMedia}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                    aria-label="Next media"
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </button>
+                  {/* Carousel counter */}
+                  <div className="absolute top-3 right-3 bg-black/60 text-white text-sm px-3 py-1.5 rounded-full">
+                    {currentMediaIndex + 1}/{mediaUrls.length}
+                  </div>
+                  {/* Dot indicators */}
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {mediaUrls.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentMediaIndex(index)}
+                        className={`w-2 h-2 rounded-full transition-colors ${
+                          index === currentMediaIndex ? 'bg-blue-500' : 'bg-white/60'
+                        }`}
+                        aria-label={`Go to media ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           )}

@@ -1,6 +1,7 @@
 'use client'
 
-import { ThumbsUp, MessageSquare, Repeat2 } from 'lucide-react'
+import { useState } from 'react'
+import { ThumbsUp, MessageSquare, Repeat2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { stripHtml, truncateText, getAllEntities, isVideoUrl } from './preview-utils'
 
 interface LinkedInPreviewProps {
@@ -9,10 +10,20 @@ interface LinkedInPreviewProps {
 }
 
 export function LinkedInPreview({ content, mediaUrls = [] }: LinkedInPreviewProps) {
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
+
   const plainText = stripHtml(content)
   // LinkedIn shows ~150 chars then "...see more"
   const { text, truncated } = truncateText(plainText, 150, 'soft')
   const entities = getAllEntities(text)
+
+  const handlePrevMedia = () => {
+    setCurrentMediaIndex((prev) => (prev > 0 ? prev - 1 : mediaUrls.length - 1))
+  }
+
+  const handleNextMedia = () => {
+    setCurrentMediaIndex((prev) => (prev < mediaUrls.length - 1 ? prev + 1 : 0))
+  }
 
   const renderContent = () => {
     if (entities.length === 0) {
@@ -81,23 +92,58 @@ export function LinkedInPreview({ content, mediaUrls = [] }: LinkedInPreviewProp
 
       {/* Media - natural aspect ratio (1.91:1 landscape recommended for best display) */}
       {mediaUrls && mediaUrls.length > 0 && (
-        <div className="relative">
-          <div className="relative bg-gray-100">
-            {isVideoUrl(mediaUrls[0]) ? (
-              <video
-                src={mediaUrls[0]}
-                className="w-full max-h-[600px] object-contain"
-                muted
-                preload="metadata"
-              />
-            ) : (
-              <img
-                src={mediaUrls[0]}
-                alt=""
-                className="w-full max-h-[600px] object-contain"
-              />
-            )}
-          </div>
+        <div className="relative bg-gray-100">
+          {isVideoUrl(mediaUrls[currentMediaIndex]) ? (
+            <video
+              src={mediaUrls[currentMediaIndex]}
+              className="w-full max-h-[600px] object-contain"
+              muted
+              preload="metadata"
+            />
+          ) : (
+            <img
+              src={mediaUrls[currentMediaIndex]}
+              alt=""
+              className="w-full max-h-[600px] object-contain"
+            />
+          )}
+
+          {/* Navigation arrows (only show if multiple media) */}
+          {mediaUrls.length > 1 && (
+            <>
+              <button
+                onClick={handlePrevMedia}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                aria-label="Previous media"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button
+                onClick={handleNextMedia}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                aria-label="Next media"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+              {/* Carousel counter */}
+              <div className="absolute top-3 right-3 bg-black/60 text-white text-sm px-3 py-1.5 rounded-full">
+                {currentMediaIndex + 1}/{mediaUrls.length}
+              </div>
+              {/* Dot indicators */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                {mediaUrls.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentMediaIndex(index)}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      index === currentMediaIndex ? 'bg-blue-600' : 'bg-white/60'
+                    }`}
+                    aria-label={`Go to media ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
 

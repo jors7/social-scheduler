@@ -1,6 +1,7 @@
 'use client'
 
-import { ThumbsUp, MessageCircle, Share2 } from 'lucide-react'
+import { useState } from 'react'
+import { ThumbsUp, MessageCircle, Share2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { stripHtml, truncateText, getAllEntities, isVideoUrl } from './preview-utils'
 
 interface FacebookPreviewProps {
@@ -10,12 +11,22 @@ interface FacebookPreviewProps {
 }
 
 export function FacebookPreview({ content, mediaUrls = [], format = 'feed' }: FacebookPreviewProps) {
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
+
   const plainText = stripHtml(content)
   // Facebook shows ~250 chars then "See more"
   const { text, truncated } = truncateText(plainText, 250, 'soft')
   const entities = getAllEntities(text)
 
   const isStoryFormat = format === 'story' || format === 'reel'
+
+  const handlePrevMedia = () => {
+    setCurrentMediaIndex((prev) => (prev > 0 ? prev - 1 : mediaUrls.length - 1))
+  }
+
+  const handleNextMedia = () => {
+    setCurrentMediaIndex((prev) => (prev < mediaUrls.length - 1 ? prev + 1 : 0))
+  }
 
   const renderContent = () => {
     if (entities.length === 0) {
@@ -58,19 +69,39 @@ export function FacebookPreview({ content, mediaUrls = [], format = 'feed' }: Fa
         {/* Story/Reel container - 9:16 aspect ratio */}
         {mediaUrls && mediaUrls.length > 0 ? (
           <div className="relative bg-gray-900 aspect-[9/16]">
-            {isVideoUrl(mediaUrls[0]) ? (
+            {isVideoUrl(mediaUrls[currentMediaIndex]) ? (
               <video
-                src={mediaUrls[0]}
+                src={mediaUrls[currentMediaIndex]}
                 className="w-full h-full object-cover"
                 muted
                 preload="metadata"
               />
             ) : (
               <img
-                src={mediaUrls[0]}
+                src={mediaUrls[currentMediaIndex]}
                 alt=""
                 className="w-full h-full object-cover"
               />
+            )}
+
+            {/* Navigation arrows (only show if multiple media) */}
+            {mediaUrls.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrevMedia}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors"
+                  aria-label="Previous media"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleNextMedia}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors"
+                  aria-label="Next media"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </>
             )}
 
             {/* Top header */}
@@ -80,6 +111,19 @@ export function FacebookPreview({ content, mediaUrls = [], format = 'feed' }: Fa
                 <span className="text-white font-semibold text-sm">Your Name</span>
                 <span className="text-white/80 text-xs">1m</span>
               </div>
+              {/* Carousel indicators */}
+              {mediaUrls.length > 1 && (
+                <div className="flex gap-1 mt-3">
+                  {mediaUrls.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`h-0.5 flex-1 rounded-full transition-colors ${
+                        index === currentMediaIndex ? 'bg-white' : 'bg-white/40'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Bottom caption area (if there's content) */}
@@ -145,48 +189,57 @@ export function FacebookPreview({ content, mediaUrls = [], format = 'feed' }: Fa
 
       {/* Media - displayed in natural aspect ratio */}
       {mediaUrls && mediaUrls.length > 0 && (
-        <div className="relative">
-          {mediaUrls.length === 1 ? (
-            <div className="relative bg-gray-100">
-              {isVideoUrl(mediaUrls[0]) ? (
-                <video
-                  src={mediaUrls[0]}
-                  className="w-full max-h-[600px] object-contain"
-                  muted
-                  preload="metadata"
-                />
-              ) : (
-                <img
-                  src={mediaUrls[0]}
-                  alt=""
-                  className="w-full max-h-[600px] object-contain"
-                />
-              )}
-            </div>
+        <div className="relative bg-gray-100">
+          {isVideoUrl(mediaUrls[currentMediaIndex]) ? (
+            <video
+              src={mediaUrls[currentMediaIndex]}
+              className="w-full max-h-[600px] object-contain"
+              muted
+              preload="metadata"
+            />
           ) : (
-            <div className={`grid gap-0.5 ${
-              mediaUrls.length === 2 ? 'grid-cols-2' :
-              mediaUrls.length === 3 ? 'grid-cols-3' :
-              'grid-cols-2'
-            }`}>
-              {mediaUrls.slice(0, 4).map((url, index) => (
-                <div
-                  key={index}
-                  className="relative bg-gray-100 aspect-square"
-                >
-                  <img
-                    src={url}
-                    alt=""
-                    className="w-full h-full object-cover"
+            <img
+              src={mediaUrls[currentMediaIndex]}
+              alt=""
+              className="w-full max-h-[600px] object-contain"
+            />
+          )}
+
+          {/* Navigation arrows (only show if multiple media) */}
+          {mediaUrls.length > 1 && (
+            <>
+              <button
+                onClick={handlePrevMedia}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                aria-label="Previous media"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button
+                onClick={handleNextMedia}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                aria-label="Next media"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+              {/* Carousel counter */}
+              <div className="absolute top-3 right-3 bg-black/60 text-white text-sm px-3 py-1.5 rounded-full">
+                {currentMediaIndex + 1}/{mediaUrls.length}
+              </div>
+              {/* Dot indicators */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                {mediaUrls.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentMediaIndex(index)}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      index === currentMediaIndex ? 'bg-blue-500' : 'bg-white/60'
+                    }`}
+                    aria-label={`Go to media ${index + 1}`}
                   />
-                  {index === 3 && mediaUrls.length > 4 && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-2xl font-bold">
-                      +{mediaUrls.length - 4}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       )}
