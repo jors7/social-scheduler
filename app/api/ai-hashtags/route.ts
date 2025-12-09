@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 import OpenAI from 'openai'
 
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -7,6 +8,14 @@ const openai = process.env.OPENAI_API_KEY ? new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
+    // Authentication check
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { content, platforms } = await request.json()
 
     if (!openai) {

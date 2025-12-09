@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TwitterService } from '@/lib/twitter/service';
 import { createClient } from '@supabase/supabase-js';
+import { createClient as createAuthClient } from '@/lib/supabase/server';
 
+// Service client for database operations (bypasses RLS)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -63,9 +65,21 @@ async function logTwitterPost(userId: string, postId: string, content: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { text, accessToken, accessSecret, userId, mediaUrls } = await request.json();
+    // SECURITY FIX: Get userId from authenticated session, not from request body
+    const authClient = await createAuthClient();
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
 
-    if (!text || !accessToken || !accessSecret || !userId) {
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const userId = user.id; // Use authenticated user's ID
+    const { text, accessToken, accessSecret, mediaUrls } = await request.json();
+
+    if (!text || !accessToken || !accessSecret) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }

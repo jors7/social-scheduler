@@ -75,31 +75,33 @@ async function pingSitemapToSearchEngines() {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
-    
-    // Check if user is admin (optional - you might want this public)
+
+    // SECURITY FIX: Require admin authentication
     const { data: { user } } = await supabase.auth.getUser()
-    const isAdmin = user?.email === 'jan.orsula1@gmail.com'
-    
+    if (!user || user.email !== 'jan.orsula1@gmail.com') {
+      return NextResponse.json(
+        { error: 'Unauthorized. Admin access required.' },
+        { status: 401 }
+      )
+    }
+
     // Get trigger source from request body
     const body = await request.json().catch(() => ({}))
     const { source = 'manual' } = body
-    
+
     // Ping search engines
     const results = await pingSitemapToSearchEngines()
-    
-    // Log the ping event (optional)
-    if (isAdmin) {
-      console.log('Sitemap pinged by admin:', {
-        source,
-        results,
-        timestamp: new Date().toISOString()
-      })
-    }
-    
+
+    console.log('Sitemap pinged by admin:', {
+      source,
+      results,
+      timestamp: new Date().toISOString()
+    })
+
     // Count successful pings
     const successCount = Object.values(results).filter(Boolean).length
     const totalCount = Object.keys(results).length
-    
+
     return NextResponse.json({
       success: successCount > 0,
       message: `Successfully pinged ${successCount}/${totalCount} search engines`,
@@ -110,7 +112,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error pinging sitemap:', error)
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: 'Failed to ping sitemap',
         message: error instanceof Error ? error.message : 'Unknown error'

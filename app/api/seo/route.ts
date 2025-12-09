@@ -4,6 +4,16 @@ import { createClient } from '@/lib/supabase/server'
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
+
+    // SECURITY FIX: Require admin authentication for SEO settings
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.email !== 'jan.orsula1@gmail.com') {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const pagePath = searchParams.get('path')
 
