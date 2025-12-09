@@ -210,7 +210,7 @@ YouTube credentials now appear only once with proper comment at line 67-69.
 
 ---
 
-### 13. Twitter OAuth Placeholders
+### 13. Twitter OAuth 2.0 Placeholders (Safe to Ignore)
 
 **Location:** `.env.local:14-15`
 
@@ -219,7 +219,7 @@ TWITTER_CLIENT_ID=your_client_id_here
 TWITTER_CLIENT_SECRET=your_client_secret_here
 ```
 
-Note: Twitter/X is documented as read-only due to API costs, so this may be intentional.
+**Note:** These OAuth 2.0 Client credentials are unused. The app uses OAuth 1.0a with API keys (lines 10-13) for Twitter/X integration. Posting works with a limit of 17 posts/day.
 
 ---
 
