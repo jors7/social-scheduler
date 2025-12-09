@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { PostingService } from '@/lib/posting/service';
-import { Receiver } from '@upstash/qstash';
+import { Receiver, Client as QStashClient } from '@upstash/qstash';
 import { r2Storage } from '@/lib/r2/storage';
 import { R2_PUBLIC_URL } from '@/lib/r2/client';
 import { cleanHtmlContent } from '@/lib/utils/html-cleaner';
@@ -30,6 +30,15 @@ import {
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+
+// QStash client for scheduling delayed cleanup
+const qstash = new QStashClient({
+  token: process.env.QSTASH_TOKEN!,
+});
+
+// Delay for media cleanup (24 hours in seconds)
+// This allows platforms like TikTok/Pinterest/Bluesky time to fetch media
+const DELAYED_CLEANUP_SECONDS = 24 * 60 * 60;
 
 // Shared processing logic for both GET and POST
 async function processScheduledPosts(request: NextRequest) {
@@ -177,7 +186,16 @@ async function processScheduledPosts(request: NextRequest) {
               }));
               console.log(`✅ Post ${post.id} was actually successful on all platforms: ${successfulPlatforms.join(', ')}`);
             } else {
-              // Partial success
+              // Partial success - update idempotency records for failed platforms (Issue 5)
+              for (const platform of failedPlatforms) {
+                await markPostAttemptFailed(
+                  post.id,
+                  platform,
+                  'unknown', // We don't have account ID in stuck recovery context
+                  'Post timed out during processing'
+                );
+              }
+
               errorMessage = `Post timed out. Successfully posted to: ${successfulPlatforms.join(', ')}. Failed/incomplete: ${failedPlatforms.join(', ')}. Do NOT retry this post - check the successful platforms first.`;
               postResults = [
                 ...successfulAttempts.map(a => ({
@@ -196,14 +214,23 @@ async function processScheduledPosts(request: NextRequest) {
               console.log(`⚠️ Post ${post.id} partially succeeded: ${successfulPlatforms.join(', ')}, failed: ${failedPlatforms.join(', ')}`);
             }
           } else {
-            // No platforms succeeded
+            // No platforms succeeded - update idempotency records (Issue 5)
+            for (const platform of post.platforms as string[]) {
+              await markPostAttemptFailed(
+                post.id,
+                platform,
+                'unknown',
+                'Post timed out - no successful platforms'
+              );
+            }
             errorMessage = 'Post processing timed out after 10 minutes. No platforms were confirmed as posted. Please check your social media accounts before retrying.';
             console.log(`❌ Post ${post.id} had no confirmed successful platforms`);
           }
 
           const updateData: any = {
             status: finalStatus,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            processing_state: null // Ensure processing state is cleared
           };
 
           if (finalStatus === 'failed') {
@@ -313,7 +340,8 @@ async function processScheduledPosts(request: NextRequest) {
                 .from('scheduled_posts')
                 .update({
                   status: 'failed',
-                  error_message: 'Invalid processing state'
+                  error_message: 'Invalid processing state',
+                  processing_state: null
                 })
                 .eq('id', post.id);
               continue;
@@ -329,7 +357,8 @@ async function processScheduledPosts(request: NextRequest) {
                   .from('scheduled_posts')
                   .update({
                     status: 'failed',
-                    error_message: 'Invalid Threads processing state - missing container_id'
+                    error_message: 'Invalid Threads processing state - missing container_id',
+                    processing_state: null
                   })
                   .eq('id', post.id);
                 continue;
@@ -1224,14 +1253,18 @@ async function processScheduledPosts(request: NextRequest) {
             });
 
           } catch (error) {
-            console.error(`Error posting to ${platformLabel} (${platform}):`, error);
-            
-            // Include URL info in error for debugging
-            const debugUrl = process.env.VERCEL_URL 
-              ? `VERCEL_URL: ${process.env.VERCEL_URL}` 
-              : 'Using localhost';
-            
             const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+
+            // Log debug info server-side only (not exposed to users)
+            console.error(JSON.stringify({
+              event: 'platform_post_error',
+              platform,
+              platform_label: platformLabel,
+              post_id: post.id,
+              account_id: account.id,
+              error: errorMsg,
+              vercel_url: process.env.VERCEL_URL || 'localhost'
+            }));
 
             // Mark idempotency record as failed
             await markPostAttemptFailed(post.id, platform, account.id, errorMsg);
@@ -1239,7 +1272,7 @@ async function processScheduledPosts(request: NextRequest) {
             postResults.push({
               platform: platformLabel,
               success: false,
-              error: `${errorMsg} (${debugUrl})`
+              error: errorMsg  // Clean error message without debug info
             });
           }
           } // End of accountsToPost loop
@@ -1321,22 +1354,42 @@ async function processScheduledPosts(request: NextRequest) {
           const postedToBluesky = post.platforms.includes('bluesky');
           const shouldSkipCleanup = postedToTikTok || postedToPinterest || postedToBluesky;
 
-          if (post.media_urls && post.media_urls.length > 0 && !shouldSkipCleanup) {
-            try {
-              const { failures } = await cleanupMediaFiles(post.media_urls, post.id);
-              if (failures.length > 0) {
-                // Log but don't fail - media cleanup is non-critical
-                console.warn(`Post ${post.id}: ${failures.length} media file(s) failed cleanup`);
+          if (post.media_urls && post.media_urls.length > 0) {
+            if (!shouldSkipCleanup) {
+              // Immediate cleanup for platforms that don't need media persistence
+              try {
+                const { failures } = await cleanupMediaFiles(post.media_urls, post.id);
+                if (failures.length > 0) {
+                  // Log but don't fail - media cleanup is non-critical
+                  console.warn(`Post ${post.id}: ${failures.length} media file(s) failed cleanup`);
+                }
+              } catch (cleanupError) {
+                console.error('Media cleanup error:', cleanupError);
               }
-            } catch (cleanupError) {
-              console.error('Media cleanup error:', cleanupError);
+            } else {
+              // Schedule delayed cleanup via QStash for platforms that need media persistence
+              const reasons = [];
+              if (postedToTikTok) reasons.push('TikTok');
+              if (postedToPinterest) reasons.push('Pinterest');
+              if (postedToBluesky) reasons.push('Bluesky');
+
+              try {
+                const cleanupUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.socialcal.app'}/api/cleanup/media`;
+                await qstash.publishJSON({
+                  url: cleanupUrl,
+                  body: {
+                    postId: post.id,
+                    mediaUrls: post.media_urls
+                  },
+                  delay: DELAYED_CLEANUP_SECONDS,
+                  retries: 3
+                });
+                console.log(`Scheduled delayed cleanup for post ${post.id} in 24h (${reasons.join(', ')} need media persistence)`);
+              } catch (qstashError) {
+                // Log but don't fail - delayed cleanup is non-critical
+                console.error(`Failed to schedule delayed cleanup for post ${post.id}:`, qstashError);
+              }
             }
-          } else if (shouldSkipCleanup) {
-            const reasons = [];
-            if (postedToTikTok) reasons.push('TikTok needs time to download');
-            if (postedToPinterest) reasons.push('Pinterest needs permanent URLs');
-            if (postedToBluesky) reasons.push('Bluesky needs time to fetch media');
-            console.log(`Skipping media cleanup - ${reasons.join(', ')}`);
           }
 
         } else {
@@ -1350,7 +1403,8 @@ async function processScheduledPosts(request: NextRequest) {
             .update({
               status: 'failed',
               error_message: errorMessage,
-              post_results: postResults
+              post_results: postResults,
+              processing_state: null
             })
             .eq('id', post.id);
 
@@ -1377,7 +1431,8 @@ async function processScheduledPosts(request: NextRequest) {
           .from('scheduled_posts')
           .update({
             status: 'failed',
-            error_message: errorMsg
+            error_message: errorMsg,
+            processing_state: null
           })
           .eq('id', post.id);
 

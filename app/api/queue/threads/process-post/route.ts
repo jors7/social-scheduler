@@ -12,9 +12,15 @@ const qstash = new Client({
  * This endpoint is called by QStash to process one post at a time
  */
 async function handler(request: NextRequest) {
+  // Capture jobId in outer scope for error handling
+  // (request.json() can only be called once - the stream is consumed)
+  let jobId: string | undefined;
+  let postIndex: number | undefined;
+
   try {
     const body = await request.json();
-    const { jobId, postIndex } = body;
+    jobId = body.jobId;
+    postIndex = body.postIndex;
 
     console.log(`[Thread Job ${jobId}] Processing post ${postIndex}`);
 
@@ -349,46 +355,42 @@ async function handler(request: NextRequest) {
   } catch (error) {
     console.error('[Thread Job] Processing error:', error);
 
-    // Try to update job with error (best effort)
-    if (request.body) {
+    // Update job with error using the captured jobId from outer scope
+    // (We can't call request.json() again - the stream was already consumed)
+    if (jobId) {
       try {
-        const body = await request.json();
-        const { jobId } = body;
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
 
-        if (jobId) {
-          const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-          );
+        const { data: job } = await supabase
+          .from('thread_jobs')
+          .select('retry_count')
+          .eq('id', jobId)
+          .single();
 
-          const { data: job } = await supabase
+        const retryCount = (job?.retry_count || 0) + 1;
+
+        // Mark as failed after 3 retries
+        if (retryCount >= 3) {
+          await supabase
             .from('thread_jobs')
-            .select('retry_count')
-            .eq('id', jobId)
-            .single();
-
-          const retryCount = (job?.retry_count || 0) + 1;
-
-          // Mark as failed after 3 retries
-          if (retryCount >= 3) {
-            await supabase
-              .from('thread_jobs')
-              .update({
-                status: 'failed',
-                error_message: error instanceof Error ? error.message : 'Unknown error',
-                retry_count: retryCount
-              })
-              .eq('id', jobId);
-          } else {
-            // Increment retry count
-            await supabase
-              .from('thread_jobs')
-              .update({
-                retry_count: retryCount,
-                last_retry_at: new Date().toISOString()
-              })
-              .eq('id', jobId);
-          }
+            .update({
+              status: 'failed',
+              error_message: error instanceof Error ? error.message : 'Unknown error',
+              retry_count: retryCount
+            })
+            .eq('id', jobId);
+        } else {
+          // Increment retry count
+          await supabase
+            .from('thread_jobs')
+            .update({
+              retry_count: retryCount,
+              last_retry_at: new Date().toISOString()
+            })
+            .eq('id', jobId);
         }
       } catch (updateError) {
         console.error('[Thread Job] Failed to update job with error:', updateError);

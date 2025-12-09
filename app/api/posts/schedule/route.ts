@@ -6,6 +6,59 @@ import { SubscriptionService } from '@/lib/subscription/service';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Validate media URLs are accessible before scheduling
+ * Returns validation result with list of invalid URLs
+ */
+async function validateMediaUrls(urls: string[]): Promise<{ valid: boolean; invalidUrls: string[]; errors: string[] }> {
+  const invalidUrls: string[] = [];
+  const errors: string[] = [];
+
+  for (const url of urls) {
+    try {
+      // Basic URL format validation
+      const urlObj = new URL(url);
+      if (!['http:', 'https:'].includes(urlObj.protocol)) {
+        invalidUrls.push(url);
+        errors.push(`Invalid protocol for URL`);
+        continue;
+      }
+
+      // HEAD request to check if URL is accessible (with 5s timeout)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      try {
+        const response = await fetch(url, {
+          method: 'HEAD',
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        // Accept 2xx, 3xx, and 403 (some storage providers block HEAD requests)
+        if (!response.ok && response.status !== 403) {
+          invalidUrls.push(url);
+          errors.push(`Media not accessible (HTTP ${response.status})`);
+        }
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        // Network errors or timeouts - URL might still be valid, log warning
+        console.warn(`[Media Validation] Could not verify URL: ${url.slice(0, 100)}...`);
+        // Don't add to invalidUrls - might be temporary network issue or HEAD not supported
+      }
+    } catch (urlError) {
+      invalidUrls.push(url);
+      errors.push(`Invalid URL format`);
+    }
+  }
+
+  return {
+    valid: invalidUrls.length === 0,
+    invalidUrls,
+    errors
+  };
+}
+
 // Helper function to check Twitter limits for scheduling
 async function checkTwitterScheduleLimit(userId: string, scheduledDate: Date): Promise<{ allowed: boolean; message?: string }> {
   const userLimit = parseInt(process.env.TWITTER_USER_DAILY_LIMIT || '2');
@@ -197,6 +250,28 @@ export async function POST(request: NextRequest) {
     } catch (usageError) {
       console.error('Error checking post limit:', usageError);
       // Continue without blocking - we don't want to break scheduling if usage check fails
+    }
+
+    // Validate media URLs if present (Issue 4: prevent scheduling with inaccessible media)
+    if (mediaUrls && mediaUrls.length > 0) {
+      // Normalize URLs - extract strings from objects if needed
+      const urlStrings: string[] = mediaUrls.map((item: any) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object' && item.url) return item.url;
+        return '';
+      }).filter((url: string) => url !== '');
+
+      if (urlStrings.length > 0) {
+        const validation = await validateMediaUrls(urlStrings);
+        if (!validation.valid) {
+          console.error('[Schedule] Media validation failed:', validation.errors);
+          return NextResponse.json({
+            error: 'Some media files are not accessible',
+            details: validation.errors.slice(0, 3).join('; '),
+            invalidCount: validation.invalidUrls.length
+          }, { status: 400 });
+        }
+      }
     }
 
     // Save to database WITHOUT .select() to avoid type casting issue

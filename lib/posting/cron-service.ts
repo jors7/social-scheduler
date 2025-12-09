@@ -7,6 +7,7 @@ import { ThreadsService } from '@/lib/threads/service';
 import { PinterestService, formatPinterestContent } from '@/lib/pinterest/service';
 import { TikTokService } from '@/lib/tiktok/service';
 import { fetchWithTimeout, TIMEOUT } from '@/lib/utils/fetch-with-timeout';
+import { retryWithBackoff, PLATFORM_RETRY_CONFIG } from '@/lib/utils/retry-with-backoff';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
@@ -133,9 +134,6 @@ export async function postToFacebookDirect(
   console.log('Is reel:', options?.isReel || false);
 
   try {
-    const facebookService = new FacebookService();
-    let result;
-
     // Normalize mediaUrls - extract URL strings from objects if needed
     const normalizedMediaUrls: string[] | undefined = mediaUrls?.map(item => {
       if (typeof item === 'string') {
@@ -148,93 +146,109 @@ export async function postToFacebookDirect(
       }
     }).filter(url => url !== '');
 
-    // Check if this is a story or reel post
-    if (options?.isStory && normalizedMediaUrls && normalizedMediaUrls.length > 0) {
-      // Facebook Story
-      if (!options.userId || !options.supabase) {
-        throw new Error('userId and supabase client are required for Facebook stories');
-      }
+    // Wrap API calls with retry logic for transient errors
+    const result = await retryWithBackoff(async () => {
+      const facebookService = new FacebookService();
 
-      const mediaUrl = normalizedMediaUrls[0];
-      const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
-      const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
-      const mediaType = isVideo ? 'video' : 'photo';
+      // Check if this is a story or reel post
+      if (options?.isStory && normalizedMediaUrls && normalizedMediaUrls.length > 0) {
+        // Facebook Story
+        if (!options.userId || !options.supabase) {
+          throw new Error('userId and supabase client are required for Facebook stories');
+        }
 
-      console.log(`Creating Facebook ${mediaType} story`);
-      result = await facebookService.createStoryPost(
-        account.platform_user_id,
-        account.access_token,
-        mediaUrl,
-        mediaType,
-        options.supabase,
-        options.userId
-      );
-    } else if (options?.isReel && normalizedMediaUrls && normalizedMediaUrls.length > 0) {
-      // Facebook Reel
-      if (!options.userId || !options.supabase) {
-        throw new Error('userId and supabase client are required for Facebook reels');
-      }
+        const mediaUrl = normalizedMediaUrls[0];
+        const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
+        const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
+        const mediaType = isVideo ? 'video' : 'photo';
 
-      const videoUrl = normalizedMediaUrls[0];
-      console.log('Creating Facebook Reel');
-      result = await facebookService.createReelPost(
-        account.platform_user_id,
-        account.access_token,
-        content,
-        videoUrl,
-        options.supabase,
-        options.userId
-      );
-    } else if (!normalizedMediaUrls || normalizedMediaUrls.length === 0) {
-      // Text-only post
-      console.log('Creating text-only Facebook post');
-      result = await facebookService.createPost(
-        account.platform_user_id,
-        account.access_token,
-        content
-      );
-    } else if (normalizedMediaUrls.length === 1) {
-      // Single media post (feed)
-      const mediaUrl = normalizedMediaUrls[0];
-      const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
-      const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
+        console.log(`Creating Facebook ${mediaType} story`);
+        return await facebookService.createStoryPost(
+          account.platform_user_id,
+          account.access_token,
+          mediaUrl,
+          mediaType,
+          options.supabase,
+          options.userId
+        );
+      } else if (options?.isReel && normalizedMediaUrls && normalizedMediaUrls.length > 0) {
+        // Facebook Reel
+        if (!options.userId || !options.supabase) {
+          throw new Error('userId and supabase client are required for Facebook reels');
+        }
 
-      if (isVideo) {
-        console.log('Creating Facebook video post');
-        result = await facebookService.createVideoPost(
+        const videoUrl = normalizedMediaUrls[0];
+        console.log('Creating Facebook Reel');
+        return await facebookService.createReelPost(
           account.platform_user_id,
           account.access_token,
           content,
-          mediaUrl
+          videoUrl,
+          options.supabase,
+          options.userId
         );
+      } else if (!normalizedMediaUrls || normalizedMediaUrls.length === 0) {
+        // Text-only post
+        console.log('Creating text-only Facebook post');
+        return await facebookService.createPost(
+          account.platform_user_id,
+          account.access_token,
+          content
+        );
+      } else if (normalizedMediaUrls.length === 1) {
+        // Single media post (feed)
+        const mediaUrl = normalizedMediaUrls[0];
+        const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
+        const isVideo = videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
+
+        if (isVideo) {
+          console.log('Creating Facebook video post');
+          return await facebookService.createVideoPost(
+            account.platform_user_id,
+            account.access_token,
+            content,
+            mediaUrl
+          );
+        } else {
+          console.log('Creating Facebook photo post');
+          return await facebookService.createPhotoPost(
+            account.platform_user_id,
+            account.access_token,
+            content,
+            mediaUrl
+          );
+        }
       } else {
-        console.log('Creating Facebook photo post');
-        result = await facebookService.createPhotoPost(
+        // Multiple photos (carousel)
+        const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
+        const imageUrls = normalizedMediaUrls.filter(url =>
+          !videoExtensions.some(ext => url.toLowerCase().includes(ext))
+        );
+
+        if (imageUrls.length === 0) {
+          throw new Error('Facebook does not support multiple videos in a single post');
+        }
+
+        console.log(`Creating Facebook carousel post with ${imageUrls.length} images`);
+        return await facebookService.createCarouselPost(
           account.platform_user_id,
           account.access_token,
           content,
-          mediaUrl
+          imageUrls
         );
       }
-    } else {
-      // Multiple photos (carousel)
-      const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
-      const imageUrls = normalizedMediaUrls.filter(url =>
-        !videoExtensions.some(ext => url.toLowerCase().includes(ext))
-      );
-
-      if (imageUrls.length === 0) {
-        throw new Error('Facebook does not support multiple videos in a single post');
+    }, {
+      ...PLATFORM_RETRY_CONFIG,
+      onRetry: (attempt, error, delay) => {
+        console.log(JSON.stringify({
+          event: 'facebook_post_retry',
+          attempt,
+          error: error.message,
+          delay_ms: Math.round(delay),
+          account_id: account.id
+        }));
       }
-
-      console.log(`Creating Facebook carousel post with ${imageUrls.length} images`);
-      result = await facebookService.createCarouselPost(
-        account.platform_user_id,
-        account.access_token,
-        content,
-        imageUrls
-      );
-    }
+    });
 
     const resultWithThumbnail = result as any;
     return {
@@ -280,13 +294,27 @@ export async function postToBlueskyDirect(content: string, account: any, mediaUr
 
   console.log('Media URLs (normalized):', normalizedMediaUrls);
 
-  const blueskyService = new BlueskyService();
-  const result = await blueskyService.createPost(
-    account.access_token, // identifier stored in access_token
-    account.access_secret, // password stored in access_secret
-    textContent,
-    normalizedMediaUrls
-  );
+  // Wrap API call with retry logic for transient errors
+  const result = await retryWithBackoff(async () => {
+    const blueskyService = new BlueskyService();
+    return await blueskyService.createPost(
+      account.access_token, // identifier stored in access_token
+      account.access_secret, // password stored in access_secret
+      textContent,
+      normalizedMediaUrls
+    );
+  }, {
+    ...PLATFORM_RETRY_CONFIG,
+    onRetry: (attempt, error, delay) => {
+      console.log(JSON.stringify({
+        event: 'bluesky_post_retry',
+        attempt,
+        error: error.message,
+        delay_ms: Math.round(delay),
+        account_id: account.id
+      }));
+    }
+  });
 
   return {
     success: true,
@@ -368,17 +396,31 @@ export async function postToInstagramDirect(
     }
 
     // Standard single-phase processing for non-video carousels or single posts
-    const instagramService = new InstagramService({
-      accessToken: account.access_token,
-      userID: account.platform_user_id,
-      appSecret: process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET
-    });
+    // Wrap API call with retry logic for transient errors
+    const result = await retryWithBackoff(async () => {
+      const instagramService = new InstagramService({
+        accessToken: account.access_token,
+        userID: account.platform_user_id,
+        appSecret: process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET
+      });
 
-    const result = await instagramService.createPost({
-      caption: content,
-      mediaUrls: normalizedMediaUrls,
-      isStory: options?.isStory,
-      isReel: options?.isReel
+      return await instagramService.createPost({
+        caption: content,
+        mediaUrls: normalizedMediaUrls,
+        isStory: options?.isStory,
+        isReel: options?.isReel
+      });
+    }, {
+      ...PLATFORM_RETRY_CONFIG,
+      onRetry: (attempt, error, delay) => {
+        console.log(JSON.stringify({
+          event: 'instagram_post_retry',
+          attempt,
+          error: error.message,
+          delay_ms: Math.round(delay),
+          account_id: account.id
+        }));
+      }
     });
 
     return {
@@ -398,49 +440,51 @@ export async function postToLinkedInDirect(content: string, account: any, mediaU
   console.log('Has media:', !!mediaUrls && mediaUrls.length > 0);
 
   try {
-    const linkedInService = new LinkedInService(account.access_token, account.user_id);
+    // Wrap API calls with retry logic for transient errors
+    const result = await retryWithBackoff(async () => {
+      const linkedInService = new LinkedInService(account.access_token, account.user_id);
 
-    if (mediaUrls && mediaUrls.length > 0) {
-      // LinkedIn only supports one media item per post
-      const mediaUrl = mediaUrls[0];
-      const mediaResponse = await fetch(mediaUrl);
-      const mediaBuffer = Buffer.from(await mediaResponse.arrayBuffer());
-      const mimeType = mediaResponse.headers.get('content-type') || 'image/jpeg';
+      if (mediaUrls && mediaUrls.length > 0) {
+        // LinkedIn only supports one media item per post
+        const mediaUrl = mediaUrls[0];
+        const mediaResponse = await fetch(mediaUrl);
+        const mediaBuffer = Buffer.from(await mediaResponse.arrayBuffer());
+        const mimeType = mediaResponse.headers.get('content-type') || 'image/jpeg';
 
-      // Detect if it's a video or image
-      const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
-      const isVideo = mimeType.startsWith('video/') ||
-                      videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
+        // Detect if it's a video or image
+        const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.m4v'];
+        const isVideo = mimeType.startsWith('video/') ||
+                        videoExtensions.some(ext => mediaUrl.toLowerCase().includes(ext));
 
-      if (isVideo) {
-        console.log('LinkedIn: Detected video, using video upload API');
-        const result = await linkedInService.postWithVideo(content, mediaBuffer, mimeType);
-
-        return {
-          success: true,
-          id: result.id,
-          message: 'Posted to LinkedIn with video successfully'
-        };
+        if (isVideo) {
+          console.log('LinkedIn: Detected video, using video upload API');
+          return await linkedInService.postWithVideo(content, mediaBuffer, mimeType);
+        } else {
+          console.log('LinkedIn: Detected image, using image upload API');
+          return await linkedInService.postWithImage(content, mediaBuffer, mimeType);
+        }
       } else {
-        console.log('LinkedIn: Detected image, using image upload API');
-        const result = await linkedInService.postWithImage(content, mediaBuffer, mimeType);
-
-        return {
-          success: true,
-          id: result.id,
-          message: 'Posted to LinkedIn with image successfully'
-        };
+        // Text-only post
+        return await linkedInService.shareContent({ text: content });
       }
-    } else {
-      // Text-only post
-      const result = await linkedInService.shareContent({ text: content });
+    }, {
+      ...PLATFORM_RETRY_CONFIG,
+      onRetry: (attempt, error, delay) => {
+        console.log(JSON.stringify({
+          event: 'linkedin_post_retry',
+          attempt,
+          error: error.message,
+          delay_ms: Math.round(delay),
+          account_id: account.id
+        }));
+      }
+    });
 
-      return {
-        success: true,
-        id: result.id,
-        message: 'Posted to LinkedIn successfully'
-      };
-    }
+    return {
+      success: true,
+      id: result.id,
+      message: 'Posted to LinkedIn successfully'
+    };
   } catch (error) {
     console.error('LinkedIn posting error:', error);
     throw error;
@@ -479,43 +523,51 @@ export async function postToTwitterDirect(content: string, account: any, mediaUr
 
     console.log('[Twitter] Normalized media URLs:', normalizedMediaUrls);
 
-    const twitterService = new TwitterService({
-      accessToken: account.access_token,
-      accessSecret: account.access_secret
+    // Wrap API calls with retry logic for transient errors
+    const result = await retryWithBackoff(async () => {
+      const twitterService = new TwitterService({
+        accessToken: account.access_token,
+        accessSecret: account.access_secret
+      });
+
+      if (normalizedMediaUrls && normalizedMediaUrls.length > 0) {
+        // Upload media first
+        const mediaIds: string[] = [];
+
+        for (const mediaUrl of normalizedMediaUrls.slice(0, 4)) { // Twitter allows max 4 images
+          const mediaResponse = await fetch(mediaUrl);
+          const mediaBuffer = Buffer.from(await mediaResponse.arrayBuffer());
+          const mimeType = mediaResponse.headers.get('content-type') || 'image/jpeg';
+
+          const mediaId = await twitterService.uploadMedia(mediaBuffer, mimeType);
+          mediaIds.push(mediaId);
+        }
+
+        // Post with media
+        return await twitterService.postTweet(content, mediaIds);
+      } else {
+        // Text-only tweet
+        return await twitterService.postTweet(content);
+      }
+    }, {
+      ...PLATFORM_RETRY_CONFIG,
+      onRetry: (attempt, error, delay) => {
+        console.log(JSON.stringify({
+          event: 'twitter_post_retry',
+          attempt,
+          error: error.message,
+          delay_ms: Math.round(delay),
+          account_id: account.id
+        }));
+      }
     });
 
-    if (normalizedMediaUrls && normalizedMediaUrls.length > 0) {
-      // Upload media first
-      const mediaIds: string[] = [];
-
-      for (const mediaUrl of normalizedMediaUrls.slice(0, 4)) { // Twitter allows max 4 images
-        const mediaResponse = await fetch(mediaUrl);
-        const mediaBuffer = Buffer.from(await mediaResponse.arrayBuffer());
-        const mimeType = mediaResponse.headers.get('content-type') || 'image/jpeg';
-
-        const mediaId = await twitterService.uploadMedia(mediaBuffer, mimeType);
-        mediaIds.push(mediaId);
-      }
-
-      // Post with media
-      const result = await twitterService.postTweet(content, mediaIds);
-
-      return {
-        success: true,
-        id: result.id,
-        thumbnailUrl, // Include thumbnail URL for video posts
-        message: 'Posted to Twitter with media successfully'
-      };
-    } else {
-      // Text-only tweet
-      const result = await twitterService.postTweet(content);
-
-      return {
-        success: true,
-        id: result.id,
-        message: 'Posted to Twitter successfully'
-      };
-    }
+    return {
+      success: true,
+      id: result.id,
+      thumbnailUrl, // Include thumbnail URL for video posts
+      message: 'Posted to Twitter successfully'
+    };
   } catch (error) {
     console.error('Twitter posting error:', error);
     throw error;
@@ -771,16 +823,30 @@ export async function postToThreadsDirect(
         throw new Error('Missing required fields: accessToken and platform_user_id are required for Threads posting');
       }
 
-      const threadsService = new ThreadsService({
-        accessToken: accessToken,
-        userID: account.platform_user_id
-      });
-
       console.log('Creating single Threads post with media:', mediaUrl);
 
-      const result = await threadsService.createPost({
-        text: content,
-        imageUrl: mediaUrl
+      // Wrap API call with retry logic for transient errors
+      const result = await retryWithBackoff(async () => {
+        const threadsService = new ThreadsService({
+          accessToken: accessToken,
+          userID: account.platform_user_id
+        });
+
+        return await threadsService.createPost({
+          text: content,
+          imageUrl: mediaUrl
+        });
+      }, {
+        ...PLATFORM_RETRY_CONFIG,
+        onRetry: (attempt, error, delay) => {
+          console.log(JSON.stringify({
+            event: 'threads_post_retry',
+            attempt,
+            error: error.message,
+            delay_ms: Math.round(delay),
+            account_id: account.id
+          }));
+        }
       });
 
       return {
@@ -921,12 +987,26 @@ export async function postToPinterestDirect(
     }
 
     // Standard image/carousel processing (synchronous - fast)
-    const result = await pinterestService.createSmartPin(
-      boardId,
-      title,
-      description,
-      normalizedMediaUrls // Pass normalized media URLs for smart detection
-    );
+    // Wrap API call with retry logic for transient errors
+    const result = await retryWithBackoff(async () => {
+      return await pinterestService.createSmartPin(
+        boardId,
+        title,
+        description,
+        normalizedMediaUrls // Pass normalized media URLs for smart detection
+      );
+    }, {
+      ...PLATFORM_RETRY_CONFIG,
+      onRetry: (attempt, error, delay) => {
+        console.log(JSON.stringify({
+          event: 'pinterest_post_retry',
+          attempt,
+          error: error.message,
+          delay_ms: Math.round(delay),
+          account_id: account.id
+        }));
+      }
+    });
 
     return {
       success: true,
@@ -973,18 +1053,31 @@ export async function postToTikTokDirect(content: string, account: any, mediaUrl
     }
 
     console.log('[TikTok Posting] Using validated token');
-    const tiktokService = new TikTokService(token);
 
     // Format content for TikTok
     const formattedContent = TikTokService.formatContent(content);
 
+    // Wrap API call with retry logic for transient errors
     // Note: TikTok posting depends on app approval status
-    // Check if app is unaudited (will force SELF_ONLY/draft mode)
-    const result = await tiktokService.createPost(
-      formattedContent,
-      videoUrl,
-      'PUBLIC_TO_EVERYONE' // Will be overridden to SELF_ONLY if app is unaudited
-    );
+    const result = await retryWithBackoff(async () => {
+      const tiktokService = new TikTokService(token);
+      return await tiktokService.createPost(
+        formattedContent,
+        videoUrl,
+        'PUBLIC_TO_EVERYONE' // Will be overridden to SELF_ONLY if app is unaudited
+      );
+    }, {
+      ...PLATFORM_RETRY_CONFIG,
+      onRetry: (attempt, error, delay) => {
+        console.log(JSON.stringify({
+          event: 'tiktok_post_retry',
+          attempt,
+          error: error.message,
+          delay_ms: Math.round(delay),
+          account_id: account.id
+        }));
+      }
+    });
 
     return {
       success: result.success,
