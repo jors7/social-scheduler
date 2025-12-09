@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { r2Storage } from '@/lib/r2/storage';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
     // Get form data
     const formData = await request.formData();
     const files = formData.getAll('files') as File[];
-    
+
     if (!files || files.length === 0) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 });
     }
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
       const validVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/x-flv', 'video/x-matroska'];
       const isImage = validImageTypes.includes(file.type);
       const isVideo = validVideoTypes.includes(file.type);
-      
+
       if (!isImage && !isVideo) {
         continue; // Skip invalid file types
       }
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
       const maxImageSize = 50 * 1024 * 1024; // 50MB for images
       const maxVideoSize = 500 * 1024 * 1024; // 500MB for videos
       const maxSize = isVideo ? maxVideoSize : maxImageSize;
-      
+
       if (file.size > maxSize) {
         return NextResponse.json(
           { error: `File ${file.name} exceeds size limit (${isVideo ? '500MB' : '50MB'})` },
@@ -60,50 +61,32 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Generate unique filename
-      const timestamp = Date.now();
-      const randomString = Math.random().toString(36).substring(2, 8);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${timestamp}-${randomString}.${fileExt}`;
+      // Generate unique key for R2
+      const key = r2Storage.generateKey(user.id, file.name);
 
-      // Convert File to ArrayBuffer
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
+      try {
+        // Upload to R2
+        const uploadResult = await r2Storage.upload(file, key, file.type);
 
-      // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from('post-media')
-        .upload(fileName, buffer, {
-          contentType: file.type,
-          cacheControl: '3600',
-          upsert: false
+        uploadedFiles.push({
+          name: file.name,
+          url: uploadResult.url,
+          type: file.type,
+          size: file.size
         });
-
-      if (error) {
-        console.error('Upload error:', error);
+      } catch (error) {
+        console.error('R2 upload error:', error);
         continue; // Skip failed uploads
       }
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('post-media')
-        .getPublicUrl(fileName);
-
-      uploadedFiles.push({
-        name: file.name,
-        url: publicUrl,
-        type: file.type,
-        size: file.size
-      });
     }
 
     if (uploadedFiles.length === 0) {
       return NextResponse.json({ error: 'No files were uploaded successfully' }, { status: 400 });
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      files: uploadedFiles 
+      files: uploadedFiles
     });
 
   } catch (error) {

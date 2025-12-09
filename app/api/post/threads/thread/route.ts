@@ -11,12 +11,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`${optimized ? '[Optimized]' : ''} Creating connected thread with ${posts.length} posts for user ${userId}`);
-    console.log('Posts to create:', posts.map((p, i) => `Post ${i + 1}: ${p.substring(0, 30)}...`));
-    console.log('Access token preview:', accessToken ? `${accessToken.substring(0, 20)}...` : 'null');
-
     // First, get the Threads user ID (different from Instagram user ID)
-    console.log('Getting Threads user ID...');
     const meResponse = await fetch(
       `https://graph.threads.net/v1.0/me?fields=id,username&access_token=${accessToken}`
     );

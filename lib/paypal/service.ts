@@ -12,6 +12,21 @@ import type {
   PayPalPayoutItem,
 } from '@/types/affiliate';
 import { fetchWithTimeout, TIMEOUT } from '@/lib/utils/fetch-with-timeout';
+import { createClient } from '@supabase/supabase-js';
+
+// Supabase admin client for webhook handlers (bypasses RLS)
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  );
+}
 
 // =====================================================
 // CONFIGURATION
@@ -285,12 +300,75 @@ async function handlePayoutSuccess(resource: any): Promise<void> {
     senderItemId,
   });
 
-  // TODO: Update database
-  // - Find payout by sender_item_id (our payout_id)
-  // - Update status to 'completed'
-  // - Store paypal_transaction_id
-  // - Update affiliate paid_balance
-  // - Send confirmation email to affiliate
+  if (!senderItemId) {
+    console.error('No sender_item_id in payout success webhook');
+    return;
+  }
+
+  const supabase = getSupabaseAdmin();
+
+  // Find the payout record by our payout_id (sender_item_id)
+  const { data: payout, error: fetchError } = await supabase
+    .from('affiliate_payouts')
+    .select('id, affiliate_id, amount, status')
+    .eq('id', senderItemId)
+    .single();
+
+  if (fetchError || !payout) {
+    console.error('Payout not found:', senderItemId, fetchError);
+    return;
+  }
+
+  // Skip if already processed
+  if (payout.status === 'completed') {
+    console.log('Payout already marked as completed:', senderItemId);
+    return;
+  }
+
+  // Update payout status to completed
+  const { error: updatePayoutError } = await supabase
+    .from('affiliate_payouts')
+    .update({
+      status: 'completed',
+      paypal_payout_item_id: payoutItemId,
+      paypal_transaction_id: transactionId,
+      processed_at: new Date().toISOString(),
+    })
+    .eq('id', senderItemId);
+
+  if (updatePayoutError) {
+    console.error('Failed to update payout status:', updatePayoutError);
+    return;
+  }
+
+  // Update affiliate's paid_balance (add) and pending_balance (subtract)
+  const { error: updateAffiliateError } = await supabase.rpc('process_affiliate_payout_success', {
+    p_affiliate_id: payout.affiliate_id,
+    p_amount: payout.amount,
+  });
+
+  // If RPC doesn't exist, fall back to manual update
+  if (updateAffiliateError) {
+    console.log('RPC not available, using manual update');
+    const { data: affiliate } = await supabase
+      .from('affiliates')
+      .select('pending_balance, paid_balance')
+      .eq('id', payout.affiliate_id)
+      .single();
+
+    if (affiliate) {
+      await supabase
+        .from('affiliates')
+        .update({
+          pending_balance: Math.max(0, Number(affiliate.pending_balance) - Number(payout.amount)),
+          paid_balance: Number(affiliate.paid_balance) + Number(payout.amount),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', payout.affiliate_id);
+    }
+  }
+
+  console.log('Payout success processed:', senderItemId);
 }
 
 async function handlePayoutFailure(resource: any): Promise<void> {
@@ -304,12 +382,70 @@ async function handlePayoutFailure(resource: any): Promise<void> {
     errors,
   });
 
-  // TODO: Update database
-  // - Find payout by sender_item_id
-  // - Update status to 'failed'
-  // - Store failure_reason
-  // - Refund pending_balance to affiliate
-  // - Notify admin
+  if (!senderItemId) {
+    console.error('No sender_item_id in payout failure webhook');
+    return;
+  }
+
+  const supabase = getSupabaseAdmin();
+
+  // Find the payout record
+  const { data: payout, error: fetchError } = await supabase
+    .from('affiliate_payouts')
+    .select('id, affiliate_id, amount, status')
+    .eq('id', senderItemId)
+    .single();
+
+  if (fetchError || !payout) {
+    console.error('Payout not found:', senderItemId, fetchError);
+    return;
+  }
+
+  // Skip if already processed
+  if (payout.status === 'completed' || payout.status === 'failed') {
+    console.log('Payout already processed:', senderItemId, payout.status);
+    return;
+  }
+
+  // Format error message
+  const failureReason = errors
+    ? (Array.isArray(errors) ? errors.map((e: any) => e.message || e).join('; ') : String(errors))
+    : 'Unknown error';
+
+  // Update payout status to failed
+  const { error: updatePayoutError } = await supabase
+    .from('affiliate_payouts')
+    .update({
+      status: 'failed',
+      paypal_payout_item_id: payoutItemId,
+      failure_reason: failureReason,
+      processed_at: new Date().toISOString(),
+    })
+    .eq('id', senderItemId);
+
+  if (updatePayoutError) {
+    console.error('Failed to update payout status:', updatePayoutError);
+    return;
+  }
+
+  // Refund the amount back to pending_balance
+  const { data: affiliate } = await supabase
+    .from('affiliates')
+    .select('pending_balance')
+    .eq('id', payout.affiliate_id)
+    .single();
+
+  if (affiliate) {
+    await supabase
+      .from('affiliates')
+      .update({
+        pending_balance: Number(affiliate.pending_balance) + Number(payout.amount),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', payout.affiliate_id);
+  }
+
+  console.log('Payout failure processed:', senderItemId);
 }
 
 async function handlePayoutBlocked(resource: any): Promise<void> {
@@ -321,10 +457,12 @@ async function handlePayoutBlocked(resource: any): Promise<void> {
     senderItemId,
   });
 
-  // TODO: Update database similar to failure
-  // - Status: 'failed'
-  // - Reason: 'Account blocked or restricted'
-  // - Notify admin for manual review
+  // Treat blocked same as failure with specific reason
+  await handlePayoutFailureInternal(
+    senderItemId,
+    payoutItemId,
+    'Account blocked or restricted by PayPal. Please contact support.'
+  );
 }
 
 async function handlePayoutReturned(resource: any): Promise<void> {
@@ -336,10 +474,12 @@ async function handlePayoutReturned(resource: any): Promise<void> {
     senderItemId,
   });
 
-  // TODO: Update database similar to failure
-  // - Status: 'failed'
-  // - Reason: 'Invalid PayPal email or account issue'
-  // - Ask affiliate to update their PayPal email
+  // Treat returned same as failure with specific reason
+  await handlePayoutFailureInternal(
+    senderItemId,
+    payoutItemId,
+    'Payment returned. Please verify your PayPal email address is correct.'
+  );
 }
 
 async function handlePayoutUnclaimed(resource: any): Promise<void> {
@@ -351,10 +491,87 @@ async function handlePayoutUnclaimed(resource: any): Promise<void> {
     senderItemId,
   });
 
-  // TODO: Update database
-  // - Status: 'processing' (keep as pending)
-  // - Send reminder email to affiliate to claim payment
-  // - After 30 days unclaimed, PayPal automatically returns the funds
+  if (!senderItemId) {
+    console.error('No sender_item_id in payout unclaimed webhook');
+    return;
+  }
+
+  const supabase = getSupabaseAdmin();
+
+  // Update payout with unclaimed note but keep as processing
+  // PayPal will send RETURNED event after 30 days if still unclaimed
+  await supabase
+    .from('affiliate_payouts')
+    .update({
+      status: 'processing',
+      paypal_payout_item_id: payoutItemId,
+      failure_reason: 'Payment unclaimed - recipient has not accepted the payment yet.',
+    })
+    .eq('id', senderItemId);
+
+  console.log('Payout unclaimed processed:', senderItemId);
+}
+
+// Helper function for failure-type events (blocked, returned)
+async function handlePayoutFailureInternal(
+  senderItemId: string | undefined,
+  payoutItemId: string,
+  failureReason: string
+): Promise<void> {
+  if (!senderItemId) {
+    console.error('No sender_item_id in payout webhook');
+    return;
+  }
+
+  const supabase = getSupabaseAdmin();
+
+  // Find the payout record
+  const { data: payout, error: fetchError } = await supabase
+    .from('affiliate_payouts')
+    .select('id, affiliate_id, amount, status')
+    .eq('id', senderItemId)
+    .single();
+
+  if (fetchError || !payout) {
+    console.error('Payout not found:', senderItemId, fetchError);
+    return;
+  }
+
+  // Skip if already processed
+  if (payout.status === 'completed' || payout.status === 'failed') {
+    console.log('Payout already processed:', senderItemId, payout.status);
+    return;
+  }
+
+  // Update payout status to failed
+  await supabase
+    .from('affiliate_payouts')
+    .update({
+      status: 'failed',
+      paypal_payout_item_id: payoutItemId,
+      failure_reason: failureReason,
+      processed_at: new Date().toISOString(),
+    })
+    .eq('id', senderItemId);
+
+  // Refund the amount back to pending_balance
+  const { data: affiliate } = await supabase
+    .from('affiliates')
+    .select('pending_balance')
+    .eq('id', payout.affiliate_id)
+    .single();
+
+  if (affiliate) {
+    await supabase
+      .from('affiliates')
+      .update({
+        pending_balance: Number(affiliate.pending_balance) + Number(payout.amount),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', payout.affiliate_id);
+  }
+
+  console.log('Payout failure (internal) processed:', senderItemId);
 }
 
 // =====================================================

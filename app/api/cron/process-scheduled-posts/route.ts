@@ -37,7 +37,6 @@ async function processScheduledPosts(request: NextRequest) {
     // Verify authorization - accept both QStash signature and Bearer token
     const authHeader = request.headers.get('authorization');
     const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
-    const testAuth = 'Bearer test';
 
     // Check for QStash signature
     const upstashSignature = request.headers.get('upstash-signature');
@@ -69,7 +68,7 @@ async function processScheduledPosts(request: NextRequest) {
     }
 
     // Accept if either QStash signature is valid OR bearer token is correct
-    const isBearerTokenValid = authHeader === expectedAuth || authHeader === testAuth;
+    const isBearerTokenValid = authHeader === expectedAuth;
 
     if (!isQStashVerified && !isBearerTokenValid) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -53,15 +53,6 @@ export class ThreadsClient {
         createParams.set(isVideo ? 'video_url' : 'image_url', imageUrl);
       }
 
-      console.log('=== Threads Create Container Debug ===');
-      console.log('URL:', `${this.baseURL}/${this.userID}/threads`);
-      console.log('User ID:', this.userID);
-      console.log('Token length:', this.accessToken?.length);
-      console.log('Token preview:', this.accessToken ? `${this.accessToken.substring(0, 30)}...` : 'null');
-      console.log('Text:', text);
-      console.log('Media type:', mediaType);
-      console.log('Media URL:', imageUrl);
-
       // Use the threads endpoint for the Instagram Business Account
       const createResponse = await fetch(
         `${this.baseURL}/${this.userID}/threads`,
@@ -71,12 +62,9 @@ export class ThreadsClient {
         }
       );
 
-      console.log('Create response status:', createResponse.status);
-
       if (!createResponse.ok) {
         const error = await createResponse.json();
-        console.error('=== Threads Container Creation Failed ===');
-        console.error('Error:', JSON.stringify(error, null, 2));
+        console.error('Threads container creation failed:', error?.error?.message || 'Unknown error');
         throw new Error(`Failed to create Threads container: ${JSON.stringify(error)}`);
       }
 

@@ -141,20 +141,10 @@ async function revokeTikTokToken(accessToken: string): Promise<boolean> {
       return false;
     }
 
-    console.log('Revoking TikTok access token...');
-    console.log('Token to revoke:', accessToken.substring(0, 20) + '...');
-    
     const revokeParams = new URLSearchParams({
       client_key: clientKey,
       client_secret: clientSecret,
       token: accessToken
-    });
-    
-    console.log('Revoke request URL:', 'https://open.tiktokapis.com/v2/oauth/revoke/');
-    console.log('Revoke params (sanitized):', {
-      client_key: clientKey.substring(0, 5) + '...',
-      client_secret: '***',
-      token: accessToken.substring(0, 20) + '...'
     });
     
     const response = await fetch('https://open.tiktokapis.com/v2/oauth/revoke/', {

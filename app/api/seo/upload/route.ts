@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { r2Storage } from '@/lib/r2/storage'
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
-    
+
     // Check if user is admin
     const { data: { user } } = await supabase.auth.getUser()
     if (user?.email !== 'jan.orsula1@gmail.com') {
@@ -25,29 +26,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate unique filename
+    // Generate unique filename for R2
     const fileExt = file.name.split('.').pop()
     const fileName = `seo-og-${pagePath.replace(/\//g, '-')}-${Date.now()}.${fileExt}`
-    const filePath = `seo-images/${fileName}`
+    const key = `seo-images/${fileName}`
 
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('media')
-      .upload(filePath, file, {
-        contentType: file.type,
-        upsert: false
-      })
+    // Upload to R2
+    const uploadResult = await r2Storage.upload(file, key, file.type)
 
-    if (uploadError) throw uploadError
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('media')
-      .getPublicUrl(filePath)
-
-    return NextResponse.json({ 
-      url: publicUrl,
-      path: filePath 
+    return NextResponse.json({
+      url: uploadResult.url,
+      path: key
     })
   } catch (error) {
     console.error('Error uploading OG image:', error)

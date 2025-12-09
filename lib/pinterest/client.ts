@@ -11,9 +11,6 @@ export class PinterestClient {
   }
 
   async getUserInfo() {
-    console.log('Making Pinterest API request to user_account endpoint...');
-    console.log('Token length:', this.accessToken.length);
-    
     const response = await fetch(
       `${this.apiBaseUrl}/user_account`,
       {
@@ -24,8 +21,6 @@ export class PinterestClient {
       }
     );
 
-    console.log('Pinterest API response status:', response.status);
-    
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Pinterest API error response:', errorText);
@@ -33,7 +28,6 @@ export class PinterestClient {
     }
 
     const data = await response.json();
-    console.log('Pinterest user data:', data);
     return data;
   }
 
@@ -79,12 +73,6 @@ export class PinterestClient {
       board_id: boardId,
       ...pinData,
     };
-
-    console.log('=== Pinterest Pin Creation Debug ===');
-    console.log('API Endpoint:', `${this.apiBaseUrl}/pins`);
-    console.log('Using Sandbox:', this.apiBaseUrl.includes('sandbox'));
-    console.log('Request Body:', JSON.stringify(requestBody, null, 2));
-    console.log('Token (first 20 chars):', this.accessToken.substring(0, 20) + '...');
 
     const response = await fetch(
       `${this.apiBaseUrl}/pins`,

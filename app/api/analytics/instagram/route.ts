@@ -54,14 +54,6 @@ export async function GET(request: NextRequest) {
       .eq('platform', 'instagram')
       .eq('is_active', true);
 
-    console.log('[Instagram Analytics] Query:', { user_id: user.id, platform: 'instagram', is_active: true });
-    console.log('[Instagram Analytics] Found accounts:', accounts?.length || 0);
-    if (accounts && accounts.length > 0) {
-      accounts.forEach(acc => {
-        console.log(`[Instagram Analytics] Account: ${acc.id} - ${acc.username} - token: ${acc.access_token?.substring(0, 15)}...`);
-      });
-    }
-
     if (accountsError || !accounts || accounts.length === 0) {
       console.log('[Instagram Analytics] No active Instagram accounts found');
       return NextResponse.json({

@@ -68,29 +68,7 @@ export async function GET(request: NextRequest) {
     tokenBody.append('redirect_uri', redirectUri);
     tokenBody.append('code', code);
 
-    console.log('=== Instagram Token Exchange ===');
-    console.log('Client ID:', instagramAppId);
-    console.log('Client Secret (first 4 chars):', instagramAppSecret?.substring(0, 4) + '...');
-    console.log('Redirect URI (exact):', redirectUri);
-    console.log('Code (first 20 chars):', code.substring(0, 20) + '...');
-    console.log('Code length:', code.length);
-    
-    // Log each parameter separately for debugging
-    console.log('Token body parameters:');
-    tokenBody.forEach((value, key) => {
-      if (key === 'client_secret') {
-        console.log(`  ${key}: ${value.substring(0, 4)}...`);
-      } else if (key === 'code') {
-        console.log(`  ${key}: ${value.substring(0, 20)}...`);
-      } else {
-        console.log(`  ${key}: ${value}`);
-      }
-    });
-    
-    // Try Instagram's token endpoint with POST body
     const tokenUrl = 'https://api.instagram.com/oauth/access_token';
-    console.log('Token URL:', tokenUrl);
-    console.log('Full request body:', tokenBody.toString().replace(instagramAppSecret!, 'SECRET').replace(code, 'CODE'));
     
     const tokenResponse = await fetch(tokenUrl, {
       method: 'POST',
@@ -99,9 +77,6 @@ export async function GET(request: NextRequest) {
       },
       body: tokenBody.toString()
     });
-
-    console.log('Token response status:', tokenResponse.status);
-    console.log('Token response headers:', Object.fromEntries(tokenResponse.headers.entries()));
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
@@ -122,7 +97,6 @@ export async function GET(request: NextRequest) {
     }
 
     const tokenData = await tokenResponse.json();
-    console.log('Token data received:', JSON.stringify(tokenData, null, 2));
 
     // Instagram OAuth response includes: access_token, user_id
     const { access_token: shortLivedToken, user_id } = tokenData;
@@ -138,44 +112,25 @@ export async function GET(request: NextRequest) {
     }
 
     // Exchange short-lived token for long-lived token
-    console.log('=== Exchanging for Long-Lived Token ===');
-    console.log('Short-lived token (first 20 chars):', shortLivedToken.substring(0, 20) + '...');
-    
     const exchangeUrl = new URL('https://graph.instagram.com/access_token');
     exchangeUrl.searchParams.append('grant_type', 'ig_exchange_token');
     exchangeUrl.searchParams.append('client_secret', instagramAppSecret!);
     exchangeUrl.searchParams.append('access_token', shortLivedToken);
-    
-    console.log('Exchange URL (without secrets):', exchangeUrl.toString().replace(instagramAppSecret!, 'SECRET').replace(shortLivedToken, 'TOKEN'));
-    
+
     const exchangeResponse = await fetch(exchangeUrl.toString());
-    
-    console.log('Exchange response status:', exchangeResponse.status);
     
     let access_token = shortLivedToken; // Fallback to short-lived token if exchange fails
     let token_type = 'short_lived';
     
     if (exchangeResponse.ok) {
       const exchangeData = await exchangeResponse.json();
-      console.log('Exchange response:', JSON.stringify(exchangeData, null, 2));
-      
       if (exchangeData.access_token) {
         access_token = exchangeData.access_token;
         token_type = 'long_lived';
-        console.log('Successfully obtained long-lived token');
-        console.log('Token expires in:', exchangeData.expires_in, 'seconds');
       }
     } else {
-      const errorText = await exchangeResponse.text();
-      console.error('Token exchange failed:', errorText);
-      console.warn('Continuing with short-lived token');
+      console.error('Long-lived token exchange failed, continuing with short-lived token');
     }
-
-    // Get Instagram Business account info
-    console.log('Instagram Business account authenticated');
-    console.log('User ID:', user_id);
-    console.log('Token type:', token_type);
-    console.log('Permissions granted:', tokenData.permissions);
     
     // Now we need to get the Instagram Business Account ID
     // The user_id from OAuth might be different from the IG Business Account ID
@@ -184,31 +139,19 @@ export async function GET(request: NextRequest) {
     let facebookPageAccessToken = null; // Store FB Page token for location search
 
     // ALWAYS fetch Facebook Pages to get Page access token (required for location search)
-    // This must happen regardless of whether Instagram token is short-lived or long-lived
-    console.log('[Instagram Callback] Fetching Facebook Pages with Instagram Business Accounts...');
-    console.log('[Instagram Callback] Token type:', token_type);
-    console.log('[Instagram Callback] Access token available:', !!access_token);
-
     const pagesUrl = `https://graph.facebook.com/v20.0/me/accounts?fields=instagram_business_account,name,access_token&access_token=${access_token}`;
     const pagesResponse = await fetch(pagesUrl);
-    console.log('[Instagram Callback] Pages response status:', pagesResponse.status);
 
     if (pagesResponse.ok) {
       const pagesData = await pagesResponse.json();
-      console.log('[Instagram Callback] Pages fetched:', pagesData.data?.length || 0, 'pages');
 
       // Find the first page with an Instagram Business Account
       const pageWithInstagram = pagesData.data?.find((page: any) => page.instagram_business_account);
 
       if (pageWithInstagram) {
-        console.log('[Instagram Callback] Found page with Instagram account:', pageWithInstagram.name);
-
         // ALWAYS capture Facebook Page access token (needed for location search)
         if (pageWithInstagram.access_token) {
           facebookPageAccessToken = pageWithInstagram.access_token;
-          console.log('[Instagram Callback] ✓ Facebook Page token captured successfully');
-        } else {
-          console.error('[Instagram Callback] ✗ Page found but no access_token in response');
         }
 
         // Only update igBusinessAccountId if we have a long-lived token

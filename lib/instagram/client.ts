@@ -36,7 +36,6 @@ export class InstagramClient {
     hmac.update(this.accessToken);
     const proof = hmac.digest('hex');
 
-    console.log('Generated appsecret_proof:', proof.substring(0, 10) + '...');
     return proof;
   }
 
