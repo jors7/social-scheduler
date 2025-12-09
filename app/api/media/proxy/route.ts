@@ -4,24 +4,38 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs'; // Use Node.js runtime for better compatibility
 export const maxDuration = 60; // Allow up to 60 seconds for large videos
 
+// Get the Supabase project URL and extract the host for validation
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_HOST = SUPABASE_URL ? new URL(SUPABASE_URL).host : '';
+
 export async function GET(request: NextRequest) {
   try {
     // Get the media URL from query params
     const { searchParams } = new URL(request.url);
     const mediaUrl = searchParams.get('url');
-    
+
     console.log('Proxy request for:', mediaUrl);
-    
+
     if (!mediaUrl) {
       return NextResponse.json({ error: 'No media URL provided' }, { status: 400 });
     }
-    
+
     // Decode the URL
     const decodedUrl = decodeURIComponent(mediaUrl);
-    
-    // Validate that it's a Supabase URL for security
-    if (!decodedUrl.includes('supabase.co/storage/v1/object/public/')) {
-      console.error('Invalid media URL:', decodedUrl);
+
+    // SECURITY: Validate that it's from OUR Supabase project only, not any Supabase project
+    let isValidUrl = false;
+    try {
+      const parsedUrl = new URL(decodedUrl);
+      // Must be from our specific Supabase project and be a public storage URL
+      isValidUrl = parsedUrl.host === SUPABASE_HOST &&
+                   parsedUrl.pathname.startsWith('/storage/v1/object/public/');
+    } catch {
+      isValidUrl = false;
+    }
+
+    if (!isValidUrl) {
+      console.error('Invalid media URL (not from our Supabase project):', decodedUrl);
       return NextResponse.json({ error: 'Invalid media URL' }, { status: 400 });
     }
     
