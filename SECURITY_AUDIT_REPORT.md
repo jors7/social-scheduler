@@ -545,9 +545,49 @@ The following files were modified to address the security vulnerabilities:
 - Added admin auth check to POST method
 - Prevents unauthorized sitemap ping abuse
 
+### 6. `/app/api/media/proxy/route.ts`
+- Restricted to only proxy URLs from your specific Supabase project
+- Prevents abuse as a general-purpose proxy
+
 ---
 
-## Appendix C: Deployment Checklist
+## Appendix C: Admin Authorization Architecture (Consolidated)
+
+After consolidation, the admin system works as follows:
+
+### Two Parallel Systems (Both Required)
+
+| System | Purpose | Used By |
+|--------|---------|---------|
+| `admin_users` table | Database-level access (RLS policies) | Supabase RLS, blog access |
+| `user_subscriptions.role` | Application-level access | API routes, UI features |
+
+### Recommended Usage
+
+| Context | What to Use |
+|---------|-------------|
+| **API routes** | `requireAdmin()` from `lib/admin/auth.ts` |
+| **Super admin API routes** | `requireSuperAdmin()` from `lib/admin/auth.ts` |
+| **Client components** | Query `admin_users` table directly |
+| **Database RLS** | Already uses `admin_users` table |
+
+### Files
+
+| File | Status | Notes |
+|------|--------|-------|
+| `lib/admin/auth.ts` | **Primary** | Use for all API routes |
+| `lib/auth/admin.ts` | **Deprecated** | Kept for backward compatibility, marked with @deprecated |
+
+### Making Someone an Admin
+
+1. Add to `admin_users` table (for RLS/database access)
+2. Set `user_subscriptions.role` to `'admin'` or `'super_admin'` (for API access)
+
+Both steps are required for full admin access.
+
+---
+
+## Appendix D: Deployment Checklist
 
 After merging fixes, run these tests to verify:
 
