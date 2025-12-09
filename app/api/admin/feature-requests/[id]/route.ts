@@ -1,39 +1,20 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { requireAdmin, requireSuperAdmin } from '@/lib/admin/auth';
 import type { UpdateFeatureRequestForm } from '@/lib/feature-requests/types';
 
 // PATCH /api/admin/feature-requests/[id]
 // Update feature request (status, priority, admin notes, etc.)
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Check admin authorization
+  const authError = await requireAdmin(request)
+  if (authError) return authError
+
   try {
     const supabase = await createClient();
-
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
-
-    // Check if user is admin
-    const { data: subscription } = await supabase
-      .from('user_subscriptions')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!subscription || !['admin', 'super_admin'].includes(subscription.role || '')) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
-        { status: 403 }
-      );
-    }
 
     // Get request body
     const updates: UpdateFeatureRequestForm = await request.json();
@@ -99,35 +80,15 @@ export async function PATCH(
 // DELETE /api/admin/feature-requests/[id]
 // Delete feature request (super admin only)
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Check super admin authorization
+  const authError = await requireSuperAdmin(request)
+  if (authError) return authError
+
   try {
     const supabase = await createClient();
-
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
-
-    // Check if user is super admin
-    const { data: subscription } = await supabase
-      .from('user_subscriptions')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!subscription || subscription.role !== 'super_admin') {
-      return NextResponse.json(
-        { error: 'Unauthorized - Super admin access required' },
-        { status: 403 }
-      );
-    }
 
     // Delete feature request (cascade will delete votes and notifications)
     const { error: deleteError } = await supabase

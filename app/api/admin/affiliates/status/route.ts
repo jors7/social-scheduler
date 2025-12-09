@@ -4,18 +4,11 @@
 // Handles suspension and reactivation of affiliates
 
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
-import { createClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
 import { suspendAffiliate, reactivateAffiliate } from '@/lib/affiliate/service';
-import { isAdminEmail, checkAdminByUserId } from '@/lib/auth/admin';
+import { requireAdmin } from '@/lib/admin/auth';
 import { logAdminAction, ADMIN_ACTIONS } from '@/lib/admin/audit';
-
-function getServiceClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return createClient(supabaseUrl, supabaseServiceKey);
-}
 
 // =====================================================
 // POST /api/admin/affiliates/status
@@ -23,18 +16,16 @@ function getServiceClient() {
 // Change affiliate status (suspend or reactivate)
 
 export async function POST(request: NextRequest) {
+  // Check admin authorization
+  const authError = await requireAdmin(request)
+  if (authError) return authError
+
   try {
     const body = await request.json();
     const { affiliate_id, action, reason } = body;
 
-    console.log('=== Affiliate Status Change API ===');
-    console.log('affiliate_id:', affiliate_id);
-    console.log('action:', action);
-    console.log('reason:', reason);
-
     // Validate required fields
     if (!affiliate_id || !action) {
-      console.log('❌ Validation failed: missing required fields');
       return NextResponse.json(
         { success: false, error: 'Missing required fields: affiliate_id, action' },
         { status: 400 }
@@ -43,14 +34,13 @@ export async function POST(request: NextRequest) {
 
     // Validate action
     if (action !== 'suspend' && action !== 'reactivate') {
-      console.log('❌ Validation failed: invalid action');
       return NextResponse.json(
         { success: false, error: 'Invalid action. Must be "suspend" or "reactivate"' },
         { status: 400 }
       );
     }
 
-    // Verify admin authentication
+    // Get current user for audit logging
     const cookieStore = cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -65,27 +55,9 @@ export async function POST(request: NextRequest) {
     );
 
     const { data: { user } } = await supabase.auth.getUser();
-
     if (!user) {
-      console.log('❌ User not authenticated');
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
-
-    console.log('✓ User authenticated:', user.id);
-
-    // Verify user is an admin
-    const supabaseAdmin = getServiceClient();
-    const isAdmin = isAdminEmail(user.email) || await checkAdminByUserId(user.id, supabaseAdmin);
-
-    if (!isAdmin) {
-      console.log('❌ User is not an admin');
-      return NextResponse.json(
-        { success: false, error: 'Forbidden: Admin access required' },
-        { status: 403 }
-      );
-    }
-
-    console.log('✓ Admin access verified');
 
     // Perform the action
     let affiliate;

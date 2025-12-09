@@ -178,42 +178,35 @@ const isBearerTokenValid = authHeader === expectedAuth;
 
 ## 🟡 MEDIUM Priority Issues
 
-### 11. Inconsistent Admin Route Protection
+### 11. ✅ RESOLVED: Inconsistent Admin Route Protection
 
-Most admin routes use `requireAdmin()`:
-```typescript
-// Good pattern (app/api/admin/users/route.ts)
-const authError = await requireAdmin(request)
-if (authError) return authError
-```
+**Status:** All admin routes now use `requireAdmin()` consistently.
 
-But some use inline checks:
-```typescript
-// Inconsistent pattern (app/api/admin/feature-requests/[id]/route.ts)
-if (!subscription || !['admin', 'super_admin'].includes(subscription.role || '')) {
-  return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-}
-```
-
-**Action Required:** Standardize all admin routes to use `requireAdmin()`.
+**Fixed routes (16 total):**
+- `app/api/admin/debug/route.ts` - Was completely unprotected!
+- `app/api/admin/check-user/route.ts` - Was completely unprotected!
+- `app/api/admin/users/[id]/simple/route.ts` - Was completely unprotected!
+- `app/api/admin/users/[id]/debug/route.ts` - Was completely unprotected!
+- `app/api/admin/feature-requests/route.ts`
+- `app/api/admin/feature-requests/[id]/route.ts` (PATCH and DELETE)
+- `app/api/admin/platform-requests/route.ts`
+- `app/api/admin/fix-instagram-accounts/route.ts`
+- `app/api/admin/support/conversations/route.ts`
+- `app/api/admin/support/conversations/[id]/route.ts` (GET and PATCH)
+- `app/api/admin/support/conversations/[id]/messages/route.ts`
+- `app/api/admin/users/[id]/route.ts` (GET and PATCH)
+- `app/api/admin/affiliates/status/route.ts`
+- `app/api/admin/affiliates/approve/route.ts`
+- `app/api/admin/affiliates/payouts/route.ts`
+- `app/api/admin/help-center-searches/route.ts`
 
 ---
 
-### 12. Duplicate/Placeholder YouTube Credentials
+### 12. ✅ RESOLVED: Duplicate/Placeholder YouTube Credentials
 
-**Location:** `.env.local:45-46 and 71-72`
+**Status:** Removed duplicate placeholder entries from `.env.local`.
 
-```env
-# Lines 45-46 (placeholders)
-YOUTUBE_CLIENT_ID=your_youtube_client_id_here
-YOUTUBE_CLIENT_SECRET=your_youtube_client_secret_here
-
-# Lines 71-72 (real values)
-YOUTUBE_CLIENT_ID=74542110103-fvhmrd02mue5h29crj77tsvllao29i0u.apps.googleusercontent.com
-YOUTUBE_CLIENT_SECRET=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
-```
-
-**Action Required:** Remove duplicate placeholder entries.
+YouTube credentials now appear only once with proper comment at line 67-69.
 
 ---
 
@@ -458,10 +451,11 @@ curl -X POST https://www.socialcal.app/api/cron/snapshot-analytics \
 |----------|-------|--------|
 | 🚨 BLOCKER | 5 | ✅ 4 Resolved, 1 Minor (admin email) |
 | 🔴 HIGH | 5 | ✅ All Resolved |
-| 🟡 MEDIUM | 4 | Pending |
+| 🟡 MEDIUM | 4 | ✅ 2 Resolved, 2 Minor (Twitter placeholders, affiliate emails) |
 | 🟢 LOW | 1 | Can wait |
 
 **Security fixes applied:** December 9, 2025
+**Admin route protection standardized:** December 9, 2025
 **Ready for:** Manual testing of critical flows (Tests 1-4)
 
 ---

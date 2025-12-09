@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/admin/auth';
 
 /**
  * One-time admin endpoint to fix duplicate Instagram accounts
  * This deactivates all Instagram accounts except the most recently updated one
  */
 export async function POST(request: NextRequest) {
+  // Check admin authorization
+  const authError = await requireAdmin(request)
+  if (authError) return authError
+
   try {
     const supabase = await createClient();
 
-    // Check authentication and admin status
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Get current user for the query
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

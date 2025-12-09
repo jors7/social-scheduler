@@ -1,37 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/admin/auth'
 
 // GET - Get conversation with all messages (admin)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Check admin authorization
+  const authError = await requireAdmin(request)
+  if (authError) return authError
+
   try {
     const { id } = await params
     const supabase = await createClient()
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      )
-    }
-
-    // Check if user is admin
-    const { data: subscription } = await supabase
-      .from('user_subscriptions')
-      .select('role')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!subscription || !['admin', 'super_admin'].includes(subscription.role || '')) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
-        { status: 403 }
-      )
-    }
 
     // Get conversation with stored user_email
     const { data: conversation, error: convError } = await supabase
@@ -119,32 +101,13 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Check admin authorization
+  const authError = await requireAdmin(request)
+  if (authError) return authError
+
   try {
     const { id } = await params
     const supabase = await createClient()
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      )
-    }
-
-    // Check if user is admin
-    const { data: subscription } = await supabase
-      .from('user_subscriptions')
-      .select('role')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!subscription || !['admin', 'super_admin'].includes(subscription.role || '')) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
-        { status: 403 }
-      )
-    }
 
     const { status } = await request.json()
 

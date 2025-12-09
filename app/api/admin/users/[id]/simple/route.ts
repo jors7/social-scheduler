@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/admin/auth'
 
 // Force dynamic rendering - disable Next.js route caching
 export const dynamic = 'force-dynamic'
@@ -8,8 +9,12 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Check admin authorization
+  const authError = await requireAdmin(request)
+  if (authError) return authError
+
   try {
-    // Direct database access without any auth
+    // Database access with admin auth verified
     const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_subscriptions?user_id=eq.${params.id}`, {
       headers: {
         'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',

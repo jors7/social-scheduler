@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/admin/auth'
 
 export async function GET(request: NextRequest) {
+  // Check admin authorization
+  const authError = await requireAdmin(request)
+  if (authError) return authError
+
   try {
     // Check environment variables
     const envCheck = {

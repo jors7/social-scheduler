@@ -8,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { createBatchPayout } from '@/lib/paypal/service';
-import { isAdminEmail, checkAdminByUserId } from '@/lib/auth/admin';
+import { requireAdmin } from '@/lib/admin/auth';
 import { logAdminAction, ADMIN_ACTIONS } from '@/lib/admin/audit';
 
 function getServiceClient() {
@@ -19,8 +19,12 @@ function getServiceClient() {
 }
 
 export async function POST(request: NextRequest) {
+  // Check admin authorization
+  const authError = await requireAdmin(request)
+  if (authError) return authError
+
   try {
-    // Verify admin authentication
+    // Get current user for audit logging
     const cookieStore = cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,7 +39,6 @@ export async function POST(request: NextRequest) {
     );
 
     const { data: { user } } = await supabase.auth.getUser();
-
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
@@ -43,17 +46,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify user is an admin
     const supabaseAdmin = getServiceClient();
-    const isAdmin = isAdminEmail(user.email) || await checkAdminByUserId(user.id, supabaseAdmin);
-
-    if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: 'Forbidden: Admin access required' },
-        { status: 403 }
-      );
-    }
-
     const { payout_ids, method } = await request.json();
 
     if (!payout_ids || !Array.isArray(payout_ids) || payout_ids.length === 0) {

@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/admin/auth'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Check admin authorization
+  const authError = await requireAdmin(request)
+  if (authError) return authError
+
   try {
     // Check environment variables
     const hasServiceRole = !!process.env.SUPABASE_SERVICE_ROLE_KEY

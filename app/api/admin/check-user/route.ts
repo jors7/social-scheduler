@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireAdmin } from '@/lib/admin/auth'
 
 export async function GET(request: NextRequest) {
+  // Check admin authorization
+  const authError = await requireAdmin(request)
+  if (authError) return authError
+
   const url = new URL(request.url)
   const userId = url.searchParams.get('id') || '34da8335-3c9d-44b8-a13f-b7aff8e3b3d7'
-  
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,

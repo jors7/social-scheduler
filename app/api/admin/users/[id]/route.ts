@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
-import { createServerClient } from '@supabase/ssr'
+import { requireAdmin } from '@/lib/admin/auth'
 
 // Create service role client for admin operations
 function getServiceSupabase() {
@@ -10,7 +9,7 @@ function getServiceSupabase() {
     console.error('SUPABASE_SERVICE_ROLE_KEY is not set in environment variables')
     return null
   }
-  
+
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -23,96 +22,18 @@ function getServiceSupabase() {
   )
 }
 
-// Fallback method using anon key with admin check
-async function getUserDetailsWithAnon(userId: string) {
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-      },
-    }
-  )
-  
-  // Check if current user is admin
-  const { data: { user: currentUser } } = await supabase.auth.getUser()
-  if (!currentUser) {
-    throw new Error('Not authenticated')
-  }
-  
-  // Check admin role
-  const { data: adminCheck } = await supabase
-    .from('user_subscriptions')
-    .select('role')
-    .eq('user_id', currentUser.id)
-    .single()
-  
-  if (!adminCheck || (adminCheck.role !== 'admin' && adminCheck.role !== 'super_admin')) {
-    throw new Error('Not authorized')
-  }
-  
-  // Now get the target user's details using RPC or direct queries
-  // We'll use the service account pattern through RPC if available
-  const { data: userData, error: userError } = await supabase
-    .rpc('get_user_details_admin', { target_user_id: userId })
-  
-  if (userError) {
-    // Fallback to direct queries
-    const { data: subscription } = await supabase
-      .from('user_subscriptions')
-      .select('*')
-      .eq('user_id', userId)
-      .single()
-    
-    // Get counts
-    const { count: postsCount } = await supabase
-      .from('scheduled_posts')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-    
-    const { count: draftsCount } = await supabase
-      .from('drafts')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-    
-    const { count: accountsCount } = await supabase
-      .from('social_accounts')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-    
-    return {
-      id: userId,
-      email: subscription?.email || 'Unknown',
-      created_at: subscription?.created_at || new Date().toISOString(),
-      last_sign_in_at: subscription?.updated_at || new Date().toISOString(),
-      subscription_plan: subscription?.plan_id || subscription?.subscription_plan || 'free',
-      subscription_status: subscription?.status || subscription?.subscription_status || 'inactive',
-      billing_cycle: subscription?.billing_cycle,
-      role: subscription?.role || 'user',
-      posts_count: postsCount || 0,
-      drafts_count: draftsCount || 0,
-      connected_accounts: accountsCount || 0,
-      stripe_customer_id: subscription?.stripe_customer_id,
-      trial_ends_at: subscription?.trial_end || subscription?.trial_ends_at,
-      is_suspended: subscription?.is_suspended || false
-    }
-  }
-  
-  return userData
-}
-
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Check admin authorization
+  const authError = await requireAdmin(request)
+  if (authError) return authError
+
   try {
-    // Try to use service role first
+    // Use service role for admin operations
     const supabase = getServiceSupabase()
-    
+
     if (supabase) {
       // Get user details using service role
       const { data: user, error: userError } = await supabase.auth.admin.getUserById(params.id)
@@ -169,10 +90,10 @@ export async function GET(
 
       return NextResponse.json(userDetails)
     } else {
-      // Fallback to anon key with admin check
-      console.warn('Using fallback method - SUPABASE_SERVICE_ROLE_KEY not available')
-      const userDetails = await getUserDetailsWithAnon(params.id)
-      return NextResponse.json(userDetails)
+      return NextResponse.json(
+        { error: 'Service configuration error. SUPABASE_SERVICE_ROLE_KEY not available.' },
+        { status: 500 }
+      )
     }
   } catch (error) {
     console.error('Admin user details API error:', error)
@@ -187,9 +108,13 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Check admin authorization
+  const authError = await requireAdmin(request)
+  if (authError) return authError
+
   try {
     const supabase = getServiceSupabase()
-    
+
     if (!supabase) {
       return NextResponse.json(
         { error: 'Service configuration error. Please add SUPABASE_SERVICE_ROLE_KEY to environment variables.' },
