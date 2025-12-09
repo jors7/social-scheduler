@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { SubscriptionService } from '@/lib/subscription/service';
 
 export const dynamic = 'force-dynamic';
 
@@ -176,6 +177,28 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Check post limit based on subscription plan
+    try {
+      const subscriptionService = new SubscriptionService();
+      const usage = await subscriptionService.getUsageSummary(user.id);
+
+      // Check if user would exceed their post limit
+      if (usage.posts_limit !== Infinity && usage.posts_used >= usage.posts_limit) {
+        console.log(`User ${user.id} reached post limit: ${usage.posts_used}/${usage.posts_limit}`);
+        return NextResponse.json({
+          error: `You've reached your monthly post limit (${usage.posts_used}/${usage.posts_limit}). Please upgrade your plan to schedule more posts.`,
+          limitReached: true,
+          usage: {
+            posts_used: usage.posts_used,
+            posts_limit: usage.posts_limit
+          }
+        }, { status: 429 });
+      }
+    } catch (usageError) {
+      console.error('Error checking post limit:', usageError);
+      // Continue without blocking - we don't want to break scheduling if usage check fails
+    }
+
     // Save to database WITHOUT .select() to avoid type casting issue
     // Build insert object conditionally to avoid trigger issues
     const insertData: any = {
@@ -262,14 +285,24 @@ export async function POST(request: NextRequest) {
         details: error.details,
         hint: error.hint
       });
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Failed to schedule post',
-        details: error.message 
+        details: error.message
       }, { status: 500 });
     }
 
+    // Increment usage after successful scheduling
+    try {
+      const subscriptionService = new SubscriptionService();
+      await subscriptionService.incrementUsage('posts', 1, user.id);
+      console.log(`Incremented post usage for user ${user.id}`);
+    } catch (usageError) {
+      console.error('Error incrementing post usage:', usageError);
+      // Don't fail the request - the post was scheduled successfully
+    }
+
     // Return success even without the full post data
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       message: 'Post scheduled successfully'
     });

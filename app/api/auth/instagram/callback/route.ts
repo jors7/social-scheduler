@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { InstagramService } from '@/lib/instagram/service';
+import { canConnectNewAccount } from '@/lib/subscription/account-limits';
 
 export const dynamic = 'force-dynamic';
 
@@ -333,6 +334,15 @@ export async function GET(request: NextRequest) {
 
       console.log('[Instagram Callback] Account updated successfully');
     } else {
+      // Check account limits before creating new account
+      const canConnect = await canConnectNewAccount(user.id, supabaseAdmin);
+      if (!canConnect) {
+        console.error('[Instagram Callback] Account limit reached for user:', user.id);
+        return NextResponse.redirect(
+          new URL('/dashboard/settings?error=account_limit_reached&details=' + encodeURIComponent('You have reached your account connection limit. Please upgrade your plan to connect more accounts.'), request.url)
+        );
+      }
+
       // Insert new account
       console.log('[Instagram Callback] Inserting new account for platform_user_id:', platformUserId);
       const { error: dbError } = await supabaseAdmin

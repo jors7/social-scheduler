@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { checkAccountLimits } from '@/lib/subscription/account-limits';
 
 export const dynamic = 'force-dynamic';
 
@@ -204,6 +205,35 @@ export async function GET(request: NextRequest) {
         },
       }
     );
+
+    // Check account limits before connecting new accounts
+    const accountLimits = await checkAccountLimits(user.id, supabaseAdmin);
+    const newPagesCount = pagesData.data.length;
+
+    // Count how many of these pages are already connected (updates don't count against limit)
+    const { data: existingAccounts } = await supabaseAdmin
+      .from('social_accounts')
+      .select('platform_user_id')
+      .eq('user_id', user.id)
+      .eq('platform', 'facebook');
+
+    const existingPageIds = new Set(existingAccounts?.map(a => a.platform_user_id) || []);
+    const trulyNewPages = pagesData.data.filter(page => !existingPageIds.has(page.id));
+
+    if (trulyNewPages.length > 0 && !accountLimits.canAddMore) {
+      console.error('Account limit reached:', accountLimits);
+      return NextResponse.redirect(
+        new URL(`/dashboard/settings?error=account_limit_reached&details=${encodeURIComponent(`You can connect up to ${accountLimits.maxAccounts} accounts on your current plan. You have ${accountLimits.currentCount} connected.`)}`, request.url)
+      );
+    }
+
+    // Check if adding all new pages would exceed the limit
+    if (trulyNewPages.length > accountLimits.remainingSlots && accountLimits.remainingSlots !== Infinity) {
+      console.error('Would exceed account limit:', { newPages: trulyNewPages.length, remainingSlots: accountLimits.remainingSlots });
+      return NextResponse.redirect(
+        new URL(`/dashboard/settings?error=account_limit_reached&details=${encodeURIComponent(`Adding ${trulyNewPages.length} new pages would exceed your limit. You can add ${accountLimits.remainingSlots} more account(s) on your current plan.`)}`, request.url)
+      );
+    }
 
     // Store each page as a separate social account
     let successCount = 0;

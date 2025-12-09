@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 export interface AccountLimit {
   maxAccounts: number;
@@ -7,8 +8,13 @@ export interface AccountLimit {
   remainingSlots: number;
 }
 
-export async function checkAccountLimits(userId: string): Promise<AccountLimit> {
-  const supabase = createClient()
+/**
+ * Check account limits for a user
+ * @param userId - The user's ID
+ * @param supabaseClient - Optional Supabase client (useful for OAuth callbacks with service role)
+ */
+export async function checkAccountLimits(userId: string, supabaseClient?: SupabaseClient): Promise<AccountLimit> {
+  const supabase = supabaseClient || createClient()
   
   // Get user's current active accounts count
   const { data: accounts, error: accountsError } = await supabase
@@ -98,8 +104,13 @@ export async function getAccountsByPlatform(userId: string) {
   return groupedAccounts
 }
 
-export async function canConnectNewAccount(userId: string): Promise<boolean> {
-  const limits = await checkAccountLimits(userId)
+/**
+ * Check if a user can connect a new account based on their plan limits
+ * @param userId - The user's ID
+ * @param supabaseClient - Optional Supabase client (useful for OAuth callbacks with service role)
+ */
+export async function canConnectNewAccount(userId: string, supabaseClient?: SupabaseClient): Promise<boolean> {
+  const limits = await checkAccountLimits(userId, supabaseClient)
   return limits.canAddMore
 }
 

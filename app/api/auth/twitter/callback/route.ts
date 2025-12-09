@@ -3,6 +3,7 @@ import { TwitterApi } from 'twitter-api-v2';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { TwitterService } from '@/lib/twitter/service';
+import { canConnectNewAccount } from '@/lib/subscription/account-limits';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,6 +103,15 @@ export async function GET(request: NextRequest) {
         );
       }
     } else {
+      // Check account limits before creating new account
+      const canConnect = await canConnectNewAccount(user.id, supabase);
+      if (!canConnect) {
+        console.error('Account limit reached for user:', user.id);
+        return NextResponse.redirect(
+          `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings?error=account_limit_reached&details=${encodeURIComponent('You have reached your account connection limit. Please upgrade your plan to connect more accounts.')}`
+        );
+      }
+
       // Insert new account
       const { error: dbError } = await supabase
         .from('social_accounts')
@@ -116,7 +126,7 @@ export async function GET(request: NextRequest) {
           access_secret: accessSecret,
           is_active: true
         });
-        
+
       if (dbError) {
         console.error('Database insert error:', dbError);
         return NextResponse.redirect(

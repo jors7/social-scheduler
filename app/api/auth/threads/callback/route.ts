@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { canConnectNewAccount } from '@/lib/subscription/account-limits';
 
 export const dynamic = 'force-dynamic';
 
@@ -356,6 +357,16 @@ export async function GET(request: NextRequest) {
         );
       }
     } else {
+      // Check account limits before creating new account
+      const canConnect = await canConnectNewAccount(user.id, supabase);
+      if (!canConnect) {
+        console.error('Account limit reached for user:', user.id);
+        const errorUrl = process.env.NODE_ENV === 'production'
+          ? 'https://www.socialcal.app/dashboard/settings?error=account_limit_reached&details=' + encodeURIComponent('You have reached your account connection limit. Please upgrade your plan to connect more accounts.')
+          : 'http://localhost:3001/dashboard/settings?error=account_limit_reached&details=' + encodeURIComponent('You have reached your account connection limit. Please upgrade your plan to connect more accounts.');
+        return NextResponse.redirect(errorUrl);
+      }
+
       // Insert new account
       const { error: dbError } = await supabase
         .from('social_accounts')
@@ -370,7 +381,7 @@ export async function GET(request: NextRequest) {
           is_active: true,
           expires_at: expiresAt.toISOString()
         });
-        
+
       if (dbError) {
         console.error('Database insert error:', dbError);
         return NextResponse.redirect(

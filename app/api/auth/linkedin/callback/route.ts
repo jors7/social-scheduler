@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { canConnectNewAccount } from '@/lib/subscription/account-limits';
 
 export const dynamic = 'force-dynamic';
 
@@ -176,6 +177,15 @@ export async function GET(request: NextRequest) {
         );
       }
     } else {
+      // Check account limits before creating new account
+      const canConnect = await canConnectNewAccount(user.id, supabase);
+      if (!canConnect) {
+        console.error('Account limit reached for user:', user.id);
+        return NextResponse.redirect(
+          new URL('/dashboard/settings?error=account_limit_reached&details=' + encodeURIComponent('You have reached your account connection limit. Please upgrade your plan to connect more accounts.'), request.url)
+        );
+      }
+
       // Create new account
       const { error: insertError } = await supabase
         .from('social_accounts')
