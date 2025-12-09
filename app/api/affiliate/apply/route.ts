@@ -133,9 +133,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Send notification email to admin
-    // TODO: Send confirmation email to applicant
-
     // Send confirmation email to applicant using existing email queue
     try {
       await supabase.from('pending_emails').insert({

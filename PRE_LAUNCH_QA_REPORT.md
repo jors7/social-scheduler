@@ -223,16 +223,22 @@ TWITTER_CLIENT_SECRET=your_client_secret_here
 
 ---
 
-### 14. Affiliate Email Notifications Not Implemented
+### 14. ✅ RESOLVED: Affiliate Email Notifications
 
-**Location:** `app/api/affiliate/apply/route.ts:136-137`
+**Status:** Fully implemented with 9 email templates.
 
-```typescript
-// TODO: Send notification email to admin
-// TODO: Send confirmation email to applicant
-```
+**Email templates available:**
+- `affiliate-application-submitted.tsx` - Sent to applicant on submission
+- `affiliate-application-admin.tsx` - Sent to admin on new application
+- `affiliate-application-approved.tsx` - Sent when approved
+- `affiliate-application-rejected.tsx` - Sent when rejected
+- `affiliate-payout-processed.tsx` - Sent when payout processed
+- `affiliate-payout-requested.tsx` - Sent when payout requested
+- `affiliate-commission-earned.tsx` - Sent when commission earned
+- `affiliate-trial-started.tsx` - Sent when referred user starts trial
+- `affiliate-conversion-cancelled.tsx` - Sent when conversion cancelled
 
-Note: Lines 140-150 show email queuing is partially implemented.
+Stale TODO comments removed from `app/api/affiliate/apply/route.ts`.
 
 ---
 
@@ -451,7 +457,7 @@ curl -X POST https://www.socialcal.app/api/cron/snapshot-analytics \
 |----------|-------|--------|
 | 🚨 BLOCKER | 5 | ✅ 4 Resolved, 1 Minor (admin email) |
 | 🔴 HIGH | 5 | ✅ All Resolved |
-| 🟡 MEDIUM | 4 | ✅ 2 Resolved, 2 Minor (Twitter placeholders, affiliate emails) |
+| 🟡 MEDIUM | 4 | ✅ 3 Resolved, 1 N/A (Twitter OAuth 2.0 placeholders unused) |
 | 🟢 LOW | 1 | Can wait |
 
 **Security fixes applied:** December 9, 2025
