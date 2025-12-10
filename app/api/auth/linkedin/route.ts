@@ -66,13 +66,7 @@ export async function GET(request: NextRequest) {
     });
 
     const authUrl = `${LINKEDIN_AUTH_URL}?${params.toString()}`;
-    
-    // Log the full auth URL for debugging
-    console.log('Full LinkedIn OAuth URL:', authUrl);
-    console.log('Client ID:', process.env.LINKEDIN_CLIENT_ID);
-    console.log('Redirect URI:', `${baseUrl}/api/auth/linkedin/callback`);
-    console.log('Scopes:', SCOPES);
-    
+
     // Store state in a cookie for verification
     const response = NextResponse.json({ 
       success: true, 

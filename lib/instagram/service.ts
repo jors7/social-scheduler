@@ -10,9 +10,6 @@ export class InstagramService {
       appSecret: process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET
     };
     
-    console.log('InstagramService: Initializing with app secret:', 
-      credentialsWithSecret.appSecret ? 'YES' : 'NO');
-    
     this.client = new InstagramClient(credentialsWithSecret);
   }
 

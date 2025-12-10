@@ -51,11 +51,6 @@ export async function GET(request: NextRequest) {
     // Use Facebook OAuth endpoint
     const authUrl = `https://www.facebook.com/v21.0/dialog/oauth?${authParams.toString()}`;
 
-    console.log('Facebook OAuth URL generated');
-    console.log('Client ID:', process.env.FACEBOOK_APP_ID);
-    console.log('Redirect URI:', redirectUri);
-    console.log('Scopes requested:', authParams.get('scope'));
-
     return NextResponse.json({ authUrl });
   } catch (error) {
     console.error('Facebook OAuth initialization error:', error);

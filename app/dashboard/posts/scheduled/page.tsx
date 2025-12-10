@@ -73,30 +73,10 @@ export default function ScheduledPostsPage() {
     }
   }
 
+  // Manual cron trigger removed for security - use QStash schedules or admin CLI instead
   const processDuePosts = async () => {
-    try {
-      toast.info('Processing due posts...')
-      
-      const response = await fetch('/api/cron/process-scheduled-posts', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || 'test'}`
-        }
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to process posts')
-      }
-      
-      const data = await response.json()
-      toast.success(`Processed ${data.processed || 0} posts`)
-      
-      // Refresh the list
-      fetchScheduledPosts()
-    } catch (error) {
-      console.error('Error processing posts:', error)
-      toast.error('Failed to process posts')
-    }
+    toast.info('Scheduled posts are processed automatically every minute by the background job.')
+    // If you need to manually trigger processing, use the admin CLI or QStash dashboard
   }
 
   const handlePostNow = async (postId: string) => {

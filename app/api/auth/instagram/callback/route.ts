@@ -263,11 +263,6 @@ export async function GET(request: NextRequest) {
     });
     
     // Use service role client for database operations to bypass RLS
-    console.log('[Instagram Callback] Creating service role client...');
-    console.log('[Instagram Callback] SUPABASE_URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log('[Instagram Callback] SERVICE_ROLE_KEY exists:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
-    console.log('[Instagram Callback] SERVICE_ROLE_KEY length:', process.env.SUPABASE_SERVICE_ROLE_KEY?.length);
-
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
