@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { daysAgoUTC } from '@/lib/utils';
+import { monitorAPIResponse } from '@/lib/api-monitor';
 
 // NOTE: Removed in-memory cache to prevent serving stale data
 // Instagram API data should always be fetched fresh
@@ -43,8 +45,7 @@ export async function GET(request: NextRequest) {
     // Get date range from query params (default to last 30 days)
     const searchParams = request.nextUrl.searchParams;
     const days = parseInt(searchParams.get('days') || '30');
-    const since = new Date();
-    since.setDate(since.getDate() - days);
+    const since = daysAgoUTC(days); // Normalized to UTC start of day
 
     // Get Instagram accounts
     const { data: accounts, error: accountsError } = await supabase
@@ -154,6 +155,9 @@ export async function GET(request: NextRequest) {
               console.log(`[Instagram Analytics] Requesting metrics: ${metrics}`);
 
               const insightsResponse = await fetch(insightsUrl);
+
+              // Monitor API response for deprecation warnings
+              monitorAPIResponse('instagram', `/v22.0/${media.id}/insights`, insightsResponse.clone(), ['reach', 'saved', 'total_interactions', 'views']);
 
               if (insightsResponse.ok) {
                 const insightsData = await insightsResponse.json();

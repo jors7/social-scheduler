@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { daysAgoUTC } from '@/lib/utils';
+import { monitorAPIResponse } from '@/lib/api-monitor';
 
 // Helper to add timeout to fetch requests
 async function fetchWithTimeout(url: string, timeout = 10000) {
@@ -54,9 +56,8 @@ export async function GET(request: NextRequest) {
     const days = parseInt(searchParams.get('days') || '30');
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    // Calculate date cutoff for filtering
-    const since = new Date();
-    since.setDate(since.getDate() - days);
+    // Calculate date cutoff for filtering (normalized to UTC)
+    const since = daysAgoUTC(days);
 
     // Get Threads accounts
     const { data: accounts, error: accountsError } = await supabase
@@ -122,6 +123,9 @@ export async function GET(request: NextRequest) {
                 const insightsUrl = `https://graph.threads.net/v1.0/${post.id}/insights?metric=views,likes,replies,reposts,quotes&access_token=${account.access_token}`;
                 const insightsResponse = await fetchWithTimeout(insightsUrl, 3000);
                 
+                // Monitor API response for deprecation warnings
+                monitorAPIResponse('threads', `/v1.0/${post.id}/insights`, insightsResponse.clone(), ['views', 'likes', 'replies', 'reposts', 'quotes']);
+
                 if (insightsResponse.ok) {
                   const insightsData = await insightsResponse.json();
                   if (insightsData.data && Array.isArray(insightsData.data)) {

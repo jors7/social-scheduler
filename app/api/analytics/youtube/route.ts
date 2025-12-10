@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserYouTubeService } from '@/lib/youtube/service';
+import { daysAgoUTC } from '@/lib/utils';
 
 // Helper to add timeout to fetch requests
 async function fetchWithTimeout(url: string, timeout = 10000, options: RequestInit = {}) {
@@ -53,8 +54,7 @@ export async function GET(request: NextRequest) {
     // Get date range from query params (default to last 30 days)
     const searchParams = request.nextUrl.searchParams;
     const days = parseInt(searchParams.get('days') || '30');
-    const since = new Date();
-    since.setDate(since.getDate() - days);
+    const since = daysAgoUTC(days); // Normalized to UTC start of day
 
     // Get YouTube accounts
     const { data: accounts, error: accountsError } = await supabase

@@ -22,9 +22,12 @@ export interface AnalyticsSnapshot {
 
 /**
  * Calculate percentage change between current and previous values
+ * Returns null when previous is 0 (can't calculate meaningful percentage from nothing)
+ * Returns 0 when both current and previous are 0 (no change)
  */
-export function calculatePercentageChange(current: number, previous: number): number {
-  if (!previous || previous === 0) return 0
+export function calculatePercentageChange(current: number, previous: number): number | null {
+  if (previous === 0 && current === 0) return 0
+  if (previous === 0) return null
   return ((current - previous) / previous) * 100
 }
 

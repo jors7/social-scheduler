@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { daysAgoUTC, endOfDayUTC } from '@/lib/utils';
+import { monitorAPIResponse } from '@/lib/api-monitor';
 
 interface PinterestMetrics {
   totalPosts: number;
@@ -38,8 +40,8 @@ export async function GET(request: NextRequest) {
     // Get date range from query params (default to last 30 days)
     const searchParams = request.nextUrl.searchParams;
     const days = parseInt(searchParams.get('days') || '30');
-    const since = new Date();
-    since.setDate(since.getDate() - days);
+    const since = daysAgoUTC(days); // Normalized to UTC start of day
+    const endDate = endOfDayUTC(); // End of today in UTC
 
     // Get Pinterest accounts
     const { data: accounts, error: accountsError } = await supabase
@@ -165,7 +167,7 @@ export async function GET(request: NextRequest) {
             if (!pinCreatedAt) return false;
 
             const pinDate = new Date(pinCreatedAt);
-            return pinDate >= since && pinDate <= new Date();
+            return pinDate >= since && pinDate <= endDate;
           });
 
           console.log(`[Pinterest Analytics] Filtered to ${filteredPins.length} pins within date range (last ${days} days)`);
@@ -181,13 +183,16 @@ export async function GET(request: NextRequest) {
 
               // Get analytics for each pin from Pinterest API
               try {
-                const analyticsUrl = `https://api.pinterest.com/v5/pins/${pinId}/analytics?start_date=${since.toISOString().split('T')[0]}&end_date=${new Date().toISOString().split('T')[0]}&metric_types=PIN_CLICK,IMPRESSION,SAVE,OUTBOUND_CLICK`;
+                const analyticsUrl = `https://api.pinterest.com/v5/pins/${pinId}/analytics?start_date=${since.toISOString().split('T')[0]}&end_date=${endDate.toISOString().split('T')[0]}&metric_types=PIN_CLICK,IMPRESSION,SAVE,OUTBOUND_CLICK`;
                 const analyticsResponse = await fetch(analyticsUrl, {
                   headers: {
                     'Authorization': `Bearer ${account.access_token}`,
                     'Content-Type': 'application/json',
                   }
                 });
+
+                // Monitor API response for deprecation warnings
+                monitorAPIResponse('pinterest', `/v5/pins/${pinId}/analytics`, analyticsResponse.clone(), ['PIN_CLICK', 'IMPRESSION', 'SAVE', 'OUTBOUND_CLICK']);
 
                 if (analyticsResponse.ok) {
                   const analyticsData = await analyticsResponse.json();

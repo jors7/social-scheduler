@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { daysAgoUTC } from '@/lib/utils';
 
 // Helper to add timeout to fetch requests
 async function fetchWithTimeout(url: string, timeout = 10000, options: RequestInit = {}) {
@@ -121,9 +122,8 @@ export async function GET(request: NextRequest) {
 
         console.log(`[TikTok Analytics] Found ${videos.length} videos for ${days} day period`);
 
-        // Filter videos by date range
-        const sinceDate = new Date();
-        sinceDate.setDate(sinceDate.getDate() - days);
+        // Filter videos by date range (normalized to UTC)
+        const sinceDate = daysAgoUTC(days);
 
         videos.forEach((video: any) => {
           const videoDate = new Date(video.created_time);

@@ -13,6 +13,7 @@ import { CalendarDays, Download, Filter, BarChart3, RefreshCw, AlertCircle, Came
 import { toast } from 'sonner'
 import { SubscriptionGateWrapper as SubscriptionGate } from '@/components/subscription/subscription-gate-wrapper'
 import { PreviewDataBanner } from '@/components/dashboard/analytics/preview-data-banner'
+import { daysAgoUTC, endOfDayUTC } from '@/lib/utils'
 
 // Generate mock posts with realistic data spread over the last 7 days
 const generateMockPosts = () => {
@@ -502,14 +503,14 @@ export default function AnalyticsPage() {
 
       // Recalculate totals for CURRENT period only (not the entire fetched range)
       // This is needed because we fetch double the period for comparisons
-      // Note: We don't set hours to 0 to match server-side API filtering (current time minus X days)
-      const currentPeriodStart = new Date();
-      currentPeriodStart.setDate(currentPeriodStart.getDate() - parseInt(dateRange));
+      // Use UTC-normalized dates to match server-side API filtering
+      const currentPeriodStart = daysAgoUTC(parseInt(dateRange));
+      const currentPeriodEnd = endOfDayUTC();
 
       const currentPeriodPosts = allPosts.filter(post => {
         const dateField = post.created_time || post.timestamp || post.createdAt || post.created_at;
         const postDate = new Date(dateField);
-        return postDate >= currentPeriodStart && postDate <= new Date();
+        return postDate >= currentPeriodStart && postDate <= currentPeriodEnd;
       });
 
       // Recalculate metrics for current period only by counting filtered posts
@@ -619,26 +620,23 @@ export default function AnalyticsPage() {
 
       // Calculate trends from the fetched posts data
       const calculateTrendsFromPosts = () => {
-        const currentPeriodStart = new Date();
-        currentPeriodStart.setDate(currentPeriodStart.getDate() - parseInt(dateRange));
-        currentPeriodStart.setHours(0, 0, 0, 0);
+        // Use UTC-normalized dates for consistent period boundaries
+        const days = parseInt(dateRange);
+        const trendCurrentStart = daysAgoUTC(days);
+        const trendCurrentEnd = endOfDayUTC();
 
-        const previousPeriodEnd = new Date(currentPeriodStart);
-        previousPeriodEnd.setMilliseconds(previousPeriodEnd.getMilliseconds() - 1);
-
-        const previousPeriodStart = new Date(previousPeriodEnd);
-        previousPeriodStart.setDate(previousPeriodStart.getDate() - parseInt(dateRange) + 1);
-        previousPeriodStart.setHours(0, 0, 0, 0);
+        const trendPreviousEnd = new Date(trendCurrentStart.getTime() - 1);
+        const trendPreviousStart = daysAgoUTC(days * 2);
 
         // Filter posts by period
         const currentPosts = allPosts.filter(post => {
           const postDate = new Date(post.created_time || post.timestamp || post.createdAt || post.created_at);
-          return postDate >= currentPeriodStart && postDate <= new Date();
+          return postDate >= trendCurrentStart && postDate <= trendCurrentEnd;
         });
 
         const previousPosts = allPosts.filter(post => {
           const postDate = new Date(post.created_time || post.timestamp || post.createdAt || post.created_at);
-          return postDate >= previousPeriodStart && postDate <= previousPeriodEnd;
+          return postDate >= trendPreviousStart && postDate <= trendPreviousEnd;
         });
 
         // Calculate metrics for each period

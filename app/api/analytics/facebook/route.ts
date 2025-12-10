@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { daysAgoUTC } from '@/lib/utils';
+import { monitorAPIResponse } from '@/lib/api-monitor';
 
 // Helper to add timeout to fetch requests
 async function fetchWithTimeout(url: string, timeout = 10000) {
@@ -51,8 +53,7 @@ export async function GET(request: NextRequest) {
     // Get date range from query params (default to last 30 days)
     const searchParams = request.nextUrl.searchParams;
     const days = parseInt(searchParams.get('days') || '30');
-    const since = new Date();
-    since.setDate(since.getDate() - days);
+    const since = daysAgoUTC(days); // Normalized to UTC start of day
     const sinceTimestamp = Math.floor(since.getTime() / 1000);
 
     // Get Facebook accounts
@@ -149,6 +150,9 @@ export async function GET(request: NextRequest) {
                 const insightsUrl = `https://graph.facebook.com/v21.0/${post.id}/insights?metric=post_media_view&access_token=${account.access_token}`;
                 const insightsResponse = await fetchWithTimeout(insightsUrl, 5000);
 
+                // Monitor API response for deprecation warnings
+                monitorAPIResponse('facebook', `/v21.0/${post.id}/insights`, insightsResponse.clone(), ['post_media_view']);
+
                 if (insightsResponse.ok) {
                   const insightsData = await insightsResponse.json();
                   if (insightsData.data && insightsData.data[0] && insightsData.data[0].values && insightsData.data[0].values[0]) {
@@ -228,6 +232,9 @@ export async function GET(request: NextRequest) {
               // Use page_media_view (official replacement for page_impressions as of Nov 2025)
               const mediaViewUrl = `https://graph.facebook.com/v21.0/${account.platform_user_id}/insights?metric=page_media_view&period=${period}&since=${sinceTimestamp}&access_token=${account.access_token}`;
               const response = await fetchWithTimeout(mediaViewUrl, 5000);
+
+              // Monitor API response for deprecation warnings
+              monitorAPIResponse('facebook', `/v21.0/${account.platform_user_id}/insights`, response.clone(), ['page_media_view']);
 
               if (response.ok) {
                 const data = await response.json();

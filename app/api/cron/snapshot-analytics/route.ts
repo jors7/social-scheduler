@@ -134,11 +134,11 @@ async function fetchInstagramMetrics(userId: string, account: any): Promise<any 
 
   const posts = data.metrics.posts;
   return posts.reduce((acc: any, post: any) => ({
-    reach: acc.reach + (post.metrics?.reach || 0),
-    likes: acc.likes + (post.metrics?.likes || 0),
-    comments: acc.comments + (post.metrics?.comments || 0),
-    saves: acc.saves + (post.metrics?.saves || 0),
-    shares: acc.shares + (post.metrics?.shares || 0)
+    reach: acc.reach + (post.reach || 0),
+    likes: acc.likes + (post.likes || 0),
+    comments: acc.comments + (post.comments || 0),
+    saves: acc.saves + (post.saves || 0),
+    shares: acc.shares + (post.shares || 0)
   }), { reach: 0, likes: 0, comments: 0, saves: 0, shares: 0 });
 }
 
@@ -148,24 +148,26 @@ async function fetchThreadsMetrics(userId: string, account: any): Promise<any | 
 
   const posts = data.metrics.posts;
   return posts.reduce((acc: any, post: any) => ({
-    views: acc.views + (post.metrics?.views || 0),
-    likes: acc.likes + (post.metrics?.likes || 0),
-    replies: acc.replies + (post.metrics?.replies || 0),
-    reposts: acc.reposts + (post.metrics?.reposts || 0),
-    quotes: acc.quotes + (post.metrics?.quotes || 0)
+    views: acc.views + (post.views || 0),
+    likes: acc.likes + (post.likes || 0),
+    replies: acc.replies + (post.replies || 0),
+    reposts: acc.reposts + (post.reposts || 0),
+    quotes: acc.quotes + (post.quotes || 0)
   }), { views: 0, likes: 0, replies: 0, reposts: 0, quotes: 0 });
 }
 
 async function fetchTikTokMetrics(userId: string, account: any): Promise<any | null> {
   const data = await fetchPlatformAnalytics(userId, 'tiktok');
-  if (!data?.metrics) return null;
+  if (!data?.metrics?.posts) return null;
 
-  return {
-    follower_count: data.metrics.follower_count || 0,
-    following_count: data.metrics.following_count || 0,
-    likes_count: data.metrics.likes_count || 0,
-    video_count: data.metrics.video_count || 0
-  };
+  // Aggregate post-level metrics (consistent with other platforms)
+  const posts = data.metrics.posts;
+  return posts.reduce((acc: any, post: any) => ({
+    views: acc.views + (post.views || 0),
+    likes: acc.likes + (post.likes || 0),
+    comments: acc.comments + (post.comments || 0),
+    shares: acc.shares + (post.shares || 0)
+  }), { views: 0, likes: 0, comments: 0, shares: 0 });
 }
 
 async function fetchPinterestMetrics(userId: string, account: any): Promise<any | null> {

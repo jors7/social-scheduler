@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { daysAgoUTC, endOfDayUTC } from '@/lib/utils';
 
 interface TrendComparison {
   current: number;
@@ -113,20 +114,14 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const days = parseInt(searchParams.get('days') || '7');
 
-    // Calculate date ranges for current and previous periods
-    const today = new Date();
-    today.setHours(23, 59, 59, 999); // End of today
+    // Calculate date ranges for current and previous periods (all in UTC)
+    const today = endOfDayUTC(); // End of today in UTC
 
-    const currentPeriodStart = new Date(today);
-    currentPeriodStart.setDate(currentPeriodStart.getDate() - days);
-    currentPeriodStart.setHours(0, 0, 0, 0); // Start of day
+    const currentPeriodStart = daysAgoUTC(days); // Start of day N days ago in UTC
 
-    const previousPeriodEnd = new Date(currentPeriodStart);
-    previousPeriodEnd.setMilliseconds(previousPeriodEnd.getMilliseconds() - 1); // Just before current period
+    const previousPeriodEnd = new Date(currentPeriodStart.getTime() - 1); // Just before current period
 
-    const previousPeriodStart = new Date(previousPeriodEnd);
-    previousPeriodStart.setDate(previousPeriodStart.getDate() - days + 1); // +1 because we include the end day
-    previousPeriodStart.setHours(0, 0, 0, 0);
+    const previousPeriodStart = daysAgoUTC(days * 2); // Start of previous period in UTC
 
     console.log('Trend calculation periods:');
     console.log('Current:', currentPeriodStart.toISOString(), 'to', today.toISOString());

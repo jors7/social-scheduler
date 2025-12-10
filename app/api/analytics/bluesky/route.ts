@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { BskyAgent } from '@atproto/api';
+import { daysAgoUTC } from '@/lib/utils';
 
 // Cache Bluesky sessions to avoid rate limits
 const sessionCache = new Map<string, { agent: BskyAgent, timestamp: number }>();
@@ -119,8 +120,7 @@ export async function GET(request: NextRequest) {
         console.log('[Bluesky Analytics] Feed success:', feed.success, 'Posts found:', feed.data?.feed?.length || 0);
 
         if (feed.success && feed.data.feed) {
-          const since = new Date();
-          since.setDate(since.getDate() - days);
+          const since = daysAgoUTC(days);
           
           let postsInDateRange = 0;
 
