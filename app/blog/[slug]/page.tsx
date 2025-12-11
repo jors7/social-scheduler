@@ -130,6 +130,9 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       description: post.excerpt,
       images: post.featured_image ? [post.featured_image] : undefined,
     },
+    alternates: {
+      canonical: `https://www.socialcal.app/blog/${params.slug}`,
+    },
     other: {
       'script:ld+json': JSON.stringify([blogPostingSchema, breadcrumbSchema])
     }

@@ -226,6 +226,21 @@ function getDefaultMetadataForPath(pagePath: string): Metadata {
         description: 'How SocialCal protects your privacy and handles your data.',
       },
     },
+    '/contact': {
+      ...defaultMetadata,
+      title: 'Contact Us - SocialCal',
+      description: 'Get in touch with the SocialCal team. We\'re here to help with questions about social media scheduling and management.',
+      openGraph: {
+        ...defaultMetadata.openGraph,
+        title: 'Contact SocialCal',
+        description: 'Get in touch with the SocialCal team. We\'re here to help.',
+      },
+      twitter: {
+        ...defaultMetadata.twitter,
+        title: 'Contact SocialCal',
+        description: 'Get in touch with the SocialCal team.',
+      },
+    },
   }
 
   return pathDefaults[pagePath] || defaultMetadata

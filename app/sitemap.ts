@@ -91,28 +91,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     })) || []
     
-    // Dashboard pages (lower priority as they're behind auth)
-    const dashboardPages: MetadataRoute.Sitemap = [
-      {
-        url: `${baseUrl}/dashboard`,
-        lastModified: currentDate,
-        changeFrequency: 'weekly',
-        priority: 0.4,
-      },
-      {
-        url: `${baseUrl}/dashboard/create/new`,
-        lastModified: currentDate,
-        changeFrequency: 'weekly',
-        priority: 0.4,
-      },
-      {
-        url: `${baseUrl}/dashboard/analytics`,
-        lastModified: currentDate,
-        changeFrequency: 'weekly',
-        priority: 0.4,
-      },
-    ]
-    
     // Check if blog_posts table exists and fetch published posts
     const { data: blogPosts } = await supabase
       .from('blog_posts')
@@ -132,7 +110,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const allPages = [
       ...staticPages,
       ...dynamicPages,
-      ...dashboardPages,
       ...blogPages,
     ]
     
