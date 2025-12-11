@@ -15,7 +15,7 @@ interface SEOMetaProps {
 export function SEOMeta({
   title = 'SocialCal - Schedule Posts Across All Social Media Platforms',
   description = 'Save 15+ hours weekly with SocialCal. Schedule and manage social media posts across 9+ platforms with AI-powered captions and analytics.',
-  image = 'https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard.webp',
+  image = 'https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/og-header.png',
   url = 'https://www.socialcal.app',
   type = 'website',
   keywords = [],

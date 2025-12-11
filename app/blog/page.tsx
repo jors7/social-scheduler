@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     description: 'Expert tips and strategies for social media success.',
     images: [
       {
-        url: 'https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard.webp',
+        url: 'https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/og-header.png',
         width: 1200,
         height: 630,
         alt: 'SocialCal Blog',
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'SocialCal Blog - Social Media Marketing Insights',
     description: 'Expert tips and strategies for social media success.',
-    images: ['https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/hero-dashboard.webp'],
+    images: ['https://pub-741f812143544724bbdccee81d8672f5.r2.dev/static-assets/og-header.png'],
     creator: '@socialcal',
     site: '@socialcal',
   },
