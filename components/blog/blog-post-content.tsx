@@ -29,7 +29,7 @@ export function BlogPostContent({ content, headings = [] }: BlogPostContentProps
       return htmlContent
     }
     
-    const mobileTocHtml = `<div class="lg:hidden my-8 px-3 pt-2 pb-3 bg-gray-50 border border-gray-200 rounded-lg"><h3 class="text-[15px] font-semibold text-gray-900 mb-1.5">Jump to a section:</h3><ul class="leading-tight">${h2Headings.map((heading) => `<li><a href="#${heading.id}" class="block text-[15px] text-green-700 hover:text-green-900 transition-colors duration-200" onclick="event.preventDefault(); const element = document.getElementById('${heading.id}'); if (element) { const yOffset = -70; const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset; window.scrollTo({ top: y, behavior: 'smooth' }); }">${heading.text}</a></li>`).join('')}</ul></div>`
+    const mobileTocHtml = `<div class="lg:hidden my-8 px-3 pt-2 pb-3 bg-gray-50 border border-gray-200 rounded-lg"><h3 class="text-[15px] font-semibold text-gray-900 mb-1.5">Jump to a section:</h3><ul class="leading-tight not-italic" style="font-style: normal;">${h2Headings.map((heading) => `<li><a href="#${heading.id}" class="block text-[15px] text-green-700 hover:text-green-900 transition-colors duration-200 not-italic" style="font-style: normal;" onclick="event.preventDefault(); const element = document.getElementById('${heading.id}'); if (element) { const yOffset = -70; const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset; window.scrollTo({ top: y, behavior: 'smooth' }); }">${heading.text}</a></li>`).join('')}</ul></div>`
     
     const beforeFirstParagraph = htmlContent.substring(0, firstParagraphEnd + 4)
     const afterFirstParagraph = htmlContent.substring(firstParagraphEnd + 4)
