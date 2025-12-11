@@ -41,7 +41,7 @@ export function TestimonialsSection() {
           <span className="block sm:inline sm:ml-1">creators worldwide</span>
         </h2>
         <p className="text-lg text-gray-600 text-center max-w-2xl mx-auto">
-          Join thousands of satisfied users who have transformed their social media game
+          See why creators and small businesses choose SocialCal for their social media workflow
         </p>
       </div>
       
