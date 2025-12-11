@@ -74,6 +74,7 @@ import { cn } from '@/lib/utils'
 import { extractVideoThumbnail, isVideoFile } from '@/lib/utils/video-thumbnail'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useAutoSave } from '@/hooks/useAutoSave'
+import { trackPostCreated, trackPostScheduled, trackDraftSaved } from '@/lib/analytics/events'
 import {
   DndContext,
   closestCenter,
@@ -2495,7 +2496,15 @@ function CreateNewPostPageContent() {
       // Process results
       const successful = results.filter(r => r.success)
       const failed = results.filter(r => !r.success)
-      
+
+      // Track successful post creation in GA4
+      if (successful.length > 0) {
+        trackPostCreated(
+          successful.map(r => r.platform),
+          mediaUrls.length > 0
+        )
+      }
+
       // Store successful posts in database for tracking and analytics
       if (successful.length > 0 || failed.length > 0) {
         try {
@@ -3313,6 +3322,14 @@ function CreateNewPostPageContent() {
 
       const successMessage = editingScheduledPost ? 'Scheduled post updated successfully!' : 'Post scheduled successfully!'
       toast.success(successMessage)
+
+      // Track scheduled post in GA4
+      if (!editingScheduledPost) {
+        trackPostScheduled(
+          selectedPlatforms,
+          uploadedMediaUrls.length > 0 || selectedFiles.length > 0
+        )
+      }
 
       // Delete draft if this was scheduled from a draft (not when editing scheduled post)
       if (!editingScheduledPost && currentDraftId) {

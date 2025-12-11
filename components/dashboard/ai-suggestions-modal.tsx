@@ -22,6 +22,7 @@ import {
   Loader2,
   ArrowLeft
 } from 'lucide-react'
+import { trackAISuggestionRequested, trackAISuggestionUsed } from '@/lib/analytics/events'
 
 interface AISuggestionsModalProps {
   open: boolean
@@ -100,6 +101,9 @@ export function AISuggestionsModal({
       setSuggestions(captionSuggestions)
       setHashtags(hashtagSuggestions)
       setStep('suggestions')
+
+      // Track AI suggestion request
+      trackAISuggestionRequested(tone)
     } catch (error) {
       clearInterval(progressInterval)
       console.error('Failed to generate suggestions:', error)
@@ -138,6 +142,9 @@ export function AISuggestionsModal({
     // Pass content as-is - don't append hashtags as they may already be included
     onSelectSuggestion(suggestion.content)
     onOpenChange(false)
+
+    // Track AI suggestion used
+    trackAISuggestionUsed(suggestion.tone)
   }
 
   const copyToClipboard = (text: string) => {

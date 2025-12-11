@@ -202,6 +202,19 @@ import Script from 'next/script'
 - [x] Enable Vercel Analytics
 - [x] Enable Vercel Speed Insights
 - [x] Set up uptime monitoring (UptimeRobot)
+- [x] Add GA4 custom event tracking
+
+### Events Tracked
+| Event | Trigger |
+|-------|---------|
+| `login` | User logs in (email, google, magic_link) |
+| `plan_selected` | User selects a pricing plan |
+| `checkout_started` | User clicks "Start Free Trial" |
+| `post_created` | Post published successfully |
+| `post_scheduled` | Post scheduled for later |
+| `account_connected` | Social account connected |
+| `ai_suggestion_requested` | User generates AI captions |
+| `ai_suggestion_used` | User selects an AI suggestion |
 
 ### Validation
 - [ ] Test OG tags with https://www.opengraph.xyz/

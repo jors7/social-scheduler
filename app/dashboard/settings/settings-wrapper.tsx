@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import SettingsContent from './settings-content'
+import { trackAccountConnected } from '@/lib/analytics/events'
 
 // Wrap the component that uses useSearchParams in its own component
 function SettingsWithParams() {
@@ -23,16 +24,22 @@ function SettingsWithParams() {
       // Process the parameters
       if (success === 'twitter_connected') {
         toast.success('Twitter account connected successfully!')
+        trackAccountConnected('twitter')
       } else if (success === 'bluesky_connected') {
         toast.success('Bluesky account connected successfully!')
+        trackAccountConnected('bluesky')
       } else if (success === 'threads_connected') {
         toast.success('Threads account connected successfully!')
+        trackAccountConnected('threads')
       } else if (success === 'instagram_connected') {
         toast.success('Instagram account connected successfully!')
+        trackAccountConnected('instagram')
       } else if (success === 'facebook_connected') {
         toast.success('Facebook page connected successfully!')
+        trackAccountConnected('facebook')
       } else if (success === 'pinterest_connected') {
         toast.success('Pinterest account connected successfully!')
+        trackAccountConnected('pinterest')
       } else if (error) {
         const errorMessages: Record<string, string> = {
           twitter_auth_failed: 'Twitter authentication failed. Please try again.',

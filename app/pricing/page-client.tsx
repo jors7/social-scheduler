@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { AuthModals } from '@/components/auth/auth-modals'
+import { trackCheckoutStarted, trackPlanSelected } from '@/lib/analytics/events'
 
 import { MobileMenu } from '@/components/layout/mobile-menu'
 import { Navbar } from '@/components/layout/navbar'
@@ -211,6 +212,14 @@ function PricingPageContent() {
   const handleStartTrial = async (planId: string) => {
     // Always proceed to Stripe checkout (for both logged in and non-logged-in users)
     setLoading(planId)
+
+    // Track plan selection and checkout start
+    const plan = pricingPlans.find(p => p.id === planId)
+    const price = billingCycle === 'annual'
+      ? Math.floor((plan?.monthlyPrice || 0) * 0.8 * 12)
+      : (plan?.monthlyPrice || 0)
+    trackPlanSelected(planId, billingCycle === 'annual' ? 'yearly' : 'monthly')
+    trackCheckoutStarted(planId, price)
 
     try {
       // Capture Endorsely referral ID from window object

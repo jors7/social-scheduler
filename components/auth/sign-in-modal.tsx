@@ -11,6 +11,7 @@ import {
   DialogContent,
 } from '@/components/ui/dialog'
 import { X } from 'lucide-react'
+import { trackLogin } from '@/lib/analytics/events'
 
 interface SignInModalProps {
   open: boolean
@@ -43,6 +44,8 @@ export function SignInModal({ open, onOpenChange, onSwitchToForgotPassword }: Si
       if (error) {
         setError(error.message)
       } else {
+        // Track successful login
+        trackLogin('email')
         // Show loading state instead of closing modal
         setIsRedirecting(true)
         // Small delay for visual feedback
@@ -79,6 +82,7 @@ export function SignInModal({ open, onOpenChange, onSwitchToForgotPassword }: Si
       if (error) {
         setError(error.message)
       } else {
+        trackLogin('magic_link')
         setMagicLinkSent(true)
       }
     } catch (err) {
@@ -111,6 +115,8 @@ export function SignInModal({ open, onOpenChange, onSwitchToForgotPassword }: Si
       if (error) {
         localStorage.removeItem('oauth_attempt_time')
         setError(error.message)
+      } else {
+        trackLogin('google')
       }
       // The redirect will happen automatically
     } catch (err) {
