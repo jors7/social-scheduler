@@ -199,9 +199,9 @@ import Script from 'next/script'
 - [x] Verify domain ownership
 - [ ] Submit sitemap to GSC (just enter `sitemap.xml` and click Submit)
 - [x] Add GA4 tracking snippet (G-GJ9QM1QNF8)
-- [ ] Enable Vercel Analytics
-- [ ] Enable Vercel Speed Insights
-- [ ] Set up uptime monitoring
+- [x] Enable Vercel Analytics
+- [x] Enable Vercel Speed Insights
+- [x] Set up uptime monitoring (UptimeRobot)
 
 ### Validation
 - [ ] Test OG tags with https://www.opengraph.xyz/
