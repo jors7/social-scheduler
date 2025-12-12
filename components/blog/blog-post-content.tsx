@@ -49,12 +49,16 @@ export function BlogPostContent({ content, headings = [] }: BlogPostContentProps
       // Add the ID to the heading
       return `<h${level}${attrs} id="${id}">${text}</h${level}>`
     })
-    
+
+    // Wrap tables in a scrollable container for mobile
+    contentWithIds = contentWithIds.replace(/<table/g, `<div class="${styles.tableWrapper}"><table`)
+    contentWithIds = contentWithIds.replace(/<\/table>/g, '</table></div>')
+
     // Insert mobile TOC after first paragraph
     if (headings.length > 0) {
       contentWithIds = insertMobileTOCAfterFirstParagraph(contentWithIds, headings)
     }
-    
+
     return contentWithIds
   }, [content, headings])
 
