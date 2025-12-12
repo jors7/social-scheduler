@@ -228,7 +228,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             <BlogPostHeader post={post} />
             
             {/* Narrower Content Container for Article Body */}
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-5xl mx-auto">
               {/* Main Content with Table of Contents */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 py-8">
                 {/* Table of Contents - Desktop Only */}
