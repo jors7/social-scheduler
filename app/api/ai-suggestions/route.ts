@@ -3,21 +3,11 @@ import OpenAI from 'openai'
 import { checkAndIncrementUsage } from '@/lib/subscription/usage'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { checkRateLimit, getClientIdentifier } from '@/lib/security/rate-limiter'
 
 export async function POST(request: NextRequest) {
   try {
-    const { content, platforms, tone, includeHashtags, includeEmojis, context } = await request.json()
-
-    // Initialize OpenAI only when needed
-    const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    }) : null
-
-    if (!openai) {
-      return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 })
-    }
-
-    // Check authentication - moved inside the handler
+    // Check authentication first
     const cookieStore = cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,6 +24,23 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Rate limit by user ID (more accurate than IP for authenticated users)
+    const rateLimitResponse = await checkRateLimit(`ai:${user.id}`, 'ai')
+    if (rateLimitResponse) {
+      return rateLimitResponse
+    }
+
+    const { content, platforms, tone, includeHashtags, includeEmojis, context } = await request.json()
+
+    // Initialize OpenAI only when needed
+    const openai = process.env.OPENAI_API_KEY ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    }) : null
+
+    if (!openai) {
+      return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 })
     }
 
     // Check if we can use AI suggestions (check limit for +1 but don't increment yet)

@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { checkRateLimit, getClientIdentifier } from '@/lib/security/rate-limiter'
 
 export async function POST(request: NextRequest) {
+  // Rate limit auth endpoints to prevent abuse
+  const clientId = getClientIdentifier()
+  const rateLimitResponse = await checkRateLimit(`auth:${clientId}`, 'auth')
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
   try {
     const cookieStore = cookies()
     const supabase = createServerClient(

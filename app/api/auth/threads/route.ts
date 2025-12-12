@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,36 +8,29 @@ export async function GET(request: NextRequest) {
   try {
     console.log('=== Threads OAuth Initialization ===');
     console.log('Environment check:', {
-      hasAppId: !!process.env.META_APP_ID,
-      hasAppSecret: !!process.env.META_APP_SECRET,
+      hasAppId: !!process.env.THREADS_APP_ID,
       nodeEnv: process.env.NODE_ENV,
-      appIdValue: process.env.META_APP_ID,
-      appIdLength: process.env.META_APP_ID?.length
     });
-    
+
     // MUST use THREADS_APP_ID, not the main Meta App ID!
     const appId = process.env.THREADS_APP_ID;
-    const appSecret = process.env.THREADS_APP_SECRET;
-    
+
     if (!appId) {
       console.error('Missing Threads App ID');
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
-    
-    // For OAuth initiation, we don't actually need the app secret yet
-    // It's only needed for token exchange in the callback
 
-    // Generate state for CSRF protection
-    const state = Math.random().toString(36).substring(7);
-    
-    // Store state in cookies
+    // Generate cryptographically secure state for CSRF protection
+    const state = crypto.randomBytes(32).toString('hex');
+
+    // Store state in cookies with secure settings
     const cookieStore = cookies();
     cookieStore.set('threads_oauth_state', state, {
       httpOnly: true,
-      secure: true, // Always use secure in production
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for cross-site in production
+      secure: true, // Always use secure (required for SameSite=None)
+      sameSite: 'none', // Required for cross-site OAuth redirects
       maxAge: 60 * 10, // 10 minutes
-      path: '/', // Ensure cookie is available across all paths
+      path: '/',
     });
 
     // Determine callback URL based on environment

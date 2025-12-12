@@ -4,8 +4,45 @@ interface ArticleContentProps {
   content: string
 }
 
+/**
+ * Sanitize a URL to prevent XSS attacks
+ * Only allows http, https, mailto, and tel protocols
+ */
+function sanitizeUrl(url: string): string {
+  // Trim and lowercase for comparison
+  const trimmedUrl = url.trim()
+  const lowerUrl = trimmedUrl.toLowerCase()
+
+  // Allow only safe protocols
+  if (
+    lowerUrl.startsWith('http://') ||
+    lowerUrl.startsWith('https://') ||
+    lowerUrl.startsWith('mailto:') ||
+    lowerUrl.startsWith('tel:') ||
+    lowerUrl.startsWith('/') // Relative URLs
+  ) {
+    return trimmedUrl
+  }
+
+  // Block javascript:, data:, vbscript:, and other potentially dangerous protocols
+  console.warn('Blocked potentially unsafe URL in markdown:', url)
+  return '#'
+}
+
+/**
+ * Escape HTML special characters to prevent XSS
+ */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export function ArticleContent({ content }: ArticleContentProps) {
-  // Simple markdown to HTML conversion
+  // Simple markdown to HTML conversion with XSS protection
   const renderMarkdown = (md: string) => {
     let html = md
       // Headers
@@ -14,10 +51,14 @@ export function ArticleContent({ content }: ArticleContentProps) {
       // Bold and italic
       .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      // Code
-      .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-gray-100 rounded text-sm font-mono">$1</code>')
-      // Links
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" class="text-purple-600 hover:underline">$1</a>')
+      // Code (escape HTML inside code blocks)
+      .replace(/`([^`]+)`/g, (_, code) =>
+        `<code class="px-1.5 py-0.5 bg-gray-100 rounded text-sm font-mono">${escapeHtml(code)}</code>`
+      )
+      // Links (sanitize URLs to prevent javascript: XSS)
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) =>
+        `<a href="${sanitizeUrl(url)}" target="_blank" rel="noopener noreferrer" class="text-purple-600 hover:underline">${escapeHtml(text)}</a>`
+      )
       // Unordered lists
       .replace(/^- (.+)$/gm, '<li class="ml-4 text-gray-600">$1</li>')
       // Ordered lists
@@ -25,7 +66,7 @@ export function ArticleContent({ content }: ArticleContentProps) {
       // Tables (simple)
       .replace(/\| (.+) \|/g, (match) => {
         const cells = match.split('|').filter(Boolean).map(cell => cell.trim())
-        return `<tr>${cells.map(cell => `<td class="py-2 px-3 border-b border-gray-200">${cell}</td>`).join('')}</tr>`
+        return `<tr>${cells.map(cell => `<td class="py-2 px-3 border-b border-gray-200">${escapeHtml(cell)}</td>`).join('')}</tr>`
       })
       // Horizontal rule
       .replace(/^---$/gm, '<hr class="my-4 border-gray-200" />')

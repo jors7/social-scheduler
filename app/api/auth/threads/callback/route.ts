@@ -40,33 +40,44 @@ export async function GET(request: NextRequest) {
     // Verify state for CSRF protection
     const cookieStore = cookies();
     const storedState = cookieStore.get('threads_oauth_state')?.value;
-    
-    if (!storedState || storedState !== state) {
-      console.warn('State mismatch - possible CSRF or cookie issue', {
-        storedState: storedState ? 'present' : 'missing',
-        receivedState: state ? 'present' : 'missing',
+
+    // SECURITY: Always validate state parameter to prevent CSRF attacks
+    // State cookie uses SameSite=None; Secure which should work for cross-site redirects
+    if (!storedState || !state) {
+      console.error('OAuth state validation failed - missing state', {
+        hasStoredState: !!storedState,
+        hasReceivedState: !!state,
         environment: process.env.NODE_ENV,
-        hasCode: !!code
       });
-      
-      // In production, be more lenient due to cross-site cookie issues
-      // The authorization code itself provides security
-      if (process.env.NODE_ENV === 'production' && code) {
-        console.log('Allowing auth despite state mismatch - using authorization code for security');
-      } else {
-        // In development or if no code, fail the auth
-        console.error('Failing auth due to state mismatch');
-        const errorUrl = process.env.NODE_ENV === 'production'
-          ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed'
-          : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed';
-        return NextResponse.redirect(errorUrl);
-      }
+
+      const errorUrl = process.env.NODE_ENV === 'production'
+        ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed&reason=state_missing'
+        : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed&reason=state_missing';
+      return NextResponse.redirect(errorUrl);
     }
 
-    // Clear state cookie if it exists
-    if (storedState) {
-      cookieStore.delete('threads_oauth_state');
+    // Use timing-safe comparison to prevent timing attacks
+    const stateBuffer = Buffer.from(state);
+    const storedBuffer = Buffer.from(storedState);
+
+    if (stateBuffer.length !== storedBuffer.length ||
+        !require('crypto').timingSafeEqual(stateBuffer, storedBuffer)) {
+      console.error('OAuth state validation failed - state mismatch', {
+        environment: process.env.NODE_ENV,
+        stateLength: state.length,
+        storedLength: storedState.length,
+      });
+
+      const errorUrl = process.env.NODE_ENV === 'production'
+        ? 'https://www.socialcal.app/dashboard/settings?error=threads_auth_failed&reason=state_mismatch'
+        : 'http://localhost:3001/dashboard/settings?error=threads_auth_failed&reason=state_mismatch';
+      return NextResponse.redirect(errorUrl);
     }
+
+    console.log('OAuth state validation successful');
+
+    // Clear state cookie after successful validation
+    cookieStore.delete('threads_oauth_state');
 
     // Exchange code for access token
     const baseUrl = process.env.NODE_ENV === 'production' 

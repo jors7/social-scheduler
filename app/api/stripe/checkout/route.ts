@@ -5,12 +5,20 @@ import Stripe from 'stripe'
 import { SUBSCRIPTION_PLANS, PlanId, BillingCycle } from '@/lib/subscription/plans'
 import { validateStripeKeys } from '@/lib/stripe/validation'
 import { createServiceClient } from '@/lib/supabase/service'
+import { checkRateLimit, getClientIdentifier } from '@/lib/security/rate-limiter'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-11-20.acacia' as any,
 })
 
 export async function POST(request: NextRequest) {
+  // Rate limit checkout requests (prevent abuse)
+  const clientId = getClientIdentifier()
+  const rateLimitResponse = await checkRateLimit(`checkout:${clientId}`, 'strict')
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
   // Validate Stripe keys at runtime
   validateStripeKeys()
 
