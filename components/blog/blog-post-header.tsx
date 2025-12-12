@@ -71,16 +71,25 @@ export function BlogPostHeader({ post }: BlogPostHeaderProps) {
         {/* Right Column - Featured Image */}
         {post.featured_image && (
           <div className="relative aspect-[16/9] overflow-hidden rounded-2xl shadow-xl">
-            <Image
-              src={post.featured_image}
-              alt={post.title}
-              fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover"
-              placeholder={post.featured_image_blur ? "blur" : "empty"}
-              blurDataURL={post.featured_image_blur}
-              priority
-            />
+            {post.featured_image.endsWith('.svg') ? (
+              // Use regular img for SVGs since Next.js Image doesn't optimize them well
+              <img
+                src={post.featured_image}
+                alt={post.title}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <Image
+                src={post.featured_image}
+                alt={post.title}
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover"
+                placeholder={post.featured_image_blur ? "blur" : "empty"}
+                blurDataURL={post.featured_image_blur}
+                priority
+              />
+            )}
           </div>
         )}
       </div>

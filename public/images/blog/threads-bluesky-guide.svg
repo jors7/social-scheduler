@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <defs>
+    <linearGradient id="bgGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0f9ff"/>
+      <stop offset="50%" style="stop-color:#faf5ff"/>
+      <stop offset="100%" style="stop-color:#fdf4ff"/>
+    </linearGradient>
+    <linearGradient id="threadsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#000000"/>
+      <stop offset="100%" style="stop-color:#333333"/>
+    </linearGradient>
+    <linearGradient id="blueskyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0085ff"/>
+      <stop offset="100%" style="stop-color:#00c8ff"/>
+    </linearGradient>
+    <linearGradient id="connectGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#000000"/>
+      <stop offset="50%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#0085ff"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad3)"/>
+
+  <!-- Decorative network lines -->
+  <g stroke="#e2e8f0" stroke-width="1" opacity="0.5">
+    <line x1="100" y1="100" x2="300" y2="200"/>
+    <line x1="300" y1="200" x2="250" y2="400"/>
+    <line x1="900" y1="100" x2="1000" y2="250"/>
+    <line x1="1000" y1="250" x2="950" y2="450"/>
+    <line x1="150" y1="500" x2="350" y2="420"/>
+    <line x1="850" y1="530" x2="1050" y2="400"/>
+  </g>
+
+  <!-- Network nodes -->
+  <circle cx="100" cy="100" r="8" fill="#e2e8f0"/>
+  <circle cx="300" cy="200" r="6" fill="#cbd5e1"/>
+  <circle cx="250" cy="400" r="5" fill="#94a3b8"/>
+  <circle cx="900" cy="100" r="8" fill="#e2e8f0"/>
+  <circle cx="1000" cy="250" r="6" fill="#cbd5e1"/>
+  <circle cx="950" cy="450" r="5" fill="#94a3b8"/>
+  <circle cx="150" cy="500" r="6" fill="#cbd5e1"/>
+  <circle cx="850" cy="530" r="5" fill="#94a3b8"/>
+
+  <!-- Threads Logo (Left) -->
+  <g transform="translate(350, 315)">
+    <!-- Glow -->
+    <circle cx="0" cy="0" r="110" fill="#000000" opacity="0.05"/>
+
+    <!-- Main circle -->
+    <circle cx="0" cy="0" r="90" fill="url(#threadsGrad)" filter="url(#glow)"/>
+
+    <!-- Threads @ symbol stylized -->
+    <g stroke="white" stroke-width="6" fill="none" stroke-linecap="round">
+      <!-- Outer swirl -->
+      <path d="M-30 -10 Q-30 -40 0 -40 Q40 -40 40 0 Q40 35 10 40 Q-20 45 -30 20"/>
+      <!-- Inner loop -->
+      <circle cx="5" cy="0" r="20"/>
+      <!-- Tail -->
+      <path d="M25 0 Q35 0 35 15"/>
+    </g>
+
+    <!-- Label -->
+    <text x="0" y="130" text-anchor="middle" fill="#1e293b" font-family="Arial, sans-serif" font-weight="bold" font-size="24">Threads</text>
+    <text x="0" y="155" text-anchor="middle" fill="#64748b" font-family="Arial, sans-serif" font-size="14">500 characters</text>
+  </g>
+
+  <!-- Bluesky Logo (Right) -->
+  <g transform="translate(850, 315)">
+    <!-- Glow -->
+    <circle cx="0" cy="0" r="110" fill="#0085ff" opacity="0.05"/>
+
+    <!-- Main circle -->
+    <circle cx="0" cy="0" r="90" fill="url(#blueskyGrad)" filter="url(#glow)"/>
+
+    <!-- Butterfly/Sky icon -->
+    <g fill="white">
+      <!-- Left wing -->
+      <path d="M-35 -5 Q-50 -35 -20 -40 Q5 -45 0 -15 Q-5 -45 -35 -5"/>
+      <!-- Right wing -->
+      <path d="M35 -5 Q50 -35 20 -40 Q-5 -45 0 -15 Q5 -45 35 -5"/>
+      <!-- Body -->
+      <ellipse cx="0" cy="5" rx="8" ry="25"/>
+      <!-- Bottom spread -->
+      <path d="M-15 25 Q-25 40 -10 45 Q0 48 10 45 Q25 40 15 25 Q5 35 -5 35 Q-15 25 -15 25"/>
+    </g>
+
+    <!-- Label -->
+    <text x="0" y="130" text-anchor="middle" fill="#1e293b" font-family="Arial, sans-serif" font-weight="bold" font-size="24">Bluesky</text>
+    <text x="0" y="155" text-anchor="middle" fill="#64748b" font-family="Arial, sans-serif" font-size="14">300 characters</text>
+  </g>
+
+  <!-- Connection between platforms -->
+  <g transform="translate(600, 315)">
+    <!-- Connection line -->
+    <line x1="-140" y1="0" x2="140" y2="0" stroke="url(#connectGrad)" stroke-width="4" stroke-dasharray="12,6"/>
+
+    <!-- Plus icon in center -->
+    <circle cx="0" cy="0" r="30" fill="white" filter="drop-shadow(0 4px 12px rgba(0,0,0,0.1))"/>
+    <line x1="-12" y1="0" x2="12" y2="0" stroke="#8b5cf6" stroke-width="4" stroke-linecap="round"/>
+    <line x1="0" y1="-12" x2="0" y2="12" stroke="#8b5cf6" stroke-width="4" stroke-linecap="round"/>
+  </g>
+
+  <!-- "New Opportunity" banner at top -->
+  <g transform="translate(600, 80)">
+    <rect x="-150" y="-30" width="300" height="60" rx="30" fill="white" filter="drop-shadow(0 4px 16px rgba(0,0,0,0.1))"/>
+    <circle cx="-110" cy="0" r="18" fill="#fbbf24"/>
+    <text x="-110" y="6" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-weight="bold" font-size="18">!</text>
+    <text x="10" y="7" text-anchor="middle" fill="#1e293b" font-family="Arial, sans-serif" font-weight="bold" font-size="18">Emerging Platforms</text>
+  </g>
+
+  <!-- Growth arrows -->
+  <g transform="translate(350, 180)">
+    <path d="M0 30 L0 0 L-10 10 M0 0 L10 10" stroke="#10b981" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="25" y="10" fill="#10b981" font-family="Arial, sans-serif" font-weight="bold" font-size="14">Growing</text>
+  </g>
+
+  <g transform="translate(850, 180)">
+    <path d="M0 30 L0 0 L-10 10 M0 0 L10 10" stroke="#10b981" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="25" y="10" fill="#10b981" font-family="Arial, sans-serif" font-weight="bold" font-size="14">Growing</text>
+  </g>
+
+  <!-- Bottom CTA -->
+  <g transform="translate(600, 550)">
+    <rect x="-180" y="-25" width="360" height="50" rx="25" fill="url(#blueskyGrad)" opacity="0.1"/>
+    <text x="0" y="8" text-anchor="middle" fill="#0369a1" font-family="Arial, sans-serif" font-weight="bold" font-size="16">Schedule to both platforms at once</text>
+  </g>
+
+  <!-- Decorative stars/sparkles -->
+  <g fill="#fbbf24" opacity="0.6">
+    <polygon points="200,250 203,258 212,258 205,263 208,272 200,267 192,272 195,263 188,258 197,258" transform="scale(0.8)"/>
+    <polygon points="1050,220 1053,228 1062,228 1055,233 1058,242 1050,237 1042,242 1045,233 1038,228 1047,228" transform="scale(0.7)"/>
+    <polygon points="550,480 553,488 562,488 555,493 558,502 550,497 542,502 545,493 538,488 547,488" transform="scale(0.6)"/>
+  </g>
+</svg>

@@ -38,15 +38,23 @@ export function RelatedPosts({ posts }: RelatedPostsProps) {
               {/* Image */}
               <div className="relative aspect-[16/9] overflow-hidden bg-gray-100">
                 {post.featured_image ? (
-                  <Image
-                    src={post.featured_image}
-                    alt={post.title}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 25vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    placeholder={post.featured_image_blur ? "blur" : "empty"}
-                    blurDataURL={post.featured_image_blur}
-                  />
+                  post.featured_image.endsWith('.svg') ? (
+                    <img
+                      src={post.featured_image}
+                      alt={post.title}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <Image
+                      src={post.featured_image}
+                      alt={post.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 25vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      placeholder={post.featured_image_blur ? "blur" : "empty"}
+                      blurDataURL={post.featured_image_blur}
+                    />
+                  )
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
                     <span className="text-2xl font-bold text-blue-200">SC</span>

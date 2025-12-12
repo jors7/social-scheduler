@@ -91,16 +91,24 @@ export function BlogHero({ post }: BlogHeroProps) {
             <div className="relative group">
               <Link href={`/blog/${post.slug}`}>
                 <div className="relative overflow-hidden rounded-2xl shadow-2xl h-[400px]">
-                  <Image
-                    src={post.featured_image}
-                    alt={post.title}
-                    fill
-                    sizes="(max-width: 1280px) 100vw, 1280px"
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    placeholder={post.featured_image_blur ? "blur" : "empty"}
-                    blurDataURL={post.featured_image_blur}
-                    priority
-                  />
+                  {post.featured_image.endsWith('.svg') ? (
+                    <img
+                      src={post.featured_image}
+                      alt={post.title}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <Image
+                      src={post.featured_image}
+                      alt={post.title}
+                      fill
+                      sizes="(max-width: 1280px) 100vw, 1280px"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      placeholder={post.featured_image_blur ? "blur" : "empty"}
+                      blurDataURL={post.featured_image_blur}
+                      priority
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               </Link>
