@@ -30,6 +30,15 @@ header.sticky {
   font-display: swap;
 }
 
+/* Stolzl Medium Font for blog headings */
+@font-face {
+  font-family: 'Stolzl Medium';
+  src: url('/Stolzl-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
