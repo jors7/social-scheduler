@@ -188,6 +188,17 @@
   margin-bottom: 0.5rem;
 }
 
+/* Desktop-specific styles */
+@media (min-width: 769px) {
+  .blogContent {
+    line-height: 30px;
+  }
+
+  .blogContent li {
+    line-height: 30px;
+  }
+}
+
 /* Mobile-specific styles */
 @media (max-width: 768px) {
   .blogContent {
