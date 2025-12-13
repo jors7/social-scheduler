@@ -45,7 +45,7 @@ export function BlogPostHeader({ post }: BlogPostHeaderProps) {
         {/* Left Column - Text Content */}
         <div className="space-y-6">
           {/* Title */}
-          <h1 className="blog-heading text-3xl md:text-4xl lg:text-5xl text-gray-900">
+          <h1 className="blog-heading text-gray-900" style={{ fontSize: '40px', lineHeight: '48px' }}>
             {post.title}
           </h1>
 

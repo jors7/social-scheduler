@@ -305,7 +305,7 @@ header.sticky {
 .blog-heading {
   font-family: var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 700;
-  line-height: 1.1;
+  line-height: 1.21 !important;
   letter-spacing: -0.02em;
 }
 

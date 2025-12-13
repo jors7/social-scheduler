@@ -204,7 +204,7 @@ export default async function BlogPage() {
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 {/* Text Content */}
                 <div className="space-y-6">
-                  <h1 className="blog-heading text-4xl md:text-5xl lg:text-6xl font-bold">
+                  <h1 className="blog-heading text-3xl md:text-4xl lg:text-5xl font-bold leading-snug">
                     <Link href={`/blog/${featuredPost.slug}`} className="hover:text-blue-400 transition-colors">
                       {featuredPost.title}
                     </Link>
