@@ -53,7 +53,7 @@ const nextConfig = {
               // Fonts: self + Google Fonts
               "font-src 'self' https://fonts.gstatic.com data:",
               // Connect: API calls
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://api.openai.com https://*.upstash.io https://*.threads.net https://*.facebook.com https://graph.facebook.com https://bsky.social https://*.bsky.network https://vitals.vercel-insights.com https://vercel.live https://va.vercel-scripts.com https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://api.openai.com https://*.upstash.io https://*.threads.net https://*.facebook.com https://graph.facebook.com https://bsky.social https://*.bsky.network https://vitals.vercel-insights.com https://vercel.live https://va.vercel-scripts.com https://*.google-analytics.com https://analytics.google.com https://www.googletagmanager.com",
               // Frames: Stripe checkout
               "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://vercel.live",
               // Frame ancestors (prevent clickjacking)
