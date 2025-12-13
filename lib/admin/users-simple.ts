@@ -173,13 +173,23 @@ export async function getUsersSimple(
   }
 }
 
+export interface PlatformStats {
+  platform: string
+  connections: number
+}
+
+export interface PostStatusStats {
+  status: string
+  count: number
+}
+
 /**
  * Get admin stats - simplified version
  */
 export async function getAdminStatsSimple() {
   try {
     const supabase = getServiceSupabase()
-    
+
     // Get counts from various tables
     const { count: totalUsers } = await supabase
       .from('user_subscriptions')
@@ -198,7 +208,7 @@ export async function getAdminStatsSimple() {
     // Get posts today
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    
+
     const { count: postsToday } = await supabase
       .from('scheduled_posts')
       .select('*', { count: 'exact', head: true })
@@ -208,7 +218,7 @@ export async function getAdminStatsSimple() {
     const firstDayOfMonth = new Date()
     firstDayOfMonth.setDate(1)
     firstDayOfMonth.setHours(0, 0, 0, 0)
-    
+
     const { data: payments } = await supabase
       .from('payment_history')
       .select('amount')
@@ -217,13 +227,51 @@ export async function getAdminStatsSimple() {
 
     const revenueMonth = payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0
 
+    // Get platform connections breakdown
+    const { data: platformData } = await supabase
+      .from('social_accounts')
+      .select('platform')
+
+    const platformCounts: Record<string, number> = {}
+    platformData?.forEach(acc => {
+      platformCounts[acc.platform] = (platformCounts[acc.platform] || 0) + 1
+    })
+
+    const platform_stats: PlatformStats[] = Object.entries(platformCounts)
+      .map(([platform, connections]) => ({ platform, connections }))
+      .sort((a, b) => b.connections - a.connections)
+
+    // Get posts by status breakdown
+    const { data: statusData } = await supabase
+      .from('scheduled_posts')
+      .select('status')
+
+    const statusCounts: Record<string, number> = {}
+    statusData?.forEach(post => {
+      const status = post.status || 'unknown'
+      statusCounts[status] = (statusCounts[status] || 0) + 1
+    })
+
+    const post_status_stats: PostStatusStats[] = Object.entries(statusCounts)
+      .map(([status, count]) => ({ status, count }))
+      .sort((a, b) => b.count - a.count)
+
+    // Calculate success rate
+    const postedCount = statusCounts['posted'] || 0
+    const failedCount = statusCounts['failed'] || 0
+    const completedTotal = postedCount + failedCount
+    const success_rate = completedTotal > 0 ? (postedCount / completedTotal) * 100 : 100
+
     return {
       total_users: totalUsers || 0,
       active_users: totalUsers || 0, // Simplified
       paid_users: paidUsers || 0,
       total_posts: totalPosts || 0,
       posts_today: postsToday || 0,
-      revenue_month: revenueMonth / 100 // Convert from cents
+      revenue_month: revenueMonth / 100, // Convert from cents
+      platform_stats,
+      post_status_stats,
+      success_rate
     }
   } catch (error) {
     console.error('getAdminStatsSimple error:', error)
@@ -234,7 +282,10 @@ export async function getAdminStatsSimple() {
       paid_users: 0,
       total_posts: 0,
       posts_today: 0,
-      revenue_month: 0
+      revenue_month: 0,
+      platform_stats: [],
+      post_status_stats: [],
+      success_rate: 100
     }
   }
 }
