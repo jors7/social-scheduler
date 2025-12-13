@@ -170,9 +170,9 @@ Important: Return ONLY the JSON object, no additional text or markdown.`
           content: prompt
         }
       ],
-      model: 'gpt-4o-mini',
+      model: 'gpt-5-mini',
       temperature: 0.9,
-      max_tokens: 1000,
+      max_tokens: 1600,
     })
 
     const responseContent = completion.choices[0]?.message?.content?.trim()
