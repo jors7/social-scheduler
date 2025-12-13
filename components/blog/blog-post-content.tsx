@@ -14,6 +14,18 @@ interface BlogPostContentProps {
   headings?: Heading[]
 }
 
+// CTA block HTML template
+const getCTABlock = () => `
+<div class="${styles.blogCta}">
+  <p class="${styles.blogCtaHeadline}">Ready to save 15+ hours every week?</p>
+  <p class="${styles.blogCtaSubtext}">Join other creators who've automated their social media with SocialCal.</p>
+  <a href="https://www.socialcal.app" class="${styles.blogCtaButton}">
+    Get started free
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+</div>
+`
+
 export function BlogPostContent({ content, headings = [] }: BlogPostContentProps) {
   // Function to insert mobile TOC after first paragraph
   const insertMobileTOCAfterFirstParagraph = (htmlContent: string, headingsList: Heading[]) => {
@@ -53,6 +65,9 @@ export function BlogPostContent({ content, headings = [] }: BlogPostContentProps
     // Wrap tables in a scrollable container for mobile
     contentWithIds = contentWithIds.replace(/<table/g, `<div class="${styles.tableWrapper}"><table`)
     contentWithIds = contentWithIds.replace(/<\/table>/g, '</table></div>')
+
+    // Replace {{CTA}} shortcode with styled CTA block
+    contentWithIds = contentWithIds.replace(/\{\{CTA\}\}/gi, getCTABlock())
 
     // Insert mobile TOC after first paragraph
     if (headings.length > 0) {

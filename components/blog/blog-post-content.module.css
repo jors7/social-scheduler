@@ -225,3 +225,83 @@
     font-weight: 700;
   }
 }
+
+/* Blog CTA Block */
+.blogCta {
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  margin: 3rem 0;
+  border-top: 1px solid #E5E7EB;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.blogCtaHeadline {
+  font-family: 'Stolzl Medium', 'Stolzl', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 500;
+  color: #111827;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.blogCtaSubtext {
+  font-family: var(--font-figtree), 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.125rem;
+  color: #6B7280;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.5;
+  max-width: 320px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.blogCtaButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #2563EB;
+  color: #ffffff !important;
+  font-family: var(--font-figtree), 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.875rem 1.75rem;
+  border-radius: 9999px;
+  text-decoration: none !important;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2), 0 2px 4px -1px rgba(37, 99, 235, 0.1);
+}
+
+.blogCtaButton:hover {
+  background-color: #1D4ED8;
+  color: #ffffff !important;
+  text-decoration: none !important;
+  transform: translateY(-1px);
+}
+
+.blogCtaButton svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+/* Mobile adjustments for CTA */
+@media (max-width: 768px) {
+  .blogCtaHeadline {
+    font-size: 1.375rem;
+    white-space: normal;
+  }
+
+  .blogCtaSubtext {
+    font-size: 1rem;
+    max-width: 280px;
+  }
+
+  .blogCtaButton {
+    font-size: 0.9375rem;
+    padding: 0.75rem 1.5rem;
+  }
+}
